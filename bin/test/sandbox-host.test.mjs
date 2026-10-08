@@ -235,7 +235,7 @@ describe('Linux argv', () => {
     assert.equal(none.profile, null);
     const reg = hostSandboxArgv(base({ platform: 'linux', egress: 'registry', reportDir: '/srv/reports', tmpDir: '/var/tmp', extraWrites: ['~/.cache/trivy'], fs: NOFS }));
     assert.deepEqual(reg.argv, ['/opt/homebrew/Cellar/node/26.7.0/bin/node', '/opt/commitwork/bin/lib/sandbox-net.mjs', '--',
-      'bwrap', '--ro-bind', '/', '/', '--tmpfs', '/tmp', '--bind', '/srv/reports', '/srv/reports', '--bind', '/var/tmp', '/var/tmp', '--bind', '/Users/op/.cache/trivy', '/Users/op/.cache/trivy',
+      'bwrap', '--ro-bind', '/', '/', '--tmpfs', '/tmp', '--bind', '/srv/reports', '/srv/reports', '--bind', '/var/tmp', '/var/tmp', '--bind-try', '/Users/op/.cache/trivy', '/Users/op/.cache/trivy',
       '--unshare-net', '--info-fd', '3', '--block-fd', '4', '--die-with-parent', '--', 'sh', '-c', 'echo hi']);
     assert.deepEqual(reg.prefix, reg.argv.slice(0, -3));
     assert.equal(reg.isolation, 'fs-only');
@@ -374,8 +374,8 @@ describe('Linux denies what macOS denies', () => {
     const { argv } = hostSandboxArgv(spec({ platform: 'linux', tmpDir: '/var/tmp', extraWrites: ['~', '~/.cache/trivy'], fs: fakeFs(present) }));
     assert.deepEqual(argv.slice(0, 7), ['bwrap', '--ro-bind', '/', '/', '--tmpfs', '/tmp', '--bind']);
     const masks = denied.map((p) => maskOf(argv, p).at);
-    const lastBind = argv.lastIndexOf('--bind');
-    assert.deepEqual(argv.slice(lastBind, lastBind + 3), ['--bind', `${H}/.cache/trivy`, `${H}/.cache/trivy`]);
+    const lastBind = argv.lastIndexOf('--bind-try');
+    assert.deepEqual(argv.slice(lastBind, lastBind + 3), ['--bind-try', `${H}/.cache/trivy`, `${H}/.cache/trivy`]);
     assert.ok(argv.indexOf(`${H}`) < Math.min(...masks), 'the home bind precedes every mask');
     assert.ok(Math.min(...masks) > lastBind + 2, 'every mask follows the last bind');
     assert.ok(Math.max(...masks) < argv.indexOf('--unshare-net'), 'and precedes the options that end the prefix');

@@ -497,7 +497,8 @@ export function hostSandboxArgv(spec = {}) {
     // fact: the runtime-dir tmpfs precedes every bind, so a report dir or declared write under /run stays reachable (expiry: never, prev: missing)
     const bw = ['bwrap', '--ro-bind', '/', '/', '--tmpfs', '/tmp', ...runtimeMasks(fs), '--bind', report, report];
     if (!(tmp === '/tmp' || tmp.startsWith('/tmp/'))) bw.push('--bind', tmp, tmp);
-    for (const w of writes) bw.push('--bind', w, w);
+    // fact: a declared write that does not exist is skipped, not fatal / bwrap refuses a missing --bind source, and a cache directory a fresh home lacks (~/.keras, ~/.cache/semgrep_version) stopped the whole lane before its tool started, measured 2026-10-08 in the container image (expiry: never, prev: broken)
+    for (const w of writes) bw.push('--bind-try', w, w);
     // fact: the credential masks follow every bind / bwrap's later mount wins, as seatbelt's later rule does: a ~/.ssh mask placed before a declared write of ~ read the key back under bwrap 0.12, measured 2026-09-27 (expiry: never, prev: missing)
     // A declaration inside a declarable store unmasks all of it: coarser than seatbelt, which opens only that path.
     const readable = [repo, report, tmp, cwRoot, nodePrefix, developerDir, ...reads, ...writes].filter(Boolean);

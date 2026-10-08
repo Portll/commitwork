@@ -13,20 +13,25 @@ import { fileURLToPath } from 'node:url';
 export const EXIT = { OK: 0, USAGE: 2, UNCONFINED: 20, TOO_FEW: 21, UNREADABLE: 22 };
 const NOT_RUN = new Set(['noscan', 'skip']);
 
-/** { ran: [{repo, id, isolation}], unconfined: [...], notRun } for a parsed scan.json. */
+/** { ran: [{repo, id, isolation}], unconfined: [...], notRun, refused: [{id, summary}] } for a parsed scan.json. */
 export function confinement(doc) {
   if (!doc || !Array.isArray(doc.repos) || !doc.repos.length) throw new Error('scan.json holds no repository');
   const ran = [], unconfined = [];
   let notRun = 0;
+  const refused = [];
   for (const r of doc.repos) {
     for (const [id, c] of Object.entries(r?.cells && typeof r.cells === 'object' ? r.cells : {})) {
-      if (!c || NOT_RUN.has(c.sev)) { notRun++; continue; }
+      if (!c || NOT_RUN.has(c.sev)) {
+        notRun++;
+        if (c?.sev === 'noscan') refused.push({ id, summary: String(c.summary || 'no reason recorded') });
+        continue;
+      }
       const row = { repo: r.slug || r.repo || '?', id, isolation: c.isolation ?? null };
       ran.push(row);
       if (!row.isolation || row.isolation === 'none') unconfined.push(row);
     }
   }
-  return { ran, unconfined, notRun };
+  return { ran, unconfined, notRun, refused };
 }
 
 export function main(argv) {
@@ -42,11 +47,17 @@ export function main(argv) {
   let result;
   try { result = confinement(JSON.parse(readFileSync(file, 'utf8'))); }
   catch (e) { console.error(`assert-confined: ${file}: ${e.code || e.message}`); return EXIT.UNREADABLE; }
-  const { ran, unconfined, notRun } = result;
+  const { ran, unconfined, notRun, refused } = result;
   const byIsolation = {};
   for (const r of ran) byIsolation[r.isolation ?? 'unrecorded'] = (byIsolation[r.isolation ?? 'unrecorded'] || 0) + 1;
   console.log(`assert-confined: ${ran.length} lane(s) ran ${JSON.stringify(byIsolation)}; ${notRun} did not run`);
   for (const r of [...ran].sort((x, y) => x.id.localeCompare(y.id))) console.log(`  ran ${r.id}: ${r.isolation ?? 'isolation not recorded'}`);
+  // A short run is diagnosed from these: the CI job keeps no scan output once it exits.
+  const byReason = new Map();
+  for (const r of refused) byReason.set(r.summary, [...(byReason.get(r.summary) || []), r.id]);
+  for (const [why, ids] of [...byReason].sort((x, y) => y[1].length - x[1].length || x[0].localeCompare(y[0]))) {
+    console.log(`  did not run (${ids.length}): ${ids.sort().join(', ')}: ${why.slice(0, 300)}`);
+  }
   if (unconfined.length) {
     for (const r of unconfined) console.error(`  UNCONFINED ${r.repo} ${r.id}: isolation ${r.isolation ?? 'not recorded'}`);
     return EXIT.UNCONFINED;
