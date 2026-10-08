@@ -67,9 +67,13 @@ test('D1: NEGATIVE — an undeclared orphan is NOT exempted by a declared one ex
   assert.deepEqual(found, ['feat/new'], 'the allowlist must not become a blanket');
 });
 
-test('D1: every local branch shares history with main, or is declared', () => {
+test('D1: every local branch shares history with main, or is declared', (t) => {
   const refs = git(['for-each-ref', '--format=%(refname:short)', 'refs/heads']).trim().split('\n').filter(Boolean);
-  assert.ok(refs.length > 0, 'no refs read — the check would pass over an empty population');
+  // A tag or pull-request build checks out a detached HEAD with no local branches and no main.
+  if (!refs.includes('main')) {
+    t.skip(`no local main in this checkout (${refs.length} local branch(es)), so there is no trunk to compare against`);
+    return;
+  }
   const sharesHistory = (r) => {
     try { git(['merge-base', 'main', r], { stdio: ['ignore', 'pipe', 'ignore'] }); return true; } catch { return false; }
   };
