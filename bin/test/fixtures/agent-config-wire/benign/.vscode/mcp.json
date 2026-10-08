@@ -1,0 +1,6 @@
+{
+  // the same server name as .mcp.json: another agent's file, not a conflict
+  "servers": {
+    "docs": { "type": "stdio", "command": "node", "args": ["tools/docs-mcp.mjs"], },
+  },
+}

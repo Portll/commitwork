@@ -1,0 +1,871 @@
+{
+ "note": "How each lane-capability fixture was produced. real: the lane's own tool ran over a seed project through `commitwork run`. synthetic: no real run produced an artifact, so a drafted artifact was accepted on the extractor's reading alone, which proves the parser and not the tool's output shape. Written by bin/lane-fixture.mjs.",
+ "lanes": {
+  "accessibility": {
+   "source": "real",
+   "check": "a11y-wcag",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "a11y.json",
+    "a11y.json.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "actionsGaps": {
+   "source": "real",
+   "check": "actions-gaps",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "actions-gaps.json",
+    "actions-gaps.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "actionsHealth": {
+   "source": "synthetic",
+   "check": "actions-health",
+   "tools": [
+    "node",
+    "gh",
+    "git"
+   ],
+   "files": [
+    "actions-health.json",
+    "actions-health.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30",
+   "why": "the lane reads a live target (egress github), not the repository"
+  },
+  "actionsLint": {
+   "source": "real",
+   "check": "actions-actionlint",
+   "tools": [
+    "actionlint"
+   ],
+   "files": [
+    "actionlint.json",
+    "actionlint.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "actionsPosture": {
+   "source": "real",
+   "check": "actions-zizmor",
+   "tools": [
+    "zizmor"
+   ],
+   "files": [
+    "zizmor.sarif",
+    "zizmor.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "agentConfig": {
+   "source": "real",
+   "check": "agent-config",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "agent-config.json",
+    "agent-config.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "agentInstructions": {
+   "source": "real",
+   "check": "agent-instructions",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "agent-instructions.json",
+    "agent-instructions.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "apiFuzz": {
+   "source": "synthetic",
+   "check": "api-fuzz",
+   "tools": [
+    "schemathesis"
+   ],
+   "files": [
+    "schemathesis.ndjson",
+    "schemathesis.ndjson.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30",
+   "why": "the lane reads a live target (egress target), not the repository"
+  },
+  "bola": {
+   "source": "synthetic",
+   "check": "dast-authz-bola",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "authz-bola.json",
+    "authz-bola.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30",
+   "why": "the lane reads a live target (egress target), not the repository"
+  },
+  "cobolCoverage": {
+   "source": "real",
+   "check": "cobol-inventory",
+   "tools": [
+    "cobolwork"
+   ],
+   "files": [
+    "cobol-inventory.json",
+    "cobol-inventory.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "commitProvenance": {
+   "source": "real",
+   "check": "commit-provenance",
+   "tools": [
+    "node",
+    "git"
+   ],
+   "files": [
+    "commit-provenance.json",
+    "commit-provenance.json.exit"
+   ],
+   "draftedBy": "hand-written seed with replayed history, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "commitVelocity": {
+   "source": "real",
+   "check": "commit-velocity",
+   "tools": [
+    "node",
+    "git"
+   ],
+   "files": [
+    "commit-velocity.json",
+    "commit-velocity.json.exit"
+   ],
+   "draftedBy": "hand-written seed with replayed history, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "cspm": {
+   "source": "synthetic",
+   "check": "cspm-github",
+   "tools": [
+    "prowler"
+   ],
+   "files": [
+    "cspm-github-ocsf.json",
+    "cspm-github-ocsf.json.exit",
+    "cspm-github.json",
+    "cspm-github.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30",
+   "why": "the lane reads a live target (egress github), not the repository"
+  },
+  "dast": {
+   "source": "synthetic",
+   "check": "dast-nuclei",
+   "tools": [
+    "nuclei"
+   ],
+   "files": [
+    "nuclei.jsonl",
+    "nuclei.jsonl.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30",
+   "why": "the lane reads a live target (egress target), not the repository"
+  },
+  "denoTypes": {
+   "source": "real",
+   "check": "deno-check",
+   "tools": [
+    "deno"
+   ],
+   "files": [
+    "deno-check.log",
+    "deno-check.log.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 2r)",
+   "accepted": "2026-09-30"
+  },
+  "depsBundlerAudit": {
+   "source": "real",
+   "check": "deps-ruby-bundler-audit",
+   "tools": [
+    "bundle-audit"
+   ],
+   "files": [
+    "bundler-audit.json",
+    "bundler-audit.json.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "depsContent": {
+   "source": "real",
+   "check": "deps-content",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "deps-content.json",
+    "deps-content.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 2r)",
+   "accepted": "2026-09-30"
+  },
+  "depsGo": {
+   "source": "real",
+   "check": "deps-go-govulncheck",
+   "tools": [
+    "govulncheck",
+    "go"
+   ],
+   "files": [
+    "govulncheck.json",
+    "govulncheck.json.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "depsGradleDeclared": {
+   "source": "real",
+   "check": "deps-gradle-declared",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "gradle-deps.sarif",
+    "gradle-deps.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "depsJvm": {
+   "source": "real",
+   "check": "deps-jvm",
+   "tools": [
+    "trivy"
+   ],
+   "files": [
+    "trivy-jvm.json",
+    "trivy-jvm.json.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "depsReachability": {
+   "source": "real",
+   "check": "deps-reachability",
+   "tools": [
+    "docker"
+   ],
+   "files": [
+    "depscan.json",
+    "depscan.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "depsRetire": {
+   "source": "real",
+   "check": "deps-retire",
+   "tools": [
+    "npx"
+   ],
+   "files": [
+    "retire.json",
+    "retire.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 2r)",
+   "accepted": "2026-09-30"
+  },
+  "dockerfile": {
+   "source": "real",
+   "check": "dockerfile-lint",
+   "tools": [
+    "hadolint"
+   ],
+   "files": [
+    "hadolint.json",
+    "hadolint.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "formatRust": {
+   "source": "real",
+   "check": "format-rust-rustfmt",
+   "tools": [
+    "cargo",
+    "rustfmt"
+   ],
+   "files": [
+    "rustfmt.json",
+    "rustfmt.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "gradleWrapper": {
+   "source": "real",
+   "check": "gradle-wrapper",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "gradle-wrapper.json",
+    "gradle-wrapper.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "iac": {
+   "source": "real",
+   "check": "iac-config",
+   "tools": [
+    "trivy"
+   ],
+   "files": [
+    "trivy-config.sarif",
+    "trivy-config.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "jacksonCaseInsensitive": {
+   "source": "real",
+   "check": "jackson-caseinsensitive-guard",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "jackson-guard.txt",
+    "jackson-guard.txt.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-07",
+   "accepted": "2026-10-07"
+  },
+  "lintGo": {
+   "source": "real",
+   "check": "lint-go-golangci",
+   "tools": [
+    "golangci-lint"
+   ],
+   "files": [
+    "golangci.sarif",
+    "golangci.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "lintJava": {
+   "source": "real",
+   "check": "lint-java-pmd",
+   "tools": [
+    "pmd"
+   ],
+   "files": [
+    "pmd.json",
+    "pmd.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "lintPython": {
+   "source": "real",
+   "check": "lint-python-ruff",
+   "tools": [
+    "ruff"
+   ],
+   "files": [
+    "ruff.sarif",
+    "ruff.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "mainframeSecrets": {
+   "source": "real",
+   "check": "secrets-cobol-jcl",
+   "tools": [
+    "cobolwork",
+    "gitleaks"
+   ],
+   "files": [
+    "gitleaks-mainframe.json",
+    "gitleaks-mainframe.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "maliciousPackages": {
+   "source": "real",
+   "check": "deps-osv",
+   "tools": [
+    "docker"
+   ],
+   "files": [
+    "osv.sarif",
+    "osv.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "minifiedCode": {
+   "source": "real",
+   "check": "minify-detect",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "minify.json",
+    "minify.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "mobileManifest": {
+   "source": "real",
+   "check": "mobile-manifest",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "mobile-manifest.sarif",
+    "mobile-manifest.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "modelArtefacts": {
+   "source": "real",
+   "check": "model-artefacts",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "model-artefacts.json",
+    "model-artefacts.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "nodeHazards": {
+   "source": "real",
+   "check": "node-hazards",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "node-hazards.sarif",
+    "node-hazards.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "sastAuto": {
+   "source": "real",
+   "check": "sast-auto",
+   "tools": [
+    "semgrep"
+   ],
+   "files": [
+    "semgrep-auto.sarif",
+    "semgrep-auto.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30",
+   "pruned": "3032 unreferenced SARIF rule definitions removed"
+  },
+  "sastBrakeman": {
+   "source": "real",
+   "check": "sast-ruby-brakeman",
+   "tools": [
+    "brakeman"
+   ],
+   "files": [
+    "brakeman.json",
+    "brakeman.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "sastCCppcheck": {
+   "source": "real",
+   "check": "sast-c-cppcheck",
+   "tools": [
+    "cppcheck"
+   ],
+   "files": [
+    "cppcheck.sarif",
+    "cppcheck.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "sastCFlawfinder": {
+   "source": "real",
+   "check": "sast-c-flawfinder",
+   "tools": [
+    "flawfinder"
+   ],
+   "files": [
+    "flawfinder.sarif",
+    "flawfinder.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "sastCobol": {
+   "source": "real",
+   "check": "sast-cobol-cobolwork",
+   "tools": [
+    "cobolwork"
+   ],
+   "files": [
+    "cobolwork.json",
+    "cobolwork.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "sastCodeql": {
+   "source": "real",
+   "pruned": "84 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql",
+   "tools": [
+    "codeql"
+   ],
+   "files": [
+    "codeql.sarif",
+    "codeql.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "sastCodeqlCpp": {
+   "source": "real",
+   "pruned": "56 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-cpp",
+   "tools": [
+    "codeql"
+   ],
+   "files": [
+    "codeql-cpp.sarif",
+    "codeql-cpp.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "sastCodeqlCsharp": {
+   "source": "real",
+   "pruned": "49 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-csharp",
+   "tools": [
+    "codeql"
+   ],
+   "files": [
+    "codeql-csharp.sarif",
+    "codeql-csharp.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "sastCodeqlGo": {
+   "source": "real",
+   "pruned": "31 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-go",
+   "tools": [
+    "codeql",
+    "go"
+   ],
+   "files": [
+    "codeql-go.sarif",
+    "codeql-go.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-06"
+  },
+  "sastCodeqlJava": {
+   "source": "real",
+   "pruned": "75 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-java",
+   "tools": [
+    "codeql",
+    "java"
+   ],
+   "files": [
+    "codeql-java.sarif",
+    "codeql-java.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "sastCodeqlPython": {
+   "source": "real",
+   "pruned": "41 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-python",
+   "tools": [
+    "codeql"
+   ],
+   "files": [
+    "codeql-python.sarif",
+    "codeql-python.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "sastCodeqlRuby": {
+   "source": "real",
+   "pruned": "39 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-ruby",
+   "tools": [
+    "codeql"
+   ],
+   "files": [
+    "codeql-ruby.sarif",
+    "codeql-ruby.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "sastCodeqlRust": {
+   "source": "real",
+   "pruned": "24 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-rust",
+   "tools": [
+    "codeql"
+   ],
+   "files": [
+    "codeql-rust.sarif",
+    "codeql-rust.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "sastCodeqlSwift": {
+   "source": "real",
+   "pruned": "26 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-swift",
+   "tools": [
+    "codeql",
+    "xcodebuild"
+   ],
+   "files": [
+    "codeql-swift.sarif",
+    "codeql-swift.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-06"
+  },
+  "sastGo": {
+   "source": "real",
+   "check": "sast-go-gosec",
+   "tools": [
+    "gosec"
+   ],
+   "files": [
+    "gosec.sarif",
+    "gosec.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "sastPhp": {
+   "source": "real",
+   "check": "sast-php-phpcs",
+   "tools": [
+    "phpcs"
+   ],
+   "files": [
+    "phpcs.json",
+    "phpcs.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "sastPhpPsalm": {
+   "source": "real",
+   "check": "sast-php-psalm",
+   "tools": [
+    "psalm"
+   ],
+   "files": [
+    "psalm.sarif",
+    "psalm.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "sastSemgrep": {
+   "source": "real",
+   "check": "sast",
+   "tools": [
+    "semgrep"
+   ],
+   "files": [
+    "semgrep.sarif",
+    "semgrep.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30",
+   "pruned": "3035 unreferenced SARIF rule definitions removed"
+  },
+  "secretsBetterleaks": {
+   "source": "real",
+   "check": "secrets-betterleaks",
+   "tools": [
+    "betterleaks"
+   ],
+   "files": [
+    "betterleaks.json",
+    "betterleaks.json.exit"
+   ],
+   "draftedBy": "hand-written seed: two rules gitleaks lacks, generic-password and generic-credential-uri",
+   "accepted": "2026-10-07"
+  },
+  "secretsHistory": {
+   "source": "real",
+   "check": "secrets",
+   "tools": [
+    "trufflehog"
+   ],
+   "files": [
+    "trufflehog.json",
+    "trufflehog.json.exit"
+   ],
+   "draftedBy": "hand-written seed with replayed history, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "shellLint": {
+   "source": "real",
+   "check": "shell-lint",
+   "tools": [
+    "shellcheck"
+   ],
+   "files": [
+    "shellcheck.json",
+    "shellcheck.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "supplyChain": {
+   "source": "synthetic",
+   "check": "supply-chain-socket",
+   "tools": [
+    "socket"
+   ],
+   "files": [
+    "socket.json",
+    "socket.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30",
+   "why": "required secrets unset: SOCKET_CLI_API_TOKEN, SOCKET_CLI_ORG_SLUG"
+  },
+  "supplyChainHeuristic": {
+   "source": "real",
+   "check": "supply-chain-guarddog",
+   "tools": [
+    "docker"
+   ],
+   "files": [
+    "guarddog.sarif",
+    "guarddog.sarif.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 2)",
+   "accepted": "2026-09-30"
+  },
+  "supplyChainPosture": {
+   "source": "synthetic",
+   "check": "posture-scorecard",
+   "tools": [
+    "scorecard"
+   ],
+   "files": [
+    "scorecard.json",
+    "scorecard.json.exit",
+    "scorecard.raw.json",
+    "scorecard.raw.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30",
+   "why": "the lane reads a live target (egress github), not the repository"
+  },
+  "testHermetic": {
+   "source": "real",
+   "check": "test-hermetic",
+   "tools": [
+    "node",
+    "cargo"
+   ],
+   "files": [
+    "test-hermetic.json",
+    "test-hermetic.json.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-10-04",
+   "accepted": "2026-10-04"
+  },
+  "tlsHeaders": {
+   "source": "synthetic",
+   "check": "tls-headers",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "tls-headers.json",
+    "tls-headers.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30",
+   "why": "the lane reads a live target (egress target), not the repository"
+  },
+  "vendorAssets": {
+   "source": "real",
+   "check": "vendor-scan",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "vendor-scan.json",
+    "vendor-scan.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, local, round 1)",
+   "accepted": "2026-09-30"
+  },
+  "weakRandom": {
+   "source": "real",
+   "check": "weak-random",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "weak-random.json",
+    "weak-random.json.exit"
+   ],
+   "draftedBy": "qwen/qwen3.8-27b (qwen-night batch 47, m4, round 1)",
+   "accepted": "2026-09-30"
+  }
+ }
+}

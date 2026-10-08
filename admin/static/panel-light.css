@@ -1,0 +1,38 @@
+/* Light token overrides for panel.css. Loaded with media="(prefers-color-scheme: light)";
+   the Appearance switcher rewrites that media attribute.
+   Measured 2026-09-27 (docs/THEME.md §3): every text token below clears 4.5:1 on --bg, --panel and
+   --panel2, and every severity and status token also clears it as a pill. --med and --low are set
+   here: a token left unset would keep its bright dark-theme value, which fails on paper.
+   Tracked, and held so by bin/test/tracked-assets.test.mjs: serve.mjs answers a missing asset with
+   200 and an empty body, so an untracked copy would leave the light theme silently absent for
+   everyone but its author. */
+:root{
+  /* Bond paper, from the STPA/HAZOP field guide: a warm cream ground, so the panel and the
+     documents read as one set. On the page ground ink is 15.19:1, mut 5.93:1, dim 5.10:1 and acc
+     5.10:1. Paper gold takes white or page-coloured ink as a fill (5.66 and 5.10:1), never the dark
+     #1a120e. */
+  --bg:#f4f3ef;--panel:#ffffff;--panel2:#eae8e2;--line:#d8d5cc;--line2:#b9b6aa;
+  --head:#101011;
+  --ink:#1c1d1f;--mut:#5f5d57;--dim:#69675f;
+  --acc:#885f25;--wash:rgba(136,95,37,.10);--on-acc:#ffffff;--acc2:#6e5220;--live:#047734;--part:#955906;--plan:#5b6675;
+  --crit:#c32b25;--high:#9c4221;--med:#a14a02;--low:#765e02;--machine:#5c6b33;--attest:#1b6a8c;
+  /* 5.27:1 on --bg. THE STRUCTURE INVERTS BETWEEN THEMES, so one literal cannot serve both: on
+     dark the FILL carries the weight (rgba(74,35,130,.55)) under light ink; here the ink is dark
+     and the fill is a tint. Over --panel the ink measures 4.85:1 on the .12 tint and 4.40:1 on
+     .18, so .12, which is also what .pill.crit/.high derive via color-mix, is the ceiling AA
+     allows; at .55 the tint composites to #b68dfb and leaves the ink at 2.28:1. So light gets its
+     "survives a glance down a long table" from HUE, violet against the red-orange severity ramp,
+     not from weight. */
+  --sev:#7b2ff7;--sev-fill:rgba(123,47,247,.12);
+  /* Lifecycle, paired with --done in panel.css. Same values as --sev in this theme; a separate
+     name so a completed plan never renders through the severity vocabulary. Without this override
+     it would keep the dark value. */
+  --done:#7b2ff7;--done-fill:rgba(123,47,247,.12);
+}
+/* fact: this forced color:#fff to sit on the old SOLID accent fill / the fill is now a 10% tint,
+   and white on it is invisible — a colour pinned to another rule's background outlives that
+   background silently (expiry: never, prev: wrong) */
+.pop .theme-opt[aria-checked="true"]{color:var(--acc2)}
+/* The default mark on a light ground: white disc, black ring, gold key (lib/brand-tokens.mjs MARK_SVG).
+   The inline seal is the dark-ground variant; the disc is its first circle and the ring its second. */
+.seal svg circle:first-of-type{fill:#FFFFFF}.seal svg circle:nth-of-type(2){stroke:#101011}

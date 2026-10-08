@@ -1,0 +1,1268 @@
+/* admin/static/panel.css — the panel's stylesheet.
+ *
+ * Extracted from index.html's inline <style>. It moved for the Content-Security-Policy: the
+ * enforced policy could only carry frame-ancestors/form-action/base-uri while the page still had
+ * inline style, and `style-src 'unsafe-inline'` is not a policy so much as a note that one is
+ * pending. Served from the panel's own origin, so it is now `style-src 'self'`, ENFORCED.
+ *
+ * The inline <script> has NOT moved yet — 1,398 lines with live work in it at time of writing —
+ * so script-src still needs 'unsafe-inline' and the full default-src stays report-only until it
+ * follows. Half a CSP that is enforced beats a whole one that is only observed.
+ */
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("/static/fonts/IBMPlexSans-Regular-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans";font-style:italic;font-weight:400;font-display:swap;src:url("/static/fonts/IBMPlexSans-Italic-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:500;font-display:swap;src:url("/static/fonts/IBMPlexSans-Medium-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("/static/fonts/IBMPlexSans-SemiBold-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:700;font-display:swap;src:url("/static/fonts/IBMPlexSans-Bold-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("/static/fonts/IBMPlexMono-Regular-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:600;font-display:swap;src:url("/static/fonts/IBMPlexMono-SemiBold-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:700;font-display:swap;src:url("/static/fonts/IBMPlexMono-Bold-Latin1.woff2") format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{--head:#f4f3ef;
+  /* Neutral ramp taken from the STPA/HAZOP field-guide livery: a WARM DARK GREY, so it reads as one
+     set with the documents' bond paper. Hue is held near-neutral so the gold accent below is the
+     only chromatic thing on the surface. Contrast on --bg · --panel · --panel2 (docs/THEME.md §3):
+     ink 13.71 · 12.72 · 11.53, mut 5.94 · 5.51 · 5.00. */
+  --bg:#17181a;--panel:#1e1f22;--panel2:#26272a;--line:#333438;--line2:#44454a;--ink:#e4e2dc;--mut:#98958e;
+  /* WCAG 1.4.3: 4.95:1 on --bg and 4.59:1 on --panel. On --panel2 it is 4.16:1, so tertiary text
+     there uses --mut (docs/THEME.md §3.1). */
+  --dim:#8a877e;
+  /* Gold, from the documents' seal and rules. 7.34:1 on --bg. */
+  --acc:#c9a227;--wash:rgba(201,162,39,.10);--acc2:#9a7b1d;--live:#5fd08a;--part:#d69a52;
+  /* Ink on a solid gold fill: 7.64:1 on #c9a227. */
+  --on-acc:#1a120e;
+  /* 5.70:1 on --bg, 5.29:1 on --panel, 4.79:1 on --panel2 and 4.60:1 as a pill; ΔE 15 from --mut. */
+  --plan:#8a92a5;
+  /* THE SEVERITY RAMP IS A CONVENTIONAL HEAT SCALE: red -> red-orange -> orange -> amber. Hue
+     carries the ordering, not lightness: forcing the ramp monotone in luminance would suppress the
+     hue separation it depends on, and choosing steps by separation alone yields colours that say
+     nothing about severity. A ramp is read by its hue family. Medium and low, the commonest
+     severities, carry their own tokens and pill rules.
+     All four clear AA 1.4.3 on --bg, --panel and --panel2 and as pills; on --bg they measure
+     5.84 / 5.77 / 7.17 / 10.45:1, and adjacent steps are ΔE 28 / 28 / 28 (docs/THEME.md §3.4).
+     THIS RAMP IS NOT ORDERABLE BY A DICHROMAT AND THAT IS DELIBERATE, not an oversight: red,
+     orange and amber collapse toward one another under protanopia and deuteranopia no matter how
+     they are chosen. The conventional scale is kept for the readers it serves, and the
+     data-cvd palettes in panel-cvd.css carry schemes built in the gamut each other reader
+     actually has. Do not "fix" this ramp by re-hueing it — that trades one audience for another.
+     Change the selector's default instead, if it ever needs changing. */
+  --crit:#fe5b66;--high:#fe5d30;--med:#f18b2e;--low:#f9bd30;
+  /* ACTIVELY EXPLOITED — a finding CISA KEV lists, ranked between high and critical.
+     A DISPLAY RANK, not a severity: the finding keeps its own severity and `kev` flag, no aggregate
+     moves, no historical slice re-bases. It exists so a known-exploited medium never looks like an
+     ordinary high.
+
+     IT IS VIOLET BECAUSE IT IS A DIFFERENT KIND OF FACT, NOT A BIGGER NUMBER. Severity is the red
+     ramp; exploitation leaves it entirely, so "being exploited" and "severe" never compete on one
+     channel. Violet sits on the blue-yellow axis, which protanopes and deuteranopes RETAIN, so this
+     token survives the deficiencies that flatten a red-against-orange pair.
+
+     THE FILL CARRIES THE WEIGHT, THE INK CARRIES THE LEGIBILITY. #b47cff is 6.15:1 on --bg;
+     rgba(74,35,130,.55) over --panel composites to #362157, and the ink on it is 4.80:1. Both clear
+     AA 1.4.3, and the ink holds AA up to a fill of .70. The .55 matches every other pill's structure
+     while the fill is far heavier than their .12, because this is the one row that has to survive a
+     glance down a long table.
+
+     --crit IS #fe5b66, A LIGHT ROSE-RED. A pure red cannot clear AA on --panel2 or as a pill on
+     this ground, and lightening red along its own hue lands on --high; rose keeps it apart. It
+     measures 4.91:1 on --panel2 and 4.64:1 as a pill, ΔE 28 from --high.
+
+     panel-light.css overrides --sev with #7b2ff7 (5.27:1 on the light --bg) and --crit with #c32b25
+     (5.12:1). --sev-fill is NOT the same shape in the two themes and cannot be: here the fill is dark
+     and heavy under light ink, there the ink is dark and the fill is a .12 tint, because .55 of
+     #7b2ff7 over --panel composites to #b68dfb and leaves the ink at 2.28:1.
+
+     COLOUR CARRIES IDENTITY, ORDER CARRIES RANK — and the violet makes that literal rather than a
+     convention. The table is sorted through rankOf, so POSITION states the rank; the hue says "this
+     one is being exploited", which is a kind. If anyone later wants the band to outrank critical,
+     change rankOf — never the palette, because repainting to express an ordering leaves the
+     ordering untouched and the sort still disagrees. */
+  --sev:#b47cff;--sev-fill:rgba(74,35,130,.55);
+  /* PLAN AND TASK LIFECYCLE, which is a different axis from severity and must not borrow --sev's
+     meaning to get its colour. Completed is violet for the same colour-vision reason severity is:
+     it sits on the blue-yellow axis protanopes and deuteranopes retain, so done/active/pending stay
+     three distinguishable states rather than collapsing into two. The VALUES are --sev's, 6.15:1
+     here and 5.27:1 in the light theme; only the name differs, because a token
+     called --sev appearing on a finished plan would teach the wrong vocabulary. */
+  --done:#b47cff;--done-fill:rgba(74,35,130,.55);
+  /* Attribution. An acceptance signed by a person and one written by an agent are both valid ledger
+     entries, and they are NOT equal evidence — so they must not render identically. Olive reads as
+     "handled" without reading as the true green of a verified human decision. 5.80:1 on --bg (AA),
+     and far enough from --live (a green) to survive a glance. See monitor/attribution.mjs. */
+  --machine:#8a9a5b;
+  /* A criterion a PERSON verified by hand. Blue, never the --live green: `pass` means a machine
+     measured it and `attested-pass` means somebody signed for it, and those must not share a
+     colour any more than they share a word. 7.66:1 on --bg (AA). See monitor/a11y-attestations.mjs. */
+  --attest:#6fb3d2;
+  /* CRA reporting clocks at 50 / 75 / 90% of their deadline and overdue. An escalation ramp, so it
+     rides the severity ramp's hues, and every theme and colour-vision palette that re-grades
+     severity re-grades the clocks with it. */
+  --cra-50:var(--low);--cra-75:var(--med);--cra-90:var(--high);--cra-over:var(--crit);
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;--sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  /* Content column, in REM so it tracks the root font. It was a flat 1140px while every child
+     was rem, so raising the root shrank the column in relative terms and everything inside it
+     overflowed. Sharing one token also keeps the bar, the sweep console and the page aligned —
+     they were three separate 1140px literals that had to be remembered together. */
+  /* 75rem = 1200px at the 16px base. Expressed in rem, not px, because the root font scales on
+     large displays and a px literal here is exactly the mismatch that once shrank this column
+     relative to its own rem-sized children until the tables cut off. Widen by changing this one
+     token — .wrap, .bar .row and the sweep console all read it. */
+  --colw:75rem}
+
+/* Responsive rem base (no-JS fallback; the head script overrides it). Bounded by BOTH axes for
+   the reason given there — a tall-but-narrow window must not get large text it has no room for.
+   cmd-+/- layers on top. All sizes are rem so nothing stuffs. */
+html{font-size:clamp(16px, min(calc(16px * 100vh / 1080), calc(16px * 100vw / 1600)), 24px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:0.8125rem;line-height:1.5;
+  background-image:radial-gradient(120% 55% at 50% -8%,color-mix(in srgb,var(--acc) 6%,transparent),transparent 60%)}
+.wrap{max-width:var(--colw);margin:0 auto;padding:0 1.25rem 5rem}
+h1,h2{font-family:var(--sans);font-weight:600;letter-spacing:-.01em;margin:0}
+/* Screen-reader-only: perceivable to assistive tech, removed from visual flow. Carries the page's
+   h1 — the wordmark already states "commitwork" visually, so the heading itself never paints. */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Skip link (WCAG 2.4.1) — off-screen until it has focus, then pinned in view above everything
+   else so a keyboard user sees exactly where the jump landed. */
+.skip-link{position:absolute;left:-999px;top:0;width:1px;height:1px;overflow:hidden}
+.skip-link:focus{left:0.75rem;top:0.75rem;width:auto;height:auto;z-index:20;
+  background:var(--acc);color:var(--on-acc);font-family:var(--sans);font-weight:600;
+  padding:0.5rem 0.875rem;border-radius:0.5rem;text-decoration:none}
+.tnum{font-variant-numeric:tabular-nums}.mut{color:var(--mut)}
+/* A refused or invalid result line under a control is --crit, and its sentence says the outcome
+   (THEME §7). A transport failure draws the error box instead. */
+.mut.bad,.pop .mut.bad{color:var(--crit)}
+.mono{font-family:var(--mono)}
+/* THE ONE HARDCODED COLOUR IN THIS FILE, and it was the dark --bg (#17181A) written as a
+   literal. panel-light.css themes by overriding :root, so a literal is the one thing it
+   cannot reach: under light the menu kept its dark ground while everything below it turned,
+   and the page read as two palettes meeting at the bar. DERIVED, not renamed — taking it from
+   --bg means the two CVD themes get it too without either file being edited, and a fifth
+   theme would need no rule here at all. The solid declaration first is the fallback: if
+   color-mix is unsupported the bar is opaque rather than transparent, because a sticky bar
+   with no background lets content scroll through it. */
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);background:color-mix(in srgb, var(--bg) 90%, transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:1.375rem}
+.bar .row{max-width:var(--colw);margin:0 auto;padding:0.8125rem 1.25rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+/* Dots and the glow rings around them are sized in em, so they grow with the label they mark
+   when the root scales; each value is its old px size over its context's font size at 16px. */
+.dot{width:.69em;height:.69em;border-radius:50%;background:var(--live);box-shadow:0 0 0 .23em color-mix(in srgb,var(--live) 16%,transparent)}
+/* The mark, set exactly as commitwork-doc.css sets it for the published documents: 1.5rem seal,
+   .31rem gap, wordmark at 0.78rem/700 with .16em tracking, uppercase. The seal is a fixed-size
+   square rather than height-driven — it is 1:1, so there is no ratio to preserve, and giving the
+   box both axes stops the SVG from collapsing before layout settles. */
+.bar .mark{display:flex;align-items:center;gap:.31rem;flex:none}
+.bar .mark .seal{flex:none;display:block;width:1.5rem;height:1.5rem}
+.bar .mark svg{width:100%;height:100%;display:block;border-radius:50%}
+.bar .mark .wordmark{font-family:var(--sans);font-size:0.78rem;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink);white-space:nowrap}
+.bar b{font-family:var(--sans);font-size:0.9375rem;font-weight:600}
+/* flex:none + nowrap: with the tab strip now allowed to grow, a shrinkable .ctl let "run sweep"
+   break across two lines, which re-inflated the bar height AND stole the width back from the
+   tabs so the strip scrolled when it did not need to. The actions size to their text. */
+.ctl-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;flex:none}
+.ctl-note{font-size:0.656rem;color:var(--acc);white-space:nowrap;text-align:right}
+.ctl-note[hidden]{display:none}
+.lane-box{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;
+  border:1px solid var(--line2);border-radius:0.25rem;font-size:0.719rem;line-height:1}
+.lane-box.on{border-color:var(--live);color:var(--live)}
+.lane-box.off{border-color:var(--line2);color:var(--dim)}
+.lane-box.inherit{border-color:var(--line);color:var(--dim);opacity:.75}
+.lane-box.dash{border-style:dashed;border-color:var(--part);color:var(--part)}
+.lane-box[data-lane]{cursor:pointer}
+.lane-box[data-lane]:hover{border-color:var(--acc)}
+.lane-box[data-lane]:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.llm-check{font-size:0.6875rem;padding:0.125rem 0.4375rem;margin-left:0.3125rem}
+.llm-verify{font-size:0.6875rem;padding:0.125rem 0.4375rem;margin-left:0.25rem}
+.llm-verdict{margin-left:0.3125rem;font-size:0.656rem}
+/* A setting that declares its options renders one checkbox per option, with the note that says what
+   choosing it costs. The note is not a tooltip: an operator deciding whether to publish a DRAFT
+   standard needs the caveat in front of them, not behind a hover they may never perform. */
+.set-opts{display:flex;flex-direction:column;gap:0.375rem;margin-top:0.25rem}
+.set-opt{display:grid;grid-template-columns:auto 1fr;gap:0.125rem 0.5rem;align-items:baseline;
+  padding:0.375rem 0.5rem;border:1px solid var(--line);border-radius:0.375rem;cursor:pointer}
+/* fact: --accent and --wash were never defined, so this rule painted its #e8730c fallback in both
+   themes / a stranded fallback is invisible to a palette swap — nothing greps as wrong, and the
+   token it names simply is not the token the sheet declares (expiry: never, prev: wrong) */
+.set-opt.on{border-color:var(--acc);background:var(--wash)}
+.set-opt input{margin:0}
+.set-opt-l{font-size:0.75rem;font-weight:600}
+.set-opt-n{grid-column:2;font-size:0.6875rem;line-height:1.5;max-width:62ch}
+/* Section headings inside the per-scanner table. A rule above rather than a filled band: the rows
+   below carry severity and state colour, and a heavy header competes with the thing being read. */
+.perf-sec th{padding:0.75rem 0.5rem 0.3125rem;border-top:1px solid var(--line);
+  font-size:0.688rem;font-weight:700;letter-spacing:0.02em;text-align:left}
+.perf-sec:first-child th{border-top:0;padding-top:0.25rem}
+/* The empty-lane panel. Centred and given room on purpose: this is the one place where the honest
+   answer is an invitation rather than a number, and a grey sentence in a table cell reads as
+   "nothing here" — the false clean the rest of this page exists to refuse. The wordmark is
+   aria-hidden; the heading carries the meaning. */
+.lane-void{display:flex;flex-direction:column;align-items:center;text-align:center;gap:0.5rem;
+  padding:3rem 1.25rem 3.25rem;max-width:44rem;margin:0 auto}
+/* The seal-and-word mark, not an image pair.
+   This panel originally used two <img> wordmarks with `wm-dark`/`wm-light` classes — reintroducing
+   the exact arrangement the header had already deleted, and for the reason the header's own comment
+   gives: the raster wordmark has its ink baked in, so a white mark needs a black twin, and the pair
+   has to be toggled from TWO stylesheets because the panel's switcher does not follow the OS.
+   Neither class had a rule anywhere, so nothing toggled and BOTH wordmarks painted, in every theme.
+   The seal carries its own dark disc and the word is live text in var(--ink), so one mark is right
+   on both surfaces and there is nothing to switch. */
+.lane-void-mark{display:flex;align-items:center;gap:.31rem;opacity:0.55;margin-bottom:0.5rem}
+.lane-void-mark .seal{flex:none;display:block;width:1.5rem;height:1.5rem}
+.lane-void-mark svg{width:100%;height:100%;display:block;border-radius:50%}
+.lane-void-mark .wordmark{font-family:var(--sans);font-size:0.78rem;font-weight:700;
+  letter-spacing:.16em;text-transform:lowercase;color:var(--ink)}
+.lane-void h3{font-size:1rem;font-weight:600}
+.lane-void p{font-size:0.75rem;line-height:1.6;max-width:52ch;margin:0}
+.lane-void-why{border-left:2px solid var(--line);padding-left:0.625rem;text-align:left}
+.lane-void-acts{margin-top:0.875rem;display:flex;flex-direction:column;align-items:center;gap:0.375rem}
+.lane-void-scope{font-size:0.6875rem;max-width:44ch}
+/* `.lane-run` is a behaviour hook — the delegated click handler selects on it — but a class in the
+   markup with no rule anywhere is what admin/test/head-closure.test.mjs calls a dangling contract,
+   and it is right to: a hook and a style look identical in the HTML, so the next person to style
+   this button has no way to know which one they are editing. The rule is real rather than empty. */
+.lane-run{min-width:12rem}
+.lane-run-msg{font-size:0.688rem;margin-top:0.25rem}
+
+/* ── A LANE THAT IS RUNNING RIGHT NOW ──────────────────────────────────────────────────────────
+   Dotted, green, circulating. Dotted because the ring is INCOMPLETE — the lane has produced no
+   result yet, and a solid ring reads as a finished measurement. Green because --live is this
+   panel's colour for a thing that is happening, not for a thing that passed.
+   The colour is never the only carrier: the tab also sets aria-busy, and the panel says the state
+   in words above it. */
+.lane-spin{width:1.5rem;height:1.5rem;border-radius:50%;
+  border:2px dotted var(--live);border-right-color:transparent;
+  animation:lane-spin 1.6s linear infinite;margin-bottom:0.25rem}
+@keyframes lane-spin{to{transform:rotate(360deg)}}
+
+/* On the tab strip the same state is a small circulating dot after the label. `position:relative`
+   on the button is the anchor; the badge span already sits inside it. */
+.vtab.lane-running{position:relative}
+.vtab.lane-running::after{content:'';display:inline-block;vertical-align:middle;
+  width:.73em;height:.73em;margin-left:0.375rem;border-radius:50%;
+  border:1.5px dotted var(--live);border-right-color:transparent;
+  animation:lane-spin 1.6s linear infinite}
+/* A FIRST run is the case the operator is actually watching — they pressed the button on an empty
+   lane and are waiting to learn whether it produces anything. It pulses; a re-run does not. */
+.vtab.lane-first-run::after{animation:lane-spin 1.6s linear infinite,lane-pulse 1.6s ease-in-out infinite}
+@keyframes lane-pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+/* Honour the OS setting: a circulating marker is exactly the kind of motion this preference is
+   about. The state must still be visible without it, so the marker stays and only stops moving. */
+@media (prefers-reduced-motion:reduce){
+  .lane-spin,.vtab.lane-running::after,.vtab.lane-first-run::after{animation:none}
+}
+
+/* ── COMPLETION NOTICES ─────────────────────────────────────────────────────────────────────────
+   A lane finishing is news wherever the operator happens to be reading, not only on its own tab. */
+.lane-toasts{position:fixed;right:1rem;bottom:1rem;z-index:60;display:flex;flex-direction:column;
+  gap:0.375rem;max-width:26rem;pointer-events:none}
+.lane-toast{background:var(--panel2);border:1px solid var(--line);
+  border-left-width:3px;border-radius:0.25rem;padding:0.5rem 0.75rem;font-size:0.75rem;
+  line-height:1.5;color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,0.35)}
+.lane-toast.ok{border-left-color:var(--live)}
+.lane-toast.bad{border-left-color:var(--crit)}
+/* Grey is its own tone here, not a lesser green. A lane that finished `noscan` neither passed nor
+   failed, and colouring it either way would be the page asserting a verdict the lane did not reach. */
+.lane-toast.grey{border-left-color:var(--plan)}
+/* The model's reasoning and the source it read, shown rather than hidden in a tooltip: the operator
+   adjudicates this verdict and a claim with its evidence out of reach is one they must take on
+   trust. The source arrives already masked by the server. */
+.llm-why{margin-top:0.25rem;font-size:0.6875rem;line-height:1.5;max-width:70ch}
+/* The verdict's evidence expands onto its own full-width row rather than squeezing the columns it
+   is about. The cell carries no padding of its own so the box owns the spacing. */
+.llm-row>td{padding:0;background:transparent}
+.llm-box{border:1px solid var(--line2);padding:0.75rem;margin:1.5rem 0}
+.llm-reason{margin-top:0.375rem;font-size:0.75rem;line-height:1.5;max-width:90ch}
+.llm-reason b{font-weight:600}
+/* RIGHT-HAND CONTROLS SURVIVE A NARROW VIEWPORT. .tw scrolls horizontally, so on a narrow window
+   the annotation cell — the only cell an operator ACTS in — scrolled out of reach behind the fold.
+   Pinning the last column keeps the action reachable at every width; the shadow marks the seam so
+   a pinned cell does not read as part of the column beside it. */
+@media (max-width:1400px){
+  .tw table td:last-child,.tw table th:last-child{
+    position:sticky;right:0;z-index:1;background:var(--panel);
+    box-shadow:-0.5rem 0 0.5rem -0.5rem rgba(0,0,0,0.45);
+  }
+  /* the expanded verdict spans every column, so pinning its single cell would strand it */
+  .tw table tr.llm-row td:last-child{position:static;box-shadow:none;background:transparent}
+}
+.llm-src{margin-top:0.3125rem;padding:0.5rem 0.625rem;border:1px solid var(--line);border-radius:0.375rem;
+  background:var(--panel2);font-family:var(--mono);font-size:0.6875rem;
+  line-height:1.55;white-space:pre;overflow-x:auto;max-height:22rem}
+.ctl{display:flex;gap:0.5rem;align-items:center;flex:none}
+.ctl button{white-space:nowrap}
+/* The sign-in page's button system. Every button shares one body; a primary is ranked only by the
+   gold rule at its foot and its type, and a caution or stop action by the colour of that rule.
+   Colours are tokens only, so panel-light.css re-grades them without a rule of its own. Hover moves
+   the edge, never the text: gold text on the light ground is under 4.5:1. */
+button{font-family:var(--sans);font-size:0.78125rem;letter-spacing:.02em;color:var(--ink);background:var(--panel);border:1px solid var(--line2);padding:0.375rem 0.75rem;border-radius:3px;cursor:pointer;transition:.14s}
+button:hover:not(:disabled){border-color:var(--acc)}button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button:disabled{opacity:.55;cursor:not-allowed}
+/* .vtab/.gtab reuse .pri to mark the selected tab; they are navigation, not actions. */
+button.pri:not(.vtab):not(.gtab){background:linear-gradient(180deg,var(--panel2),var(--panel));color:var(--head);border-color:var(--line2);border-bottom:2px solid var(--acc);font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+button.pri:not(.vtab):not(.gtab):hover:not(:disabled){border-color:var(--acc)}
+button.ph-update{background:linear-gradient(180deg,var(--panel2),var(--panel));color:var(--head);border-bottom:2px solid var(--part);font-weight:600}
+/* Single-line tabs. The explanatory sub-labels that used to sit under each name in a <br/>+span
+   forced a two-line box on EVERY tab to annotate half of them, doubling the height of the whole
+   nav row; they live in title= now. Keep this rule single-line — no wrapping tab labels.
+   Labels are set in --sans, not --mono: nothing here is columnar data, and the proportional cut
+   buys ~15% horizontal at the same legibility, which is what lets ten tabs sit on one row. The
+   mono stays where it earns its keep — figures, ids, paths. */
+.vtab{font-family:var(--sans);font-weight:500;padding:0.3125rem 0.625rem;font-size:0.719rem;line-height:1.3;white-space:nowrap;display:inline-flex;align-items:center;gap:0.375rem}
+/* ONE ACCENT, ONE MEANING. This used to be `background:var(--acc)` — pixel-identical to the
+   `↻ refresh` button beside it, so the single loudest colour on the page meant "you are here"
+   (a state) in one place and "primary action" (an affordance) in another. The eye groups them and
+   they have nothing to do with each other. The active tab now reads as a lifted surface with an
+   accent rule under it; solid accent fill is left to buttons, where it means "this one acts". */
+.vtab.pri{background:var(--panel2);color:var(--ink);font-weight:600;border-color:var(--acc2);
+  box-shadow:inset 0 -2px 0 0 var(--acc)}
+/* Count badge. Absent by default and only filled in once a real number is known: a tab that has
+   never been scanned/loaded shows NO badge rather than a 0, because a zero here would read as
+   "clean" for something we simply have not looked at. Mono so the digits are columnar. */
+/* On --panel2 with a --line2 ring: --mut on the old --line2 fill measured 3.20:1 dark and 3.24:1 light.
+   The ring keeps the badge's edge when a hovered or active tab takes the same --panel2 ground. */
+.vtab .vn{font-family:var(--mono);font-size:0.656rem;font-weight:400;padding:0.0625rem 0.3125rem;border-radius:0.3125rem;background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line2);color:var(--mut);line-height:1.45}
+/* Graded, because twelve identically-grey numbers make the reader do the triage the panel exists to
+   do for them: `Malware 1` and `Runtime 11` rendered the same weight, and one of those is a
+   confirmed-malicious package — an incident, not a backlog row. The tone is set from the LANE and
+   the value in setTabN(), never by the caller, so a lane cannot be quietly recoloured at one of its
+   seventeen call sites.
+   A measured zero keeps the quiet default on purpose: it is the one number that has earned calm.
+   Absence is still absence — an unknown lane renders no badge at all (:empty below), never a 0.
+   Graded badges are outlined, not tinted: on the --panel2 ground of a hovered or active tab a 16-18%
+   tint took the ink under 4.5:1 in both themes, as low as 3.55:1 for light --crit. */
+.vtab .vn.warn{background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--part) 45%,transparent);color:var(--part)}
+.vtab .vn.crit{background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--crit) 45%,transparent);color:var(--crit);font-weight:600}
+/* A zero somebody argued for: every finding judged, rows still present and struck through.
+   --machine, the attribution olive, because it reads as handled without reading as the true green
+   of a clean scan. */
+.vtab .vn.triaged{background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--machine) 45%,transparent);color:var(--machine)}
+.vtab .vn:empty{display:none}
+/* ⏺ record — re-run one scanner (Scanner coverage) or one repo (Fleet). Deliberately quiet until
+   hovered: the tables are read far more often than they are acted on, and twelve loud buttons
+   would compete with the states they sit beside. Disabled while any sweep holds the job slot. */
+.rec{font-family:var(--mono);font-size:0.8125rem;line-height:1;padding:0.1875rem 0.375rem;border-radius:0.375rem;
+  background:transparent;border:1px solid transparent;color:var(--dim);cursor:pointer;transition:.14s}
+.rec:hover:not(:disabled){color:var(--crit);border-color:var(--line2);background:var(--panel2)}
+.rec:disabled{opacity:.3;cursor:not-allowed}
+.rec.on{color:var(--crit);border-color:var(--crit)}
+@keyframes recpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.rec.on{animation:recpulse 1.1s ease-in-out infinite}
+/* No rule between the identity row and the tab strip — the .bar's own bottom border already
+   closes the header, and a second hairline inside it split one block of chrome into two. */
+.bar .row{padding-bottom:0.4375rem}
+/* The nav row carries two strips now (sections, then that section's tabs) and they STACK.
+   nowrap put them side by side, where a section and its identically-styled first tab read as
+   two peers: the Overview section sat next to the Overview tab, both accented, both claiming
+   to be where you are. flex-basis:100% on #groups is what breaks the line. */
+.bar .row.nav{padding-top:0;flex-wrap:wrap}
+#groups{flex:0 0 100%}
+/* The tab strip WRAPS to two rows on desktop. It used to scroll instead, because wrapping had
+   produced a ragged second row of unequal-width tabs with nothing aligned to anything — but the
+   cause of that raggedness was tabs sized to their own labels, not wrapping itself. `flex:1 1 auto`
+   lets each row's tabs share the leftover width, so both rows are flush at both edges and the
+   strip reads as a block. Scrolling hid its own last tabs at 23 of them, which is the worse
+   failure: a tab you cannot see is a view you do not know exists.
+   Scoped `#views .vtab`, never a bare `.vtab` — that class is also worn by the ≡ menu button and
+   the hide/stop/run controls, and a loose selector stretching those is the styling twin of the
+   bare-selector bug that once stole the view switcher's click handler (see index.html). */
+#views{display:flex;gap:0.25rem;flex-wrap:wrap;min-width:0}
+/* GROWTH IS CAPPED. flex-grow shares each row's LEFTOVER space equally, so the fewer tabs a row
+   holds the more each one stretches: at 19+8 the second row rendered roughly twice the width of the
+   first, and `BOLA` came out as wide as `Modernization`. The rows were flush, but tab width had
+   stopped carrying any information and the two rows read as different levels of hierarchy rather
+   than one block. Narrowing the column to 75rem sharpens this — a last row holding one tab would
+   otherwise grow it to the full 1200px. 11rem is comfortably past the longest natural label
+   (`Accessibility`, ~113px at the 16px base), so the cap only ever bites on stretch, never on text. */
+/* Subordinate level: no fill, a thin accent underline only. The section strip above owns the
+   surface treatment, so the two levels can never both look like the active one. flex:0 0 auto
+   because five tabs stretched across 1200px read as a row of buttons rather than a set of
+   options — the stretch was right when this strip was the only level and 28 wide. */
+#views .vtab{flex:0 0 auto;justify-content:center;max-width:11rem;font-size:0.688rem;
+  padding:0.25rem 0.5625rem;background:transparent;border-color:var(--line);color:var(--mut)}
+#views .vtab:hover{color:var(--ink);border-color:var(--line2);background:var(--panel2)}
+#views .vtab.pri{background:transparent;border-color:var(--line2);color:var(--ink);font-weight:600;
+  box-shadow:inset 0 -2px 0 0 var(--acc)}
+/* ── section strip ──────────────────────────────────────────────────────────────────────────────
+   The primary level. Sections are questions; the tabs below them are the answers, so the section
+   strip carries the weight and the tab strip is deliberately quieter than it was when it was the
+   only level. `.ghide` is how a tab leaves the strip without leaving the DOM — the buttons stay
+   put so every existing click handler, badge id and query selector keeps working, and so a tab
+   nobody declared a section for can still be found under "Other". */
+#groups{display:flex;gap:0.3125rem;flex-wrap:wrap;min-width:0;margin-bottom:0.4375rem}
+.gtab{font-family:var(--sans);font-weight:600;font-size:0.8125rem;line-height:1.3;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:0.4375rem;padding:0.375rem 0.875rem;border-radius:0.5rem;
+  color:var(--mut);background:transparent;border:1px solid var(--line);cursor:pointer;transition:.14s}
+.gtab:hover{color:var(--ink);border-color:var(--line2);background:var(--panel2)}
+.gtab:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* Same split as the tabs: an accent RULE for "you are here", solid accent fill stays with buttons
+   that act. The section is the louder level, so it also takes the surface and the ink. */
+.gtab.pri{color:var(--ink);background:var(--panel2);border-color:var(--acc2);box-shadow:inset 0 -2px 0 0 var(--acc)}
+.gtab .vn{font-family:var(--mono);font-size:0.656rem;font-weight:400;padding:0.0625rem 0.3125rem;
+  border-radius:0.3125rem;background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line2);color:var(--mut);line-height:1.45}
+.gtab .vn.warn{background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--part) 45%,transparent);color:var(--part)}
+.gtab .vn.crit{background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--crit) 45%,transparent);color:var(--crit);font-weight:600}
+.gtab .vn:empty{display:none}
+.vtab.ghide{display:none}
+/* An experimental view whose flag is off leaves navigation entirely (static/features.js); one whose
+   flag is on carries a quiet "experimental" tag. */
+.fhide{display:none!important}
+.exp-tag{font-family:var(--mono);font-size:0.625rem;font-weight:400;margin-left:0.375rem;padding:0 0.3125rem;
+  border-radius:0.3125rem;box-shadow:inset 0 0 0 1px var(--line2);color:var(--mut);line-height:1.45}
+/* ≡ popout: Config + session. Anchored to the button, so it stays top-right with the picker. */
+.menu{position:relative}
+#menubtn{display:inline-flex;align-items:center;gap:0.4375rem}
+#menubtn .bars{display:inline-flex;flex-direction:column;gap:2px;width:0.75rem}
+#menubtn .bars i{display:block;height:1.5px;background:currentColor;border-radius:1px}
+#menubtn[aria-expanded="true"]{border-color:var(--acc2)}
+.pop{position:absolute;right:0;top:calc(100% + 0.375rem);min-width:11rem;z-index:10;
+  background:var(--panel);border:1px solid var(--line2);border-radius:0.5rem;padding:0.3125rem;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:0.125rem}
+.pop[hidden]{display:none}
+/* menu text at 0.421875rem, about half the panel's 0.8125rem body, so the popout reads as a
+   compact control surface rather than competing with the content behind it */
+.pop a,.pop button{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:0.75rem;
+  color:var(--ink);background:transparent;border:0;border-radius:0.375rem;padding:0.3125rem 0.4375rem;
+  text-decoration:none;cursor:pointer}
+.pop a:hover,.pop button:hover{background:var(--panel2)}
+.pop .sect{display:flex;flex-direction:column;gap:0.125rem;margin-top:0.3125rem;padding-top:0.3125rem;border-top:1px solid var(--line)}
+/* the sign-in / log-out actions sit on ONE row; each button sizes to its own label */
+.pop .row-actions{flex-direction:row;align-items:center;gap:0.25rem;flex-wrap:wrap}
+.pop .row-actions button{width:auto;flex:0 0 auto;border:1px solid var(--line2);text-align:center}
+/* Segmented control. fact: .theme-opt inherited border-radius:0.375rem from .pop button and never
+   reset it / every segment was a rounded pill while the 1px border-left divider between them ran
+   straight, so the selected fill curved away from its own divider and left a stray arc beside it —
+   the radius belongs to the GROUP, never to a segment inside it (expiry: never, prev: wrong) */
+.pop .theme-row{display:flex;align-items:stretch;flex-wrap:nowrap;border:1px solid var(--line);
+  border-radius:0.25rem;overflow:hidden;margin-bottom:0.1875rem}
+.pop .theme-opt{width:auto;flex:1 1 0;text-align:center;padding:0.1875rem 0.25rem;color:var(--mut);
+  white-space:nowrap;border-radius:0}
+.pop .theme-opt+.theme-opt{border-left:1px solid var(--line)}
+/* The selected segment is TINTED, not filled. A solid accent behind 0.42rem mono is the loudest
+   thing in the menu, and it was competing with the settings it labels; weight stays even across
+   the three so the row does not reflow by a hair as the choice moves. */
+.pop .theme-opt[aria-checked="true"]{color:var(--acc);background:var(--wash);font-weight:inherit}
+/* The same control on pages outside the shell, built by /static/theme-switch.js. */
+.theme-switch{display:inline-flex;align-items:stretch;border:1px solid var(--line2);border-radius:0.25rem;overflow:hidden;flex:none}
+.theme-switch[hidden]{display:none}
+.theme-switch .theme-opt{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.04em;font-weight:600;color:var(--mut);
+  background:transparent;border:0;border-radius:0;padding:0.25rem 0.5rem;cursor:pointer;white-space:nowrap}
+.theme-switch .theme-opt+.theme-opt{border-left:1px solid var(--line2)}
+.theme-switch .theme-opt:hover{color:var(--ink)}
+.theme-switch .theme-opt[aria-checked="true"]{color:var(--ink);background:var(--wash);box-shadow:inset 0 -2px var(--acc)}
+/* The placeholder serve.mjs answers with when a bridged service or a map is absent. */
+.fallback{display:grid;place-items:center;min-height:100vh;padding:1.25rem;text-align:center;font-family:var(--sans);color:var(--mut)}
+.fallback-t{font-size:0.9375rem;color:var(--ink);font-weight:600;margin-bottom:0.375rem}
+.fallback-s{font-size:0.75rem}
+.fallback-n{font-size:0.71875rem;margin-top:0.625rem;max-width:26.25rem;color:var(--dim)}
+.fallback .theme-switch{position:fixed;top:0.75rem;right:0.75rem}
+
+/* The account popout's own furniture. These five classes carry the whole structure of the menu —
+   identity header, section headings, labelled fields, view buttons — and until now NONE had a rule
+   anywhere: not here, not in panel-light.css, not inline. The markup was complete and the styling
+   simply absent, so headings inherited the body size while the links sat at 0.42rem. That mismatch
+   is what made the menu look broken rather than merely plain. */
+.pop-acct{display:flex;align-items:center;gap:0.4375rem;padding:0.4375rem 0.5rem 0.5rem;
+  border-bottom:1px solid var(--line);margin-bottom:0.125rem}
+.pop-acct .acct-lines{display:flex;flex-direction:column;min-width:0;line-height:1.32}
+.pop-acct b{font-size:0.8125rem;color:var(--head);font-weight:600;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pop-acct .mut{font-size:0.6875rem;color:var(--dim);padding:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pop-acct .avatar{flex:0 0 auto;width:1.125rem;height:1.125rem;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);
+  font-size:0.6875rem;background:var(--panel2);color:var(--mut);border:1px solid var(--line2)}
+
+/* Section heading. Deliberately not an <h*>: it labels a group inside a menu, so it is sized and
+   spaced like a label, not like a document heading — which is exactly how it was rendering. */
+.pop-h{font-family:var(--mono);font-size:0.625rem;letter-spacing:0.11em;text-transform:uppercase;
+  color:var(--dim);font-weight:600;padding:0.4375rem 0.5rem 0.1875rem;margin-top:0.1875rem;
+  border-top:1px solid var(--line)}
+.pop-acct + .pop-h{border-top:0;margin-top:0}
+
+/* A labelled control on one row: label left, control right, both vertically centred. Without this
+   each label and its select/checkbox stacked, which is where the ragged left edge came from. */
+.pop-fld{display:flex;align-items:center;gap:0.5rem;padding:0.1875rem 0.5rem;min-height:1.375rem;
+  flex-wrap:wrap}
+.pop-fld.chk{gap:0.375rem}
+.pop-lbl{flex:0 0 auto;font-size:0.75rem;color:var(--ink)}
+.pop-fld select{flex:1 1 auto;min-width:0;font-family:var(--mono);font-size:0.75rem;
+  background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:2px;
+  padding:0.1875rem 0.25rem;cursor:pointer}
+.pop-fld select:hover{border-color:var(--acc2)}
+.pop-fld input[type="checkbox"]{flex:0 0 auto;margin:0;accent-color:var(--acc);cursor:pointer}
+.pop-fld .mut{flex:1 1 100%;font-size:0.6875rem;color:var(--dim);padding:0;order:9}
+.pop-fld .theme-row{flex:1 1 auto;margin-bottom:0;border-bottom:0}
+
+/* View buttons share the column with the <a> destinations beside them, so the group reads as one
+   list rather than two kinds of thing that happen to be adjacent. */
+.pop .menu-view{font-family:var(--mono);font-size:0.75rem}
+
+/* Passkey enrolment state. index.html:4934-4941 sets three DIFFERENT classes for three genuinely
+   different facts — unknown, known-empty, known-list — and the comment above it explains at length
+   why collapsing the first two "made a successful enrolment invisible". None of the three had a CSS
+   rule, so the dot was an unstyled zero-size span and all three rendered identically anyway.
+   fact: the panel distinguished the states in script and erased the distinction in paint / setting
+   a class is a marker, and a marker with no rule obeying it is indistinguishable from not setting
+   one — which is the same shape as the guard that read a marker instead of an effect
+   (expiry: never, prev: broken) */
+/* fact: 0.6875rem here was sized for a page section and this lives in the MENU, whose whole
+   vocabulary is 0.375-0.42rem / a sentence 63% larger than everything around it wrapped to four
+   lines and became the loudest element in the popout (expiry: never, prev: wrong)
+   align-items:flex-start, because a dot centred against a wrapped block floats away from the
+   line it belongs to. */
+.pk-state{display:flex;align-items:flex-start;gap:0.375rem;font-size:0.75rem;line-height:1.45;
+  color:var(--mut)}
+.pk-state .pk-dot{margin-top:0.4em}
+.pk-dot{flex:0 0 auto;width:.67em;height:.67em;border-radius:50%;display:inline-block;
+  border:1px solid transparent;box-sizing:border-box}
+/* Unknown is hollow and DASHED, the same vocabulary .pill.unk already uses in this sheet: it must
+   read as neither the green of enrolled nor the flat grey of a settled answer. */
+.pk-dot.unk{background:transparent;border-color:var(--mut);border-style:dashed}
+/* Known-empty is a settled fact, not a fault — solid, quiet, and unmistakably not the dashed ring. */
+.pk-dot.none{background:var(--dim);border-color:var(--dim)}
+.pk-dot.on{background:var(--live);border-color:var(--live)}
+/* enrolled but unconfirmed: its own colour, because rounding it to on or off is exactly the
+   over- and under-claim the three states exist to prevent */
+.pk-dot.part{background:var(--part);border-color:var(--part)}
+.pk-list{list-style:none;margin:0.375rem 0 0;padding:0;display:flex;flex-direction:column;gap:0.25rem}
+.pk-list li{font-size:0.75rem;color:var(--ink);display:flex;align-items:center;gap:0.5rem}
+.pop .mut{padding:0.25rem 0.4375rem;font-size:0.6875rem}
+.pop .chk{display:flex;align-items:center;gap:0.4375rem;padding:0.3125rem 0.4375rem;font-size:0.75rem;cursor:pointer}
+.pop .chk input{accent-color:var(--acc);cursor:pointer;margin:0}
+select#proj{font-family:var(--mono);font-size:0.719rem;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:0.5rem;padding:0.25rem 0.4375rem;cursor:pointer}
+select#proj:hover{border-color:var(--acc2)}
+/* Scope sits with the brand, not floated right: the picker qualifies everything below it, so it
+   reads as "commitwork / ClientA". Its old top-right berth also left the row's middle empty. */
+.scope{display:flex;align-items:center;gap:0.3125rem;font-size:0.656rem;text-transform:uppercase;letter-spacing:.11em;color:var(--mut)}
+/* Rollup freshness. setGen() has written data-state="fresh|stale|old|none" since the stamp became
+   relative, and NOTHING styled it — the attribute was live and inert at once, which is worse than
+   never having built it, because a wired-looking hook invites the reader to assume the signal is
+   being shown. "rollup 4d ago" in the same grey as "rollup 4m ago" is the header's own false clean.
+   `none` is a HOLLOW ring, not a colour: never scanned is its own state, and filling it with any
+   hue — including grey — would put it on the same scale as the three that have evidence. */
+.gen{font-size:0.656rem;color:var(--dim)}
+.gen::before{content:"";display:inline-block;width:.57em;height:.57em;border-radius:50%;
+  margin-right:0.375rem;vertical-align:0.08em;background:var(--dim)}
+.gen[data-state=fresh]::before{background:var(--live);box-shadow:0 0 0 .29em color-mix(in srgb,var(--live) 14%,transparent)}
+.gen[data-state=stale]::before{background:var(--part)}
+.gen[data-state=old]::before{background:var(--crit);box-shadow:0 0 0 .29em color-mix(in srgb,var(--crit) 14%,transparent)}
+.gen[data-state=old]{color:var(--part)}
+.gen[data-state=none]::before{background:transparent;box-shadow:inset 0 0 0 1.5px var(--plan)}
+section{margin:1.625rem 0}.hd{display:flex;align-items:baseline;gap:0.6875rem;margin-bottom:0.8125rem;border-bottom:1px solid var(--line);padding-bottom:0.5rem}
+.hd h2{font-size:0.9375rem}.hd .n{font-size:0.719rem;color:var(--dim)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.875rem,1fr));gap:0.6875rem}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:0.625rem;padding:0.8125rem 0.875rem;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc)}
+.kpi.good::before{background:var(--live)}.kpi.warn::before{background:var(--part)}.kpi.bad::before{background:var(--crit)}
+.kpi .k{font-size:0.656rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mut)}
+.kpi .v{font-family:var(--sans);font-weight:600;font-size:1.25rem;margin-top:0.3125rem;letter-spacing:-.02em}
+.kpi .s{font-size:0.719rem;color:var(--mut);margin-top:0.125rem}.kpi .u{font-size:0.75rem;color:var(--mut);font-weight:500}
+
+/* ── POSTURE STRIP ───────────────────────────────────────────────────────────────────────────────
+   Global sweep posture, sitting above the per-project KPI tiles. Deliberately NOT a .kpi tile, and
+   the reason is the house rule rather than taste: a tile's job is to show a NUMBER, and the whole
+   point of this row is the three states a number cannot carry — fresh, stale, and never-scanned.
+   An unknown renders as its OWN state (hollow dot, grey, italic) and never as a zero, because a
+   zero in this row would be read as "clean" by exactly the reader it is meant to inform. */
+.posture{display:flex;flex-wrap:wrap;gap:0 1.75rem;align-items:center;padding:.625rem .875rem;
+  margin-bottom:.6875rem;background:var(--panel);border:1px solid var(--line);border-radius:.625rem;
+  font-family:var(--mono);font-size:.719rem}
+.posture .p-row{display:flex;align-items:center;gap:.5rem;min-height:1.5rem}
+.posture .p-dot{width:.7em;height:.7em;border-radius:50%;flex:none}
+.posture .p-dot[data-s=ok]{background:var(--live);box-shadow:0 0 0 .26em color-mix(in srgb,var(--live) 16%,transparent)}
+.posture .p-dot[data-s=stale]{background:var(--part);box-shadow:0 0 0 .26em color-mix(in srgb,var(--part) 16%,transparent)}
+/* hollow, not coloured: unknown is the ABSENCE of a reading, so it gets the absence of a fill */
+.posture .p-dot[data-s=unknown]{background:none;border:1px solid var(--dim)}
+.posture .p-k{color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-size:.656rem}
+.posture .p-v{color:var(--ink)}
+.posture .p-v[data-s=unknown]{color:var(--dim);font-style:italic}
+@media (max-width:640px){.posture{gap:0 1rem;font-size:.6875rem}}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:0.625rem;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:40rem;font-size:0.75rem}
+th{font-family:var(--mono);font-size:0.625rem;text-transform:uppercase;letter-spacing:.08em;color:var(--head);text-align:left;padding:0.625rem 0.8125rem;background:var(--panel2);border-bottom:1px solid var(--line2)}
+td{padding:0.5625rem 0.8125rem;border-bottom:1px solid var(--line);vertical-align:middle}tbody tr:last-child td{border-bottom:0}
+/* A hovered row is marked by a rule, not a fill: a --panel2 fill darkens the ground under every
+   pill in the row and takes the severity pills under AA (docs/THEME.md §12). */
+tbody tr:hover>td:first-child{box-shadow:inset 2px 0 0 var(--acc2)}
+
+td.d{border-left:3px solid var(--line2)}tr[data-s="live"] td.d{border-left-color:var(--live)}tr[data-s="part"] td.d{border-left-color:var(--part)}tr[data-s="plan"] td.d{border-left-color:var(--plan)}
+td.d b{font-family:var(--sans);font-weight:600;color:var(--ink);display:block;font-size:0.8125rem}td.d .c{font-size:0.656rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.pill{display:inline-flex;align-items:center;gap:0.3125rem;font-size:0.656rem;font-weight:600;padding:0.125rem 0.5rem;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.pill::before{content:"";width:.57em;height:.57em;border-radius:50%}
+.pill.live{color:var(--live);background:color-mix(in srgb,var(--live) 12%,transparent);border-color:color-mix(in srgb,var(--live) 28%,transparent)}.pill.live::before{background:var(--live)}
+.pill.part{color:var(--part);background:color-mix(in srgb,var(--part) 12%,transparent);border-color:color-mix(in srgb,var(--part) 28%,transparent)}.pill.part::before{background:var(--part)}
+.pill.plan{color:var(--plan);background:color-mix(in srgb,var(--plan) 12%,transparent);border-color:color-mix(in srgb,var(--plan) 28%,transparent)}.pill.plan::before{background:var(--plan)}
+/* A sortable column header. It is a real <button> rather than a clickable <th>, so it is reachable
+   by keyboard and announced as a control; aria-sort on the th carries the direction. */
+.lnk{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:inherit}
+.lnk:hover{color:var(--acc)}
+.lnk:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.lnk[data-dir]::after{content:'\00a0\25b2';font-size:.8em;color:var(--acc)}
+.lnk[data-dir=desc]::after{content:'\00a0\25bc'}
+/* Nested task rows read as belonging to the plan above them rather than as peers of it. */
+.ow-task td:first-child{padding-left:1.6rem}
+.ow-subtask td:first-child{padding-left:3rem}
+.ow-plan-row td{border-top:1px solid var(--line)}
+/* Lifecycle triple: done violet, active green (.pill.live), pending orange (.pill.part). Three
+   states, three hues on two colour-vision axes, so none of them is distinguished by weight alone. */
+.pill.done{color:var(--done);background:color-mix(in srgb, var(--done) 14%, transparent);border-color:color-mix(in srgb, var(--done) 38%, transparent)}.pill.done::before{background:var(--done)}
+/* n/a: quieter than grey ON PURPOSE. Grey is an open question (never evaluated); n/a is a
+   closed one (evaluated, does not apply). A settled answer should not draw the eye. */
+/* Passkey enrolment form in the menu (#pkenroll). Mirrors .ann-form: the fields sit in the
+   control the operator is already looking at, and a refusal renders beside them. */
+#pkenroll{flex-direction:column;align-items:stretch;gap:0.25rem}
+#pk-form{display:flex;flex-direction:column;gap:0.25rem;margin-top:0.25rem}
+#pk-form.jshide,#pk-revoke.jshide{display:none}
+/* SCOPED `.pop .pk-fp` (0,2,0), NOT `.pk-fp` (0,1,0), and this is the whole reason the control was
+   invisible the first time. `.pop a,.pop button` is (0,1,1) and therefore outranks the button's own
+   rule — every colour set here was silently replaced by the generic menu-item colour, so the glyph
+   took menu-text ink and the accent tint was overridden away. On a light surface the operator saw
+   nothing at all. The rule was restored at some point without the scoping, which restores the bug:
+   both readings are correct CSS and only their specificity difference decides the outcome. */
+.pop .pk-fp{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0.125rem;width:auto;min-width:2.75rem;min-height:2.75rem;padding:0.375rem 0.5rem;
+  border:1px solid var(--acc2);border-radius:0.5rem;
+  background:color-mix(in srgb, var(--acc) 10%, transparent);color:var(--acc);
+  font-family:var(--sans);font-size:0.6875rem;font-weight:600;line-height:1.2;cursor:pointer;transition:.14s}
+.pop .pk-fp:hover{background:color-mix(in srgb, var(--acc) 18%, transparent);border-color:var(--acc)}
+.pop .pk-fp:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* The stroke is pinned rather than left to currentColor, so no ancestor can recolour the mark the
+   way one just recoloured the button. */
+.pop .pk-fp svg{display:block;stroke:var(--acc)}
+/* The launch row holds the control, the pre-flight's warning, and the failure — in that order, so
+   an operator reads the thing they pressed, then why it might not work, then what happened. */
+.pk-launch{display:flex;align-items:center;gap:0.5rem;padding:0.3125rem 0.4375rem;flex-wrap:wrap}
+/* The pre-flight's OPINION. Amber, beside the control, never in place of it — it warns and does not
+   veto, because the browser is the authority on what the browser accepts. */
+.pk-warn{font-size:0.75rem;line-height:1.4;color:var(--part);flex:1 1 100%}
+/* THE FAILURE, WRAPPED AROUND THE CONTROL THAT PRODUCED IT, and it does not evaporate. Errors used
+   to go to #pk-msg at the far end of the menu, which initOauth() clears on entry — so a failure was
+   legible until anything refreshed the session and then vanished, taking the only account of what
+   happened with it. Full width so a DOMException name and its remedy both fit without truncation:
+   an error you must hover to read is an error nobody reads.
+   It is the panel's one error box (THEME §3.6): a view whose load failed draws it too, so a failure
+   never reads as grey prose beside an empty table. An unreadable VALUE is .pill.unk, not this. */
+.pk-err,.pop .pk-err{flex:1 1 100%;display:flex;align-items:flex-start;gap:0.375rem;
+  font-size:0.6875rem;line-height:1.45;color:var(--crit);white-space:normal;
+  background:color-mix(in srgb, var(--crit) 8%, transparent);
+  border:1px solid color-mix(in srgb, var(--crit) 35%, transparent);
+  border-radius:0.375rem;padding:0.375rem 0.4375rem;margin-top:0.125rem}
+.pop .pk-err #pk-err-txt{flex:1 1 auto;min-width:0}
+.pop .pk-err-x{width:auto;flex:none;padding:0 0.1875rem;border:0;background:transparent;
+  color:var(--crit);font-size:0.688rem;line-height:1;cursor:pointer;opacity:.7}
+.pop .pk-err-x:hover{opacity:1;background:transparent}
+/* Learning mode and the roaming-authenticator choice are checkboxes, so the label sits BESIDE the
+   control rather than above it. */
+.pk-chk{flex-direction:row;align-items:flex-start;gap:0.375rem;line-height:1.4;text-transform:none;letter-spacing:0}
+.pk-chk input{accent-color:var(--acc);cursor:pointer;margin:0.125rem 0 0;flex:none}
+/* Revoking is destructive, so the control stays quiet until hovered — the list is read far more
+   often than it is acted on, and a loud button beside a list invites the click. */
+.pk-rm{width:auto;flex:none;font-size:0.6875rem;padding:0.0625rem 0.3125rem;border:1px solid transparent;
+  background:transparent;color:var(--dim);border-radius:0.25rem}
+.pk-rm:hover{color:var(--crit);border-color:var(--line2);background:var(--panel2)}
+/* The account name on the bar. Ellipsised rather than wrapped: this sits in a single-line navbar
+   and an email is longer than the space it has. */
+.acct-name{font-family:var(--sans);font-weight:500;max-width:9rem;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pk-fld input{width:100%}
+.pk-fld{display:flex;flex-direction:column;gap:0.125rem;font-size:0.656rem;color:var(--mut)}
+.pk-fld input{font-family:var(--mono);font-size:0.719rem;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:0.375rem;padding:0.1875rem 0.375rem}
+#pk-msg{font-size:0.6875rem;line-height:1.45;white-space:normal}
+#pk-msg.bad{color:var(--crit)}
+#pk-msg.ok{color:var(--live)}
+/* Settings view: threshold rows and the override rule tables. */
+.set-row{display:grid;grid-template-columns:minmax(12rem,1fr) auto;gap:0.25rem 0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--line2)}
+.set-row .set-note{grid-column:1/-1;font-size:0.6875rem}
+.set-val{display:flex;align-items:center;gap:0.375rem}
+.set-input{width:7rem;font-family:var(--mono);font-size:0.719rem;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:0.375rem;padding:0.1875rem 0.375rem;text-align:right}
+.set-input:disabled{opacity:.55;cursor:not-allowed}
+.set-input[type=text]{text-align:left}
+.set-slider,.set-durslider{width:9rem;padding:0;accent-color:var(--acc);background:none;border:0}
+.set-out{font-family:var(--mono);font-size:0.719rem;color:var(--acc);min-width:1ch}
+.set-durnum{width:4.5rem}
+.set-sys{background:var(--panel2);border:1px solid var(--line);border-radius:0.375rem;padding:0.625rem 0.8125rem;margin-bottom:0.75rem}
+.sys-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:0.25rem 1rem;margin-top:0.375rem}
+.dur-units{display:inline-flex;border:1px solid var(--line2);border-radius:0.375rem;overflow:hidden}
+.dur-u{font-family:var(--mono);font-size:0.625rem;font-weight:600;letter-spacing:.06em;padding:0.1875rem 0.4375rem;background:var(--panel2);color:var(--mut);border:0;cursor:pointer}
+.dur-u+.dur-u{border-left:1px solid var(--line2)}
+.dur-u.on{background:var(--wash);color:var(--ink);box-shadow:inset 0 -2px 0 var(--acc)}
+.dur-u:disabled{opacity:.55;cursor:not-allowed}
+.set-table{margin-bottom:1rem}
+.set-table h4{margin:0;font-size:0.75rem}
+.set-table input,.set-table select{font-family:var(--mono);font-size:0.688rem;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:0.375rem;padding:0.125rem 0.3125rem;width:100%}
+.set-table .set-v{text-align:right}
+.set-add{font-size:0.688rem}
+.set-del{font-size:0.75rem;line-height:1;padding:0.125rem 0.375rem}
+.set-rules-msg.bad,#set-save-msg.bad{color:var(--crit)}
+.kvs{display:flex;flex-direction:column}
+/* Fleet table grouped by registry entry: the entry heading, and the `--` mark on its repos. */
+tr.row-entry td{background:var(--panel2);padding-top:0.375rem;padding-bottom:0.25rem}
+tr.row-entry .name{font-size:0.719rem}
+.sub-mark{color:var(--mut);font-family:var(--mono);font-weight:400;letter-spacing:-0.05em}
+.pill.unk{color:var(--mut);background:transparent;border-color:color-mix(in srgb,var(--plan) 28%,transparent);border-style:dashed}
+/* ── Lane E · weakness-class coverage strip (#po-classvoids) ─────────────────────────────────
+   Which first-party weakness CLASSES a lane in scope looks for, and which NOTHING does. A void chip
+   REUSES the board's grey .pill.plan, which has to carry TWO separate claims and not one twice: a void
+   is not a PASS, because nothing looked and so nothing was cleared; and a void is not a FINDING, because
+   nothing looked and so nothing was found. The words "nothing looked" carry both, and the meaning never
+   rests on colour alone. (Both halves previously read "explicit uncertainty", which states one claim
+   twice and drops the distinction the chip exists to make.) Covered
+   chips are neutral (--mut/--line2), never --live green: a lane LOOKING is not a clean result. Every
+   colour is a token, so panel-light.css's :root overrides theme this with no rule of its own. */
+.clax{display:flex;flex-wrap:wrap;align-items:center;gap:0.4375rem;margin:0.5rem 0 0.25rem}
+.clax-h{font-size:0.656rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mut)}
+.clax-row{display:flex;flex-wrap:wrap;gap:0.3125rem;width:100%}
+.clax-cov{color:var(--mut);border-color:var(--line2)}.clax-cov::before{display:none}
+/* Inline triage form (button.ann-fp -> .ann-form). Replaces a prompt(): the reason and the
+   REQUIRED re-check date are entered in the row, and a refusal renders here instead of in an
+   alert() the operator dismisses and loses. */
+.ann-form{display:flex;flex-direction:column;gap:0.25rem;min-width:15rem}
+.ann-form textarea.ann-reason{font-family:var(--mono);font-size:0.719rem;line-height:1.5;resize:vertical;min-height:2.75rem;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:0.375rem;padding:0.25rem 0.375rem}
+.ann-form .ann-exp{font-size:0.656rem;color:var(--mut);display:flex;align-items:center;gap:0.25rem}
+.ann-form .ann-exp input{font-family:var(--mono);font-size:0.656rem;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:0.375rem;padding:0.0625rem 0.25rem}
+.ann-form .row-actions{display:flex;gap:0.25rem}
+.ann-msg{font-size:0.6875rem;line-height:1.45;white-space:normal}
+.ann-msg.bad{color:var(--crit)}
+.ann-msg.warn{color:var(--part)}
+.ann-msg ul{margin:0.25rem 0 0;padding-left:1rem}
+.pill.na{color:var(--plan);background:transparent;border-color:color-mix(in srgb,var(--plan) 28%,transparent);opacity:.72}.pill.na::before{background:transparent;border:1px solid var(--plan)}
+/* The exploited band carries a HEAVIER fill than every other pill (.55 against the .12 the rest
+   use), because it is the one row where the colour has to survive a glance down a long table. The
+   weight is the fill, the legibility is the ink — see the --sev note above.
+   .pill.crit's fill is expressed FROM --crit rather than as a literal rgba(), so the fill and the
+   ink always share a hue: a colour written twice drifts, and colour-mix keeps the fill derived
+   from the token it belongs to. */
+.pill.exploited{color:var(--sev);background:var(--sev-fill);font-weight:600}.pill.exploited::before{background:var(--sev)}
+/* An UNCORROBORATED ZERO (nothing has ever fed the measure) — its own state, distinct from grey
+   unk (unknown) and from green live (a corroborated zero). Violet like .exploited because it too
+   is a different KIND of fact, not a bigger number; a light .12 tint so the two never read as one
+   weight. See admin/index.html renderFatigue. */
+.pill.unrf{color:var(--sev);background:color-mix(in srgb, var(--sev) 12%, transparent);border-color:color-mix(in srgb, var(--sev) 40%, transparent)}.pill.unrf::before{background:var(--sev)}
+.pill.crit{color:var(--crit);background:color-mix(in srgb, var(--crit) 12%, transparent)}.pill.crit::before{background:var(--crit)}
+.pill.med{color:var(--med);background:color-mix(in srgb, var(--med) 12%, transparent)}.pill.med::before{background:var(--med)}
+.pill.low{color:var(--low);background:color-mix(in srgb, var(--low) 12%, transparent)}.pill.low::before{background:var(--low)}
+.pill.high{color:var(--high);background:color-mix(in srgb, var(--high) 12%, transparent)}.pill.high::before{background:var(--high)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:0.625rem;padding:0.9375rem 1rem}
+.card h3{font-family:var(--sans);font-size:0.8125rem;font-weight:600;margin:0 0 0.625rem}
+.kv{display:flex;justify-content:space-between;gap:0.625rem;padding:0.3125rem 0;border-top:1px dashed var(--line);font-size:0.75rem}.kv:first-of-type{border-top:0}.kv .mut{color:var(--mut)}
+.find{font-size:0.75rem;padding:0.3125rem 0;border-top:1px dashed var(--line);display:flex;gap:0.5rem;align-items:baseline}.find:first-child{border-top:0}
+.find code{font-family:var(--mono);color:var(--ink)}.find .at{color:var(--dim);font-size:0.6875rem;margin-left:auto}
+/* Attribution on a ledger signature. `.who-machine` is olive; `.who-unknown` keeps the dim default
+   because an unsigned entry is an absence, not a machine — explicit uncertainty applies to `who` too.
+   Colour is never the only channel (1.4.1): the markup pairs these with a text/title marker. */
+.who-machine{color:var(--machine)}
+.who-human{color:var(--ink)}
+.who-unknown{color:var(--dim);font-style:italic}
+/* The annotations log lays its own header row out; was two inline styles. */
+.anno-acts{margin:0.5rem 0 0.25rem}
+.anno-pkg{font-size:0.6875rem}
+/* ── WCAG attestations (the Accessibility tab's checkbox column) ───────────────────────────────
+   Six success criteria are UNCHECKED by construction — no static analysis will ever decide whether
+   a tab order is meaningful — and this column is where a person records having checked one by
+   hand. The colour is the point: `--attest` is a BLUE, deliberately not `--live`, because a green
+   tick next to a criterion no machine measured is the exact false claim this whole tab exists to
+   refuse. `pass` is a measurement; `attested-pass` is a signature. Different evidence, different
+   colour, different word. 7.66:1 on --bg (AA), and far enough from --live to survive a glance —
+   the same reasoning, and the same job, as the olive --machine token above.
+   The box is 1.5rem square so it clears WCAG 2.2's own 24x24 target minimum (2.5.8) — a control
+   for attesting to accessibility that failed an accessibility criterion would be its own joke. */
+.pill.attest{color:var(--attest);background:color-mix(in srgb,var(--attest) 12%,transparent);border-color:color-mix(in srgb,var(--attest) 28%,transparent)}
+.pill.attest::before{background:var(--attest)}
+.att-row{display:inline-flex;align-items:center;gap:0.5rem;cursor:pointer}
+.att-box{width:1.5rem;height:1.5rem;flex:none;margin:0;accent-color:var(--attest)}
+.att-box:disabled{cursor:not-allowed;opacity:.5}
+.att-row:has(.att-box:disabled){cursor:not-allowed}
+.att-lbl{font-size:0.719rem;color:var(--mut)}
+.att-sig{margin-top:0.3125rem;font-size:0.688rem;line-height:1.45}
+.att-note{margin-top:0.375rem;width:100%;min-width:8rem;min-height:1.5rem;background:var(--bg);color:var(--ink);
+  border:1px solid var(--line2);border-radius:0.375rem;padding:0.25rem 0.375rem;font-family:var(--mono);font-size:0.688rem}
+.att-note:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.att-said{color:var(--mut);font-style:italic}
+.att-msg{margin-top:0.25rem;font-size:0.688rem;color:var(--mut)}
+.att-msg.err{color:var(--crit)}
+.att-cell{min-width:13rem}
+/* ── Lifted out of the markup ──────────────────────────────────────────────────────────────────
+   The rest of this file arrived when index.html's <style> block moved. THIS block arrived when its
+   190 style= attributes did, and it is what finishes the job the header note describes: a policy
+   of `style-src 'self'` is only worth writing down while NOTHING in the document carries its own
+   styling, so one surviving attribute would have put the CSP back where it started.
+   Two spans are deliberately still inline, both inside ansiHtml() — see the note at the end.
+
+   Everything below is named for what it MEANS here rather than for the declaration it holds: the
+   same eight font sizes and six opacities were written out by hand across a hundred and forty
+   places, and a reader choosing between them is choosing a job, not a number. */
+
+/* Type scale. Every step below was already in the markup as a literal; naming them is the change. */
+.t-micro{font-size:0.625rem;letter-spacing:.04em}   /* the WCAG 2.2 marker riding inside a level cell */
+.t-tag{font-size:0.625rem}     /* a pill worn as a tag on a summary line, under the pill's own size */
+.t-meta{font-size:0.656rem}    /* annotation — the step .kpi .k and .gen already use */
+/* .t-loc absorbed a second spelling of itself: three elements on the BOLA card were written
+   0.688rem where the other eight were 0.6875rem — 11.008px against 11px, the same step typed
+   twice by different hands. They are one step now, and that is the only VALUE this extraction
+   changed; everything else moved byte-for-byte. */
+.t-loc{font-size:0.6875rem}    /* a LOCATED thing: file:line, a commit, a batch id, an age stamp */
+.t-note{font-size:0.719rem}    /* explanatory prose — the step .foot and .hd .n already use */
+.t-body{font-size:0.75rem}     /* the table-body step */
+.t-title{font-size:0.8125rem}  /* a card's own title */
+.t-lead{font-size:0.875rem}    /* the lead line of a fleet card */
+.t-mark{font-size:1rem}        /* an emoji standing in for a vendor mark (self-contained, no CDN) */
+/* The proportional face borrowed into mono surroundings. .name is the 25-times-repeated one — the
+   name of a repo, service or category inside a table of otherwise columnar data. .sans is the same
+   swap WITHOUT the weight, for <b> elements that are already bold by virtue of being <b>. */
+.sans{font-family:var(--sans)}
+.name{font-family:var(--sans);font-weight:600}
+/* Colour by token. Never the only channel (1.4.1): every use sits beside a word that says the same
+   thing — "no", "origin down", the advisory id that is itself the link text. */
+.txt-acc{color:var(--acc)}
+.txt-crit{color:var(--crit)}
+.txt-part{color:var(--part)}
+.point{cursor:pointer}
+.push-right{margin-left:auto}                        /* the far end of a flex row */
+.trailing{margin-left:0.375rem}                      /* a count pill trailing the name it counts */
+
+/* Vertical rhythm. Four steps, each already a literal in the markup: a coverage banner sits
+   0.75rem above the table it qualifies, a KPI strip 0.875rem, a second section within one tab
+   body 1rem. .hd-note is the extra sentence that trails a section heading. */
+.gap-banner{margin-bottom:0.75rem}
+.gap-strip{margin-bottom:0.875rem}
+.gap-top{margin-top:0.875rem}
+.gap-t{margin-top:0.5rem}
+.hd-sub{margin-top:1rem}
+/* the Closed (adjudicated) table folds; the button IS the heading, so it inherits the h2 face
+   rather than growing a second one. .tw sets no display, so the `hidden` attribute would already
+   fold it via the UA sheet — this states it rather than relying on that. */
+.closed-toggle{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.closed-toggle:hover{color:var(--acc)}
+.closed-toggle .caret{color:var(--dim);font-size:0.75em}
+.tw[hidden]{display:none}
+.hd-note{font-size:0.656rem;margin-left:0.625rem}
+.note-gap{font-size:0.719rem;margin-top:0.375rem}
+.note-tight{font-size:0.719rem;margin-top:0.25rem}
+.note-b{font-size:0.719rem;margin-bottom:0.625rem}
+.meta-tight{font-size:0.656rem;margin-top:0.25rem}
+/* One statement per line — the shape every coverage/redaction banner on this panel is built in. */
+.stack{display:flex;flex-direction:column;gap:0.375rem}
+.actrow{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap}   /* the buttons under a card */
+.chiprow{display:flex;gap:0.625rem;flex-wrap:wrap;margin-bottom:0.625rem}
+#svctabs{gap:0.375rem}
+.sum-row{cursor:pointer;display:flex;gap:0.5rem;align-items:baseline;flex-wrap:wrap}
+.kv-tight{gap:0.375rem}
+/* .card.card-tight, not .card-tight: the narrow media query re-pads .card at the bottom of this
+   file, and an inline padding used to outrank it. Two classes keep that win without !important. */
+.card.card-tight{padding:0.75rem 0.875rem}
+.banner-box{border:1px solid var(--line);border-radius:0.5rem;padding:0.5rem 0.75rem;margin-bottom:0.625rem}
+
+/* A row dimmed by its STATE, which is why these are six values and not one: a scanner category
+   whose counts were carried forward is not as faint as a repo that has been retired out of scan
+   scope, and the ordering between them is the information. Opacity is never the only channel —
+   each of these rows also carries a pill or a word saying which state it is in. */
+.row-carried{opacity:.72}                            /* counts came forward from an earlier slice */
+.row-absent{opacity:.55}                             /* the category has never scanned here */
+.row-accepted{opacity:.55}                           /* the finding has a recorded acceptance */
+.row-superseded{opacity:.65}                         /* repo folded into another; rollback standby */
+.row-standby{opacity:.6}                             /* a finding belonging to such a repo */
+.row-retired{opacity:.5}                             /* out of scan scope entirely */
+.btn-off{opacity:.5;cursor:not-allowed}              /* a run button whose credentials do not resolve */
+
+/* Column caps. Each is the width of ONE named column; they differ because the columns do. */
+.cell-msg{max-width:21.25rem}                        /* scanner / CVE message */
+.cell-act{max-width:20rem}                           /* remediation action */
+.cell-detail{max-width:26rem}                        /* BOLA finding detail */
+.cell-why{max-width:30rem}                           /* WCAG criterion detail */
+.cell-wrap{white-space:pre-wrap;word-break:break-word}
+.cat-sub{display:block;font-size:0.656rem;color:var(--dim)}   /* check id under a category name */
+
+/* Hidden until the script has decided. Every element carrying this has JS that writes an EXPLICIT
+   display on it, so the class only ever supplies the state before the first pass — unlike .vhide,
+   it is never removed. The second selector exists because .pop a,.pop button and .pop .sect are
+   two-class rules: a bare .jshide loses to them and the ≡ menu's sign-in buttons would show on a
+   panel with no provider configured. */
+.jshide,.pop .jshide{display:none}
+
+/* ── live sweep / BOLA console ─────────────────────────────────────────────────────────────── */
+#sweepbar{max-width:var(--colw);margin:0 auto;padding:0 1.25rem}
+/* #healthbar is a sibling of #sweepbar and #cq-console, all three OUTSIDE main.wrap, so each must
+   carry the column gutter itself. It was the only one without the rule and ran the full viewport
+   width — the record read as a different kind of surface from the two consoles beside it. */
+#healthbar{max-width:var(--colw);margin:0 auto;padding:0 1.25rem}
+#sweepbar>.card{margin:0.875rem 0}
+#bola-console{margin:0 0 0.875rem}
+.con-head{display:flex;align-items:center;gap:0.625rem;margin-bottom:0.5625rem}
+/* THE HEALTH BAR'S SUBTITLE IS A SENTENCE, NOT A FIGURE. .con-head is a single non-wrapping flex
+   row, which is right for a console header of short chips and wrong for the one member that
+   carries explanatory prose: the row grew to the sentence's width and pushed the card past the
+   viewport. Scoped to #healthbar so every other console header keeps the tight single-line
+   behaviour it was designed for. */
+#healthbar .con-head{flex-wrap:wrap}
+#healthbar #hb-sub{flex:1 1 18rem;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+#healthbar #hb-age{flex:0 0 auto}
+#bola-console .con-head{margin-bottom:0.5rem}
+.con-title{font-family:var(--sans);font-size:0.844rem}
+.vtab-sm{padding:0.25rem 0.5625rem}                  /* hide / stop, beside the console heading */
+.prog{height:6px;border-radius:4px;background:var(--panel2);overflow:hidden;margin-bottom:0.5625rem}
+/* Both consoles' fill. Selector-shared rather than duplicated: an ID-scoped copy per panel is how
+   the health bar would have shipped as a 0-height invisible element while its markup looked right. */
+#sw-prog,#hb-prog{height:100%;width:0;background:var(--acc);transition:width .3s}
+.con-log{margin:0;max-height:13.75rem;overflow:auto;font-size:0.719rem;line-height:1.45;color:var(--mut);
+  background:var(--bg);border:1px solid var(--line);border-radius:0.5rem;padding:0.5625rem 0.6875rem;
+  white-space:pre-wrap;word-break:break-word}
+#viewframe{width:100%;height:calc(100vh - var(--barh,3.5rem));border:0;background:var(--bg)}
+#svcframe{width:100%;height:520px;border:1px solid var(--line);border-radius:0.625rem;background:#fff}
+
+/* ── SARIF findings, grouped by diagnosis ──────────────────────────────────────────────────── */
+.site-line{padding:0.125rem 0}
+.sites{margin-top:0.25rem;max-height:14rem;overflow:auto}
+/* ── scan scope (what a scanner was permitted to see) ──────────────────────────────────────── */
+.scope-blk{margin:.4rem 0}
+.scope-desc{margin:.15rem 0 .25rem}
+.path-chip{margin-right:.4rem}
+.drop-gap{margin-top:.35rem}                         /* a disclosure hanging off the block above */
+
+/* ── Posture / Delivery cards ──────────────────────────────────────────────────────────────────
+   Scoped by container rather than given a class of their own: both boards render through the one
+   poCard(), and admin/test/remediation-prompts.test.mjs pins the literal `<details class="card"
+   open` that the sibling renderer emits — so the padding is attached to where the card LIVES. */
+#po-cards details.card,#dl-cards details.card{margin-bottom:0.5rem;padding:0.5rem 0.8125rem}
+.po-why{font-size:0.719rem;margin:0.4375rem 0 0.25rem}
+.po-acts{margin-top:0.4375rem}
+
+/* ── Remediation · triage prompts ──────────────────────────────────────────────────────────── */
+#rp-cards details.card{margin-bottom:0.625rem;padding:0.625rem 0.875rem}
+.rp-desc{font-size:0.719rem;margin:0.5rem 0 0.25rem}
+/* the prompt / thinking / verdict blocks. .blk-tight follows .blk-pre on purpose: same specificity,
+   later wins, which is how a block that wants the wider gap gets it without a second full rule. */
+.blk-pre{white-space:pre-wrap;word-break:break-word;font-size:0.719rem;line-height:1.5;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);border-radius:0.5rem;padding:0.5625rem 0.6875rem;
+  margin:0.25rem 0}
+.blk-tight{margin:0.375rem 0}
+.blk-thinking{color:var(--mut);border-style:dashed}  /* how it got there, not what it concluded */
+.verdict-line{font-size:0.75rem;margin-top:0.375rem}
+.rp-llm{display:none;margin-top:0.5rem}
+.rp-eng{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin:0.25rem 0}
+.eng-down{opacity:.55}                               /* nothing listening — stated, never dropped */
+.eng-head{display:inline-flex;gap:0.375rem;align-items:center;min-width:6.5rem}
+.mark-lm{display:inline-flex;align-items:center;justify-content:center;width:1.125rem;height:1.125rem;
+  border-radius:0.3125rem;background:linear-gradient(135deg,#4f2d7f,#7b3aed 55%,#3b82f6);color:#fff;
+  font-size:0.5rem;font-weight:700;letter-spacing:.02em}
+
+/* ── Remediation · the generated plan, rendered from Markdown ──────────────────────────────── */
+/* Scoped to #remplan, and that is load-bearing rather than tidy: the plan renders INSIDE a .card,
+   and `.card h3` (0-1-1) outranks a bare .md-h (0-1-0) — the inline margin these replace did not
+   have to care. h2 needs it too, since `h1,h2{margin:0}` sits above. */
+#remplan{line-height:1.65}
+#remplan .md-h1{margin:0 0 .5rem}
+#remplan .md-h{margin:1.1rem 0 .4rem}
+#remplan .md-ul{margin:.35rem 0 .35rem 1.1rem;padding:0}
+#remplan .md-table{margin:.5rem 0}
+#remplan .md-p{margin:.4rem 0}
+
+/* ── Report · the delta band ───────────────────────────────────────────────────────────────── */
+.delta-band{margin-top:0.375rem}
+
+/* ── Renovate · paste ingest ───────────────────────────────────────────────────────────────── */
+#rn-ta{width:100%;font-family:var(--mono);font-size:0.75rem;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line2);border-radius:0.5rem;padding:0.5625rem 0.6875rem;resize:vertical}
+.rn-help{font-size:0.719rem;margin:0.5rem 0 0.375rem}
+
+/* ── BOLA ──────────────────────────────────────────────────────────────────────────────────── */
+.vtab-run{padding:0.25rem 0.625rem}
+.bola-head{display:flex;align-items:center;gap:0.625rem;flex-wrap:wrap;margin-bottom:0.4rem}
+.bola-ready{margin-bottom:0.5rem}                    /* only when a detail block follows it */
+.bola-classes{margin:0.35rem 0}
+.bola-drop{margin-top:0.4rem}
+.void-list{margin:0.3rem 0 0;padding-left:1.1rem;font-size:0.719rem}
+.bola-verdict{margin-top:0.4rem;font-size:0.719rem}
+
+/* THE TWO THAT STAY INLINE, and why there is no class for them here.
+   ansiHtml() translates the sweep's terminal output — SGR escape codes — into HTML. The colour it
+   emits is `38;2;R;G;B` read off the stream: it is DATA, arriving from a running scanner, and a
+   stylesheet cannot enumerate a value it will only learn at 2am mid-sweep. Its companion (SGR 1,
+   bold) could have moved, and is kept beside it so the one function that turns bytes into styling
+   has one rule rather than a split personality — admin/test/ansi-console.test.mjs pins both spans.
+   These are the reason script-src, not style-src, is what remains report-only: the digits are
+   matched by this page's own parser and everything around them is HTML-escaped first, so the
+   attribute carries no byte an untrusted scanner chose. */
+/* ── Profile tab ───────────────────────────────────────────────────────────────────────────────
+   The account page's affordances. Every one of them is a class because the page it lives on
+   describes a credential-bearing identity, and `style-src 'self'` is only enforceable while no
+   markup carries its own styling — a single style= attribute on this tab would put the CSP back
+   where it was before the stylesheet was extracted.
+   .vhide: the pre-route hide, now carried by EVERY native view (it started here, on the one tab
+   that could not be allowed a style attribute, and the rest followed when the last inline style
+   left the document). setView() removes it on its first pass and owns display from then on — an
+   inline display:'' cannot beat a class rule, so the class has to come off rather than be
+   overridden. No flash before the router runs. */
+.vhide{display:none}
+.pf-state{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem}
+.pf-who{font-family:var(--sans);font-weight:600;font-size:0.8125rem;color:var(--ink)}
+code.pf-who{font-family:var(--mono);font-weight:400}
+.pf-note{font-size:0.719rem;color:var(--dim);margin-top:0.5rem;line-height:1.5}
+.pf-note b{color:var(--part)}                          /* the clause that changes what is ENFORCED */
+.ru-gate{margin:0 0 0.75rem}                            /* rollups: canary headline above the table */
+.pf-acts{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-top:0.75rem}
+/* align-items:flex-end so the button's baseline sits on the inputs', not on their labels' */
+.pf-form{display:flex;flex-wrap:wrap;gap:0.625rem;align-items:flex-end;margin-top:0.75rem}
+.pf-field{display:flex;flex-direction:column;gap:0.25rem}
+.pf-field label{font-size:0.656rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mut)}
+.pf-input{font-family:var(--mono);font-size:0.75rem;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line2);border-radius:0.5rem;padding:0.375rem 0.5625rem;min-width:11rem}
+.pf-input:hover{border-color:var(--acc2)}
+.pf-input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* Result line for a control group. Colour is never the only channel (1.4.1) — the sentence itself
+   says which way it went; these only make it quicker to see. */
+.pf-msg{font-size:0.719rem;color:var(--mut);margin-top:0.625rem;min-height:1rem}
+.pf-msg.ok{color:var(--live)}
+.pf-msg.err{color:var(--crit)}
+/* the typed GitHub link, kept behind a disclosure now that GitHub itself can report the pair */
+.pf-manual{margin-top:0.75rem}
+.pf-manual>summary{font-size:0.719rem;color:var(--mut);cursor:pointer}
+/* The one-shot enrolment block. Dashed amber, not the panel's usual solid border: this is the one
+   region of the page whose contents cease to exist when it is dismissed, and it should not look
+   like the settled rows around it. word-break because an otpauth URI has no spaces to wrap at. */
+.pf-once{margin-top:0.75rem;padding:0.625rem 0.75rem;border:1px dashed var(--part);border-radius:0.5rem;
+  background:var(--bg);font-size:0.719rem;color:var(--mut)}
+.pf-once b{color:var(--part)}
+/* The one-shot QR. qrToSvg already emits the spec's 4-module quiet zone in `light` (#fff), so the
+   scannable white border is inside the SVG — this box must not clip it or tint it, which is why it
+   sets no background of its own and no overflow. A gold or dark frame here would eat the quiet
+   zone at the edges and cost exactly the readings the code exists to make possible. */
+/* The non-QR fallback inside .pf-once: "add to this device's authenticator". It needs a rule of its
+   own because this sheet has NO global a{} rule, so an unclassed anchor here renders as a default
+   blue underlined link on a dark panel. Emphasis is the underline rather than the accent: gold text
+   on the light ground is under 4.5:1, the same reason the button system moves its edge and not its
+   text on hover. */
+.pf-oa{color:var(--ink);text-decoration:underline;text-underline-offset:2px;font-size:0.719rem}
+.pf-oa:hover{text-decoration-thickness:2px}
+.pf-qr{display:flex;justify-content:center;margin:0.75rem 0 0.5rem}
+.pf-qr svg{display:block;width:11rem;height:11rem;image-rendering:pixelated;border-radius:0.25rem}
+.pf-qr:empty{display:none}
+.pf-once code{display:block;font-family:var(--mono);font-size:0.719rem;color:var(--ink);
+  word-break:break-all;margin-top:0.5rem}
+.foot{margin-top:2rem;padding-top:0.875rem;border-top:1px solid var(--line);color:var(--dim);font-size:0.719rem}
+.spin{display:inline-block;width:10px;height:10px;border:2px solid var(--line2);border-top-color:var(--acc);border-radius:50%;animation:s .7s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.spin{animation:none}}
+/* ── phones and small tablets ──────────────────────────────────────────────────────────────
+   This panel is a wide-table surface, and on a handset exactly two things actually break.
+   (1) The view-tab row: 23 tabs, several with a second line, wrapping to four-plus rows that
+   consume most of the screen before any data shows. It becomes one horizontally-scrolling
+   strip. Desktop wraps to two rows (see #views above); narrow is where that stops paying, so
+   nowrap + scroll are restored HERE rather than being the base behaviour. This used to need
+   `#views{flex-wrap:nowrap!important}`, because the markup carried its own flex-wrap and an
+   inline style outranks a stylesheet rule; #views owns its whole layout from the rule above
+   now, so a plain override suffices. That is the shape of the whole extraction: !important is
+   what inline style costs.
+   (2) Tables: min-width is 40rem by design, so they must SCROLL rather than squeeze — .tw
+   already does overflow-x, so the fix is only to stop wasting horizontal room on padding and
+   to add iOS momentum. Cell padding and the min-width come down; nothing is hidden, because a
+   column silently dropped on mobile is worse than one you have to scroll to.
+   Everything else just tightens. No desktop rule is modified. */
+@media(max-width:640px){
+  .wrap{padding:0 .75rem 4rem}
+  .bar{margin-bottom:1rem}
+  .bar .row{padding:.625rem .75rem;gap:.5rem}
+  .bar .mark .seal{width:1.25rem;height:1.25rem}
+  .bar .mark .wordmark{font-size:0.7rem;letter-spacing:.13em}
+  .gen{display:none}                                   /* the generated-at stamp is in the foot too */
+  .ctl{gap:.375rem}
+  .ctl label.mut{font-size:.6875rem;gap:.25rem}
+  select#proj{max-width:7.5rem}
+  /* two wrapped rows are a desktop affordance; at 640px they would eat the viewport, so narrow
+     goes back to one scrolling strip. Both overrides are scoped `#views .vtab` to outrank the
+     `#views .vtab{flex:1 1 auto}` above — a bare `.vtab` here would lose on specificity and the
+     tabs would silently keep stretching. */
+  .bar .row.nav{padding-bottom:.5rem}
+  #views{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #views::-webkit-scrollbar{display:none}
+  #views .vtab{flex:none;min-height:2rem}
+  .scope{font-size:.625rem}
+  section{margin:1.125rem 0}
+  .hd{flex-wrap:wrap;gap:.375rem}
+  .kpis{grid-template-columns:1fr 1fr;gap:.5rem}
+  .kpi{padding:.625rem .6875rem}
+  .kpi .v{font-size:1.1875rem}
+  .tw{-webkit-overflow-scrolling:touch}
+  table{min-width:34rem;font-size:.75rem}
+  th{padding:.5rem .625rem}
+  td{padding:.5rem .625rem}
+  .card{padding:.8125rem .875rem}
+  .find{flex-wrap:wrap}
+  .find .at{margin-left:0;width:100%}                  /* the timestamp drops to its own line */
+  .kv{font-size:.75rem}
+  /* profile fields go full-width rather than keeping an 11rem floor that overflows a handset */
+  .pf-field{flex:1 1 100%}
+  .pf-input{min-width:0;width:100%}
+  .pop{min-width:min(14rem,calc(100vw - 1.5rem))}
+  button{min-height:2.25rem}
+}
+
+/* scanner-annotation triage: an annotated row STAYS, struck through, with its judgment beside it —
+   suppressed is never deleted (rollup.mjs scanner-annotations overlay attaches `annotation`) */
+tr.ann-row td{opacity:.55}
+tr.ann-row td:not(:last-child){text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--part) 60%,transparent)}
+button.ann-fp{font-size:.7rem;padding:.1rem .45rem;min-height:1.5rem;white-space:nowrap}
+
+/* ── Issues · the per-issue lodging panel ──────────────────────────────────────────────────── */
+/* A row expands in place rather than opening a second view: the queue IS the context for judging
+   one item, and losing it to navigate is how a triage pass turns into a tab-hunting pass. */
+.iss-row{cursor:pointer}
+.iss-row:hover>td:first-child{box-shadow:inset 2px 0 0 var(--acc2)}
+.iss-row.open td{border-bottom-color:transparent}
+.iss-det td{padding:0 0.6875rem 0.75rem}
+.iss-panel{background:var(--panel);border:1px solid var(--line);border-radius:0.625rem;padding:0.75rem 0.875rem}
+.iss-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:0.625rem;align-items:end}
+.iss-fld{display:flex;flex-direction:column;gap:0.25rem}
+.iss-fld label{font-size:0.656rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.iss-fld select,.iss-fld textarea{font-family:var(--mono);font-size:0.719rem;color:var(--ink);
+  background:var(--panel2);border:1px solid var(--line2);border-radius:0.5rem;padding:0.375rem 0.5rem}
+.iss-fld textarea{min-height:4.5rem;resize:vertical;line-height:1.5}
+.iss-notes{grid-column:1/-1}
+.iss-count{font-size:0.656rem;color:var(--mut)}
+.iss-count.over{color:var(--crit)}
+/* The two greens, never merged — scanner-clean and human-green must not share a colour. */
+.pill.green-human{color:var(--attest);background:color-mix(in srgb,var(--attest) 12%,transparent);border-color:color-mix(in srgb,var(--attest) 28%,transparent)}
+.pill.green-human::before{background:var(--attest)}
+.iss-local-note{font-size:0.719rem;color:var(--mut);border:1px dashed var(--line2);border-radius:0.5rem;
+  padding:0.4375rem 0.625rem;margin:0.5rem 0}
+.iss-sec{margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--line)}
+.iss-sec>h4{font-family:var(--sans);font-size:0.719rem;font-weight:600;margin:0 0 0.4375rem;color:var(--mut)}
+.iss-dsp{font-size:0.719rem;padding:0.25rem 0;border-bottom:1px solid var(--line)}
+.iss-dsp:last-child{border-bottom:0}
+
+/* ── Credentials tab ─────────────────────────────────────────────────────────────────────────────
+   The store's presence view. Four states, and they must stay APART: the route reports resolvable /
+   unresolvable / undeclared / overridden separately because each needs a different fix, and a
+   renderer that merges them into one "missing" throws that away. Colour is never the only channel
+   (WCAG 1.4.1) — every state also carries its own word in the cell.
+   `--machine` is reused for an env override: it is the same fact as elsewhere, something other than
+   the declared source supplying the value. */
+.cred-counts{display:flex;gap:0.75rem;flex-wrap:wrap;margin:0.5rem 0 0.75rem}
+.cred-fig{font-family:var(--mono);font-size:0.719rem;padding:0.1875rem 0.5rem;border-radius:0.375rem;border:1px solid var(--line2)}
+.cred-msg{font-size:0.719rem;padding:0.4375rem 0.625rem;border-radius:0.375rem;border:1px solid var(--line2);margin-bottom:0.75rem}
+.cred-ok{color:var(--live)}
+.cred-bad{color:var(--crit)}
+/* UNDECLARED is not a failure and not a pass — nobody has said where it lives. Dim, never green. */
+.cred-none{color:var(--dim);font-style:italic}
+.cred-over{color:var(--machine)}
+
+/* ── CodeQL dual-agent remediation (view-codeql) ──────────────────────────────────────────────
+   The prompt bar renders ABOVE AND BELOW the findings table — on a long table the operator is
+   at one end or the other, and the call to action must be at both. */
+.cq-remed{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acc2);
+  border-radius:0.5rem;padding:0.625rem 0.875rem;margin:0.75rem 0}
+.cq-remed-act{display:flex;align-items:center;gap:0.75rem;white-space:nowrap}
+.cq-play{border-color:var(--acc2);font-weight:600}
+.cq-detail td{background:var(--panel);border-top:1px dashed var(--line2)}
+.cq-agree{margin:0.375rem 0 0.625rem}
+.cq-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:0.75rem;margin:0.5rem 0}
+.cq-v{border:1px solid var(--line);border-radius:0.5rem;padding:0.5rem 0.625rem}
+.cq-v>div{margin-top:0.375rem}
+.cq-diff{background:var(--bg);border:1px solid var(--line2);border-radius:0.5rem;padding:0.625rem;
+  overflow:auto;max-height:24rem;white-space:pre;font-size:0.719rem}
+#cq-console{max-width:var(--colw);margin:0 auto;padding:0 1.25rem}
+#cq-console>.card{margin:0.875rem 0}
+.cq-counts{display:inline-flex;gap:0.375rem;align-items:center}
+.cqc-job{border:1px solid var(--line);border-radius:0.5rem;padding:0.5rem 0.625rem;margin:0.5rem 0}
+.cqc-job.live{border-color:var(--acc2)}
+.cqc-head{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.cqc-chips{display:flex;gap:0.375rem;flex-wrap:wrap;margin:0.375rem 0}
+.cqc-chip{font-size:0.656rem;border:1px solid var(--line2);border-radius:0.3125rem;padding:0.0625rem 0.375rem;color:var(--mut)}
+.cqc-chip.ok{color:var(--live);border-color:color-mix(in srgb,var(--live) 28%,transparent)}
+.cqc-chip.run{color:var(--part);border-color:color-mix(in srgb,var(--part) 28%,transparent)}
+.cqc-chip.bad{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 28%,transparent)}
+.cqc-log{max-height:7.5rem}
+.cq-remed.err{border-left-color:var(--crit)}
+.cq-err-text{color:var(--crit)}
+
+/* ── CRA Art. 14 clocks (view-cra) ───────────────────────────────────────────────────────────────
+   The countdown colours are load-bearing, not decoration: an overdue legal clock must never read
+   as a running one, and the escalation bands must be distinguishable before the deadline, not at
+   it. Lives here rather than inline because the panel's CSP declares style-src-elem 'self' and an
+   inline <style> block would make that declaration false (admin/test asserts exactly this). */
+/* A case is a CARD, not a paragraph. `.case` had no rule at all — it exists in cra/dashboard.mjs,
+   which carries its own inline styles — so three cases ran together as one wall of text and the
+   reader could not tell where one reporting obligation ended and the next began. Found by opening
+   the page, which is the only way this class of defect is ever found. The left border carries the
+   state: red where a clock is overdue, quiet where none is. */
+#view-cra .case{border:1px solid var(--line2);border-left:3px solid var(--crit);border-radius:0.5rem;
+  background:var(--panel2);padding:0.625rem 0.875rem;margin:0 0 0.625rem}
+#view-cra .case.ok{border-left-color:var(--line2)}
+#view-cra .case>b{font-size:0.8125rem}
+#view-cra .case .sub{margin:0.1875rem 0 0.375rem}
+#view-cra .case-clock{display:flex;gap:0.625rem;align-items:baseline;margin:0.1875rem 0}
+#view-cra .case-clock>span:first-child{min-width:11em;opacity:.75}
+#view-cra .cra-ok{opacity:.85}
+#view-cra .cra-p50{color:var(--cra-50)}
+#view-cra .cra-p75{color:var(--cra-75);font-weight:600}
+#view-cra .cra-p90{color:var(--cra-90);font-weight:700}
+#view-cra .cra-overdue{color:var(--cra-over);font-weight:700}
+
+/* Learning mode — deliberately quiet: an explanation that shouts competes with the finding it explains. */
+/* fact: --accent was undefined here and carried no fallback, and an undefined var with no
+   fallback voids the WHOLE declaration — border-left-style reverted to none, so this box had
+   no left rule at all rather than a mis-coloured one (expiry: never, prev: wrong) */
+.learn-box{position:relative;margin:0.375rem 0 0.625rem;padding:0.5625rem 2.125rem 0.5625rem 0.75rem;border-left:3px solid var(--acc);
+  background:var(--wash);border-radius:0 0.5rem 0.5rem 0;font-size:0.84375rem;line-height:1.55;max-width:78ch}
+.learn-box b{margin-right:0.375rem}
+.learn-x{position:absolute;top:0.375rem;right:0.5rem;border:0;background:transparent;cursor:pointer;font-size:0.8125rem;line-height:1;opacity:.55;padding:0.125rem 0.25rem}
+.learn-x:hover{opacity:1}
+#learn-row{display:flex;align-items:center;gap:0.5rem}
+#learn-row .mut{margin-left:auto;font-size:0.71875rem}
+
+/* The daily-median sparkline on the perf view's measured-cost table. Sized to sit inline in a row
+   without changing its height. */
+.lt-spark{display:block;overflow:visible}
+
+/* Slop Bucket rows. The comment marker sits in a gutter outside the text, and the text wraps at 80
+   columns, the common default line length (Prettier, Google style guides, PEP 8's 79). */
+#cmt-rows>.card{margin:0.625rem 0;padding:0.75rem 0.875rem}
+#cmt-rows .cmt-hd{display:flex;gap:0.625rem;align-items:baseline;flex-wrap:wrap}
+#cmt-rows .cmt-act{margin-left:auto;display:flex;gap:0.375rem}
+#cmt-rows .cmt-void,#cmt-rows .cmt-warn-l{color:var(--part)}
+#cmt-rows .cmt-warn-l{margin:0.375rem 0 0}
+#cmt-rows .cmt-cols{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0.625rem;margin-top:0.5rem}
+#cmt-rows .cmt-col{min-width:0;padding:0.375rem 0.5rem;border:1px solid var(--line);border-radius:0.25rem}
+#cmt-rows .cmt-col[hidden]{display:none}
+#cmt-rows .cmt-col.sel{background-image:repeating-linear-gradient(45deg,color-mix(in srgb,var(--live) 15%,transparent) 0 1px,transparent 1px 7px)}
+#cmt-rows .cmt-ch{font-size:0.6875rem;color:var(--mut);margin-bottom:0.25rem}
+#cmt-rows .cmt-need{color:var(--part)}
+#cmt-rows .cmt-ln{display:grid;grid-template-columns:3ch minmax(0,80ch);column-gap:.6ch;font:0.75rem/1.5 var(--mono)}
+#cmt-rows .cmt-gut{color:var(--mut);text-align:right;user-select:none}
+#cmt-rows .cmt-ro,#cmt-rows .cmt-tx{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+#cmt-rows textarea.cmt-tx{display:block;width:100%;margin:0;padding:0;border:0;background:transparent;font:inherit;resize:none;overflow:hidden;field-sizing:content}
+#cmt-rows [data-sel=first] .cmt-o[data-f1=kept],#cmt-rows [data-sel=second] .cmt-o[data-f2=kept]{color:var(--live)}
+#cmt-rows [data-sel=first] .cmt-o[data-f1=reworded],#cmt-rows [data-sel=second] .cmt-o[data-f2=reworded]{color:var(--part);text-decoration:underline dotted}
+#cmt-rows [data-sel=first] .cmt-o[data-f1=dropped],#cmt-rows [data-sel=second] .cmt-o[data-f2=dropped]{color:var(--crit);text-decoration:line-through}
+#cmt-rows [data-sel=first] .cmt-w[data-for=second],#cmt-rows [data-sel=second] .cmt-w[data-for=first]{display:none}
+#cmt-rows .cmt-ok{color:var(--live)}
+#cmt-rows .cmt-st{margin:0.375rem 0 0;min-height:1em}
+#cmt-rows .cmt-st.bad{color:var(--crit)}
+
+/* /perf/ scanner console (static/perf-console.js). One tab and one route per scanner; the JSON
+   editor is white and centred in the content column, by operator request, in both themes. */
+.pc-subnav{display:flex;flex-wrap:wrap;gap:0.375rem 0.75rem;align-items:flex-start;margin:0 0 0.75rem}
+.pc-grp{display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center}
+.pc-grp-l{font-size:0.656rem;color:var(--mut);text-transform:uppercase;letter-spacing:0.04em;margin-right:0.125rem}
+.pc-tab{font-family:var(--mono);font-size:0.688rem;padding:0.1875rem 0.5rem;background:var(--panel);color:var(--mut);border:1px solid var(--line);border-radius:0.3125rem;cursor:pointer}
+.pc-tab:hover{color:var(--ink);border-color:var(--line2)}
+.pc-tab.on{color:var(--ink);background:var(--panel2);border-color:var(--acc2)}
+.pc-scanner .pc-desc{font-size:0.875rem;margin:0.25rem 0 0.75rem}
+.pc-back{margin-left:auto}
+.pc-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:0.5rem 1rem;margin-bottom:0.75rem}
+.pc-ladder{margin:0.25rem 0 0.75rem 1.25rem;font-size:0.813rem}
+.pc-prov table td{vertical-align:top}
+.pc-act{font-size:0.688rem;padding:0.1875rem 0.5rem}
+.pc-act.pc-danger{border-color:var(--crit);color:var(--crit)}
+.pc-log{max-height:16rem;overflow:auto;background:var(--panel2);border:1px solid var(--line);padding:0.5rem;font-size:0.688rem;white-space:pre-wrap}
+.pc-repos{max-height:28rem;overflow:auto}
+.pc-repos tr.pc-own td:first-child{box-shadow:inset 2px 0 0 var(--acc)}
+.perf-desc{max-width:32rem;white-space:normal}
+.pc-modal-back{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;justify-content:center;align-items:flex-start;padding:5vh 1rem;overflow:auto}
+.pc-modal{background:#fff;color:#16171a;width:100%;max-width:56rem;border-radius:0.5rem;box-shadow:0 1rem 3rem rgba(0,0,0,.45);display:flex;flex-direction:column;max-height:90vh}
+.pc-modal-h{padding:0.75rem 1rem;border-bottom:1px solid #e3e1db;font-family:var(--mono)}
+.pc-modal-files{color:#5c5a55;font-size:0.719rem;margin-left:0.5rem}
+.pc-modal-ta{flex:1;min-height:55vh;margin:0;border:0;padding:0.75rem 1rem;background:#fff;color:#16171a;font-family:var(--mono);font-size:0.75rem;line-height:1.5;resize:vertical;outline:none;tab-size:2}
+.pc-modal-msg{padding:0.5rem 1rem;font-size:0.75rem;color:#5c5a55;border-top:1px solid #e3e1db}
+.pc-modal-msg.bad{color:#b3160d}
+.pc-modal-msg.ok{color:#1d7a43}
+.pc-modal-f{display:flex;justify-content:flex-end;gap:0.5rem;padding:0.625rem 1rem;border-top:1px solid #e3e1db}
+.pc-modal-f button{background:#f4f3ef;color:#16171a;border:1px solid #cfcdc6}
+.pc-modal-f .pc-modal-save{background:#16171a;color:#fff;border-color:#16171a}

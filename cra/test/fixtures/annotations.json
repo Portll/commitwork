@@ -1,0 +1,12 @@
+{
+  "annotations": [
+    {
+      "id": "CVE-2026-33333",
+      "repo": "repo-a",
+      "action": "false-positive",
+      "reason": "test data only",
+      "who": "tester",
+      "at": "2026-07-01T00:00:00Z"
+    }
+  ]
+}

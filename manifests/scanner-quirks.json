@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "note": "DECLARED COVERAGE BOUNDS from a scanner own error notifications. A rule that crashes, times out, or meets a file it cannot parse finds nothing, and the run still exits 0 with a finding count. Each bound below is named and counted so the loss is publishable rather than absorbed. Not all are defects: a parse failure on a minified bundle is the scanner working. A crash is not.",
+  "principle": "A quirk entry NEVER hides output. It converts an unexplained notification into a named, counted one with an upstream reference. An entry whose `status` is `open` means the coverage loss is live; `fixed-in` means it should stop appearing above that version, and a test can then assert it does.",
+  "quirks": [
+    {
+      "id": "semgrep-oss-internal-matching-error",
+      "tool": "semgrep",
+      "engine": "oss",
+      "status": "open",
+      "match": {
+        "notificationId": "Internal matching error",
+        "messageContains": "An error occurred while invoking the Semgrep engine"
+      },
+      "rules": [
+        "javascript.crypto-js.cryptojs-weak-algorithm.cryptojs-weak-algorithm",
+        "javascript.express.web.cors-default-config-express.cors-default-config-express",
+        "javascript.koa.web.cors-default-config-koa.cors-default-config-koa",
+        "yaml.github-actions.security.curl-eval.curl-eval",
+        "yaml.github-actions.security.gha-curl-pipe-shell.gha-curl-pipe-shell"
+      ],
+      "measured": {
+        "on": "2026-08-26",
+        "corpus": "100randomrepos, 94 repositories with artifacts in both arms",
+        "ossErrors": 36037,
+        "proErrors": 24,
+        "topThree": {
+          "cryptojs-weak-algorithm": 15771,
+          "cors-default-config-express": 10121,
+          "cors-default-config-koa": 10121
+        },
+        "note": "Five rules account for essentially the whole volume, and two of them report an IDENTICAL count of 10121. One detector dominating a category is the defect signature this fleet already learned to read from the TruffleHog Lob case; two detectors agreeing to the unit is stronger still — they are failing on the same files for the same reason, not finding anything about those files."
+      },
+      "reproduction": {
+        "verified": true,
+        "command": "semgrep scan --config p/default --include eslint.config.js --metrics=off --json .",
+        "cwd": "a checkout of 1Panel-dev/1Panel at frontend/",
+        "file": "frontend/eslint.config.js",
+        "semgrepVersion": "1.172.0",
+        "result": "exit 0, 'Ran 368 rules on 1 file: 0 findings', and one Internal matching error in errors[]. Deterministic across runs.",
+        "platformMatrix": {
+          "measuredOn": "2026-09-02",
+          "note": "Live at 1.175.0 on macOS arm64. The macOS-ONLY claim made here 2026-09-02 is WITHDRAWN — see platformClaimWithdrawn. All four cells scanned the file, so none is a no-files vacuum; the inference from them was the error.",
+          "cells": {
+            "1.172.0 / macOS arm64 native": "1 error",
+            "1.175.0 / macOS arm64 native": "1 error",
+            "1.172.0 / linux arm64 (semgrep/semgrep docker)": "0 errors",
+            "1.175.0 / linux arm64 (semgrep/semgrep docker)": "0 errors"
+          },
+          "howTheFirstReadingWasWrong": "host-1.172.0 (1 error) against docker-1.175.0 (0) reads as fixed upstream. The same docker harness at PINNED 1.172.0 also gave 0 — it could not express the defect on any version, so the upgrade's zero carried no information. A negative result is evidence only after the positive control has produced the failure.",
+          "rootCause": "Measured 2026-09-03 by reading the whole error, not its first line: it ends `metavariable-name:module(s) operator is only supported in the Pro engine`. A p/default rule uses a Pro-only operator and the OSS engine reports it as Internal matching error — the class whose text says to file a bug — instead of skipping it. 36,037 is that one message, not 36,037 faults.",
+          "platformClaimWithdrawn": "Retested 2026-09-03 with the rule pinned and an explicit target: linux scanned ZERO files for it while macOS scanned and errored; linux with the full pack scanned the file and did not error. Same rule, file and version, unexplained. A Pro-only operator has no obvious reason to vary by OS. Survives: reproduces on macOS arm64 at 1.172.0 and 1.175.0. Does not: any claim about linux, or that the variable is the OS.",
+          "nativeTestRecipe": "venv needs python >= 3.10 (system 3.9.6 resolves nothing). Assert on semgrep.__VERSION__ and `semgrep-core -version`, never `semgrep --version` — that banner printed 1.172.0 for a 1.175.0 venv, and 1.175.0 under env -i."
+        }
+      },
+      "upstream": {
+        "project": "semgrep/semgrep",
+        "reportUrl": "https://github.com/semgrep/semgrep/issues",
+        "filed": "https://github.com/semgrep/semgrep/issues/11885",
+        "note": "Filed 2026-09-03 as #11885, on the root cause — a Pro-only operator in a p/default rule surfaced as an internal error that asks the user to file a bug. The platform split is NOT claimed there; it is withdrawn."
+      },
+      "openQuestions": [
+        "ANSWERED 2026-09-02, and the answer is no: 1.175.0 native macOS arm64 still reproduces, so it is not fixed by upgrading. The earlier inconclusive 1.174.0 venv failed for a resolution reason; the recipe that works is recorded in reproduction.platformMatrix.",
+        "WHY linux does not error is OPEN; the platform claim built on it is withdrawn. Not yet separated: registry serving different rule content per client, language detection on eslint.config.js, pack composition.",
+        "The semgrep version is still pinned NOWHERE in this repository — it is whatever Homebrew last installed. That remains its own defect and is unaddressed.",
+        "Whether the Pro engine's 24 errors are the same defect at lower frequency or a different one."
+      ],
+      "impact": "The OSS engine's finding count is measured through a partly broken instrument. Any comparison that treats an OSS run as a clean baseline conflates 'what the other engine adds' with 'what not crashing adds'.",
+      "mitigation": "Prefer --pro-intrafile, which is the engine that does not crash on these rules. Where the OSS engine must be used, this quirk makes the loss countable."
+    },
+    {
+      "id": "semgrep-rule-timeout",
+      "tool": "semgrep",
+      "engine": "both",
+      "status": "expected",
+      "match": {
+        "notificationId": "Timeout"
+      },
+      "measured": {
+        "on": "2026-08-26",
+        "corpus": "100randomrepos",
+        "oss": 2952,
+        "pro": 3268,
+        "note": "Present in BOTH engines at similar volume, so it is a property of the rules and the corpus rather than of either engine. Concentrated in heavy taint rules for cpp, go and rust. The Pro engine times out slightly MORE, which is consistent with it doing more work per rule."
+      },
+      "impact": "A timed-out rule produced no result for that file. The finding count is a floor, not a total.",
+      "mitigation": "Raise --timeout for the deep group, or accept the bound and publish it. Not yet decided."
+    },
+    {
+      "id": "semgrep-parse-failure",
+      "tool": "semgrep",
+      "engine": "both",
+      "status": "expected",
+      "match": {
+        "notificationIdAnyOf": [
+          "Syntax error",
+          "Other syntax error",
+          "Lexical error"
+        ]
+      },
+      "measured": {
+        "on": "2026-08-26",
+        "corpus": "100randomrepos",
+        "oss": 6511,
+        "pro": 6257,
+        "note": "The LARGEST non-crash category and the one nobody was counting. Present in both engines at similar volume. A scanner that cannot parse a file did not scan it, and minified or generated sources are the common cause — which is why the minify-detect lane exists."
+      },
+      "impact": "Those files were not analysed at all. Their absence from the findings is not evidence about them.",
+      "mitigation": "Cross-reference against minify-detect: a parse failure on a file that lane already flags is expected and needs no action; one on ordinary source is a real gap."
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/commitwork-report-1.0.schema.json",
+  "title": "commitwork neutral report 1.0",
+  "description": "The form every published document is a PROJECTION of. cra/vex.mjs has always collected one neutral statement set and rendered it into CycloneDX VEX, CSAF 2.0, CSAF 2.1 and OpenVEX, so the four can never contradict each other about a CVE — but that intermediate had no schema and no consumer outside cra/, which is taxonomy class 1.30, structured data with no schema. This is that schema.\n\nWHY A SUPERSET AND NOT A CHOSEN STANDARD. The target formats model FINDINGS. This models findings AND the reliability of the looking: whether the lane ran, how completely, why a void is a void, which scanner build produced the row, how many independent analysts saw it, and the date beyond which an ABSENCE means nothing. None of those has a representation in CycloneDX, CSAF or OpenVEX. A CSAF document cannot say `we did not look at this, and here is how much we did not look` — and this fleet's reporting rule, that an unmeasured result is neither a pass nor a finding, is a statement about exactly that.\n\nEvery projection declares what it dropped (see `fidelity`), so an export can never be a quieter claim than the evidence supports.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["specVersion", "generated", "product", "statements", "looking", "fidelity"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "specVersion": {
+      "const": "commitwork-report/1.0",
+      "description": "Pinned. A consumer that reads this field is entitled to the shape below; bumping it is how a breaking change is announced rather than discovered."
+    },
+    "generated": { "type": "string", "description": "ISO 8601. (JSON Schema `format` is annotation-only and this validator refuses keywords it does not enforce, so the constraint is stated rather than pretended.) When THIS document was built. Not when the evidence was gathered, and never conflated with `looking.vdb.builtAt`." },
+    "product": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "repos": { "type": "array", "items": { "type": "string" }, "description": "The repositories this product is composed of — the population the statements describe." }
+      }
+    },
+    "manufacturer": { "type": ["object", "null"], "additionalProperties": true, "description": "CRA manufacturer identity, when one is declared." },
+    "statements": {
+      "type": "array",
+      "description": "One statement per vulnerability, deduplicated by the strongest state (STATE_RANK in cra/vex.mjs). The lifecycle mapping is decided ONCE, here, which is what stops the four output formats disagreeing.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["vulnId", "state", "origin"],
+        "properties": {
+          "vulnId": { "type": "string", "description": "Upper-cased CVE/GHSA/advisory id." },
+          "state": {
+            "enum": ["exploitable", "accepted", "in_triage", "false_positive", "resolved"],
+            "description": "`accepted` is AFFECTED, never not_affected: a recorded decision not to remediate is not a statement that the product is unaffected, and rendering it as one is an unsupported pass in a document a regulator may read."
+          },
+          "origin": { "enum": ["finding", "ledger", "annotation"], "description": "Which store the statement came from. A verified fix and an operator's judgement are different evidence and must stay distinguishable." },
+          "decision": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] },
+          "advisory": { "type": ["string", "null"] },
+          "cvss": { "type": ["number", "null"] },
+          "severity": { "type": ["string", "null"] },
+          "detail": { "type": ["string", "null"] },
+          "firstIssued": { "type": ["string", "null"] },
+          "lastUpdated": { "type": ["string", "null"] },
+          "affects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["ref"],
+              "properties": {
+                "ref": { "type": "string" },
+                "repo": { "type": ["string", "null"] },
+                "package": { "type": ["string", "null"] },
+                "version": { "type": ["string", "null"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "looking": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "THE PART NO TARGET FORMAT HOLDS, and the reason this schema exists. Every field here is computed by the fleet today and has nowhere to go in CycloneDX, CSAF or OpenVEX. A projection drops the lot and says so in `fidelity`.",
+      "required": ["coverage", "voids", "vintage"],
+      "properties": {
+        "coverage": {
+          "type": "array",
+          "description": "Per lane: did it run, and how much of it. `basis` is the strength of the claim — `per-file` is a measured k-of-n, `signal` is a regex match whose gap size is unknown. Both are `reduced`; only one is a number.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["lane", "coverage"],
+            "properties": {
+              "lane": { "type": "string" },
+              "coverage": { "enum": ["full", "reduced", "unknown"] },
+              "basis": { "enum": ["per-file", "signal", "exit-code", "log-absent", "log-unreadable", "declaration-error", "none"] },
+              "reason": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "voids": {
+          "type": "array",
+          "description": "A lane that produced no trustworthy output, WITH its cause. The count alone is a number with no evidence behind it; absence of a finding is not a finding, and a document with no statements is not the same document as one that could not be produced.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["lane", "reason"],
+            "properties": {
+              "lane": { "type": "string" },
+              "repo": { "type": ["string", "null"] },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "fixtures": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "description": "Findings describing a TEST CORPUS rather than the software. Measured on the 100-repository corpus: one repository produced 730 of the fleet's 800 criticals and 723 sat under spec/fixtures — every number real, none describing the software. Classified, never dropped.",
+          "properties": {
+            "rows": { "type": "integer", "minimum": 0 },
+            "brokenOnPurpose": { "type": "integer", "minimum": 0, "description": "Fixtures named as invalid BY DESIGN — a scanner refusing them is working." },
+            "note": { "type": ["string", "null"] }
+          }
+        },
+        "vintage": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Which build of the scanner produced these rows. A full sweep takes hours over a tree that is committed to throughout: one batch measured 41 distinct runners across 100 repositories and was published as a single measurement. CycloneDX has `tools[]`, but nothing that says rows WITHIN one document came from different builds.",
+          "required": ["distinct"],
+          "properties": {
+            "distinct": { "type": "integer", "minimum": 0 },
+            "recorded": { "type": "integer", "minimum": 0 },
+            "unrecorded": { "type": "integer", "minimum": 0, "description": "Rows whose runner was never recorded. Not a vintage of its own, and never agreement." },
+            "mixed": { "type": "boolean" },
+            "note": { "type": ["string", "null"] }
+          }
+        },
+        "corroboration": {
+          "type": ["object", "null"],
+          "additionalProperties": true,
+          "description": "How many independent analysts saw each finding, and whether they agreed. Measured on this fleet: 96.15% single-analyst, 11 disputes. All three target formats assume a single authoring authority."
+        },
+        "reachability": {
+          "type": ["object", "null"],
+          "additionalProperties": true,
+          "description": "{reachability, prover, proofKind}. CycloneDX's `analysis.justification` is an enum of reasons NOT to be affected — the wrong axis. There is no field anywhere for who proved reachability and how."
+        },
+        "vdb": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "description": "The advisory database this result was matched against. `builtAt` is the bound on what an ABSENCE can mean, and it is NOT the document date — putting it in `/document/tracking/current_release_date` would tell a reader the evidence is as fresh as the export.",
+          "properties": {
+            "image": { "type": ["string", "null"] },
+            "builtAt": { "type": ["string", "null"] },
+            "pulledAt": { "type": ["string", "null"] },
+            "bound": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "fidelity": {
+      "type": "object",
+      "description": "What each projection could not express. Generated and DECLARED: a document that lost nothing says so (`lossless: true`) rather than leaving a reader to infer it from an absent field. Without this the export IS the false clean — a CSAF showing three findings while silently omitting that two lanes were half-blind and one never ran is a more confident claim than the data supports.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "lossless": { "type": "boolean" },
+          "statements": { "type": "integer", "minimum": 0 },
+          "lost": { "type": "array", "description": "Each statement that lost something, and what." }
+        }
+      }
+    }
+  }
+}

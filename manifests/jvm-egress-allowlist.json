@@ -1,0 +1,35 @@
+{
+  "$comment": "The reachable set for bin/jvm-resolve.sh. DEFAULT DENY — a host absent from this list is unreachable from the resolution container, and the attempt is logged. Every entry states what needs it and why, because an allowlist nobody can review is a list that grows until it is the internet.",
+  "note": "Adding a host here widens what repo-authored build logic can reach. That is the whole control, so an entry with no `why` fails bin/test/jvm-egress.test.mjs. Wildcards are dstdomain-style: a leading dot matches the domain and its subdomains.",
+  "denyLogIsEvidence": "squid's access log records every DENIED request. That log is the interesting output of this lane, not a side effect: it says what a repo's build logic tried to reach and could not. A build that only ever touches the registries below is a build that did what it said; anything else is a lead.",
+  "allow": [
+    { "host": ".repo1.maven.org", "why": "Maven Central. The default repository for essentially every JVM project." },
+    { "host": ".repo.maven.apache.org", "why": "Maven Central's other canonical hostname; Maven's built-in super-POM uses this one." },
+    { "host": ".plugins.gradle.org", "why": "the Gradle Plugin Portal. Resolving a build script means resolving its plugins first. It serves METADATA only and redirects the actual files to plugins-artifacts.gradle.org, which is a separate host and needs its own entry — see below." },
+    { "host": "plugins-artifacts.gradle.org", "why": "where the Plugin Portal actually serves plugin artifacts. A SEPARATE host, not a subdomain of plugins.gradle.org, so the entry above does not cover it — which is why every plugin-using gradle build failed with 403 until 2026-08-27. Its URLs are CONTENT-ADDRESSED: the artifact's sha256 is a path segment, so what is served is verifiable against what was asked for." },
+    { "host": ".services.gradle.org", "why": "distribution downloads and wrapper checksums — gradlew fetches its own gradle build before it can do anything." },
+    { "host": ".jcenter.bintray.com", "why": "read-only archive; older builds in this corpus still name it and fail slowly against a blackhole rather than quickly against a 403." },
+    { "host": ".maven.google.com", "why": "Google's Maven repository — any Android or Guava-adjacent build declares it." },
+    { "host": ".oss.sonatype.org", "why": "Sonatype OSS snapshots; several corpus projects depend on their own. This also covers s01.oss.sonatype.org, the host projects onboarded after 2021 use — listing both was an overlap the renderer refused, and it was refusing correctly: two entries that read as careful scoping were one broad one." },
+    {
+      "host": ".github.com",
+      "tier": "amber",
+      "why": "AMBER, and the only entry that is not an artifact registry. Gradle itself is served from here: services.gradle.org/distributions/gradle-X-bin.zip 307-redirects to github.com/gradle/gradle-distributions/releases/download/, so no gradle wrapper anywhere can bootstrap without it — measured 2026-08-27, and it is why every repo in this lane failed before its first dependency was ever resolved. The proxy cannot allow just that path: for HTTPS squid sees only CONNECT host:443, and seeing the path would mean terminating TLS. So the host is allowed and the BYTES are pinned instead — manifests/gradle-distributions.json lists which distributions may be downloaded and what each must hash to, and bin/jvm-resolve.sh injects distributionSha256Sum so the wrapper enforces it. An unlisted version does not run. Remove that pin and this entry becomes ordinary trust in github, which is not what was agreed."
+    },
+    {
+      "host": "release-assets.githubusercontent.com",
+      "tier": "amber",
+      "why": "AMBER, and the SECOND hop of the same redirect: github.com/.../releases/download/ redirects again to here, which is where the release bytes actually live. Found only by allowing the first hop and watching the next thing get denied — the chain is three hosts long and no single one of them is 'the download'. Safe for exactly the reason github.com is and for no other: what arrives is checked against manifests/gradle-distributions.json by the wrapper itself. NOT to be confused with raw.githubusercontent.com, which stays absent — that one serves arbitrary repository content with no version identity and nothing to pin, and the distinction between the two is the whole difference between a bounded allowance and a hole."
+    }
+  ],
+  "tiers": {
+    "green": "An artifact registry serving immutable versioned artifacts. Fetches are permitted and recorded. The entries in `allow` without an explicit tier are green.",
+    "amber": "Reachable, but NOT because the host is trusted — because the specific artifacts fetched from it are pinned by hash somewhere else, and that pin is enforced by the thing doing the fetching. An amber entry with no enforcing pin is a green entry wearing a warning label, which is worse than either.",
+    "red": "The default. Everything absent from `allow` is denied and the attempt is logged."
+  },
+
+  "deliberatelyAbsent": [
+    { "host": "*", "why": "there is no escape entry and there must not be one. A wildcard here would make every other line decoration." },
+    { "host": "raw.githubusercontent.com", "why": "serves arbitrary repository content with no version identity and nothing to pin. The github.com entry above is safe only because manifests/gradle-distributions.json pins what may be downloaded; there is no equivalent for raw content, so it stays out." }
+  ]
+}

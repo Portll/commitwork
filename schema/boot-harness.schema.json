@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.online/schema/boot-harness.schema.json",
+  "title": "boot-harness.json — did the scanned repository's application actually start",
+  "description": "Emitted by bin/boot-harness.sh. Container-only by operator ruling (GATE A, option A): this lane executes the scanned repository's code, so it never runs on the host. The document exists to distinguish four states a reader must never conflate — not attempted, not bootable, bootable but did not boot, and running — because only the last makes the runtime lanes meaningful and the other three are voids rather than passes.",
+  "type": "object",
+  "required": ["tool", "generatedAt", "ran"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": { "enum": ["boot-harness"] },
+    "generatedAt": { "type": "string" },
+
+    "ran": { "type": "boolean", "description": "false means the harness declined before trying (skipped). NOT a statement about the repo." },
+    "skipped": { "type": "boolean", "description": "Present only when ran is false. Pairs with reason." },
+    "bootable": { "type": "boolean", "description": "Whether the repo ships something this harness knows how to start (compose or Dockerfile). false is a COVERAGE VOID, not a defect in the repo." },
+    "booted": { "type": "boolean", "description": "Whether it actually came up. booted:false with bootable:true is the interesting state — it shipped a stack that did not start here." },
+    "needsConfig": { "type": "boolean", "description": "The stack wants configuration the repository does not ship. Deliberately distinguished from a boot failure: it would boot for its maintainer, and the harness will not invent credentials to make a number look better." },
+    "reason": { "type": "string", "description": "Required in every non-booting state — a void with no stated cause is unactionable, and the four causes need four different responses." },
+
+    "url": { "type": "string" },
+    "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "mode": { "enum": ["compose", "dockerfile"] },
+    "project": { "type": "string", "description": "The compose project name, so a leaked stack can be found and torn down by hand." },
+    "sourceCopied": { "type": "boolean" },
+    "note": { "type": "string" }
+  }
+}

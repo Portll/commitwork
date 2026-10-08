@@ -1,0 +1,2503 @@
+// monitor/extractors.mjs — the per-scanner artifact readers, and the category table.
+//
+// Split out of rollup.mjs because that is a DRIVER: importing it performs a rollup, so nothing could
+// import these. Eleven test files read rollup.mjs as TEXT and regexed a function body out with
+// `new Function`, hand-injecting join/existsSync/_zero to make it run — asserting the behaviour of a
+// function the test itself re-wired. Everything here is `(dir, filename) -> counts`: no driver
+// state, no writes, no clock. That is where the split lands; below it is the rollup proper.
+//
+// THE SHAPE EVERY EXTRACTOR RETURNS — consumers depend on these distinctions:
+//   null                       ABSENT. The category reports the void from checks-status provenance.
+//                              Also how a tool's own refusal reads (Socket's {ok:false} husk, a
+//                              quota refusal, any shape that is not an affirmed completion).
+//   {ran:true}                 a real scan, counts are real
+//   {ran:true, nosrc:true}     artifact empty, or a self-gated check (cspm) says it did not run
+//   {ran:true, unparseable}    artifact corrupt
+//   {ran:true, norules}        valid SARIF, a run executed, ZERO rules loaded — a configuration
+//                              void, not a clean result (the semgrep empty-ruleset class)
+//   {ran:true, neverran}       valid JSON, NO runs[] — a tool's error object or stub
+//   {ran:true, toolfailed}     SARIF whose invocation channel reports failure with zero results
+//
+// Not cosmetic: cra/controls.mjs refuses to evidence a control from nosrc or unparseable — a control
+// cannot be proven by a file nobody could read. neverran/toolfailed are wired the same way.
+// `norules` joins the vocabulary here; wiring it downstream is tracked separately.
+
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { rowsFor } from './detail-schema.mjs';
+// safe-parse: a scanned repo can SHAPE the JSON its scanner emits. safeParseFile bounds size and
+// nesting and refuses prototype-pollution keys; a hostile shape THROWS rather than parsing into a
+// polluted object. Every adoption below keeps its site's existing catch semantics — the guard
+// hardens the parse, it does not re-litigate what an unreadable artifact means.
+import { safeParseFile } from './safe-parse.mjs';
+import { readSarif, ruleIndex, cweOf } from './sarif-read.mjs';
+import { unknownReasonOf } from './unknown.mjs'; // ONE predicate; lanes name a reason, not a new adjective
+import { classifyPath } from './fixture-paths.mjs'; // a test corpus is a different population, not a cleaner one
+import { markPlaceCorroboration } from './corroborate.mjs'; // D15: a lane with no advisory id joins on PLACE
+import { classifyWorktreePath } from './worktree-paths.mjs'; // an agent worktree is this repo counted twice
+import { classify as classifyReach, ecosystemOf, NOTE as REACH_NOTE } from './advisory-reach.mjs'; // a name collision is not an installed package
+import { coverageForLane, coverageLicensesAZero } from './codeql-coverage.mjs'; // an unread file cannot testify that it is empty
+
+const _zero = () => ({ crit: 0, high: 0, med: 0, low: 0, total: 0 });
+
+// ── per-finding detail (the drill-down behind the scanner tabs) ────────────────────────────────
+// secrets / maliciousPackages / supplyChainHeuristic / the SARIF categories / dast return a bounded
+// `findings` array. Fields are WHITELISTED — each row is constructed field-by-field, which holds
+// even against a gitleaks artifact carrying live secret material in Secret/Match (redaction is
+// manifest policy, not a format guarantee, and rollup.json is served over the published tunnel).
+// The cap is per repo per category and RECORDED (`truncated` = rows dropped), never a silent slice.
+// Rows are sorted so a re-roll of the same batch stays byte-identical (rerollup-identical gate).
+//
+// 10000 after three raises (100 -> 2500 -> 5000 -> 10000, the last two by operator ruling; the
+// measurements are in git). The cap EXISTS because unboundedness is real — a vendored key directory
+// can yield six figures — and rollup.json is parsed whole by eight consumers that want none of this
+// detail. It bounds drill-down, not arithmetic: totals and openTotals come from the aggregates, so
+// no published number moves. Before raising again do the STRUCTURAL fix instead — move detail to
+// its own per-tab artifact. reports/100randomrepos/rollup.json is already 43 MB of the fleet's 51.
+const DETAIL_CAP = 10000;
+const _cmpStr = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const _cap = (rows) => (rows.length > DETAIL_CAP
+  ? { findings: rows.slice(0, DETAIL_CAP), truncated: rows.length - DETAIL_CAP }
+  : { findings: rows });
+const _detail = (rows, cmp) => { rows.sort(cmp); return _cap(rows); };
+// SCHEMA-DRIVEN detail: rows are BUILT by monitor/detail-schema.mjs from a declared field list, so
+// an undeclared key is never read rather than read-then-filtered. These artifacts carry live
+// credential material (trufflehog Raw/RawV2, gitleaks Secret/Match) and a filter can be outrun by a
+// format change; a construction cannot. Sorting comes from the schema, so byte-identity holds
+// without per-extractor comparators. No schema returns {} — counts only: say less, never guess.
+const _detailFor = (key, items) => { const rows = rowsFor(key, items); return rows ? _cap(rows) : {}; };
+// ecosystem is DERIVED from the manifest the record points at (a package-lock.json IS npm) —
+// osv.sarif itself declares no ecosystem field. Unknown manifests stay '', never a guess.
+// One map, in advisory-reach.mjs, because the reachability rule is GATED on it: a second copy
+// here would let the two drift and quietly change which rows the npm-only rule applies to.
+const _ecosystemOf = ecosystemOf;
+
+function _sarifCounts(dir, file, collect, coverageOf = null) {
+  // Maps sarif-read states onto this file's vocabulary; 'unreadable' joins 'absent' as null
+  // (a non-affirmed completion reads through checks-status provenance, never as counts)
+  const r = readSarif(join(dir, file));
+  if (r.state === 'absent' || r.state === 'unreadable') return null;
+  // `empty` has TWO live meanings and this is the one place that must not merge them: a self-gated
+  // check with genuinely no source, and a tool killed before it wrote a byte. Both keep `nosrc` so
+  // existing consumers still render grey; `emptyArtifact` is the discriminator a void-carry needs.
+  if (r.state === 'empty') return { ..._zero(), ran: true, nosrc: true, emptyArtifact: true };
+  if (r.state === 'unparseable') return { ..._zero(), ran: true, unparseable: true };
+  if (r.state === 'never-ran') return { ..._zero(), ran: true, neverran: true };
+  if (r.state === 'tool-failed') return { ..._zero(), ran: true, toolfailed: true };
+  const c = { ..._zero(), ran: true };
+  // Findings under a test-fixture path are counted SEPARATELY, never silently dropped: the raw
+  // SARIF on disk is untouched and `fixtures` states how many were set aside and under which
+  // pattern. Measured 2026-08-24: dependabot-core contributed 730 of the fleet's 800 criticals and
+  // 723 were spec/fixtures — real numbers describing a test corpus rather than the software (C3).
+  const fx = { crit: 0, high: 0, med: 0, low: 0, total: 0, byPattern: {}, rows: [] };
+  for (const run of r.runs) {
+    const rules = ruleIndex(run);
+    for (const res of run.results) {
+      const rule = rules[res.ruleId] || {};
+      const ss = parseFloat(((rule.properties && rule.properties['security-severity']) ?? (res.properties && res.properties['security-severity'])) ?? NaN);
+      let b;
+      if (!Number.isNaN(ss)) b = ss >= 9 ? 'crit' : ss >= 7 ? 'high' : ss >= 4 ? 'med' : 'low';
+      else { const lvl = res.level || (rule.defaultConfiguration && rule.defaultConfiguration.level) || 'warning'; b = lvl === 'error' ? 'high' : lvl === 'warning' ? 'med' : 'low'; }
+      const loc = res.locations && res.locations[0] && res.locations[0].physicalLocation;
+      const uri = (loc && loc.artifactLocation && loc.artifactLocation.uri) || '';
+      const cls = classifyPath(uri);
+      if (cls.fixture) {
+        fx[b]++; fx.total++;
+        fx.byPattern[cls.pattern] = (fx.byPattern[cls.pattern] || 0) + 1;
+        // ENUMERABLE, not merely counted. _malCounts already kept `rows` here and this call site did
+        // not, in the same commit — so a malicious package under a fixture path could be looked at
+        // and a hardcoded key under one could not, across every SARIF lane (semgrep, codeql, gosec,
+        // iac, dockerfile, shellcheck). The header's promise that a finding "keeps its place in the
+        // artifact" was true for one branch and false for the bulk. The raw SARIF always held these
+        // rows; nothing could reach them from the published side, which is a weaker failure than
+        // dropping them and still weaker than the promise. Counts are untouched: these rows stay
+        // out of c[b] and out of `collect`, so no headline number moves.
+        fx.rows.push({
+          rule: res.ruleId || rule.id || '',
+          file: uri,
+          line: Number(loc && loc.region && loc.region.startLine) || 0,
+          sev: b,
+          pattern: cls.pattern,
+          ...(cls.intent ? { intent: cls.intent, intentBasis: cls.intentBasis } : {}),
+        });
+        continue;   // out of the published counts, enumerable in `fixtures.rows`, untouched on disk
+      }
+      c[b]++; c.total++;
+      if (collect) collect(res, rule, b);
+    }
+  }
+  // Stated as a fraction, so a shrinking published count is visible rather than merely true.
+  if (fx.total) {
+    c.fixtures = { ...fx, of: fx.total + c.total, note: `${fx.total} of ${fx.total + c.total} findings are under a test-fixture path and are excluded from these counts. They remain in the SARIF artifact on disk. Set CW_FIXTURE_PATHS=off to count them.` };
+  }
+  // norules (zero rules loaded, zero results, runs present) is a void for the rule-driven engines
+  // this function reads — the semgrep-empty-ruleset class; the fact comes from sarif-read.mjs
+  if (r.norules) return { ...c, norules: true };
+  // A CodeQL lane whose extractor read only part of its language produces well-formed SARIF, an
+  // empty results[] and a zero exit — byte-indistinguishable from a clean repository. `coverageOf`
+  // names the check id whose appliesIfSourceExt is the denominator. Attached for EVERY state, not
+  // only the bad one: a consumer that sees the field on partial runs and nothing on covered ones
+  // cannot tell "covered" from "this lane predates the guard".
+  if (coverageOf) {
+    const cov = coverageForLane(r.runs, coverageOf);
+    c.coverage = cov;
+    // The count stays exactly as measured — findings that WERE found are real. What changes is the
+    // licence to read the remainder as clean: an unread file cannot testify that it is empty.
+    if (!coverageLicensesAZero(cov)) c.coverageIncomplete = true;
+  }
+  return c;
+}
+// Semgrep / CodeQL / trivy-config all emit SARIF; drill-down rows are rebuilt field-by-field —
+// rule / file / line / sev / message and NOTHING else. A SARIF `message.text` can carry matched
+// source, so the copy is bounded (capMessage) and snippets, code flows and related locations never
+// cross — these rows leave the box over the published tunnel. `sev` is the same bucket the counts
+// used, so a row can never disagree with the tally above it.
+//
+// capMessage is 4000, not the original 240: a Semgrep or CodeQL message spends its first couple of
+// hundred characters naming the rule and tracing the taint path, so 240 dropped the part that says
+// what to DO. Still bounded deliberately — third-party text in a JSON the panel loads whole is a
+// render-and-memory hazard. The ELLIPSIS matters as much as the number: silent truncation is how
+// 240 survived.
+export const MESSAGE_CAP = 4000;
+export const capMessage = (s) => {
+  const t = String(s ?? '');
+  return t.length <= MESSAGE_CAP ? t : `${t.slice(0, MESSAGE_CAP)}… [truncated at ${MESSAGE_CAP} chars — see the SARIF for the full text]`;
+};
+
+// Categories whose rows carry a `cwe` field — true source-weakness SAST, where the join in
+// corroborate.mjs's markSastPlaceCorroboration() (repo|file|CWE, tighter than the file-only
+// fallback) is meaningful. Deliberately excludes lintGo (a linter, never a SAST-shaped verdict —
+// see its own note), iac/actionsPosture/depsGradleDeclared (different finding shapes, out of
+// scope for this join) and any lane not yet wired here.
+const CWE_ROW_KEYS = new Set([
+  'sastSemgrep', 'sastAuto', 'sastGo',
+  'sastCodeql', 'sastCodeqlJava', 'sastCodeqlPython', 'sastCodeqlRuby',
+  'sastCodeqlCpp', 'sastCodeqlSwift', 'sastCodeqlCsharp', 'sastCodeqlRust',
+  'sastCCppcheck', 'sastCFlawfinder',
+]);
+// sastBrakeman is NOT in this set: it is a _brakemanCounts row (cwe already comes from Brakeman's
+// own cwe_id field, not from _sarifDetail's SARIF-tag extraction), and CWE_ROW_KEYS only governs
+// what _sarifDetail attaches. Its own row schema still declares a cwe field, populated directly.
+
+function _sarifDetail(dir, file, key, coverageOf = null) {
+  const rows = [];
+  const wantsCwe = CWE_ROW_KEYS.has(key);
+  const c = _sarifCounts(dir, file, (res, rule, b) => {
+    const loc = res.locations && res.locations[0] && res.locations[0].physicalLocation;
+    rows.push({
+      rule: String(res.ruleId || (rule && rule.id) || ''),
+      file: String((loc && loc.artifactLocation && loc.artifactLocation.uri) || '').replace(/^file:\/\/\/?/, ''),
+      line: Number(loc && loc.region && loc.region.startLine) || 0,
+      sev: b,
+      message: capMessage(String((res.message && res.message.text) || '')),
+      // The rule asserts what it asserts; an empty join means "no CWE tag on this rule", never a
+      // guess. See sarif-read.mjs's cweOf() header for why nothing here infers one.
+      ...(wantsCwe ? { cwe: cweOf(rule).join(', ') } : {}),
+    });
+  }, coverageOf);
+  if (!c || c.nosrc || c.unparseable || c.norules || c.neverran || c.toolfailed) return c; // absent, or a husk with nothing to detail
+  return { ...c, ..._detailFor(key, rows) };
+}
+// A lane that is DECLARED but whose output shape nobody here has ever seen. joern, bearer, sobelow,
+// clippy and hlint were added 2026-08-24 with all five wired here as stubs, because none of the
+// binaries had run on this fleet and every claim about their JSON was documentation-derived.
+// Writing a parser from documentation is how you get one that returns zero on a shape it did not
+// recognise, and a zero from an unverified parser is indistinguishable from a clean repository —
+// the defect this whole file is arranged against. So: an absent artifact is absent, and a PRESENT
+// one is `unparseable` until a parser is written against real output. That publishes as
+// undetermined, never as a count and never as clean.
+// Status 2026-08-26: clippy graduated — cargo-clippy is installed here and _clippyCounts below was
+// written against real fold output from scratch crates (clean / linted / compile-failed shapes).
+// Status 2026-08-27: joern, bearer and sobelow graduated the same way — all three tools now
+// installed on this box, all three parsers below written against real runs on scratch fixtures
+// (findings / clean / failure shapes each; see the per-function comments for what the probes
+// exposed, because in every case the real contract differed from the documented one). Later the
+// same day, hlint graduated last (_hlintCounts below) and the stub itself (_unverifiedShape,
+// which returned `unparseable` for ANY present artifact) was retired with zero consumers. THE
+// RULE OUTLIVES THE FUNCTION: a new lane whose output nobody here has read gets a stub of the
+// same shape — absent is null, present is unparseable, never a count and never clean — until a
+// parser is written against a real run. Every probe in this ledger found the real contract
+// differing from the documented one, which is the whole argument.
+// clippy's parser, written against REAL output (2026-08-26, scratch crates on this box's
+// toolchain — the check's formatNotes hold the fold contract, verified 2026-08-23). The artifact
+// is the FOLD's product, `{tool:'clippy', diagnostics:[{code,level,message,file,line}]}` — the
+// wrapper key is the proof the fold ran, so a body without it is unparseable, never zero.
+// Level mapping: `error` → med, `warning` → low; `failure-note`/`note`/`help` lines are
+// explanations, not findings, and are not counted. rustc's own lints (unused_variables and
+// friends) share the stream with clippy:: lints and stay counted under their own codes — the
+// artifact is "compiler diagnostics under the clippy invocation", and dropping them would be a
+// filter nobody declared. LANE_KINDS keeps all of it out of the severity headline (hygiene,
+// not-a-vulnerability) — a lint count must not wear a vulnerability verdict.
+// THE EXIT SIDECAR IS THE SECOND WITNESS, orthogonal to the parse: a non-zero exit with no
+// clippy:: diagnostic means the compile died before the lint pass could finish (the --offline
+// cold-registry case, or a broken crate) — that run reads toolfailed, never clean, whatever
+// partial rustc errors it managed to emit. A non-zero exit WITH clippy:: diagnostics is the
+// deny(warnings) shape: the lint DID run and its findings are real, so they count. A missing
+// sidecar is a pre-sidecar vintage — health unknown, the parse decides alone.
+function _clippyCounts(dir, file) {
+  const p = join(dir, file);
+  if (!existsSync(p)) return null;          // absent is absent — the lane did not produce
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || j.tool !== 'clippy' || !Array.isArray(j.diagnostics)) return { ..._zero(), ran: true, unparseable: true };
+  let exit = 0;
+  try { exit = parseInt(readFileSync(`${p}.exit`, 'utf8').trim(), 10) || 0; } catch { /* no sidecar: vintage artifact */ }
+  const lintRan = j.diagnostics.some((d) => typeof d.code === 'string' && d.code.startsWith('clippy::'));
+  if (exit !== 0 && !lintRan) return { ..._zero(), ran: true, toolfailed: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const d of j.diagnostics) {
+    const b = d.level === 'error' ? 'med' : d.level === 'warning' ? 'low' : null;
+    if (!b) continue;                       // failure-note / note / help — explanation, not finding
+    c[b]++; c.total++;
+    rows.push({ rule: d.code || 'clippy', file: d.file || '', line: Number(d.line) || 0, sev: b, message: capMessage(d.message || '') });
+  }
+  return { ...c, ..._detailFor('lintRust', rows) };
+}
+// cargo-audit's parser, written against REAL output (2026-08-28, memory-layer: 18 advisories over 719
+// resolved dependencies). SEVERITY IS NOT MINTED: RustSec publishes CVSS VECTORS, not scores, so
+// every advisory counts in `undetermined` — outside crit/high/med/low — with the vector preserved
+// on its row. The lane is non-additive 'duplicate' (same advisory universe as deps-osv via the
+// RustSec→OSV import); its published value is DISAGREEMENT with the osv row for the same crate.
+// Warnings (unmaintained / unsound / yanked) are counted in `warned`, never folded into total.
+function _cargoAuditCounts(dir, file) {
+  const p = join(dir, file);
+  if (!existsSync(p)) return null;          // absent is absent — the lane did not produce
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let exit = 0;
+  try { exit = parseInt(readFileSync(`${p}.exit`, 'utf8').trim(), 10) || 0; } catch { /* no sidecar: vintage artifact */ }
+  let j; try { j = JSON.parse(raw); } catch {
+    return { ..._zero(), ran: true, ...(exit > 1 ? { toolfailed: true } : { unparseable: true }) };
+  }
+  const v = j && j.vulnerabilities;
+  if (!v || typeof v !== 'object' || !('count' in v)) return { ..._zero(), ran: true, unparseable: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const item of Array.isArray(v.list) ? v.list : []) {
+    const a = (item && item.advisory) || {};
+    const pkg = (item && item.package) || {};
+    c.total++;
+    rows.push({
+      rule: String(a.id || 'RUSTSEC'),
+      package: String(a.package || pkg.name || ''),
+      version: String(pkg.version || ''),
+      sev: '',                              // undetermined by design — the vector is not a score
+      message: capMessage(`${a.title || ''}${a.cvss ? ` [${a.cvss}]` : ''}${item && item.versions && Array.isArray(item.versions.patched) && item.versions.patched.length ? ` — patched: ${item.versions.patched.join(', ')}` : ''}`),
+    });
+  }
+  c.undetermined = c.total;
+  const w = j.warnings;
+  if (w && typeof w === 'object') {
+    c.warned = Object.values(w).reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0);
+  }
+  return { ...c, ..._detailFor('depsRustAudit', rows) };
+}
+// hlint's parser, written against REAL output (2026-08-27, scratch modules on this box's hlint —
+// the last stub to graduate). `--json` emits an ARRAY of hint objects {severity, hint, file,
+// startLine, from, to, …}; severity is Error / Warning / Suggestion and maps med / low / low —
+// a taste lint must not climb higher, and LANE_KINDS keeps all of it out of the headline anyway
+// (hygiene, not-a-vulnerability).
+// WHAT THE PROBE EXPOSED, once again differing from the docs: on a tree with NO Haskell sources
+// hlint does not print an empty array — it CRASHES (exit 1, "Uncaught exception … ErrorCall")
+// and the exception text lands in hlint.json via the redirect, so the artifact body is prose,
+// not JSON. That body must read unparseable/toolfailed, never clean — which is exactly what the
+// sidecar-plus-parse contract below yields. The gate (appliesIfSourceExt .hs/.lhs) makes the
+// no-source run rare; the parser refuses it anyway, because gates and parsers must not share a
+// failure mode.
+function _hlintCounts(dir, file) {
+  const p = join(dir, file);
+  if (!existsSync(p)) return null;          // absent is absent — the lane did not produce
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let exit = 0;
+  try { exit = parseInt(readFileSync(`${p}.exit`, 'utf8').trim(), 10) || 0; } catch { /* no sidecar: vintage artifact */ }
+  let j; try { j = JSON.parse(raw); } catch {
+    // The crash shape writes prose here; with a non-zero sidecar that is the tool dying, and with
+    // a zero one it is still not a result. Either way: undetermined, never a count.
+    return { ..._zero(), ran: true, ...(exit !== 0 ? { toolfailed: true } : { unparseable: true }) };
+  }
+  if (!Array.isArray(j)) return { ..._zero(), ran: true, unparseable: true };
+  if (exit !== 0 && !j.length) return { ..._zero(), ran: true, toolfailed: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const h of j) {
+    if (!h || typeof h !== 'object') continue;
+    const b = h.severity === 'Error' ? 'med' : 'low';
+    c[b]++; c.total++;
+    rows.push({
+      rule: String(h.hint || 'hlint'),
+      file: String(h.file || '').replace(/^\.\//, ''),
+      line: Number(h.startLine) || 0,
+      sev: b,
+      message: capMessage(h.from && h.to ? `${h.from} ⇒ ${h.to}` : String(h.from || h.hint || '')),
+    });
+  }
+  return { ...c, ..._detailFor('lintHaskell', rows) };
+}
+// joern-scan's parser, written against REAL output (2026-08-27, joern 4.0.610 on scratch C
+// sources). The probe rewrote the lane's whole contract: joern-scan 4.x has NO --format option —
+// the manifest's original `--format json` produced 'Error: Unknown option' AND EXIT 0, a one-line
+// husk that a zero-line parser would have read as clean. So the artifact is joern.txt: raw stdout,
+// `Result: <score> : <title>: <file>:<line>:<method>` findings interleaved with [INFO] pass logs.
+// THE SCAN-RAN GUARD IS THE POINT: a ScanPass marker (or at least one Result line) is required
+// before ANY number is published, zero included — without it the husk shape reads unparseable
+// (exit 0) or toolfailed (non-zero), never clean. Scores are the query authors' 0-10 scale and
+// band CVSS-style: >=9 crit, >=7 high, >=4 med, else low (measured: gets()=8.0→high,
+// non-constant printf format=4.0→med, unchecked malloc/read=3.0→low). The Result line names no
+// query id, so the title is the rule — stable per query, and identity is [rule,file] per the
+// house line-exclusion rule.
+function _joernScanCounts(dir, file) {
+  const p = join(dir, file);
+  if (!existsSync(p)) return null;          // absent is absent — the lane did not produce
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let exit = 0;
+  try { exit = parseInt(readFileSync(`${p}.exit`, 'utf8').trim(), 10) || 0; } catch { /* no sidecar: vintage artifact */ }
+  const lines = raw.split('\n');
+  const results = lines.filter((l) => l.startsWith('Result: '));
+  const scanRan = results.length > 0 || lines.some((l) => l.includes('ScanPass completed'));
+  if (!scanRan) {
+    // joern-scan's exit code lies — measured twice: an option error exits 0, and a failed CPG
+    // frontend exits 0 (memory-layer, 2026-08-28: rust2cpg died on the missing rust_ast_gen-macos-arm,
+    // '[ERROR] Process exited with code 1.' in the artifact, sidecar 0). So on a scanless
+    // artifact the error MARKER is the witness the exit code refuses to be: error text present
+    // → the tool broke (toolfailed); no error text → a shape nobody verified (unparseable, the
+    // pure 'Writing logs to' husk). Either way, never a number.
+    const errored = lines.some((l) => l.includes('[ERROR]') || / ERROR /.test(l) || l.startsWith('Error:'));
+    return (exit !== 0 || errored)
+      ? { ..._zero(), ran: true, toolfailed: true }
+      : { ..._zero(), ran: true, unparseable: true };
+  }
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  // joern-scan emits BYTE-IDENTICAL Result lines for one defect when more than one query in the
+  // bundle matches the same call — measured 2026-09-01 on a single strcpy(): three Result lines for
+  // two defects, so `total` overstated by 50% and the duplicate landed in the detail rows twice.
+  // Deduped on the whole emitted tuple, which is what "the tool said this twice" means.
+  //
+  // This is NOT the line-keyed identity the house rule bans. That rule is about deciding whether a
+  // finding across RUNS is the same one — where a line moves for reasons unrelated to the finding.
+  // Here both lines came out of ONE artifact in one run, so the line cannot have moved between
+  // them, and two rows identical in every emitted field are one defect reported twice by
+  // construction. Nothing downstream keys on this; it only stops one defect being counted as two.
+  const seen = new Set();
+  for (const line of results) {
+    const m = line.match(/^Result:\s*([0-9.]+)\s*:\s*(.+):\s*([^:\s]+):(\d+)(?::(\S+))?\s*$/);
+    if (!m) continue;                       // a Result line the shape does not fit — skip, never guess
+    const key = line.trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const score = parseFloat(m[1]);
+    const b = score >= 9 ? 'crit' : score >= 7 ? 'high' : score >= 4 ? 'med' : 'low';
+    c[b]++; c.total++;
+    rows.push({ rule: m[2].trim(), file: m[3], line: Number(m[4]) || 0, sev: b, message: capMessage(m[2].trim()) });
+  }
+  return { ...c, ..._detailFor('sastJoern', rows) };
+}
+// bearer's parser, written against REAL output (2026-08-27, bearer 2.1.1 on a scratch JS project).
+// The measured shape: severity buckets ARE the top-level keys ({critical:[...], medium:[...]});
+// a clean scan emits literally `{}` (measured), and exit is 1 when findings exist, 0 when clean —
+// so a non-{0,1} exit is the tool dying, toolfailed. `warning`-bucket entries are informational
+// rule matches, not findings — uncounted, the same treatment nuclei's info severity gets. A body
+// that is valid JSON but neither empty-object-clean nor carrying a known bucket is a shape nobody
+// verified: unparseable, never zero.
+function _bearerCounts(dir, file) {
+  const p = join(dir, file);
+  if (!existsSync(p)) return null;          // absent is absent — the lane did not produce
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object' || Array.isArray(j)) return { ..._zero(), ran: true, unparseable: true };
+  let exit = 0;
+  try { exit = parseInt(readFileSync(`${p}.exit`, 'utf8').trim(), 10) || 0; } catch { /* no sidecar: vintage artifact */ }
+  if (exit !== 0 && exit !== 1) return { ..._zero(), ran: true, toolfailed: true };
+  const map = { critical: 'crit', high: 'high', medium: 'med', low: 'low' };
+  const keys = Object.keys(j);
+  const known = keys.filter((k) => map[k] || k === 'warning');
+  if (keys.length && !known.length) return { ..._zero(), ran: true, unparseable: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const k of known) {
+    const b = map[k]; if (!b) continue;     // warning bucket: informational, not a finding
+    for (const f of Array.isArray(j[k]) ? j[k] : []) {
+      c[b]++; c.total++;
+      rows.push({ rule: String(f.id || ''), file: String(f.filename || f.full_filename || ''),
+        line: Number(f.line_number) || 0, sev: b, message: capMessage(String(f.title || '')) });
+    }
+  }
+  return { ...c, ..._detailFor('sastBearer', rows) };
+}
+// sobelow's parser, written against REAL output (2026-08-27, sobelow 0.15.0 archive on a scratch
+// Phoenix skeleton). The probe exposed a fleet-shaped trap: `--format json` calls Jason.encode!,
+// and Jason comes from the SCANNED PROJECT's built deps — which this fleet never builds (deps.get
+// executes package code). Without a jason archive on the scanning box the scan completes and then
+// CRASHES ENCODING, leaving an empty artifact and exit 1 — that is the toolfailed branch below,
+// and the box-prep fix is `mix archive.install hex jason` (done here 2026-08-27). The wrapper
+// {findings:{...}, total_findings} is the proof sobelow finished, like clippy's {tool,diagnostics}.
+// Sobelow asserts CONFIDENCE (high/medium/low_confidence), not severity — mapping confidence to
+// high/crit would dress likelihood-of-true-positive as impact (the GuardDog defect in miniature),
+// so: high_confidence→med, medium/low_confidence→low, the class string preserved as the rule.
+// Sobelow exits 0 findings-or-not (no --exit flag in the lane); a non-zero exit WITH a valid
+// wrapper still counts — the scan finished and something after it failed, not the findings.
+function _sobelowCounts(dir, file) {
+  const p = join(dir, file);
+  if (!existsSync(p)) return null;          // absent is absent — the lane did not produce
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  let exit = 0;
+  try { exit = parseInt(readFileSync(`${p}.exit`, 'utf8').trim(), 10) || 0; } catch { /* no sidecar: vintage artifact */ }
+  if (!raw.trim()) return exit !== 0
+    ? { ..._zero(), ran: true, toolfailed: true }  // the measured Jason-crash shape: scan done, encode died, nothing written
+    : { ..._zero(), ran: true, unparseable: true }; // empty with exit 0 is a shape no probe has produced
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j.findings !== 'object' || j.findings === null || typeof j.total_findings !== 'number') {
+    return { ..._zero(), ran: true, unparseable: true }; // wrapperless body — the fold never finished
+  }
+  const map = { high_confidence: 'med', medium_confidence: 'low', low_confidence: 'low' };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const [bucket, b] of Object.entries(map)) {
+    for (const f of Array.isArray(j.findings[bucket]) ? j.findings[bucket] : []) {
+      c[b]++; c.total++;
+      rows.push({ rule: String(f.type || ''), file: String(f.file || ''), line: Number(f.line) || 0,
+        sev: b, message: capMessage(String(f.type || '') + (f.variable ? ` (${f.variable})` : f.key ? ` (${f.key})` : '')) });
+    }
+  }
+  return { ...c, ..._detailFor('sastElixir', rows) };
+}
+// bandit's parser, written against a REAL install (1.8.6, verified 2026-09-01) rather than a
+// remembered claim: bandit has NO SARIF format at all (-f {csv,custom,html,json,screen,txt,xml,
+// yaml}), so this reads its native -f json shape: {results:[{filename,line_number,test_id,
+// issue_severity,issue_confidence,issue_text,issue_cwe:{id}}], errors:[...]}.
+// `sev` comes from issue_severity ALONE, never issue_confidence -- Bandit asserts the two
+// independently and folding confidence into severity is the GuardDog capability-* defect in
+// miniature (a likelihood-of-true-positive signal dressed as impact). Confidence rides in the
+// message text instead, matching lintRust/lintGo's convention of embedding classifying context
+// rather than adding a schema column for something no existing lane has needed one for.
+// Bandit exits non-zero merely for FINDING issues (bin/python-lane-scan.mjs already refuses to
+// write a report unless the JSON actually parses into {results:[]}), so a present, parseable file
+// with results is `ran: true` regardless of exit code -- the same discipline every SARIF-based
+// lane already applies.
+function _banditCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let j; try { j = safeParseFile(p); } catch { return null; }
+  if (!j || !Array.isArray(j.results)) return { ..._zero(), ran: true, unparseable: true };
+  const map = { HIGH: 'high', MEDIUM: 'med', LOW: 'low' };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const r of j.results) {
+    const b = map[String(r.issue_severity || '').toUpperCase()]; if (!b) continue;
+    c[b]++; c.total++;
+    const conf = String(r.issue_confidence || '').toUpperCase();
+    rows.push({
+      rule: String(r.test_id || ''), file: String(r.filename || ''), line: Number(r.line_number) || 0,
+      sev: b, message: capMessage(String(r.issue_text || '') + (conf ? ` (confidence: ${conf})` : '')),
+      cwe: r.issue_cwe && r.issue_cwe.id ? `CWE-${r.issue_cwe.id}` : '',
+    });
+  }
+  return { ...c, ..._detailFor('sastPython', rows) };
+}
+// brakeman's parser, written against a REAL run (5.4.1, verified 2026-09-01 against a fixture Rails
+// app: SQL injection, dangerous eval, XSS, CSRF and EOL-Rails findings). Native JSON, not SARIF:
+// Brakeman's own -f sarif output DROPS both `confidence` and `cwe_id` (checked directly — the SARIF
+// rule properties carry only a bare check-name tag, no CWE, and `level` collapses confidence to two
+// buckets), while the native format carries both for free. `confidence` (High/Medium/Weak) is
+// Brakeman's ONLY severity-shaped signal — it has no separate issue_severity field the way Bandit
+// does, so unlike bandit's parser above (which keeps confidence OUT of `sev` because it has a real
+// severity to use instead) this one maps confidence directly to severity: there is nothing else to
+// map from. Embedded in the message too, matching the fleet's convention of surfacing confidence as
+// readable context rather than a schema column nothing else has needed.
+function _brakemanCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let j; try { j = safeParseFile(p); } catch { return null; }
+  if (!j || !Array.isArray(j.warnings)) return { ..._zero(), ran: true, unparseable: true };
+  const map = { High: 'high', Medium: 'med', Weak: 'low' };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const w of j.warnings) {
+    const b = map[String(w.confidence || '')]; if (!b) continue;
+    c[b]++; c.total++;
+    const cwe = Array.isArray(w.cwe_id) ? w.cwe_id.map((n) => `CWE-${n}`).join(', ') : '';
+    rows.push({
+      rule: String(w.check_name || ''), file: String(w.file || ''), line: Number(w.line) || 0,
+      sev: b, message: capMessage(`${String(w.message || '')} (confidence: ${w.confidence || 'unknown'})`),
+      cwe,
+    });
+  }
+  return { ...c, ..._detailFor('sastBrakeman', rows) };
+}
+// bundler-audit's parser, written against a REAL run (0.9.3, verified 2026-09-01: 40 advisories over
+// a 2-gem fixture Gemfile.lock via ruby-advisory-db). Same shape as cargo-audit's lane above and the
+// same reason it is `duplicate`: OSV already reads Gemfile.lock for the same advisory universe (OSV
+// imports the Ruby advisory DB the way it imports RustSec), so this is the second opinion, not
+// additive coverage. Unlike RustSec's cargo-audit, `criticality` IS a real bucket here
+// (low/medium/high/critical), not a bare CVSS vector — but it can be null (measured: 5 of 40 rows in
+// the fixture run), and a null criticality is undetermined, never defaulted to a guessed bucket.
+function _bundlerAuditCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let j; try { j = safeParseFile(p); } catch { return null; }
+  if (!j || !Array.isArray(j.results)) return { ..._zero(), ran: true, unparseable: true };
+  const map = { low: 'low', medium: 'med', high: 'high', critical: 'crit' };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const r of j.results) {
+    // insecure_source / unpatched_ruby are declared by bundler-audit's own docs but not exercised
+    // by this fixture run — parsed only when a real one is observed, per this file's own rule for
+    // every stub above (absent is absent; a shape nobody has seen reads unparseable, never zero).
+    if (r.type !== 'unpatched_gem') continue;
+    const adv = r.advisory || {}; const gem = r.gem || {};
+    const b = map[String(adv.criticality || '').toLowerCase()];
+    if (b) c[b]++; else c.undetermined = (c.undetermined || 0) + 1;
+    c.total++;
+    const patched = Array.isArray(adv.patched_versions) && adv.patched_versions.length
+      ? ` — patched: ${adv.patched_versions.join(', ')}` : '';
+    rows.push({
+      rule: String(adv.id || ''), package: String(gem.name || ''), version: String(gem.version || ''),
+      sev: b || '', message: capMessage(`${String(adv.title || '')}${patched}`),
+    });
+  }
+  return { ...c, ..._detailFor('depsBundlerAudit', rows) };
+}
+// phpcs's parser, written against a REAL run (PHP_CodeSniffer 4.0.4 + the pheromone/phpcs-security-
+// audit ruleset, verified 2026-09-01 against a fixture with mysqli/eval/echo-XSS patterns). --report
+// =json shape: {totals:{errors,warnings,fixable}, files:{<path>:{errors,warnings,messages:[{message,
+// source,severity,fixable,type,line,column}]}}}. `type` (ERROR/WARNING) is the only severity-shaped
+// signal this ruleset's messages carry in practice — every real message measured had `severity:5`
+// regardless of how dangerous the pattern was (eval() and a dynamic mysqli param both landed on the
+// same number), so severity is NOT trusted as a bucket; `type` alone decides sev, and `severity` is
+// dropped rather than folded in as false precision. No CWE: `source` is a dotted rule id
+// (Security.BadFunctions.NoEvals.NoEvals) with no CWE mapping shipped by the ruleset or phpcs
+// itself, so this lane declares no cwe field rather than inventing one.
+function _phpcsCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let j; try { j = safeParseFile(p); } catch { return null; }
+  if (!j || !j.files || typeof j.files !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const [filePath, entry] of Object.entries(j.files)) {
+    for (const m of (entry && Array.isArray(entry.messages)) ? entry.messages : []) {
+      const b = String(m.type || '').toUpperCase() === 'ERROR' ? 'high' : 'med';
+      c[b]++; c.total++;
+      rows.push({
+        rule: String(m.source || ''), file: String(filePath || ''), line: Number(m.line) || 0,
+        sev: b, message: capMessage(String(m.message || '')),
+      });
+    }
+  }
+  return { ...c, ..._detailFor('sastPhp', rows) };
+}
+// PMD's parser, written against REAL runs (7.9.0 then 7.27.0/Homebrew, verified 2026-09-01 against
+// a fixture with an empty catch block, an always-true if, and System.out usage). --format json:
+// {formatVersion, pmdVersion, timestamp, files:[{filename, violations:[{beginline, begincolumn,
+// endline, endcolumn, description, rule, ruleset, priority, externalInfoUrl}]}], suppressedViolations,
+// processingErrors, configurationErrors}. `priority` is PMD's own 1(High)-5(Low) scale, folded to
+// high/med/low: 1-2 high, 3 med, 4-5 low. No CWE: the JSON renderer carries no CWE mapping for any
+// rule in any of the four categories scanned (errorprone, bestpractices, multithreading,
+// performance — codestyle/documentation/design and the 2-rule security.xml are deliberately not
+// scanned, see LANE_KINDS/detail-schema notes).
+// THE AMBIGUITY THE PROBE FOUND: `files` lists only files WITH AT LEAST ONE VIOLATION — a real run
+// with zero violations and a run against zero .java files (a build marker with no Java sources,
+// e.g. a Kotlin-only Gradle module) produce the IDENTICAL body, {files: [], ...all empty}. PMD logs
+// "No files to analyze" to stderr in the second case and nothing distinguishing in the first, so
+// the manifest's `local` command redirects that stream to pmd.log and this parser reads it ONLY
+// when files is empty, to tell a real zero from a scan that never had anything to scan — grey, not
+// green, exactly as a source-count guard is required to be everywhere else in this file. The `local`
+// command also passes --no-fail-on-error --no-fail-on-violation, so a normal run's exit is always 0
+// regardless of findings (PMD's own docs: undecorated exit is a bitmask over violations/errors) —
+// the ran/did-not-run decision is made from the parsed JSON, never the exit code, matching lintGo.
+function _pmdCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let j; try { j = safeParseFile(p); } catch { return null; }
+  if (!j || !Array.isArray(j.files)) return { ..._zero(), ran: true, unparseable: true };
+  if (j.files.length === 0) {
+    let log = ''; try { log = readFileSync(join(dir, 'pmd.log'), 'utf8'); } catch { /* no log: treat as a real zero */ }
+    if (log.includes('No files to analyze')) return { ..._zero(), ran: true, nosrc: true };
+  }
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const f of j.files) {
+    for (const v of (f && Array.isArray(f.violations)) ? f.violations : []) {
+      const pr = Number(v.priority) || 5;
+      const b = pr <= 2 ? 'high' : pr === 3 ? 'med' : 'low';
+      c[b]++; c.total++;
+      rows.push({
+        rule: String(v.rule || ''), file: String(f.filename || '').replace(/^\.\//, ''),
+        line: Number(v.beginline) || 0, sev: b, message: capMessage(String(v.description || '')),
+      });
+    }
+  }
+  return { ...c, ..._detailFor('lintJava', rows) };
+}
+function _trivyCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let j; try { j = safeParseFile(p); } catch { return null; }
+  const c = { ..._zero(), ran: true }, map = { CRITICAL: 'crit', HIGH: 'high', MEDIUM: 'med', LOW: 'low' };
+  const rows = [];
+  for (const res of j.Results || []) for (const v of res.Vulnerabilities || []) {
+    const b = map[(v.Severity || '').toUpperCase()]; if (!b) continue;
+    c[b]++; c.total++;
+    rows.push({ id: v.VulnerabilityID, package: v.PkgName, version: v.InstalledVersion, sev: b, fixed: v.FixedVersion });
+  }
+  return { ...c, ..._detailFor('depsJvm', rows) };
+}
+// nuclei rows: template / sev / path / name. `matched-at` names a LIVE HOST, and the panel's
+// existing rule is that nuclei hostnames never render (admin/index.html strips them client-side)
+// — so the host is dropped HERE, at the extractor, rather than trusted to every consumer
+// downstream: everything up to the first path slash (scheme + host + port) goes, whether or not
+// the value carried a scheme. Counting behaviour is unchanged from the counts-only extractor:
+// info-severity results are neither counted nor rowed.
+function _nucleiCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  const c = { ..._zero(), ran: true }, map = { critical: 'crit', high: 'high', medium: 'med', low: 'low' };
+  const rows = [];
+  for (const line of raw.split('\n')) {
+    if (!line.trim()) continue;
+    let o; try { o = JSON.parse(line); } catch { continue; /* skip non-json line */ }
+    const b = map[(((o.info && o.info.severity) || o.severity) || '').toLowerCase()];
+    if (!b) continue;
+    c[b]++; c.total++;
+    const at = String(o['matched-at'] || o.matched || '');
+    const pm = at.match(/^(?:[a-z][a-z0-9+.-]*:\/\/)?[^/]*(\/.*)?$/i);
+    // The record carries `port` and `type` as their own fields — the host:port in `matched-at` is
+    // not the only source, and parsing it back out would re-derive what is already structured.
+    // Falling back to the port inside matched-at covers older artifacts that predate those fields.
+    const portFromAt = at.match(/^(?:[a-z][a-z0-9+.-]*:\/\/)?[^/:]+:(\d+)/i);
+    rows.push({ rule: String(o['template-id'] || o.templateID || ''), sev: b,
+      path: (pm && pm[1]) || '/',
+      port: String(o.port ?? (portFromAt ? portFromAt[1] : '')),
+      proto: String(o.type || ''),
+      name: String((o.info && o.info.name) || '').slice(0, 120) });
+  }
+  return { ...c, ..._detailFor('dast', rows) };
+}
+// MAL- advisories (the OpenSSF malicious-packages feed, ingested by osv.dev) ride in on osv.sarif
+// ALONGSIDE ordinary CVEs. Counting only those lets the fleet state "malicious packages" as a number
+// that CVE volume cannot dilute — 1 worm among 246 CVEs is not a rounding error. Every hit is `crit`:
+// a confirmed-malicious package has no severity gradient. osv-scanner groups aliases, so the MAL id
+// is often not the primary ruleId; it is matched wherever it appears (see bin/commitwork.mjs).
+// Returns null when the artifact is ABSENT so the ran/skipped/noscan join below reports the void
+// rather than a zero — the S2 contract this file's next comment block exists to enforce.
+const _MAL_ID = /\bMAL-\d{4}-\d+\b/;
+function _malCounts(dir, file) {
+  // Same typed-state mapping as _sarifCounts
+  const r = readSarif(join(dir, file));
+  if (r.state === 'absent' || r.state === 'unreadable') return null;
+  // `empty` has TWO live meanings and this is the one place that must not merge them: a self-gated
+  // check with genuinely no source, and a tool killed before it wrote a byte. Both keep `nosrc` so
+  // existing consumers still render grey; `emptyArtifact` is the discriminator a void-carry needs.
+  if (r.state === 'empty') return { ..._zero(), ran: true, nosrc: true, emptyArtifact: true };
+  if (r.state === 'unparseable') return { ..._zero(), ran: true, unparseable: true };
+  if (r.state === 'never-ran') return { ..._zero(), ran: true, neverran: true };
+  if (r.state === 'tool-failed') return { ..._zero(), ran: true, toolfailed: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  const fx = { crit: 0, total: 0, byPattern: {}, rows: [] };
+  const un = { total: 0, byCode: {}, rows: [] };
+  for (const run of r.runs) {
+    const rules = ruleIndex(run);
+    for (const res of run.results) {
+      const rule = rules[res.ruleId] || {};
+      const msg = (res.message && res.message.text) || '';
+      const hay = [res.ruleId, rule.id,
+        rule.shortDescription && rule.shortDescription.text, rule.fullDescription && rule.fullDescription.text,
+        msg].filter((s) => typeof s === 'string').join('\n');
+      const mal = hay.match(_MAL_ID);
+      if (!mal) continue;
+      // the same message grammar parseOsv reads, but greedy on the name so a scoped package
+      // ('@ctrl/tinycolor@4.1.1') keeps its scope instead of failing the match
+      const pm = msg.match(/Package '([^']+)@([^']+)'/);
+      const loc = res.locations && res.locations[0] && res.locations[0].physicalLocation;
+      // A confirmed-malicious package inside a TEST FIXTURE is a different claim from one in the
+      // dependency tree. Measured 2026-08-24: 24 of the fleet's 25 MAL- rows were dependabot-core
+      // fixtures, including flatmap-stream, the real 2018 event-stream attack kept deliberately so
+      // the updater can be proven to remove it. Counted apart, never dropped — the SARIF is intact
+      // and the row keeps its identity, because a worm that reaches a fixture directory is still
+      // something an operator may want to look at.
+      const fcls = classifyPath((loc && loc.artifactLocation && loc.artifactLocation.uri) || '');
+      if (fcls.fixture) {
+        fx.crit++; fx.total++;
+        fx.byPattern[fcls.pattern] = (fx.byPattern[fcls.pattern] || 0) + 1;
+        fx.rows.push({ id: mal[0], package: pm ? pm[1] : '', version: pm ? pm[2] : '', pattern: fcls.pattern });
+        continue;
+      }
+      const uri = (loc && loc.artifactLocation && loc.artifactLocation.uri) || '';
+      const version = pm ? pm[2] : '';
+      // Fixture FIRST, then reachability: which population a row describes is the stronger
+      // statement, and a fixture row is set aside whether or not the advisory reaches it.
+      // A MAL- advisory with `introduced: 0` matches every version of a NAME, so a collision
+      // publishes a critical about a package the repo never installed — measured 3 for 3 false
+      // here once the fixture rows were removed. Counted apart under `undetermined`, never
+      // dropped, and never restated as safe. See advisory-reach.mjs.
+      const reach = classifyReach({ id: mal[0], version, path: uri });
+      if (!reach.reachable) {
+        un.total++;
+        un.byCode[reach.code] = (un.byCode[reach.code] || 0) + 1;
+        un.rows.push({ id: mal[0], package: pm ? pm[1] : '', version, ecosystem: _ecosystemOf(uri),
+          unknown: true, unknownReason: reach.unknownReason,
+          code: reach.code, reason: reach.reason, claimedSeverity: 'crit' });
+        continue;
+      }
+      c.crit++; c.total++;
+      rows.push({ id: mal[0], package: pm ? pm[1] : '', version,
+        ecosystem: _ecosystemOf(uri),
+        advisory: `https://osv.dev/vulnerability/${mal[0]}` });
+    }
+  }
+  const out = { ...c, ..._detailFor('maliciousPackages', rows) };
+  if (fx.total) {
+    out.fixtures = { ...fx, of: fx.total + c.total, note: `${fx.total} of ${fx.total + c.total} malicious-package hits are under a test-fixture path and are excluded from these counts. Each is listed in fixtures.rows and remains in the SARIF artifact. Set CW_FIXTURE_PATHS=off to count them.` };
+  }
+  if (un.total) {
+    out.undetermined = un.total;
+    out.undeterminedDetail = { ...un, of: un.total + c.total, note: REACH_NOTE };
+  }
+  return out;
+}
+// Socket's CLI writes {ok:false, message} when it could NOT run — no org, no token, bad input. The
+// artifact exists and parses, so the retired generic array-counter (_countArray, deleted 2026-08-13
+// once _socketCounts took over every caller) reported it as `ran:true, total:0`: byte-identical to a
+// scan that completed and found nothing.
+//
+// That is not merely a cosmetic zero. cra/controls.mjs:50 reads `v.ran === true` as "this category
+// PROVABLY RAN on this repo" and credits it as evidence for SR-3 / SR-4 / SI-3 — so a fleet that has
+// never once completed a Socket scan was producing compliance evidence from the error object saying
+// so. bin/commitwork.mjs's own socket parser already refuses this (`j.ok === false` -> noscan), so
+// the two layers disagreed about the same file: the runner recorded a noscan while the rollup
+// recorded proof.
+//
+// The husk returns null — the same answer this file gives for an artifact that is absent, because
+// "no scan happened" is what both states mean. The category does NOT vanish: scannerFleet still
+// emits it from the checks-status ran/skipped/noscan provenance, where it reports the void honestly.
+//
+// ALLOWLIST, NOT DENYLIST. The check above excluded exactly one shape, {ok:false}; everything else —
+// a quota-exhaustion refusal under a key this extractor has never seen, {error:...}, {} — fell
+// through to "ran, 0 findings". Socket's free tier is 1,000 scans/month, and this fleet already runs
+// it deliberately OUTSIDE the nightly sweep for exactly that reason (2026-08-10: 23 repos
+// carry a package.json, 690/month nightly against the ceiling — it fit, with 31% headroom and no
+// alarm when that ran out). That commit removed the nightly cron risk; it did not remove the API
+// call, so an on-demand run (`sweep.mjs supply-chain`) can still exhaust the same quota mid-run. An
+// exhausted quota is an API refusal, and per the incident above, a refusal that does not happen to
+// spell itself `{ok:false}` would read as the exact false green this lane was cured of — restored
+// with a real credential behind it, which makes it harder to notice, not easier. So the gate is now
+// a positive list of the shapes a completed scan can take, MEASURED rather than assumed (see
+// _socketAlertCount's header comment): the legacy array, or `{ok:true, data:{alerts:{…}}}`. `ok:false`
+// still vetoes both outright, in case some future refusal shape were ever to carry a stray
+// legacy-looking array alongside it. Anything that is not one of these two shapes returns null — the
+// same "no scan happened" answer as the husk this function already curbed, whatever the reason this
+// particular refusal used.
+function _socketCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return null;                       // a zero-byte husk is not a clean scan either
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  if (!_socketCompleted(j)) return null;              // not an affirmed completion — void, not zero
+  const n = _socketAlertCount(j) || 0;
+  // `high: n` until 2026-08-26 — every alert asserted HIGH on the strength of `policy`, which is
+  // "warn" on all 35,488 of them. Graded from the TYPE now; see SOCKET_TYPES. Rows are computed
+  // once and both tallied and published, so the count and the list cannot disagree.
+  const rows = _socketAlertRows(j);
+  return { ..._zero(), ran: true, total: n, ..._socketTally(rows), ..._detailFor('supplyChain', rows) };
+}
+
+// Socket's five alert types are five different KINDS of claim, so the lane's counts partition too:
+// `byKind` overrides the lane-level declaration in partitionByKind. Without it, 34,898 licence
+// alerts would land wherever `supplyChain` was declared, which is one answer for five questions.
+/**
+ * D15 close-out: grade `criticalCVE` once it is known whether a CVE lane already reported it.
+ *
+ * The type table withholds a severity from criticalCVE with reason `pending-dedup-against-cve-lanes`,
+ * because 4 of 8 sampled were already counted by depsJvm/supplyChainHeuristic and publishing 59
+ * crits on top of them is over-reporting. That was the honest holding position, not the answer.
+ * This is the answer: a row the CVE lanes ALSO report stays undetermined and says who else saw it;
+ * a row NOBODY else reports is the lane's own witness of a critical advisory, and grades `crit`.
+ *
+ * Called from rollup.mjs, where the repo's advisory rows exist beside the lane. Deliberately NOT
+ * done inside _socketCounts by re-reading osv.sarif: parseOsv already parses that file, and two
+ * parsers over one artifact is how the Malicious-packages tab and the headline came to name
+ * different packages for the same finding.
+ *
+ * Re-tallies rather than adjusting counts by hand — the split must keep summing to `total`.
+ */
+export function regradeSocket(lane, advisoryRows, { repo = '' } = {}) {
+  if (!lane || !Array.isArray(lane.findings) || !lane.findings.length) return lane;
+  const rows = lane.findings.filter((r) => r && r.rule === 'criticalCVE');
+  if (!rows.length) return lane;
+  markPlaceCorroboration(rows, advisoryRows, { repo });
+  for (const r of rows) {
+    const twins = Array.isArray(r.corroboratedBy) ? r.corroboratedBy : [];
+    if (twins.length) {
+      r.sev = '';
+      r.sevReason = `corroborated-by-${[...new Set(twins.map((t) => t.tool))].sort().join('+')}`;
+    } else {
+      // SOLE WITNESS. Socket holds the advisory and says critical; nothing else in this repo saw
+      // it. Withholding a grade here is the mirror defect of publishing a duplicate one — a real
+      // finding made unfindable by being dressed as noise.
+      r.sev = 'crit';
+      r.sevReason = '';
+    }
+  }
+  return { ...lane, ..._socketTally(lane.findings) };
+}
+
+function _socketTally(rows) {
+  const zero = () => ({ crit: 0, high: 0, med: 0, low: 0, undetermined: 0 });
+  const flat = zero(); const byKind = {};
+  for (const r of rows) {
+    const s = ['crit', 'high', 'med', 'low'].includes(r.sev) ? r.sev : 'undetermined';
+    flat[s] += 1;
+    (byKind[r.claimKind || 'unclassified'] ||= zero())[s] += 1;
+  }
+  return { ...flat, byKind };
+}
+
+// The positive list of shapes a COMPLETED socket scan can take, measured rather than assumed. Split
+// out of _socketCounts so the refusal probe below cannot drift from it: two functions deciding
+// "did this scan complete" by two separate expressions is how the runner and the rollup came to
+// disagree about the same file in the first place.
+function _socketCompleted(j) {
+  const legacy = j.issues || j.alerts || (j.results && j.results.issues);
+  return j.ok !== false && (Array.isArray(legacy)
+    || (j.ok === true && j.data && typeof j.data === 'object'
+      && j.data.alerts && typeof j.data.alerts === 'object'));
+}
+
+// ── REFUSAL IS NOT ABSENCE ───────────────────────────────────────────────────────────────────────
+// _socketCounts answers null for a refusal AND for an absent artifact, because for its purpose —
+// "how many findings" — both mean "no scan happened". Correct there, and lossy: the fleet cannot
+// tell "Socket refused us" from "Socket was never pointed at this repo", and those call for
+// opposite actions. Socket's free tier is 1,000 scans/month and this lane is deliberately outside
+// the nightly sweep for that reason; the day an on-demand run exhausts the quota, every repo after
+// it would go quietly into the same bucket as a repo nobody ever scanned.
+//
+// A REFUSAL IS A SUBTYPE OF VOID, NEVER A SIBLING OF IT. The caller records these as
+// `status:'noscan'` carrying a `refusal`, rather than a new status value, and the reason is
+// mechanical: every existing consumer counts voids with `c.status === 'noscan'`, so a sibling status
+// would make refusals invisible to all of them — a refusal would stop counting as a coverage void at
+// all, which is a worse failure than the false green this lane was already cured of. Subtype keeps
+// every void counter correct and lets the panel colour the distinction.
+//
+// QUOTA IS ONLY CLAIMED WHEN THE MESSAGE SAYS SO. Every refusal in this repository's history reads
+// `{ok:false, message:"Input error"}` — the old no-token/bad-input cause, fixed. Nothing in the
+// corpus is a quota refusal, so the quota flag is matched against the provider's own words and is
+// false whenever they do not say it. Inventing the diagnosis would put a confident wrong cause on
+// the exact state that exists to stop confident wrong readings.
+const QUOTA_LANGUAGE = /\b(quota|rate.?limit|too many requests|payment required|upgrade your plan|exceeded)\b|\b(429|402)\b/i;
+export function socketRefusal(dir, file = 'socket.json') {
+  const p = join(dir, file);
+  if (!existsSync(p)) return null;                    // absent: a void, but not a refusal
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return null;                       // husk: void, and it refuses nothing
+  let j; try { j = JSON.parse(raw); } catch { return null; }   // unparseable has its own state already
+  if (!j || typeof j !== 'object') return null;
+  if (_socketCompleted(j)) return null;               // it ran; nothing was refused
+  const message = typeof j.message === 'string' ? j.message : '';
+  return {
+    refused: true,
+    // Verbatim, capped. The provider's own words are the evidence; a paraphrase would be this
+    // module's opinion about someone else's error.
+    message: message.slice(0, 200) || '(no message field on the refusal)',
+    quota: QUOTA_LANGUAGE.test(message),
+  };
+}
+
+// ── the seven categories that used to have no category at all ──────────────────────────────────
+// Each of these checks WROTE an artifact on every sweep and had a remediationPrompt written for it,
+// but no SCANNER_SPECS row — so the rollup never spoke for them, `scanners` had no key, and the
+// panel's triage card rendered `no live counts`. That pill means "the rollup never spoke for this
+// check", which an operator reads as "nothing to see"; in fact hadolint had been reporting
+// Dockerfile errors and trufflehog had been scanning git history into a number nobody aggregated.
+// A category here is NOT new evidence — it is evidence that was already on disk reaching a total.
+// Every one returns null when the artifact is ABSENT, so the ran/skipped/noscan join below reports
+// the void; a written-but-empty artifact is `ran:true` with zeroes, which is a real clean result.
+
+// TruffleHog scans git HISTORY and writes JSON-lines. A VERIFIED secret is `crit` and nothing
+// else: the tool has confirmed the credential is live at its provider, which is the strongest
+// statement any scanner in this fleet makes. Unverified is `med` — a candidate needing triage, not
+// a finding to page on. (bin/commitwork.mjs's `trufflehog` parseReport branch makes the same split
+// for the per-check severity; this is the fleet-aggregate half of the same judgement.)
+function _trufflehogCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true };   // clean history: trufflehog writes nothing
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const line of raw.split('\n')) {
+    const t = line.trim(); if (!t) continue;
+    let o; try { o = JSON.parse(t); } catch { continue; }  // the log interleaves non-JSON banners
+    if (!(o.SourceMetadata || o.DetectorName || o.Verified !== undefined)) continue;
+    // Mirrors the row's tri state: an errored verification is counted nowhere graded. It used to
+    // land in med, which asserted a middling severity about a credential nobody had assessed.
+    if (o.Verified) c.crit++;
+    else if (!o.VerificationError) c.low++;
+    else c.undetermined = (c.undetermined || 0) + 1;
+    c.total++;
+    // SourceMetadata.Data.Git carries commit/file/line. `Raw`, `RawV2` and `Redacted` carry the
+    // secret itself and are deliberately not mapped — the schema would refuse them anyway, and
+    // the two layers agreeing is the point.
+    const g = (o.SourceMetadata && o.SourceMetadata.Data && o.SourceMetadata.Data.Git) || {};
+    // THREE states. `o.Verified === true` collapsed the other two, and measurement says the
+    // collapsed pair is not evenly split: of 439 non-true rows across 60 artifacts, 439 carried a
+    // VerificationError. So `false` was the label on a population that was entirely "could not ask",
+    // and it published as a refusal. An errored verification is NULL, and its sev is blank so the
+    // row counts as undetermined rather than as a graded finding.
+    const ver = o.Verified === true ? true : (o.VerificationError ? null : false);
+    rows.push({ detector: o.DetectorName, file: g.file, line: g.line,
+      sev: ver === true ? 'crit' : (ver === false ? 'low' : ''),
+      commit: g.commit, verified: ver, verificationError: o.VerificationError || '' });
+  }
+  return { ...c, ..._detailFor('secretsHistory', rows) };
+}
+
+// Hadolint writes a flat array of {code, level, file, line, message}. level ∈ error|warning|info|
+// style. The manifest writes '[]' itself when no Dockerfile matched, so an empty array is a real
+// clean run, not a void.
+// shellcheck --format=json1 → { comments: [ {file, line, level, code, message} ] }. json1 and NOT
+// json: the plain formatter emits a BARE ARRAY, so `[]` from a clean run and `[]` from a shellcheck
+// that examined nothing are the same two bytes. The `comments` key is the proof of a real run, and
+// its absence is `unparseable` — a void — rather than a zero.
+function _shellcheckCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!Array.isArray(j && j.comments)) return { ..._zero(), ran: true, unparseable: true };
+  const c = { ..._zero(), ran: true }, map = { error: 'high', warning: 'med', info: 'low', style: 'low' };
+  const rows = [];
+  for (const f of j.comments) {
+    const b = map[String((f && f.level) || '').toLowerCase()] || 'low';
+    c[b]++; c.total++;
+    rows.push({ rule: f && f.code ? `SC${f.code}` : '', file: f && f.file, line: f && f.line, sev: b, message: f && f.message });
+  }
+  return { ...c, ..._detailFor('shellLint', rows) };
+}
+// actionlint has no SARIF mode and no severity field of its own. The lane's manifest wraps its bare
+// array in `{tool, ran:true, findings}` using actionlint's own Go template, because the tool exits
+// before rendering the template — so the marker cannot survive a run that did not happen, and its
+// absence is a void. Severity is derived here: untrusted input interpolated into an inline `run:`
+// is the script-injection sink (a live RCE on pull_request_target) and outranks everything else;
+// every other finding, INCLUDING a kind this code has never seen, is `med` rather than `low`, so a
+// future actionlint check cannot land silently at the bottom of the panel.
+function _actionlintCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || j.ran !== true || !Array.isArray(j.findings)) return { ..._zero(), ran: true, unparseable: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const f of j.findings) {
+    const b = /potentially untrusted/i.test(String((f && f.message) || '')) ? 'high' : 'med';
+    c[b]++; c.total++;
+    rows.push({ rule: (f && f.kind) || 'unknown', file: f && f.filepath, line: f && f.line, sev: b, message: f && f.message });
+  }
+  return { ...c, ..._detailFor('actionsLint', rows) };
+}
+function _hadolintCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!Array.isArray(j)) return { ..._zero(), ran: true, unparseable: true };
+  const c = { ..._zero(), ran: true }, map = { error: 'high', warning: 'med', info: 'low', style: 'low' };
+  const rows = [];
+  for (const f of j) {
+    const b = map[String((f && f.level) || '').toLowerCase()] || 'low';
+    c[b]++; c.total++;
+    rows.push({ rule: f && f.code, file: f && f.file, line: f && f.line, sev: b, message: f && f.message });
+  }
+  return { ...c, ..._detailFor('dockerfile', rows) };
+}
+
+// govulncheck emits JSON-lines of `{osv:…}` (an advisory definition) and `{finding:…}` (this module
+// is affected). REACHABILITY IS THE WHOLE POINT of preferring it over OSV/grype, so it is preserved
+// in the severity rather than flattened: a finding whose trace names a `function` is a proven call
+// path (`high`); a module-level trace means govulncheck could not prove the vulnerable package is
+// imported (`med` — present, unproven, frequently already mitigated). Counting both as one number
+// would throw away the only thing this scanner knows that the others do not.
+//
+// govulncheck emits ONE finding per trace, so the same advisory arrives several times; findings are
+// deduped by (osv id, reachable) so the count is advisories-at-a-reachability, not trace rows.
+function _govulnCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  const seen = new Set();
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  // govulncheck -format json is a stream of concatenated objects, pretty-printed across lines —
+  // NOT one object per line. Split on the top-level brace boundary the encoder emits.
+  const chunks = raw.split(/\n(?=\{)/);
+  for (const chunk of chunks) {
+    const t = chunk.trim(); if (!t) continue;
+    let o; try { o = JSON.parse(t); } catch { continue; }
+    const f = o && o.finding; if (!f || !f.osv) continue;
+    const reachable = (f.trace || []).some((e) => e && e.function);
+    const key = `${f.osv} ${reachable ? 'R' : 'M'}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (reachable) c.high++; else c.med++;
+    c.total++;
+    // REACHABILITY IS A TYPED FIELD, not a phrase in a sentence. The distinction lived only in this
+    // prose, which was fine while govulncheck was the sole analyst — and stopped being fine the
+    // moment dep-scan started writing to a sibling lane. Two engines emitting the word "reachable"
+    // in free text make two very different claims look identical: govulncheck's is a path from the
+    // Go compiler's own call graph, dep-scan's is a static slice over an intermediate representation.
+    // `prover` and `proofKind` say WHOSE proof and WHAT KIND, so a consumer can weigh them
+    // differently instead of matching on a string.
+    //
+    // `unproven` is deliberately NOT `unreachable`. govulncheck does not assert that a symbol cannot
+    // be reached; it reports that it did not show a path. Publishing the stronger word would be the
+    // in_triage defect that dep-scan's lane was corrected for.
+    rows.push({ id: f.osv, package: (f.trace && f.trace[0] && f.trace[0].module) || '', sev: reachable ? 'high' : 'med',
+      reachability: reachable ? 'reachable' : 'unproven',
+      prover: 'govulncheck',
+      proofKind: reachable ? 'compiler-callgraph' : 'none',
+      message: reachable
+        ? 'REACHABLE — govulncheck traced a call path to the vulnerable symbol'
+        : 'present, unproven — the module is imported but no call path to the vulnerable symbol was shown' });
+  }
+  return { ...c, ..._detailFor('depsGo', rows) };
+}
+
+// bin/tls-headers-scan.mjs writes {headers:{ran,grade,missing[]}, tls:{ran,findings[]}, ran, …}.
+// Two halves that gate independently: the headers half needs CW_TARGET_URL, the TLS half needs a
+// reachable https listener. `ran:false` at top level means NEITHER looked — a void, reported as
+// null-with-provenance rather than a grade of zero missing headers.
+//
+// A missing security header is `med`, not `high`: it is a hardening gap, not a live exposure, and
+// six of them on one edge would otherwise outrank a real CVE in the headline sum. The TLS half's
+// own findings carry their severity (an expired or untrusted certificate is `high` there) and are
+// passed through as graded rather than re-judged here.
+function _tlsHeaderCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  // the scan ran and found nothing to grade — its own honest void, not a clean grade
+  if (j.ran === false) return { ..._zero(), ran: true, nosrc: true };
+  const c = { ..._zero(), ran: true };
+  // A missing header and a certificate defect are different evidence; they share a row vocabulary
+  // (issue / target / sev / detail) so the tab is one table, and each row still says which it is.
+  const rows = [];
+  const target = String(j.target || '');
+  const missing = (j.headers && Array.isArray(j.headers.missing)) ? j.headers.missing : [];
+  c.med += missing.length; c.total += missing.length;
+  for (const h of missing) rows.push({ issue: h, target, sev: 'med', message: 'security header not sent by the origin' });
+  const tf = (j.tls && Array.isArray(j.tls.findings)) ? j.tls.findings : [];
+  for (const f of tf) {
+    const b = ({ crit: 'crit', critical: 'crit', high: 'high', med: 'med', medium: 'med', low: 'low' })[String((f && f.severity) || '').toLowerCase()] || 'med';
+    c[b]++; c.total++;
+    rows.push({ issue: f && f.issue, target: (f && f.target) || target, sev: b, message: f && f.detail });
+  }
+  return { ...c, ..._detailFor('tlsHeaders', rows) };
+}
+
+// Prowler's GitHub provider, summarised by bin/cspm-github.sh to {ran, pass, fail} (or
+// {ran:false,skipped:true,reason} when prowler / the dedicated token / a github origin is absent).
+// A failing posture check is `high`: branch protection off or secret scanning disabled is a
+// standing control gap, not an informational note.
+function _cspmCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  if (j.ran !== true) return { ..._zero(), ran: true, nosrc: true }; // self-gated skip — a void, not 0 failing controls
+  const fail = Number(j.fail) || 0;
+  // `low`, not `high` — OPERATOR RULING 2026-08-28, reasoned at the row-construction site below.
+  // Every FAIL this lane produces is a repository SETTING somebody has not switched on, not a
+  // weakness detected in the code, and several are gated behind a paid plan. The bucket has to move
+  // with the rows or the two disagree: the count here is the producer's `fail`, computed
+  // independently of the per-row `sev` set below, which is precisely the shape that let
+  // scanners.stubs read {high:4322, low:0} while every row carried `low`.
+  const c = { ..._zero(), ran: true, low: fail, total: fail };
+  // MANUAL is prowler's own "could not determine". It was never counted here — correctly, since it
+  // is not a finding — but it was also never REPORTED, so a control prowler declined to judge
+  // vanished. Carried now, and deliberately kept out of every severity bucket.
+  if (Number(j.manual)) c.undetermined = Number(j.manual);
+  // Whether the evidence behind the security_and_analysis controls was visible to the credential
+  // that ran. `absent` means prowler asserted those controls from a field GitHub did not return.
+  if (j.securityAndAnalysisEvidence) c.securityAndAnalysisEvidence = j.securityAndAnalysisEvidence;
+  // cspm-github.json's `detail` field NAMES the OCSF file beside it. A summary that points at its
+  // own evidence and is then rendered as a bare number is evidence nobody can read: 398 failing
+  // posture controls fleet-wide, not one of them nameable. Only FAIL records become rows — a PASS
+  // is not a finding — and the count above stays the producer's, so the rows can only ever be a
+  // subset of a number this extractor did not compute.
+  const rows = [];
+  const detailFile = String(j.detail || '');
+  if (detailFile && !detailFile.includes('/')) {
+    const dp = join(dir, detailFile);
+    if (existsSync(dp)) {
+      let arr = null;
+      try { const d = safeParseFile(dp); arr = Array.isArray(d) ? d : (d.findings || null); } catch { arr = null; }
+      const map = { critical: 'crit', high: 'high', medium: 'med', low: 'low', informational: 'low' };
+      // Controls whose verdict is read off `security_and_analysis`. When the probe says that field
+      // was ABSENT, prowler's FAIL on these is an assertion about data it never received, so the
+      // row is marked undetermined and its severity dropped rather than published as a finding.
+      //
+      // The set is matched on prowler's own control titles and is deliberately SMALL and declared,
+      // not inferred: a wide regex here would silently downgrade real findings, which is the
+      // opposite error and a worse one. Sourced from the fleet's 614 OCSF artifacts, 2026-08-22.
+      const EVIDENCE_GATED = /secret scanning|push protection|dependabot (alerts|security updates)|advanced security/i;
+      const blind = String(j.securityAndAnalysisEvidence || '') === 'absent';
+      let downgraded = 0;
+      for (const f of arr || []) {
+        if (String((f && f.status_code) || '').toUpperCase() !== 'FAIL') continue;
+        const fi = (f && f.finding_info) || {};
+        const res = (f && Array.isArray(f.resources) && f.resources[0]) || {};
+        const md = (res.data && res.data.metadata) || {};
+        const title = fi.title || '';
+        if (blind && EVIDENCE_GATED.test(title)) {
+          downgraded += 1;
+          // sev '' is the schema's legal no-severity value (detail-schema COERCE.sev). An
+          // undetermined control HAS no severity — giving it one would be the assertion again.
+          rows.push({ control: title, resource: md.full_name || md.name || res.region, sev: '',
+            message: `UNDETERMINED — GitHub did not return security_and_analysis to the credential this scan ran as, so this control was judged from a field that never arrived. Prowler reported: ${String(f.status_detail || '').slice(0, 160)}` });
+          continue;
+        }
+        // REPOSITORY-SETTINGS CONTROLS ARE RECOMMENDATIONS, AND THEIR SEVERITY IS VENDOR-SET.
+        //
+        // Every FAIL this lane produces for a GitHub repo is a setting somebody has not switched
+        // on — branch protection, required reviewers, signed commits, CODEOWNERS, immutable
+        // releases. Not one is a detected weakness in the code, and several are gated behind a paid
+        // plan, so the platform has an interest in reporting them loudly. Measured 2026-08-28: memory-layer
+        // and shodh-memory failed the SAME 14 controls, control for control, and 8 of the 14 were
+        // published at `high` — which is the platform's severity, not this fleet's judgement.
+        //
+        // OPERATOR RULING 2026-08-28: capped at `low` and labelled, never dropped. The control, the
+        // resource and Prowler's own status_detail all still travel, so an operator who wants
+        // branch protection can still read exactly which repo lacks it — what changes is that a
+        // repository-configuration recommendation no longer sits in the same bucket as a CVE.
+        // This is the GuardDog `capability-*` shape again: a control that fails on essentially
+        // every repository is measuring adoption, not risk.
+        rows.push({ control: title, resource: md.full_name || md.name || res.region,
+          sev: 'low', suggestion: true,
+          claimedSeverity: map[String(f.severity || '').toLowerCase()] || 'med',
+          note: 'SUGGESTION — a repository SETTING that is not switched on, not a weakness detected in the code. Severity as reported by the platform is preserved in claimedSeverity.',
+          message: f.status_detail });
+      }
+      if (downgraded) {
+        // The producer's count stays the producer's; what changes is how many of it we are willing
+        // to call findings. Both numbers travel, because a reader needs to know the gap exists.
+        c.undetermined = (c.undetermined || 0) + downgraded;
+        c.low = Math.max(0, c.low - downgraded);   // follows the bucket above; was c.high
+        c.total = Math.max(0, c.total - downgraded);
+        c.evidenceBlindControls = downgraded;
+      }
+    }
+  }
+  return { ...c, ..._detailFor('cspm', rows) };
+}
+
+// OpenSSF Scorecard — supply-chain posture from the OUTSIDE, and the roster's only posture tool
+// that can say "I could not tell" in its own output format.
+//
+// WHY IT SITS BESIDE cspm RATHER THAN REPLACING IT. Prowler asks the GitHub API "is this setting
+// on?" and gets FAIL when the API withholds the setting from a non-admin token. On the
+// 100randomrepos corpus that read as 100/100 repos failing "secret scanning enabled" — a rate no
+// real population produces, because it is not a finding, it is a permission denial wearing one.
+// Scorecard scores what a non-admin can actually observe and returns -1 for the rest.
+//
+// SCORE -1 IS NOT A ZERO. This is the whole reason the lane exists, so it is enforced here rather
+// than left to the panel: an undetermined check is counted in `undetermined`, never in crit/high/
+// med/low, and never given a row. Grey is not green, and the mirror the codebase was missing —
+// grey is not RED either. A repo whose posture is 6 scored and 12 undetermined is not a repo with
+// 6 problems; it is a repo nobody could see.
+//
+// Severity from the score, because the score is what the tool emits. Scorecard also publishes a
+// per-check risk tier (Critical/High/Medium/Low) in its docs, which is NOT in the JSON and is NOT
+// mirrored here — a hand-copied risk table beside a machine-emitted score is exactly the artefact
+// that rots into disagreement.
+// SCORECARD CONTROLS THAT ASSERT A PRACTICE, NOT A WEAKNESS.
+//
+// _scorecardCounts mapped every score <= 2 to `high`, uniformly, so "project is not fuzzed" was
+// published at the same severity as "51 existing vulnerabilities detected". Those are not the same
+// claim. Measured 2026-08-28 on memory-layer: of 11 controls published at `high`, four asserted nothing
+// about the repository's security state — `CII-Best-Practices score 0 / no effort to earn an
+// OpenSSF best practices badge detected`, `Fuzzing score 0 / project is not fuzzed`,
+// `Contributors score 0 / project has 0 contributing companies or organizations`, and packaging.
+//
+// A badge nobody applied for and a fuzzing harness nobody wrote are practices not adopted. They are
+// worth SUGGESTING and they are not findings — the same distinction that made GuardDog's
+// `capability-*` rules 602 of 675 rows at `med` for "this package can open a socket". A control
+// that fails on essentially every repository is measuring adoption, not risk.
+//
+// Kept visible at `low` and LABELLED rather than dropped: the score, the reason and the docs URL
+// still travel, so a project that wants the badge can still see what it would take.
+const SCORECARD_SUGGESTION = new Set([
+  'CII-Best-Practices',   // an OpenSSF badge application; asserts nothing about the code
+  'Fuzzing',              // a practice not adopted, not a weakness found
+  'Contributors',         // counts contributing ORGANISATIONS — a fact about affiliation
+  'Packaging',            // whether the project publishes a package; not a security property
+]);
+
+function _scorecardCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  if (j.ran !== true) return { ..._zero(), ran: true, nosrc: true }; // self-gated skip — a void, not a clean posture
+
+  // The producer's summary is authority for how many checks came back undetermined; the raw file
+  // beside it carries the per-check rows. A summary that points at its own evidence and is then
+  // rendered as a bare number is evidence nobody can read (see _cspmCounts above for the incident).
+  const undetermined = Number((j.counts && j.counts.inconclusive)) || 0;
+  const c = { ..._zero(), ran: true, undetermined,
+    aggregateScore: typeof j.aggregateScore === 'number' ? j.aggregateScore : null,
+    undeterminedChecks: Array.isArray(j.inconclusiveChecks) ? j.inconclusiveChecks : [] };
+
+  const rows = [];
+  const detailFile = String(j.detail || '');
+  if (detailFile && !detailFile.includes('/')) {
+    const dp = join(dir, detailFile);
+    if (existsSync(dp)) {
+      let checks = null;
+      try { const d = safeParseFile(dp); checks = Array.isArray(d.checks) ? d.checks : null; } catch { checks = null; }
+      // A detail file that exists but yields no checks is a husk. Fall back to the producer's own
+      // failing count rather than reporting zero findings for a repo nobody scored.
+      if (!checks) {
+        const fail = Number(j.counts && j.counts.failing) || 0;
+        return { ...c, med: fail, total: fail, detailUnreadable: true };
+      }
+      for (const ch of checks) {
+        const score = Number(ch && ch.score);
+        if (!Number.isFinite(score) || score === -1) continue;   // undetermined: counted above, never a finding
+        if (score >= 10) continue;                                // a pass is not a finding
+        const suggestion = SCORECARD_SUGGESTION.has(String(ch.name || ''));
+        // A suggestion is capped at `low` however badly it scores: the severity of "no badge" does
+        // not vary with how thoroughly there is no badge.
+        const sev = suggestion ? 'low' : (score <= 2 ? 'high' : score <= 5 ? 'med' : 'low');
+        c[sev] += 1; c.total += 1;
+        if (suggestion) c.suggestions = (c.suggestions || 0) + 1;
+        rows.push({ control: ch.name, score, sev, message: ch.reason || '',
+          ...(suggestion ? { suggestion: true, note: 'SUGGESTION — this control measures a practice the project has not adopted (a badge, a fuzzing harness, organisational affiliation). It asserts nothing about a weakness in this repository, so it is capped at low rather than published beside a real posture failure.' } : {}),
+          docs: (ch.documentation && ch.documentation.url) || '' });
+      }
+    }
+  }
+  return { ...c, ..._detailFor('supplyChainPosture', rows) };
+}
+
+// ── THE BUILD THAT PRODUCED THE FINDINGS ───────────────────────────────────────────────────────
+// bin/commitwork.mjs writes tool-version-<checkId>.json beside each check's report, at the moment
+// the check runs. This reads it back so a category can say WHICH BINARY produced its rows.
+//
+// ABSENT IS `not-recorded`, NEVER "current". The temptation is to fall back to whatever is
+// installed now — that would attribute rows produced days ago to a binary that never touched them.
+// Every rollup written before this shipped legitimately has no stamp, and saying so is the correct
+// answer for them; guessing would silently convert an unknown into a confident falsehood.
+//
+// This is the half that was missing when trufflehog 3.96.0's Lob detector produced 1,311 false
+// CRITICALs: the box's version was knowable, but not one of those findings carried it.
+function _toolProvenance(dir, checkId) {
+  if (!checkId) return { provenance: 'not-recorded' };
+  const safe = String(checkId).replace(/[^A-Za-z0-9._-]/g, '_');
+  const p = join(dir, `tool-version-${safe}.json`);
+  if (!existsSync(p)) return { provenance: 'not-recorded' };
+  let j; try { j = safeParseFile(p); } catch {
+    return { provenance: 'unreadable' };   // a torn stamp is not an absent one
+  }
+  const tools = (j && j.tools) || {};
+  const names = Object.keys(tools).sort();
+  if (!names.length) return { provenance: 'not-recorded' };
+  const out = {};
+  for (const n of names) {
+    const t = tools[n] || {};
+    out[n] = t.state === 'present'
+      ? (t.versionState === 'stated' ? t.version : null)
+      : null;
+  }
+  // `unstated` travels as its own list rather than as a null nobody reads: a tool that cannot name
+  // its build is a different problem from a tool that was not probed, and only one of them is
+  // fixable by upgrading.
+  const unstated = names.filter((n) => (tools[n] || {}).state === 'present' && (tools[n] || {}).versionState !== 'stated');
+  const absent = names.filter((n) => (tools[n] || {}).state && (tools[n] || {}).state !== 'present');
+  return {
+    provenance: 'recorded',
+    toolVersions: out,
+    probedAt: j.probedAt || null,
+    ...(unstated.length ? { toolsWithoutVersion: unstated } : {}),
+    ...(absent.length ? { toolsAbsentAtRun: absent } : {}),
+  };
+}
+
+// bin/gradle-wrapper-verify.mjs — the wrapper FETCH PATH, checked without running anything.
+//
+// `applicable:false` is a repo with no Gradle wrapper, which is nothing-to-scan rather than a void:
+// nosrc, the same state a deps lane uses for a repo with no manifest. A repo that HAS a wrapper and
+// could not be read reports its findings instead, because "unreadable" is a finding here.
+function _gradleWrapperCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  if (j.ran !== true) return { ..._zero(), ran: true, nosrc: true, reason: j.reason || null };
+  if (j.applicable === false) return { ..._zero(), ran: true, nosrc: true, reason: j.reason || 'no Gradle wrapper in this repo' };
+
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const f of (Array.isArray(j.findings) ? j.findings : [])) {
+    const sev = String(f && f.sev || '').toLowerCase();
+    if (sev in c) c[sev] += 1;
+    c.total += 1;
+    rows.push({ rule: f && f.rule, sev, message: f && f.message });
+  }
+  // The scope disclaimer travels with the counts, not just in the tool's own file. This lane
+  // verifies where the toolchain is fetched from and what the committed binaries are; it does NOT
+  // establish that running the wrapper is safe, and a zero here must not be read as saying so.
+  if (j.scope) c.scope = j.scope;
+  if (Array.isArray(j.doesNotCover)) c.doesNotCover = j.doesNotCover;
+  if (j.declaredVersion) c.declaredVersion = j.declaredVersion;
+  // Published for cross-repo comparison: these artifacts are GENERATED by Gradle, so two repos on
+  // one version should agree, and disagreement is the only shape a substitution can take.
+  if (j.jarSha256) c.jarSha256 = j.jarSha256;
+  if (j.gradlewSha256) c.gradlewSha256 = j.gradlewSha256;
+  if (j.checksumCheck) c.checksumCheck = j.checksumCheck;
+  return { ...c, ..._detailFor('gradleWrapper', rows) };
+}
+
+// OWASP dep-scan — the only lane that ADJUDICATES a dependency finding rather than reporting its
+// existence. bin/depscan-scan.sh writes the summary; the CycloneDX VDR beside it carries the rows.
+//
+// EXCLUDED FROM THE SEVERITY SUM, for the reason maliciousPackages is (see TOTALS_EXCLUDE): its CVE
+// list is drawn from the same advisory data parseOsv already counted, so adding it would double-
+// count the CVE lane rather than extend it. What this lane contributes is the SECOND OPINION —
+// whether a path to the vulnerable symbol was adjudicated — and that is not a number to sum.
+//
+// "NOT PRODUCED" IS NOT "NOTHING REACHABLE". dep-scan's `in_triage` is its DEFAULT analysis state,
+// and its slicer writes nothing at all on a tree with no installed dependencies. Measured on
+// vercel/satori: 105 findings, 100 of them in_triage, and *-usages.slices.json empty — zero
+// adjudications, from an analyser that never ran. Publishing that as "0 reachable" would be the
+// strongest false-clean this fleet can emit, so the producer's `reachability.state` is carried
+// through verbatim and a not-produced run yields NO reachability counts at all.
+function _depscanCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  if (j.ran !== true) return { ..._zero(), ran: true, nosrc: true, reason: j.reason || null };
+
+  const k = j.counts || {};
+  const reach = j.reachability || {};
+  const produced = reach.state === 'analysed';
+  const c = {
+    ..._zero(), ran: true,
+    crit: Number(k.crit) || 0, high: Number(k.high) || 0, med: Number(k.med) || 0, low: Number(k.low) || 0,
+    total: Number(k.total) || 0,
+    components: Number(k.components) || null,
+    // The isolation the scan ran under is part of the result: a network-severed run cannot resolve
+    // transitives, and a reader who does not know that will read a short list as a clean one.
+    sandbox: j.sandbox || null,
+    coverage: j.coverage || null,
+    // The database's build date bounds which advisories a finding OR an absence can reflect;
+    // carried whole so the reader sees builtAt (the bound) and pulledAt (the policy) apart.
+    vdb: j.vdb && typeof j.vdb === 'object' ? j.vdb : { builtAt: null, pulledAt: null, bound: 'database build date unrecorded (receipt predates the vdb field) — the temporal bound of this result is unknown' },
+    reachabilityState: reach.state || 'unknown',
+    // Counts ONLY when the analyser actually produced slices. Absent — not zero — otherwise.
+    ...(produced ? { reachable: Number(reach.exploitable) || 0, notAdjudicated: Number(reach.notAdjudicated) || 0 }
+      : { reachabilityReason: reach.reason || 'the reachability analyser produced no output — there is no answer here, not an answer of none' }),
+  };
+
+  const rows = [];
+  const vdrs = Array.isArray(j.detail) ? j.detail : (j.detail ? [String(j.detail)] : []);
+  const map = { critical: 'crit', high: 'high', medium: 'med', low: 'low' };
+  for (const name of vdrs) {
+    if (!name || String(name).includes('/')) continue;      // a path is not a sibling filename
+    if (!/\.vdr\.json$/i.test(name)) continue;              // the SBOMs beside it are inventory, not findings
+    const dp = join(dir, name);
+    if (!existsSync(dp)) continue;
+    let d; try { d = safeParseFile(dp); } catch { continue; }
+    for (const v of (Array.isArray(d.vulnerabilities) ? d.vulnerabilities : [])) {
+      const purl = ((v.affects || [])[0] || {}).ref || '';
+      const state = String((v.analysis && v.analysis.state) || '').toLowerCase();
+      rows.push({
+        id: v.id || '',
+        package: purl,
+        sev: map[String(((v.ratings || [])[0] || {}).severity || '').toLowerCase()] || 'unknown',
+        // The word is chosen deliberately: `exploitable` is dep-scan's only adjudication, and
+        // everything else — in_triage included — is `unadjudicated`, never `unreachable`.
+        reachability: state === 'exploitable' ? 'exploitable' : 'unadjudicated',
+        insight: ((v.properties || []).find((x) => x.name === 'depscan:insights') || {}).value || '',
+      });
+    }
+  }
+  return { ...c, ..._detailFor('depsReachability', rows) };
+}
+
+// Schemathesis 4.x NDJSON event stream. Each line is a single-key object naming the event.
+//
+// THIS ONE REPLACES A SILENT GREEN. The check declared report.format 'generic', which is a
+// pass-through — the report scored ok as long as the file existed. Measured on this fleet
+// (2026-08-01, a client API gateway): the stream's only substantive event was
+// `FatalError: Failed to load schema … HTTP 401 Unauthorized`, the fuzzer never sent one request,
+// and the sweep recorded `api-fuzz: pass`. A run that could not load the spec is a coverage VOID,
+// and `nosrc` is how this file says so.
+//
+// A failing scenario is `high`: schemathesis only fails an operation when the app 500s or breaks
+// its own declared contract, both of which are defects rather than style.
+function _schemathesisCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  const c = { ..._zero(), ran: true };
+  let fatal = false, scenarios = 0;
+  const rows = [];
+  for (const line of raw.split('\n')) {
+    const t = line.trim(); if (!t) continue;
+    let o; try { o = JSON.parse(t); } catch { continue; }
+    if (!o || typeof o !== 'object') continue;
+    if (o.FatalError) { fatal = true; continue; }
+    const s = o.ScenarioFinished;
+    if (!s) continue;
+    scenarios++;
+    const st = String(s.status || '').toLowerCase();
+    let b = null;
+    if (st === 'failure') b = 'high';
+    else if (st === 'error') b = 'med';
+    if (!b) continue;
+    c[b]++; c.total++;
+    rows.push({ operation: s.label || s.name || s.operation || '', sev: b,
+      message: b === 'high' ? 'the operation failed its own declared contract or returned 5xx' : 'the scenario errored before it could reach a verdict' });
+  }
+  // Loaded nothing and ran nothing: the fuzzer never got to make a statement about the API.
+  if (fatal && !scenarios) return { ..._zero(), ran: true, nosrc: true };
+  return { ...c, ..._detailFor('apiFuzz', rows) };
+}
+
+// gitleaks: whitelisted provenance rows — rule / file / line / commit / entropy — and a THREE-STATE
+// verification verdict. See the DETAIL_CAP block above for why the copy is a whitelist rather than
+// redaction-trust; the `Secret` and `Match` fields are still never mapped out of here.
+//
+// THIS LANE PUBLISHED 2,368 ROWS AT `high` WHILE PERFORMING NO VERIFICATION AT ALL.
+// The previous comment was honest about the premise and wrong about the conclusion: "gitleaks
+// grades nothing, so the lane is uniformly high". A detector that grades nothing must not emit the
+// second-highest severity. Measured across the 100-repo corpus on 2026-08-24:
+//   - 2,368 rows at high, ZERO carrying any verification field;
+//   - the sibling TruffleHog lane, which does verify, found 3 live credentials in the entire fleet;
+//   - 87% of the gitleaks rows sat in test/example/doc-shaped paths (vlang_v 1,111 of 1,117;
+//     kenn-io_agentsview 174 of 175 — a secrets-tool test corpus reported as a breach).
+// Three compounding defects, and fixing severity alone would have left the other two.
+//
+// Grading now follows monitor/secret-verify.mjs, which is the only place that may see a live
+// secret: verified -> crit, refused-by-its-service -> low, and NO VERDICT -> `undetermined`,
+// outside crit/high/med/low entirely. Undetermined is the common case and is not a failure —
+// `generic-api-key` names no service, so there is nothing to ask. It is also the state this lane
+// was silently converting into `high`.
+//
+// `testPath` is a LANE-LOCAL signal, deliberately not folded into monitor/fixture-paths.mjs. That
+// classifier is shared, and widening it to catch `foo_test.go` would move every other lane's
+// numbers at once — a SAST finding in test code is still a defect in code that runs, whereas a
+// credential in a test fixture is usually a fixture. Different lanes, different question.
+const _TEST_PATH_RE = /(^|\/)(test|tests|spec|specs|__tests__|testdata|fixtures?|examples?|samples?|mocks?|docs?)\//i;
+const _TEST_FILE_RE = /(^|\/)[^/]*[._-](test|spec)\.[A-Za-z0-9]+$|(^|\/)[^/]*_test\.[A-Za-z0-9]+$/i;
+export const isTestPath = (f) => _TEST_PATH_RE.test(String(f || '')) || _TEST_FILE_RE.test(String(f || ''));
+
+// Context beyond test/fixture, each a place a matched string is usually NOT a live operational
+// secret. Measured on the 100-repo corpus: one i18n label ('discord') fired in 11 locale files as
+// 11 rows; an `airtable-api-key` matched inside a minified icons bundle; a `private-key` string
+// literal sat in vendored mbedtls headers in two repos. Context does NOT change severity — a real
+// secret in a minified vendor blob is still real — it is a triage signal, the same role testPath
+// plays. `test` is reported first because isTestPath already owns that classification.
+const _LOCALE_RE = /(^|\/)(locales?|i18n|lang|translations?)\//i;
+const _MINIFIED_RE = /(^|\/)[^/]*\.min\.(js|mjs|css)$/i;
+const _VENDOR_RE = /(^|\/)(vendor|vendored|third[_-]?party|node_modules|bower_components)\//i;
+export function classifyContext(f) {
+  const p = String(f || '');
+  if (isTestPath(p)) return 'test';
+  if (_LOCALE_RE.test(p)) return 'locale';
+  if (_MINIFIED_RE.test(p)) return 'minified';
+  if (_VENDOR_RE.test(p)) return 'vendored';
+  return '';
+}
+
+// Rules whose match is a PUBLIC identifier, not a secret. A Firebase/GCP browser API key (`AIza…`,
+// gitleaks rule `gcp-api-key`) is documented by Google as non-confidential — it is restricted by
+// API/referrer, not by being hidden, and ships in client bundles by design. Even if a verifier
+// reports it live, publishing it `crit` is the fabricated-critical the house rule forbids. Such a
+// row is forced to `undetermined` with the original claim preserved in `verified`, never erased.
+// Deliberately NARROW: `algolia-api-key` is excluded because gitleaks cannot tell a public search
+// key from an admin key, and a wrong demotion there would hide a real one.
+export const PUBLIC_BY_DESIGN = new Set(['gcp-api-key']);
+
+function _gitleaksCounts(dir, file, verdictFile = 'gitleaks-verify.json') {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  // EMPTY IS CLEAN; UNREADABLE IS NOT. gitleaks writes nothing on a clean tree, and the old catch
+  // treated BOTH that and a torn/hostile file as "ran, zero findings" — an unreadable secret scan
+  // reading as a clean one, which is the failure this codebase exists to refuse. safeParseFile
+  // throws on strictly more inputs than JSON.parse did (size, nesting, pollution keys), so keeping
+  // the old catch would have WIDENED that lie rather than inherited it. Split, per the trufflehog
+  // idiom at the top of this file: no bytes => clean; bytes we cannot trust => a named void.
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true };            // clean tree: gitleaks writes nothing
+  let j; try { j = safeParseFile(p); } catch (e) {
+    return { ..._zero(), ran: false, unreadable: true, reason: `gitleaks.json refused: ${e.message}` };
+  }
+  const arr = Array.isArray(j) ? j : (j.findings || []);
+
+  // The verification sidecar, when the verify pass has run. Its ABSENCE is `null` for every row —
+  // never `false`. "We did not ask" and "the service said no" are different facts and only one of
+  // them is evidence.
+  const vmap = new Map();
+  let verifyRan = false;
+  const vp = join(dir, verdictFile);
+  if (existsSync(vp)) {
+    try {
+      const v = safeParseFile(vp);
+      verifyRan = !!v.ran;
+      for (const d of v.verdicts || []) vmap.set(`${d.file}|${d.line}|${d.rule}`, d.verified);
+    } catch { verifyRan = false; }   // fail closed: an unreadable sidecar verifies nothing
+  }
+
+  const c = { ..._zero(), ran: true, undetermined: 0, testPath: 0, verifyRan };
+  const rows = arr.map((f) => {
+    const rule = String((f && f.RuleID) || '');
+    const path = String((f && f.File) || '');
+    const line = Number(f && f.StartLine) || 0;
+    const verified = vmap.has(`${path}|${line}|${rule}`) ? vmap.get(`${path}|${line}|${rule}`) : null;
+    const publicByDesign = PUBLIC_BY_DESIGN.has(rule);
+    // A public-by-design identifier never buckets — the raw claim stays in `verified`.
+    const sev = publicByDesign ? null : (verified === true ? 'crit' : (verified === false ? 'low' : null));
+    const testPath = isTestPath(path);
+    const context = classifyContext(path);
+    if (sev) c[sev]++; else c.undetermined++;
+    if (testPath) c.testPath++;
+    c.total++;
+    return {
+      rule, file: path, line, commit: String((f && f.Commit) || ''), redacted: true,
+      // Entropy is the one confidence signal gitleaks DOES emit and the old extractor discarded it.
+      ...(Number.isFinite(f && f.Entropy) ? { entropy: Number(f.Entropy) } : {}),
+      ...(sev ? { sev } : {}), verified, ...(testPath ? { testPath: true } : {}),
+      ...(context ? { context } : {}), ...(publicByDesign ? { publicByDesign: true } : {}),
+    };
+  });
+  return { ...c, ..._detailFor('secrets', rows) };
+}
+
+// GuardDog (heuristic supply-chain): SARIF results whose signal lives in ruleId + message.text.
+// GuardDog's SARIF declares no structured package field, so package@version is recovered from the
+// message when the text carries one and stays '' otherwise — the rule + message are the payload
+// either way, and '' is honest, never a guess.
+function _guarddogCounts(dir, file) {
+  const rows = [];
+  const c = _sarifCounts(dir, file, (res, rule) => {
+    const msg = String((res.message && res.message.text) || '').trim();
+    // THREE forms, and the third is the one GuardDog actually writes. Measured 2026-08-13 across the
+    // fleet's 676 published rows: EVERY message opens `On package: <name> version: <ver>`, which
+    // neither `name@version` pattern matches — so 673 of 676 rows carried package:'' and the panel's
+    // supply-chain tab rendered a dash where the package belongs, for 99.6% of its content. The data
+    // was never missing; it was sitting in the message string one field over. The two `@`-forms stay:
+    // an artifact from a different GuardDog version must not start parsing as empty because the shape
+    // it uses is no longer the one being looked for first.
+    const pm = msg.match(/'(@?[^'\s]+)@([^'\s]+)'/)
+      || msg.match(/(?:^|\s)(@?[\w.-]+(?:\/[\w.-]+)?)@(\d[\w.+-]*)/)
+      || msg.match(/\bpackage:\s*(\S+)\s+version:\s*(\S+)/i);
+    rows.push({ rule: String(res.ruleId || (rule && rule.id) || ''), package: pm ? pm[1] : '',
+      version: pm ? pm[2] : '', message: capMessage(msg) });
+  });
+  if (!c || c.nosrc || c.unparseable || c.norules || c.neverran || c.toolfailed) return c; // absent, or a husk with nothing to detail
+
+  // ── CAPABILITY IS NOT A VERDICT ────────────────────────────────────────────────────────────────
+  // GuardDog emits two families under one SARIF. `threat-*` (plus metadata_mismatch, typosquatting,
+  // bundled_binary, provenance_regression) are ADJUDICATIONS: this package did something bad.
+  // `capability-*` is DESCRIPTION: this package can open a socket, spawn a process, read a file.
+  // Almost every real package can.
+  //
+  // Measured on sweep-20260820120254: 602 of 675 published rows are capability-* across 255 distinct
+  // packages — including @fortawesome/fontawesome-free (capability-network-outbound) and
+  // @popperjs/core. Publishing those at `med` is the same defect class as the Lob detector's 1,311
+  // false criticals: a descriptive signal wearing a verdict's clothes, at 89% of the lane.
+  //
+  // So capability rows keep their DETAIL — they are genuine context about a package, and deleting
+  // them would lose real information — and lose their SEVERITY. They are counted under `capability`,
+  // outside crit/high/med/low, and the verdict rows keep the lane's counts to themselves.
+  const VERDICT = /^(threat-|metadata_mismatch|typosquatting|bundled_binary|provenance_regression|potentially_compromised_email_domain)/i;
+  const isCapability = (r) => /^capability-/i.test(String(r.rule || ''));
+  const capability = rows.filter(isCapability).length;
+  if (capability) {
+    // The producer counted every row; what changes is how many we are willing to call findings.
+    // Both numbers travel — a reader needs to see that the lane is mostly description.
+    const drop = Math.min(capability, Number(c.med) || 0);
+    c.med = Math.max(0, (Number(c.med) || 0) - drop);
+    c.total = Math.max(0, (Number(c.total) || 0) - capability);
+    c.capability = capability;
+    c.verdicts = rows.filter((r) => VERDICT.test(String(r.rule || ''))).length;
+  }
+  // No per-row `kind`: the rule prefix already determines the family, and declaring it as a field
+  // would put one fact in two columns. The split that matters is in the counts above.
+  return { ...c, ..._detailFor('supplyChainHeuristic', rows) };
+}
+
+// Socket's alert shape, MEASURED rather than assumed:
+//   { ok, data: { healthy, alerts: { <ecosystem>: { <package>: { <version>: {type, policy, url} } } } } }
+// The previous extractor read `j.issues || j.alerts || (j.results && j.results.issues)` and treated
+// the result as an array. None of those paths exist in the CLI's output, and `data.alerts` is an
+// OBJECT — so `.length` was undefined, `|| 0` made it zero, and every supply-chain scan in the
+// fleet reported "ran, 0 findings" from a scan that had genuinely run. Verified against a real
+// repo: this walk finds a criticalCVE on vitest@4.0.18 and an obfuscatedFile on minimatch@9.0.6
+// where the old one found nothing.
+// The legacy paths are KEPT: an artifact written by an older CLI must not start reading as zero
+// just because the shape moved.
+function _socketAlertCount(j) {
+  if (!j || typeof j !== 'object') return 0;
+  const legacy = j.issues || j.alerts || (j.results && j.results.issues);
+  if (Array.isArray(legacy)) return legacy.length;
+  const alerts = j.data && j.data.alerts;
+  if (!alerts || typeof alerts !== 'object') return 0;
+  let n = 0;
+  for (const byPkg of Object.values(alerts)) {
+    if (!byPkg || typeof byPkg !== 'object') continue;
+    for (const byVer of Object.values(byPkg)) {
+      if (!byVer || typeof byVer !== 'object') continue;
+      n += Object.keys(byVer).length;   // one alert per (package, version)
+    }
+  }
+  return n;
+}
+
+// key → [manifest check id, extractor] (report filenames match manifests/security-baseline.json +
+// bin/authz-bola.mjs). The check id ties each category back to its checks-status.json rows — the
+// per-repo run provenance — and is chosen by which check WRITES the artifact the extractor reads,
+// not by name similarity: `secrets` here reads gitleaks.json, which the `secrets-gitleaks` check
+// produces, NOT the `secrets` (TruffleHog) check — crediting TruffleHog's 0/18 record to numbers
+// gitleaks produced would be its own provenance lie in the other direction.
+// The same traversal _socketAlertCount walks, carrying the (package, version, alert) triple out as
+// rows instead of only counting the leaves. Kept beside the counter so the two cannot disagree
+// about what an alert IS — a divergence there would show as a row list that outnumbers its tally.
+// ── D15: what a Socket alert actually carries ────────────────────────────────────────────────────
+// Measured 2026-08-26 over 400 artifacts / 35,488 alerts: the alert is {type, policy, url, manifest}
+// and nothing else. No severity field, and `policy` is "warn" on every single one — so `policy` is
+// not a gradient, it is a constant, and the lane's old `total: n, high: n` asserted ~30,000 HIGHs on
+// the strength of a field that never varies.
+//
+// Severity therefore has to come from the TYPE, and the type says five different KINDS of thing.
+// Four are undetermined, and each says why rather than leaving a blank a reader fills in:
+//   licenseSpdxDisj  98.3% of the lane. A disjunctive licence expression — `(MIT OR Apache-2.0)` on
+//                    @babel/code-frame — is not a defect, it is a choice we have not made because no
+//                    licence policy is configured. Undetermined is the true answer, not zero.
+//   obfuscatedFile   our own minifiedCode lane adjudicates this class with 11 rules and names the
+//                    file; Socket names none, so there is nothing here to grade against it.
+//   criticalCVE      a real verdict with real evidence, and 4 of 8 sampled are ALREADY counted by
+//                    depsJvm/supplyChainHeuristic. Publishing 59 crits before dedup lands is
+//                    over-reporting; withheld until identity-dedup can say which are new.
+//   gptMalware       all six are numpy@2.5.1 — a current, real PyPI release. One LLM, no second
+//                    signal, and this is the exact shape that made TruffleHog's Lob detector 1,311
+//                    of 1,314 false criticals. It stays SUMMED as undetermined so a real one alarms.
+// gitHubDependency is the one that grades: a dependency resolved from a git URL bypasses registry
+// immutability and its tag can move. Low, and genuinely low — not a hedge.
+const SOCKET_TYPES = Object.freeze({
+  licenseSpdxDisj: { kind: 'policy', sev: '', why: 'no-licence-policy-configured' },
+  obfuscatedFile: { kind: 'integrity', sev: '', why: 'corroborates-minifiedCode-no-file-named' },
+  criticalCVE: { kind: 'vulnerability', sev: '', why: 'pending-dedup-against-cve-lanes' },
+  gptMalware: { kind: 'integrity', sev: '', why: 'single-source-llm-unverified' },
+  gitHubDependency: { kind: 'integrity', sev: 'low', why: '' },
+});
+// An unknown type is undetermined and keeps its name. The vocabulary grew under us once already —
+// the first census of this lane missed licenseSpdxDisj, which is 98% of it.
+const socketType = (t) => SOCKET_TYPES[t] || { kind: '', sev: '', why: 'type-not-in-vocabulary' };
+export const _socketTypes = SOCKET_TYPES;
+
+function _socketAlertRows(j) {
+  const out = [];
+  if (!j || typeof j !== 'object') return out;
+  const legacy = j.issues || j.alerts || (j.results && j.results.issues);
+  if (Array.isArray(legacy)) {
+    for (const a of legacy) {
+      const t = socketType((a && (a.type || a.key)) || '');
+      out.push({ rule: (a && (a.type || a.key)) || '', package: (a && (a.pkg || a.package)) || '',
+        version: (a && a.version) || '', sev: t.sev, claimKind: t.kind, sevReason: t.why,
+        message: (a && (a.description || a.title)) || '' });
+    }
+    return out;
+  }
+  const alerts = j.data && j.data.alerts;
+  if (!alerts || typeof alerts !== 'object') return out;
+  const map = { critical: 'crit', high: 'high', middle: 'med', medium: 'med', low: 'low' };
+  // THE NESTING IS ecosystem -> package -> version, and this loop used to name those three levels
+  // pkg, ver, name — off by one at every level. Measured on live artifacts 2026-08-10, it emitted
+  //   {rule:'11.0.0', package:'npm', version:'copy-webpack-plugin', sev:'', message:''}
+  // for copy-webpack-plugin@11.0.0: a version string in `rule`, the ECOSYSTEM in `package`, and the
+  // package name in `version`. Every field is a string, so no schema check could fire; the panel's
+  // Socket tab rendered "Alert: 11.0.0 · Package: npm · Version: copy-webpack-plugin" and every
+  // published rollup carried it.
+  //
+  // Two consequences worse than the labels. First, the ALERT TYPE — criticalCVE vs obfuscatedFile,
+  // the whole basis on which 5 real gaps were separated from 120 minified-bundle warnings — was
+  // never emitted at all: `a.type` was fed to the severity map, which has no key for a type name,
+  // so `sev` was always ''. The discrimination existed in Socket's JSON and in the analysis, and
+  // died at this function. Second, ROW_SCHEMAS.supplyChain keys suppression identity on
+  // ['rule','package']: an annotation authored from what the panel displayed would have been
+  // {rule:'&lt;version&gt;', package:'npm'} — silencing every npm alert at that version string across
+  // every repo. The strict matcher would have applied it faithfully, to the wrong fields.
+  for (const [eco, byEco] of Object.entries(alerts)) {
+    if (!byEco || typeof byEco !== 'object') continue;
+    for (const [pkg, byPkg] of Object.entries(byEco)) {
+      if (!byPkg || typeof byPkg !== 'object') continue;
+      for (const [ver, a] of Object.entries(byPkg)) {
+        // `type` IS the rule, and it is also the only severity signal — see SOCKET_TYPES.
+        const t = socketType((a && a.type) || '');
+        out.push({ rule: (a && a.type) || '', package: pkg, version: ver, ecosystem: eco,
+          sev: map[String((a && a.severity) || '').toLowerCase()] || t.sev,
+          claimKind: t.kind, sevReason: t.why,
+          message: (a && (a.description || a.title)) ? String(a.description || a.title) : '' });
+      }
+    }
+  }
+  return out;
+}
+
+// stub-detect is OURS (bin/stub-detect.mjs) and writes {summary, findings:[{type, marker, severity,
+// path, line, detail}]}. It is the LARGEST category in the fleet — 4,283 findings, an order of
+// magnitude above anything else — and it has never had a drill-down, so it existed only as a number
+// nobody could act on. It stays out of the severity headline (TOTALS_EXCLUDE: a TODO is not a
+// vulnerability); being out of the headline is not a reason to be unreadable.
+//
+// The counts stay byte-compatible with _countArray's convention — total = high = rows — so this
+// change adds evidence without moving a single number.
+// bin/vendor-scan.mjs writes {ran, skipped, reason, summary, findings[], unidentified[]}.
+// ran:false is honoured as a VOID, never a zero: an unreachable advisory database and a clean one
+// are the same empty array, and only the flag tells them apart. `unidentified` rides in the counts
+// so the panel can say "0 findings, N files nothing could identify" instead of a bare clean.
+function _vendorCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (j && j.ran === false) return { ..._zero(), ran: false, noscan: true, reason: j.reason || null };
+  const arr = (j && Array.isArray(j.findings)) ? j.findings : [];
+  const map = { critical: 'crit', crit: 'crit', high: 'high', moderate: 'med', medium: 'med', med: 'med', low: 'low' };
+  const rows = arr.map((f) => ({ package: f && f.package, version: f && f.version, file: f && f.file,
+    id: f && f.id, sev: map[String((f && f.severity) || '').toLowerCase()] || '',
+    severitySource: String((f && f.severitySource) || ''),
+    severityReason: String((f && f.severityReason) || ''),
+    cvssVia: String((f && f.cvssVia) || ''), cwe: String((f && f.cwe) || ''),
+    cwePillar: String((f && f.cwePillar) || ''), capec: String((f && f.capec) || ''),
+    capecVia: String((f && f.capecVia) || ''), attack: String((f && f.attack) || ''),
+    attackTactic: String((f && f.attackTactic) || ''), capecReason: String((f && f.capecReason) || ''),
+    summary: f && f.summary }));
+  const t = { ..._zero(), ran: true, total: arr.length, undetermined: 0,
+    unidentified: (j.unidentified || []).length };
+  // Ungradable lands in `undetermined`, never nowhere: 'unknown' matched no bucket, so 35 of 37 rows
+  // left `total` standing over a split summing to 2.
+  for (const r of rows) { if (t[r.sev] !== undefined) t[r.sev] += 1; else t.undetermined += 1; }
+  return { ...t, ..._detailFor('vendorAssets', rows) };
+}
+
+// bin/weak-random-detect.mjs — insufficient randomness in security-sensitive values.
+//
+// Every row is `high`: a guessable credential is not a severity gradient, and the lane already
+// refuses to publish anything it cannot tie to a credential-shaped assignment target or a
+// credential-generating function.
+//
+// `context:'test'` rows are counted under `undetermined`, never as findings — the same split
+// _stubCounts makes. A deterministic seed in a benchmark is the correct implementation of a
+// benchmark, and suppressing those rows entirely would hide the one case where a fixture leaks
+// into production by being imported.
+//
+// filesScanned === 0 is a VOID: a walk that examined nothing has not found nothing.
+function _weakRandomCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object' || j.tool !== 'weak-random-detect' || !Array.isArray(j.findings)) {
+    return { ..._zero(), ran: true, unparseable: true };
+  }
+  const scanned = Number(j.summary && j.summary.filesScanned);
+  if (!Number.isFinite(scanned) || scanned <= 0) return { ..._zero(), ran: true, nosrc: true };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  let testRows = 0;
+  for (const f of j.findings) {
+    if (!f) continue;
+    if (f.context === 'test') { testRows += 1; }
+    else { c.high += 1; c.total += 1; }
+    rows.push({ rule: f.rule, file: f.path, line: Number(f.line) || 0,
+      sev: f.context === 'test' ? '' : 'high',
+      context: f.context, fn: f.fn, message: capMessage(f.why || f.detail || '') });
+  }
+  if (testRows) {
+    c.undetermined = (c.undetermined || 0) + testRows;
+    c.testContextNote = `${testRows} row(s) in test/bench/fixture paths — deterministic randomness is correct there, so they are counted apart rather than published as findings.`;
+  }
+  c.filesScanned = scanned;
+  return { ...c, ..._detailFor('weakRandom', rows) };
+}
+
+function _stubCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  const all = (j && Array.isArray(j.findings)) ? j.findings : [];
+  // CONTEXT SPLIT (2026-08-28). bin/stub-detect.mjs now tags each row `comment` or `code`: a stub
+  // marker is a note somebody left, and the same WORD appearing in an identifier, a string or a JSX
+  // prop is not one. Both twins ship a to-do feature, so `todo` is a domain noun in their source —
+  // measured before the split, memory-layer published 982 TODO rows of which 10 contained the CAPS word.
+  //
+  // A row with NO `context` key is a VINTAGE artifact from before the split, and is counted as a
+  // finding exactly as it was. That is deliberate: re-rolling a 2026-07 batch must still produce
+  // the 2026-07 answer, and silently reinterpreting old evidence under a new rule would make
+  // corrected-history a fiction. Only `context === 'code'` moves.
+  const arr = all.filter((f) => !f || f.context !== 'code');
+  const codeRows = all.filter((f) => f && f.context === 'code');
+  const map = { critical: 'crit', high: 'high', medium: 'med', med: 'med', low: 'low' };
+  const rows = arr.map((f) => ({ marker: f && (f.marker || f.type), file: f && f.path, line: f && f.line,
+    sev: map[String((f && f.severity) || '').toLowerCase()] || 'high', message: f && f.detail }));
+  // COUNTS ARE DERIVED FROM THE ROWS, never asserted beside them. This was `high: arr.length`, a
+  // hardcoded bucket computed independently of the per-row `sev` two lines above — two numbers from
+  // one input, free to disagree, and they did: measured 2026-08-19, scanners.stubs read
+  // {high: 4322, low: 0} fleet-wide while every one of those 4,322 rows carried sev 'low'. A
+  // complete inversion, and the reason it was survivable is that TOTALS_EXCLUDE keeps the lane out
+  // of the headline — unexcluded, 4,322 TODO markers would have landed in the fleet's HIGH count.
+  // Deriving the buckets makes the disagreement unrepresentable rather than merely absent today.
+  const bySev = { crit: 0, high: 0, med: 0, low: 0 };
+  for (const r of rows) if (r.sev in bySev) bySev[r.sev] += 1;
+  // Never dropped: the code-context rows are counted under `undetermined`, outside crit/high/med/
+  // low, the same routing cspm and advisory-reach use for a claim that is real evidence but not a
+  // finding. `codeContextNote` travels so the gap is stated where it is read, not only where it is
+  // produced.
+  const out = { ..._zero(), ran: true, total: arr.length, ...bySev, ..._detailFor('stubs', rows) };
+  if (codeRows.length) {
+    out.undetermined = (out.undetermined || 0) + codeRows.length;
+    out.codeContextNote = `${codeRows.length} row(s) matched a marker WORD outside any comment — an identifier, a string or a prop, not a note. Counted apart rather than published as unfinished work.`;
+  }
+  return out;
+}
+
+// bin/minify-detect.mjs writes {tool, summary:{findings, byRule, filesScanned, filesSkipped, config},
+// findings:[{rule, path, sev, capped, metrics, detail}]}. Unlike stubs this lane carries mixed
+// severities (per-rule) and IS security-relevant, so it tallies each row's sev rather than folding
+// all to high, and it is NOT in TOTALS_EXCLUDE. filesScanned===0 is a declared void, not a clean
+// zero (Portll-security PS3): a walk that matched nothing must not read as examined-and-clean.
+function _minifyCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || !j.summary || !Array.isArray(j.findings)) return { ..._zero(), ran: true, unparseable: true };
+  if ((j.summary.filesScanned || 0) === 0) return { ..._zero(), ran: true, nosrc: true };
+  const c = { ..._zero(), ran: true };
+  const bucket = { crit: 'crit', critical: 'crit', high: 'high', med: 'med', medium: 'med', low: 'low' };
+  // fix: minified-source counts as undetermined, not med — readability is coverage, not a verdict.
+  // As med it was 19 of 20 med rows (2026-08-25), and its `maxLine > 1000` clause fires on any long
+  // template literal (timeline2.mjs:418 is an HTML legend). cspm precedent above; claim preserved.
+  const UNDETERMINED_RULES = new Set(['minified-source']);
+  // byName as well as byPattern, so this matches worktree-paths.partition()'s report shape — one
+  // concept must not have two shapes that are free to disagree (see the stubs bucket above).
+  const wt = { crit: 0, high: 0, med: 0, low: 0, total: 0, byPattern: {}, byName: {}, rows: [] };
+  // minify-detect marks rows where it matched its OWN pattern definitions. Set aside with severity
+  // intact and enumerable, same contract as `worktrees` — the producer decides, we do not re-derive
+  // the path list here (two authorities over one publication decision is how they drift apart).
+  const sr = { crit: 0, high: 0, med: 0, low: 0, total: 0, byFile: {}, rows: [] };
+  let undetermined = 0;
+  const rows = [];
+  for (const f of (j.findings || [])) {
+    const file = (f && f.path) || '';
+    const m = (f && f.metrics) || {};
+    const metric = `entropy=${m.entropy} ws=${m.wsRatio} maxline=${m.bytesPerLineMax}`;
+    const raw = bucket[String((f && f.sev) || '').toLowerCase()] || 'med';
+    if (f && f.selfReference) {
+      sr[raw]++; sr.total++;
+      sr.byFile[file] = (sr.byFile[file] || 0) + 1;
+      sr.rows.push({ rule: f && f.rule, file, sev: raw, why: String(f.selfReference) });
+      continue;
+    }
+    const cls = classifyWorktreePath(file);
+    if (cls.worktree) {
+      // Set aside with its severity intact — this row is not judged, it is addressed to another
+      // copy of this repo. Enumerable in `worktrees.rows`, untouched in minify.json on disk.
+      wt[raw]++; wt.total++;
+      wt.byPattern[cls.pattern] = (wt.byPattern[cls.pattern] || 0) + 1;
+      wt.byName[cls.name] = (wt.byName[cls.name] || 0) + 1;
+      wt.rows.push({ rule: f && f.rule, file, sev: raw, pattern: cls.pattern, name: cls.name, why: cls.why });
+      continue;
+    }
+    const grey = UNDETERMINED_RULES.has(f && f.rule);
+    // sev '' is the schema's legal no-severity value; giving one back would be the assertion again.
+    const sev = grey ? '' : raw;
+    if (grey) undetermined++; else { c[sev]++; c.total++; }
+    rows.push({
+      rule: f && f.rule, file, sev, capped: !!(f && f.capped), metric,
+      message: grey
+        ? `UNDETERMINED — unreadable is a coverage fact, not a vulnerability; this file was measured, not judged. minify-detect reported: ${String((f && f.detail) || '').slice(0, 160)}`
+        : f && f.detail,
+    });
+  }
+  if (undetermined) c.undetermined = undetermined;
+  // Stated as a fraction, so a shrinking published count is visible rather than merely true.
+  const scanned = c.total + undetermined + wt.total + sr.total;
+  if (wt.total) {
+    c.worktrees = { ...wt, of: scanned, note: `${wt.total} of ${scanned} rows are the same files re-scanned through an agent worktree under .claude/worktrees/ and are excluded from these counts. They remain in minify.json on disk. Set CW_WORKTREE_PATHS=off to count them.` };
+  }
+  if (sr.total) {
+    c.selfReference = { ...sr, of: scanned, note: `${sr.total} of ${scanned} rows are minify-detect matching its own pattern definitions — the literals in its comments and fixtures ARE the rules — and are excluded from these counts. They remain in minify.json on disk. Readability, bidi and packer rules stay live on those files.` };
+  }
+  // Recorded skips must have a reader, or "no silent size drop" becomes a silent drop one hop
+  // later (Sauron S4). Surface the count alongside the standard buckets.
+  const skipped = Array.isArray(j.summary.filesSkipped) ? j.summary.filesSkipped.length : 0;
+  return { ...c, ...(skipped ? { skipped } : {}), ..._detailFor('minifiedCode', rows) };
+}
+
+// bin/authz-bola.mjs writes {ran, skipped, reason, summary, findings:[{type, severity, path,
+// detail}], tested}. `ran:false` is its own honest void — the probe found no object-level endpoint
+// to test — and must not read as "tested, nothing found", which is what _countArray's `total:0` said.
+function _bolaCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  if (j.ran === false) return { ..._zero(), ran: true, nosrc: true }; // nothing probed — a void, not a clean result
+  const arr = Array.isArray(j.findings) ? j.findings : [];
+  const map = { critical: 'crit', high: 'high', medium: 'med', med: 'med', low: 'low' };
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const f of arr) {
+    const b = map[String((f && f.severity) || '').toLowerCase()] || 'high';
+    c[b]++; c.total++;
+    rows.push({ probe: f && f.type, path: f && f.path, sev: b,
+      message: [f && f.detail, f && f.direction ? `(${f.direction})` : ''].filter(Boolean).join(' ') });
+  }
+  return { ...c, ..._detailFor('bola', rows) };
+}
+
+// retire.js identifies a library BY THE CONTENT OF A FILE, which is why this is not the same
+// evidence as deps-osv / npm-audit even though all three walk a node_modules tree. Those answer
+// "what does the lockfile DECLARE"; retire answers "what library is actually IN this file".
+//
+// The gap that makes it worth its own category, measured 2026-08-01 on a client admin console: quill
+// 1.3.7 inside react-quill/dist/react-quill.js, and vue 2.6.14 inside a chart.js docs asset. No
+// manifest anywhere names either one — the lockfile declares react-quill and chart.js — so every
+// manifest-gated lane in this fleet is structurally blind to them. The check has been running and
+// writing retire.json since before this category existed; the findings simply reached no total,
+// which is the same "ran, aggregated by nothing" shape as the seven categories above.
+//
+// KNOWN LIMIT, stated because a category that overclaims is worse than none: retire's database is
+// curated, so absence is not proof. Verified 2026-08-02 — `retire --path sitemap/vendor` returns
+// zero entries for three.min.js (607KB, ~4 years old, served publicly). A vendored asset retire
+// does not know remains uncovered by EVERY lane, and that hole is tracked separately, not papered
+// over by this category reading `ran: true`.
+function _retireDetail(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let j; try { j = safeParseFile(p); } catch { return null; }
+  // A husk is not a clean scan. `{data: []}` IS a clean scan — retire lists only vulnerable files —
+  // so the two are distinguished here rather than both collapsing to zeroes.
+  if (!Array.isArray(j.data)) return null;
+  const c = { ..._zero(), ran: true };
+  const map = { critical: 'crit', high: 'high', medium: 'med', low: 'low' };
+  const rows = [];
+  for (const f of j.data) for (const r of f.results || []) for (const v of r.vulnerabilities || []) {
+    const b = map[String(v.severity || '').toLowerCase()]; if (!b) continue;
+    c[b]++; c.total++;
+    const ids = v.identifiers || {};
+    // retire reports an ABSOLUTE path on the scanning machine. Trimming to the node_modules segment
+    // (or the last two segments) keeps the row's meaning — WHICH bundle the library was found in —
+    // without publishing this operator's home directory into an artifact the panel serves.
+    const abs = String(f.file || '');
+    const nm = abs.indexOf('/node_modules/');
+    const rel = nm >= 0 ? abs.slice(nm + 1) : abs.split('/').slice(-2).join('/');
+    rows.push({
+      component: String(r.component || ''),
+      version: String(r.version || ''),
+      id: String((Array.isArray(ids.CVE) && ids.CVE[0]) || ids.githubID || ids.issue || ''),
+      sev: b,
+      file: rel,
+      message: capMessage(String(ids.summary || '')),
+    });
+  }
+  return { ...c, ..._detailFor('depsRetire', rows) };
+}
+
+// Stamp the SHARED unknown predicate onto a category block built by any lane.
+//
+// Additive on purpose: the lane's own word (nosrc/noscan/norules/unparseable/undetermined/...) stays
+// exactly where it is, and `unknown`/`unknownReason` appear beside it. That makes the fleet-level
+// question — how much of what we published is unknown, and why — answerable today, without touching
+// the 41 files that read `noscan` or the 79 that read `unparseable`.
+export function stampUnknown(block) {
+  if (!block || typeof block !== 'object' || block.unknown === true) return block;
+  const reason = unknownReasonOf(block);
+  return reason ? { ...block, unknown: true, unknownReason: reason } : block;
+}
+
+const SCANNER_SPECS = [
+  ['depsJvm', 'deps-jvm', (d) => _trivyCounts(d, 'trivy-jvm.json')],
+  ['sastSemgrep', 'sast', (d) => _sarifDetail(d, 'semgrep.sarif', 'sastSemgrep')],
+  ['sastCodeql', 'sast-codeql', (d) => _sarifDetail(d, 'codeql.sarif', 'sastCodeql', 'sast-codeql')],
+  ['sastCodeqlJava', 'sast-codeql-java', (d) => _sarifDetail(d, 'codeql-java.sarif', 'sastCodeqlJava', 'sast-codeql-java')],
+  // Python and Ruby run under build-mode NONE — CodeQL extracts them without building the source
+  // root, so these two lanes execute nothing from the scanned repository and need no container.
+  // That is what separates them from CodeQL C/C++, which has no build-mode none and must autobuild.
+  // Kept as their own categories for the reason sastCodeqlJava is: a lane must never be able to
+  // stand in for one that did not run. 48 of the 100randomrepos corpus carry .py sources.
+  ['sastCodeqlPython', 'sast-codeql-python', (d) => _sarifDetail(d, 'codeql-python.sarif', 'sastCodeqlPython', 'sast-codeql-python')],
+  ['sastCodeqlRuby', 'sast-codeql-ruby', (d) => _sarifDetail(d, 'codeql-ruby.sarif', 'sastCodeqlRuby', 'sast-codeql-ruby')],
+  // Added 2026-08-24; until 2026-08-27 neither joern nor bearer was installed on any machine in
+  // this fleet, and both lanes correctly resolved to tool-unavailable — noscan, never a clean
+  // zero. They are separate categories rather than folded into sastSemgrep for the reason
+  // sastCodeqlJava is: a lane must never be able to stand in for one that did not run.
+  ['sastCodeqlCpp', 'sast-codeql-cpp', (d) => _sarifDetail(d, 'codeql-cpp.sarif', 'sastCodeqlCpp', 'sast-codeql-cpp')],
+  ['sastCCppcheck', 'sast-c-cppcheck', (d) => _sarifDetail(d, 'cppcheck.sarif', 'sastCCppcheck', 'sast-c-cppcheck')],
+  ['sastCFlawfinder', 'sast-c-flawfinder', (d) => _sarifDetail(d, 'flawfinder.sarif', 'sastCFlawfinder', 'sast-c-flawfinder')],
+  ['sastCodeqlSwift', 'sast-codeql-swift', (d) => _sarifDetail(d, 'codeql-swift.sarif', 'sastCodeqlSwift', 'sast-codeql-swift')],
+  // Added 2026-08-24. Its own category, not folded into sastCodeql: before it, C# reached the
+  // rollup only through maliciousPackages (osv reading packages.lock.json), which never reads C#.
+  ['sastCodeqlCsharp', 'sast-codeql-csharp', (d) => _sarifDetail(d, 'codeql-csharp.sarif', 'sastCodeqlCsharp', 'sast-codeql-csharp')],
+  // Rust's FIRST security reading of source (2026-08-26). Coverage is structurally unmeasurable —
+  // the rust extractor emits successes but no expected-extracted-files baseline — so every run
+  // carries coverageIncomplete; that is fail-closed, not a defect (see codeql-coverage.mjs).
+  ['sastCodeqlRust', 'sast-codeql-rust', (d) => _sarifDetail(d, 'codeql-rust.sarif', 'sastCodeqlRust', 'sast-codeql-rust')],
+  ['sastAuto', 'sast-auto', (d) => _sarifDetail(d, 'semgrep-auto.sarif', 'sastAuto')],
+  // All three graduated 2026-08-27 against real runs (see each parser's comment for what the
+  // probe overturned — joern's artifact even changed name, because the JSON its check promised
+  // does not exist in the installed tool).
+  ['sastJoern', 'sast-joern', (d) => _joernScanCounts(d, 'joern.txt')],
+  ['sastBearer', 'sast-bearer', (d) => _bearerCounts(d, 'bearer.json')],
+  ['sastElixir', 'sast-elixir-sobelow', (d) => _sobelowCounts(d, 'sobelow.json')],
+  // The two lint lanes below carry lint- names and lint- categories deliberately. Clippy ships no
+  // security rule pack and no taint analysis, and hlint is a style tool; a sast- name on either
+  // would let a lint-clean repository earn a green SAST row. Both join TOTALS_EXCLUDE and
+  // METRIC_CATEGORIES below for the same reason denoLint does — a Haskell project with 400 style
+  // suggestions must not publish 400 findings.
+  ['lintRust', 'lint-rust-clippy', (d) => _clippyCounts(d, 'clippy.json')],
+  ['sastPython', 'sast-python-bandit', (d) => _banditCounts(d, 'bandit.json')],
+  ['lintPython', 'lint-python-ruff', (d) => _sarifDetail(d, 'ruff.sarif', 'lintPython')],
+  ['sastBrakeman', 'sast-ruby-brakeman', (d) => _brakemanCounts(d, 'brakeman.json')],
+  ['depsBundlerAudit', 'deps-ruby-bundler-audit', (d) => _bundlerAuditCounts(d, 'bundler-audit.json')],
+  ['sastPhp', 'sast-php-phpcs', (d) => _phpcsCounts(d, 'phpcs.json')],
+  ['sastPhpPsalm', 'sast-php-psalm', (d) => _sarifDetail(d, 'psalm.sarif', 'sastPhpPsalm', 'sast-php-psalm')],
+  ['lintJava', 'lint-java-pmd', (d) => _pmdCounts(d, 'pmd.json')],
+  ['mobileManifest', 'mobile-manifest', (d) => _sarifDetail(d, 'mobile-manifest.sarif', 'mobileManifest')],
+  ['nodeHazards', 'node-hazards', (d) => _sarifDetail(d, 'node-hazards.sarif', 'nodeHazards')],
+  ['depsRustAudit', 'deps-rust-audit', (d) => _cargoAuditCounts(d, 'cargo-audit.json')],
+  ['lintHaskell', 'lint-haskell-hlint', (d) => _hlintCounts(d, 'hlint.json')],
+  ['iac', 'iac-config', (d) => _sarifDetail(d, 'trivy-config.sarif', 'iac')],
+  ['supplyChain', 'supply-chain-socket', (d) => _socketCounts(d, 'socket.json')],
+  // Deliberately NOT merged into supplyChain. Socket alerts and OSV MAL- records are different
+  // evidence from different feeds with different run provenance, and supply-chain-socket has never
+  // completed a scan in this fleet (0 pass / 40 token-skip / 25 noscan, 2026-07-31). Folding a live
+  // lane into a dead one's key would launder the dead one's reputation — the category stays separate
+  // so each reports its OWN ran/skipped/noscan.
+  ['maliciousPackages', 'deps-osv', (d) => _malCounts(d, 'osv.sarif')],
+  // GuardDog is the HEURISTIC half and is kept apart from maliciousPackages for the same reason:
+  // MAL- is a curated verdict ("this package is malware"), GuardDog is a registry-metadata signal
+  // ("this package is worth a look"). Summing them would let a typosquat suspicion inflate the
+  // confirmed-malware number, which is the one number that must never need a caveat.
+  ['supplyChainHeuristic', 'supply-chain-guarddog', (d) => _guarddogCounts(d, 'guarddog.sarif')],
+  ['secrets', 'secrets-gitleaks', (d) => _gitleaksCounts(d, 'gitleaks.json')],
+  ['dast', 'dast-nuclei', (d) => _nucleiCounts(d, 'nuclei.jsonl')],
+  ['bola', 'dast-authz-bola', (d) => _bolaCounts(d, 'authz-bola.json')],
+  ['stubs', 'stub-detect', (d) => _stubCounts(d, 'stub.json')],
+  ['weakRandom', 'weak-random', (d) => _weakRandomCounts(d, 'weak-random.json')],
+  ['minifiedCode', 'minify-detect', (d) => _minifyCounts(d, 'minify.json')],
+  ['vendorAssets', 'vendor-scan', (d) => _vendorCounts(d, 'vendor-scan.json')],
+  // ── the seven that had a scanner, an artifact and a remediation prompt but no category ────────
+  // Each of these ran on every sweep and wrote a report nothing aggregated, so `scanners` had no
+  // key for them and the panel's triage card said `no live counts` — which reads as "nothing to
+  // see" for checks that were, in hadolint's case, reporting Dockerfile errors the whole time.
+  // `secretsHistory` is kept separate from `secrets` for the reason the header above gives: they
+  // are different tools with different run provenance over different corpora (git history vs the
+  // working tree), and one number would credit whichever ran to whichever did not.
+  ['secretsHistory', 'secrets', (d) => _trufflehogCounts(d, 'trufflehog.json')],
+  ['sastGo', 'sast-go-gosec', (d) => _sarifDetail(d, 'gosec.sarif', 'sastGo')],
+  ['lintGo', 'lint-go-golangci', (d) => _sarifDetail(d, 'golangci.sarif', 'lintGo')],
+  // Gradle projects that commit no lockfile: coordinates read from version catalogs and build
+  // files, transitive closure from deps.dev, matched against OSV. ITS OWN CATEGORY rather than an
+  // alias onto depsJvm, deliberately — its resolution is DECLARED, so its counts carry a caveat
+  // (constraints, resolutionStrategy, BOMs and plugins can each override a declared version) that
+  // merging into Trivy's would silently drop. Same count, different epistemic status; a shared
+  // bucket cannot hold both.
+  ['depsGradleDeclared', 'deps-gradle-declared', (d) => _sarifDetail(d, 'gradle-deps.sarif', 'depsGradleDeclared')],
+  ['depsGo', 'deps-go-govulncheck', (d) => _govulnCounts(d, 'govulncheck.json')],
+  ['depsRetire', 'deps-retire', (d) => _retireDetail(d, 'retire.json')],
+  ['dockerfile', 'dockerfile-lint', (d) => _hadolintCounts(d, 'hadolint.json')],
+  ['tlsHeaders', 'tls-headers', (d) => _tlsHeaderCounts(d, 'tls-headers.json')],
+  ['apiFuzz', 'api-fuzz', (d) => _schemathesisCounts(d, 'schemathesis.ndjson')],
+  ['cspm', 'cspm-github', (d) => _cspmCounts(d, 'cspm-github.json')],
+  // Kept apart from cspm for the reason secretsHistory is kept apart from secrets: different tools,
+  // different corpora, different run provenance. They also DISAGREE by design — Prowler reports a
+  // control it cannot read as failing, Scorecard reports it as undetermined — and one merged number
+  // would resolve that disagreement silently in favour of whichever ran last.
+  ['supplyChainPosture', 'posture-scorecard', (d) => _scorecardCounts(d, 'scorecard.json')],
+  // Deliberately NOT merged into the CVE lane, and deliberately excluded from the severity SUM
+  // (TOTALS_EXCLUDE) — the two read the same advisory data, so summing them double-counts. This
+  // lane exists for the SECOND OPINION: an independent engine over the same dependency graph, whose
+  // disagreement with osv is the signal. Merging them would resolve that disagreement silently.
+  ['depsReachability', 'deps-reachability', (d) => _depscanCounts(d, 'depscan.json')],
+  // Static: reads the wrapper's declared distributionUrl and hashes the two committed artifacts.
+  // Runs no Gradle, needs no container, and is the cheapest real signal on a JVM repo.
+  ['gradleWrapper', 'gradle-wrapper', (d) => _gradleWrapperCounts(d, 'gradle-wrapper.json')],
+  // The CI configuration is the part of the supply chain that runs holding repository credentials,
+  // and no code scanner looks at it. zizmor audits it statically and OFFLINE, so unlike the cspm
+  // lane beside it this one needs no token and cannot be gated into a permanent void.
+  ['actionsPosture', 'actions-zizmor', (d) => _sarifDetail(d, 'zizmor.sarif', 'actionsPosture')],
+  ['accessibility', 'a11y-wcag', (d) => _a11yCounts(d, 'a11y.json')],
+  // The two Deno lanes. Both are CORRECTNESS, not vulnerability — see TOTALS_EXCLUDE below and the
+  // note on deno-check in manifests/security-baseline.json. They exist because a Deno repo would
+  // otherwise be scored on the unconditional checks alone: no advisory database covers Deno's
+  // URL/JSR import graph and osv-scanner rejects deno.lock, so its dependencies are checked against
+  // nothing at all. Measuring the code is not a substitute for that, and neither lane pretends to
+  // be; the void is declared in monitor/coverage-manifest.mjs where it can be read directly.
+  ['denoLint', 'deno-lint', (d) => _denoLintCounts(d, 'deno-lint.json')],
+  ['denoTypes', 'deno-check', (d) => _denoCheckCounts(d, 'deno-check.log')],
+  // Kept apart from actionsPosture (zizmor) for the reason denoLint is kept apart from denoTypes:
+  // they measure different properties of the same file, and one row would let a green posture audit
+  // stand in for a correctness lint that never ran.
+  ['actionsLint', 'actions-actionlint', (d) => _actionlintCounts(d, 'actionlint.json')],
+  ['shellLint', 'shell-lint', (d) => _shellcheckCounts(d, 'shellcheck.json')],
+];
+
+// ── THE DISPLAY NAMES, BESIDE THE SPECS THAT EARN THEM ───────────────────────────────────────────
+// admin/index.html kept its own SCANNER_LABEL map and derived the coverage table's category set from
+// it — `const ALL = Object.keys(SCANNER_LABEL)`. That map had TWELVE entries against this list's
+// twenty-five, and the thirteen it lacked were not merely unlabelled: they were dropped from the
+// table AND from its denominator. Measured on client-d 2026-08-06, the header read "12/12 categories"
+// — full coverage of the programme — while eleven categories the rollup had spoken for were
+// invisible, two of them (tls-headers, api-fuzz) sitting on unreported coverage gaps. A section
+// built to refuse "0 findings means clean" was itself answering a question nobody asked.
+//
+// So the names live HERE, one row per spec, enforced by a test that compares the two key sets. A
+// scanner cannot now be added without being named, and cannot be named without appearing. The panel
+// still ships a fallback copy for rollups written before this shipped, and unions whatever it is
+// given with the payload's own keys — belt and braces, because the failure mode is silence.
+export const SCANNER_LABELS = Object.freeze({
+  secrets: 'Secrets · Gitleaks',
+  secretsHistory: 'Secrets in history · TruffleHog',
+  sastSemgrep: 'SAST · Semgrep',
+  sastCodeql: 'SAST · CodeQL (JS/TS)',
+  sastCodeqlJava: 'SAST · CodeQL (Java)',
+  sastCodeqlPython: 'SAST · CodeQL (Python)',
+  sastCodeqlRuby: 'SAST · CodeQL (Ruby)',
+  sastGo: 'SAST · gosec (Go)',
+  sastCodeqlCpp: 'SAST · CodeQL (C/C++)',
+  sastCCppcheck: 'SAST · cppcheck (C/C++)',
+  sastCFlawfinder: 'SAST · flawfinder (C/C++, lexical)',
+  sastCodeqlSwift: 'SAST · CodeQL (Swift)',
+  sastCodeqlCsharp: 'SAST · CodeQL (C#)',
+  sastCodeqlRust: 'SAST · CodeQL (Rust)',
+  sastAuto: 'SAST · Semgrep --auto (comparison arm)',
+  sastJoern: 'SAST · Joern (CPG, C/C++/binary)',
+  sastBearer: 'Data-flow · Bearer (privacy/PII)',
+  sastElixir: 'SAST · Sobelow (Elixir/Phoenix)',
+  lintRust: 'Lint · clippy (Rust, not a security scan)',
+  sastPython: 'SAST · Bandit (Python)',
+  lintPython: 'Lint · ruff (Python, not a security scan)',
+  lintGo: 'Lint · golangci-lint (Go, not a security scan)',
+  sastBrakeman: 'SAST · Brakeman (Ruby)',
+  depsBundlerAudit: 'Ruby gem advisories · bundler-audit (second opinion)',
+  sastPhp: 'SAST · phpcs + security-audit (PHP)',
+  sastPhpPsalm: 'SAST · Psalm taint (PHP)',
+  lintJava: 'Lint · PMD (Java, not a security scan)',
+  mobileManifest: 'Mobile manifest · Android/iOS exported surface',
+  nodeHazards: 'Node hazards · unsafe-by-presence constructs (JS/TS + templates)',
+  depsRustAudit: 'RustSec advisories · cargo-audit (second opinion)',
+  lintHaskell: 'Lint · hlint (Haskell, not a security scan)',
+  depsGradleDeclared: 'Gradle declared deps · deps.dev + OSV (floor)',
+  depsJvm: 'JVM CVEs · Trivy',
+  depsGo: 'Go CVEs · govulncheck',
+  depsRetire: 'JS library CVEs · Retire.js',
+  maliciousPackages: 'Malicious packages · OSV MAL-',
+  supplyChain: 'Supply chain · Socket',
+  supplyChainHeuristic: 'Supply-chain heuristics · GuardDog',
+  vendorAssets: 'Vendored assets',
+  iac: 'IaC config · Trivy',
+  dockerfile: 'Dockerfile · hadolint',
+  cspm: 'Cloud posture · GitHub CSPM',
+  supplyChainPosture: 'Supply-chain posture · OpenSSF Scorecard',
+  depsReachability: 'Dependency reachability · OWASP dep-scan',
+  gradleWrapper: 'Gradle wrapper integrity',
+  actionsPosture: 'CI posture · zizmor',
+  dast: 'DAST · nuclei',
+  bola: 'Authz / BOLA',
+  tlsHeaders: 'TLS + security headers',
+  apiFuzz: 'API fuzz · Schemathesis',
+  accessibility: 'Accessibility · WCAG',
+  weakRandom: 'Insufficient randomness · credentials',
+  denoLint: 'Deno lint',
+  denoTypes: 'Deno type check',
+  actionsLint: 'CI correctness · actionlint',
+  shellLint: 'Shell · shellcheck',
+  stubs: 'Stubs / unfinished work',
+  minifiedCode: 'Minified / obfuscated code',
+});
+// ── THE HEADLINE, SUMMED ─────────────────────────────────────────────────────────────────────────
+// `totals` was dependency CVEs alone; everything else sat one level down in `scanners` and reached
+// no headline. A repo with 88 leaked secrets and no CVEs reported 0 crit / 0 high and rendered as
+// CLEAN. The headline now sums the CVE feed AND every security scanner category — minus the lanes
+// declared non-additive below, where summing makes the number WRONG rather than big.
+//
+// ── WHAT EACH LANE CLAIMS (2026-08-26) ───────────────────────────────────────────────────────────
+// Three independent axes, previously two hand-kept lists plus their comments:
+//   kind       — WHAT is claimed. Severity is orthogonal to it: `high` means a different thing, and
+//                asks for a different act, in each. Summing across kinds is the category error that
+//                put 29,771 Socket licence alerts on course for the vulnerability headline (D15).
+//   additive   — does this lane reach the flat severity sum. false ⇒ `why` states which of the two
+//                unrelated reasons: `duplicate` (another lane already counted this data) or
+//                `not-a-vulnerability` (real defects, wrong headline). The old single list
+//                collapsed those; maliciousPackages and stubs were never the same case.
+//   actionable — may a row be handed to somebody as work (operator ruling D4, 2026-08-13;
+//                monitor/issue-store.mjs ingestArea).
+// maliciousPackages proves the axes are independent: non-additive AND emphatically actionable.
+//
+// kinds: vulnerability (exploitable) · posture (a control's state) · integrity (is this artifact
+// what it claims) · policy (a rule WE chose) · hygiene (a real defect, not a security claim).
+const V = 'vulnerability'; const P = 'posture'; const I = 'integrity';
+const POL = 'policy'; const H = 'hygiene';
+const lane = (kind, why = '') => ({ kind, additive: !why, actionable: why !== 'not-a-vulnerability', why });
+export const LANE_KINDS = Object.freeze({
+  accessibility: lane(POL),                 // WCAG conformance — a standard we adopted
+  actionsLint: lane(V),                     // untrusted input into `run:` is live RCE
+  actionsPosture: lane(P),
+  apiFuzz: lane(V),
+  bola: lane(V),
+  cspm: lane(P),
+  dast: lane(V),
+  denoLint: lane(H, 'not-a-vulnerability'),
+  denoTypes: lane(H, 'not-a-vulnerability'),
+  depsGo: lane(V),
+  depsGradleDeclared: lane(V),
+  depsJvm: lane(V),
+  depsReachability: lane(V, 'duplicate'),   // dep-scan reads the advisory data parseOsv counted
+  depsRetire: lane(V),
+  dockerfile: lane(P),
+  gradleWrapper: lane(I),
+  iac: lane(P),
+  lintHaskell: lane(H, 'not-a-vulnerability'),
+  lintRust: lane(H, 'not-a-vulnerability'),
+  sastPython: lane(V),
+  lintPython: lane(H, 'not-a-vulnerability'),
+  lintGo: lane(H, 'not-a-vulnerability'),
+  sastBrakeman: lane(V),
+  // Same advisory universe as deps-osv (OSV imports the Ruby advisory DB), so counting it would
+  // double every gem advisory; it exists for the second opinion, exactly like depsRustAudit below.
+  depsBundlerAudit: lane(V, 'duplicate'),
+  sastPhp: lane(V),
+  sastPhpPsalm: lane(V),
+  lintJava: lane(H, 'not-a-vulnerability'),
+  // An exported component with no permission is reachable by any app on the device, and a
+  // debuggable build is a live foothold — attack surface, not hygiene. lane(V), additive: nothing
+  // else in the fleet reads the manifest, so these counts duplicate no other lane's.
+  mobileManifest: lane(V),
+  // Constructs that are defects by PRESENCE rather than by reachability — TLS verification
+  // off, a cipher with no IV, a template bypassing its own escaping. sastSemgrep owns the
+  // reachable question and structurally cannot own this one, so these counts duplicate nothing.
+  nodeHazards: lane(V),
+  // Same advisory universe as deps-osv (OSV imports RustSec), so counting it would double every
+  // Rust advisory; it exists for the second opinion, exactly like depsReachability.
+  depsRustAudit: lane(V, 'duplicate'),
+  maliciousPackages: lane(I, 'duplicate'),  // MAL- records are inside cveTotals already
+  minifiedCode: lane(I),
+  sastAuto: lane(V, 'duplicate'),           // comparison arm over sastSemgrep's rule packs
+  sastBearer: lane(V),
+  sastCodeql: lane(V),
+  sastCodeqlCpp: lane(V),
+  sastCCppcheck: lane(V),
+  sastCFlawfinder: lane(V),
+  sastCodeqlCsharp: lane(V),
+  sastCodeqlRust: lane(V),
+  sastCodeqlJava: lane(V),
+  sastCodeqlPython: lane(V),
+  sastCodeqlRuby: lane(V),
+  sastCodeqlSwift: lane(V),
+  sastElixir: lane(V),
+  sastGo: lane(V),
+  sastJoern: lane(V),
+  sastSemgrep: lane(V),
+  secrets: lane(V),
+  secretsHistory: lane(V),
+  shellLint: lane(H),                       // additive: SC2086-class quoting defects are injection
+  // vulnerability, and additive: a guessable API key is exploitable on its own, and no other lane
+  // in the roster counts it (CodeQL ships no Rust query for it, clippy no lint, bearer one
+  // language). Nothing to double-count against.
+  weakRandom: lane(V),
+  stubs: lane(H, 'not-a-vulnerability'),    // ~4019 TODOs, all `high` by _countArray convention
+  supplyChain: lane(POL),                   // Socket, 97.9% licence policy — see D15
+  supplyChainHeuristic: lane(I),
+  supplyChainPosture: lane(P),
+  tlsHeaders: lane(P),
+  vendorAssets: lane(V),
+});
+export const LANE_KIND_NAMES = Object.freeze([V, P, I, POL, H]);
+export const kindOf = (category) => (LANE_KINDS[category] || {}).kind || '';
+
+// Both derived, sorted so the published order is stable by construction rather than by accident of
+// declaration. Membership is asserted against the pre-derivation literals in
+// monitor/test/lane-kinds.test.mjs — the table may not silently re-base the headline.
+const laneNames = Object.keys(LANE_KINDS);
+export const TOTALS_EXCLUDE = Object.freeze(laneNames.filter((k) => !LANE_KINDS[k].additive).sort());
+export const METRIC_CATEGORIES = new Set(laneNames.filter((k) => !LANE_KINDS[k].actionable).sort());
+
+// Exported and pure so the arithmetic is testable without running a sweep — the previous headline
+// was wrong for months precisely because nothing asserted what it summed.
+export function sumTotals(cveTotals, scanners, exclude = TOTALS_EXCLUDE) {
+  const skip = new Set(exclude);
+  const sev = (k) => Object.entries(scanners || {})
+    .filter(([name, v]) => v && !skip.has(name))
+    .reduce((n, [, v]) => n + (Number(v[k]) || 0), 0);
+  return {
+    ...cveTotals,
+    crit: cveTotals.crit + sev('crit'),
+    high: cveTotals.high + sev('high'),
+    med: cveTotals.med + sev('med'),
+    low: cveTotals.low + sev('low'),
+    // UNDETERMINED IS SUMMED TOO, and it is not one of the four. A lane that grades nothing — a
+    // gitleaks regex match with no verifier to ask — is counted here and nowhere else. Omitting it
+    // was worse than the bug it replaced: with the severity fix in place but no aggregate, 2,368
+    // rows became total:2368 / crit:0 / high:0 / med:0 / low:0 in the history slice, and a reader
+    // of the four buckets would have concluded the fleet was clean. Grey must be VISIBLE, not
+    // merely kept out of red.
+    undetermined: (Number(cveTotals.undetermined) || 0) + sev('undetermined'),
+    // `cves` and `kev` stay CVE-ONLY — they name a specific feed, not "everything found"
+    cveTotals,
+    excludedFromTotals: [...skip],
+    // The same counts, partitioned by what they CLAIM. Nothing is dropped or re-weighted: the
+    // kinds sum back to the buckets above, asserted by monitor/test/lane-kinds.test.mjs. The
+    // flat number stays because it is what every consumer reads today; the partition is what makes
+    // it sayable — "14 high" is not a fact until it says high WHAT.
+    byKind: partitionByKind(cveTotals, scanners, skip),
+  };
+}
+
+// A lane the table does not know is `unclassified`, never folded into vulnerability. It still
+// reaches the flat sum exactly as before, so the partition surfaces the gap instead of hiding it.
+export function partitionByKind(cveTotals, scanners, skip = new Set(TOTALS_EXCLUDE)) {
+  const zero = () => ({ crit: 0, high: 0, med: 0, low: 0, undetermined: 0 });
+  const out = Object.fromEntries([...LANE_KIND_NAMES, 'unclassified'].map((k) => [k, zero()]));
+  const add = (bucket, v) => {
+    for (const s of ['crit', 'high', 'med', 'low', 'undetermined']) bucket[s] += Number(v[s]) || 0;
+  };
+  add(out.vulnerability, cveTotals || {});   // the CVE feed is a vulnerability claim by definition
+  for (const [name, v] of Object.entries(scanners || {})) {
+    if (!v || skip.has(name)) continue;
+    // A lane whose ROWS carry different kinds partitions itself — Socket is five claims in one
+    // lane. Its own split wins over the lane-level declaration; an unrecognised kind from a lane
+    // still goes to `unclassified` rather than being trusted into the vocabulary.
+    if (v.byKind && typeof v.byKind === 'object') {
+      for (const [k, b] of Object.entries(v.byKind)) add(out[k in out ? k : 'unclassified'], b || {});
+      continue;
+    }
+    add(out[kindOf(name) || 'unclassified'], v);
+  }
+  return out;
+}
+
+// WCAG 2.2 conformance, by success criterion (bin/a11y-scan.mjs).
+//
+// A level-A failure is `high` and AA is `med`, because the levels are not a severity gradient of
+// the same thing: level A criteria exclude people from using the interface at all. `unchecked` is
+// counted rather than dropped — a criterion nobody could decide is an open question, and a category
+// that reported only failures would let a page with 3 fails and 9 undecided criteria look better
+// than it is.
+//
+// WHERE IT IS COUNTED CHANGED 2026-08-28, and the reasoning above is kept because it was never the
+// wrong half. `unchecked` used to land in `low`, which made "a machine cannot decide this" into a
+// FINDING — the grey-is-not-red violation, with the scanner's own sentence for why it could not
+// decide sitting in the message field of a row published as a low. MEASURED on memory-layer: 7 of the
+// lane's 12 rows were `unchecked`, so 58% of this repo's a11y findings were criteria nobody had
+// looked at, and 7 of its 188 published lows had no claim behind them at all. `undetermined` is the
+// field that already exists for exactly this, on its own axis outside crit/high/med/low, and the
+// row still travels with `state` and `why` intact — visibility was never what `low` was buying.
+// deno lint emits {diagnostics:[{code,message,filename,range}], errors:[]}. It assigns NO severity
+// — every rule is just "a diagnostic" — so everything lands in `low` and the COUNT carries the
+// signal. Ranking them here would be inventing a precision the tool does not have, which is the
+// failure this rollup keeps finding in other people's scanners.
+function _denoLintCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  const diags = Array.isArray(j && j.diagnostics) ? j.diagnostics : [];
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const d of diags) {
+    c.low++; c.total++;
+    rows.push({ rule: d.code || 'deno-lint', sev: 'low', message: d.message || '',
+      path: d.filename ? String(d.filename).replace(/^file:\/\//, '') : undefined,
+      line: d.range && d.range.start ? d.range.start.line : undefined });
+  }
+  return { ...c, ..._detailFor('denoLint', rows) };
+}
+
+// deno check writes human text, not JSON: the parseable fact is its trailing "Found N errors."
+// A clean run prints "Check file:///…" lines and no total, which is a real zero — distinguished
+// from "the log is missing" (null, so the category reads as a void) and from an unparseable body.
+function _denoCheckCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  const m = raw.match(/Found (\d+) errors?\./);
+  const n = m ? Number(m[1]) : 0;
+  const c = { ..._zero(), ran: true };
+  if (!n) return c;                                   // ran, type-clean
+  c.low = n; c.total = n;
+  // One row per distinct TS code, not per occurrence: 422 errors on client-d were four or five real
+  // shapes repeated, and a 422-row table hides that where a 5-row one states it.
+  //
+  // ANSI FIRST, AND IT IS LOAD-BEARING. `deno check` colours its output, and the reset sequence
+  // lands BETWEEN the code and the tag: the bytes are `TS2307 <ESC>[0m[ERROR]:`, not
+  // `TS2307 [ERROR]:`. The pattern below matched neither, so every deno repo published a correct
+  // total from `Found N errors.` and ZERO detail rows beside it. Measured 2026-08-22 across the
+  // fleet's 34 rollups: 40,453 counted errors with no row to explain any of them, the single
+  // largest detail gap in the fleet — and it read as an aggregation choice rather than a parse
+  // failure, which is why it survived. Same defect class as the GuardDog message shape above:
+  // the data was never missing, the pattern was looking for bytes the tool does not emit.
+  // The ESC byte is written as \u001b rather than pasted literally: an invisible control
+  // character in source survives nothing — a copy, a lint autofix, or an editor normalising the
+  // file silently turns this pattern back into one that matches nothing, which is the exact bug
+  // it was added to fix.
+  const plain = raw.replace(/\u001b\[[0-9;]*m/g, '');
+  const byCode = new Map();
+  for (const mm of plain.matchAll(/TS(\d+)\s*\[ERROR\]:\s*([^\n]*)/g)) {
+    const code = `TS${mm[1]}`;
+    if (!byCode.has(code)) byCode.set(code, { rule: code, sev: 'low', message: (mm[2] || '').trim(), count: 0 });
+    byCode.get(code).count++;
+  }
+  return { ...c, ..._detailFor('denoTypes', [...byCode.values()].sort((a, b) => b.count - a.count)) };
+}
+
+function _a11yCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true };
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object') return { ..._zero(), ran: true, unparseable: true };
+  if (j.ran !== true) return { ..._zero(), ran: true, nosrc: true };  // nothing served to audit
+  const crit = Array.isArray(j.criteria) ? j.criteria : [];
+  const c = { ..._zero(), ran: true };
+  const rows = [];
+  for (const r of crit) {
+    let b = null;
+    if (r.state === 'fail') { b = r.level === 'A' ? 'high' : 'med'; }
+    else if (r.state === 'unchecked') { b = 'undetermined'; }
+    if (!b) continue;                       // a PASS is not a finding; it is not published as a row
+    c[b] = (c[b] || 0) + 1;
+    // `total` is the findings total and an undetermined criterion is not a finding, so it does not
+    // enter it — the same split cspm makes above, for the same reason.
+    if (b !== 'undetermined') c.total++;
+    // `why` is the scanner's own sentence for an UNCHECKED criterion — the reason a machine cannot
+    // decide it. That sentence is the entire value of the row: it tells a human what to go and do.
+    // sev '' is the schema's legal no-severity value (detail-schema COERCE.sev). An undetermined
+    // criterion HAS no severity; giving it one is the assertion this change exists to remove.
+    rows.push({ criterion: r.id, name: r.name, level: r.level, state: r.state,
+      sev: b === 'undetermined' ? '' : b, message: r.why });
+  }
+  return { ...c, ..._detailFor('accessibility', rows) };
+}
+
+// The names the rollup and its tests both need. `_`-prefixed internals are exported too — the tests
+// that used to regex them out of rollup.mjs now import them, which is the entire point of the split.
+export {
+  _zero, _cmpStr, _detail, _ecosystemOf, DETAIL_CAP,
+  _sarifCounts, _sarifDetail, _trivyCounts, _nucleiCounts, _malCounts,
+  _weakRandomCounts, _socketCounts, _socketAlertCount, _trufflehogCounts, _hadolintCounts, _govulnCounts,
+  _tlsHeaderCounts, _cspmCounts, _scorecardCounts, _depscanCounts, _gradleWrapperCounts, _schemathesisCounts, _gitleaksCounts, _guarddogCounts,
+  SCANNER_SPECS, _a11yCounts, _stubCounts, _minifyCounts, _bolaCounts, _socketAlertRows, _detailFor,
+  _toolProvenance, _vendorCounts,
+};

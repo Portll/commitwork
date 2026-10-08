@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Daily remediation config",
+  "description": "monitor/private/daily.json: which areas get a daily report, and per repository which path prefixes hold data (fixtures, corpora, vendored trees, crawled pages) rather than code. Findings under a data path are counted, not listed, so a prefix that is too broad hides code: every prefix ends in '/' and names a directory, never a file pattern.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "areas"
+  ],
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "areas": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repos"
+        ],
+        "properties": {
+          "repos": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "dataPaths"
+              ],
+              "properties": {
+                "dataPaths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[^*?\\[]+/$"
+                  }
+                },
+                "testCommands": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Commands a suggestion's verify.command may start with, e.g. 'node --test', 'cargo test'."
+                }
+              }
+            }
+          },
+          "maxItemsPerRepo": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "contextLines": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "maxDigestBytes": {
+            "type": "integer",
+            "minimum": 10000
+          },
+          "fileTodos": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "p2PerDay": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "p3": {
+                "type": "boolean"
+              }
+            }
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "retentionDays": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "digest": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "report": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "maxBudgetUsd": {
+            "type": "number",
+            "minimum": 0.5,
+            "description": "Most one model attempt may spend (claude --max-budget-usd); default 8."
+          }
+        }
+      }
+    }
+  }
+}

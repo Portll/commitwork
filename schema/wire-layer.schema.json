@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schema/wire-layer.schema.json",
+  "title": "wire-layer",
+  "description": "manifests/wire-layer.json — the files licensed Apache-2.0 while the rest of the repository is AGPL-3.0-or-later (operator ruling 2026-09-09, D19 item 6). bin/test/wire-layer-licence.test.mjs asserts every entry exists and is marked; a file not listed is AGPL.",
+  "type": "object",
+  "required": ["note", "license", "licenseText", "entries", "excluded"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string", "minLength": 1 },
+    "license": { "const": "Apache-2.0" },
+    "licenseText": { "type": "string", "minLength": 1, "description": "Repo-relative path of the licence text the marker points at." },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "kind", "marker", "what"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["directory", "file"] },
+          "marker": { "type": "string", "minLength": 1, "description": "How the licence is asserted in place: a LICENSE file path for a directory, spdx-header for a source file, manifest-only for a data file that cannot carry a header." },
+          "excludes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Sub-paths that keep their own licences." },
+          "what": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "why": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

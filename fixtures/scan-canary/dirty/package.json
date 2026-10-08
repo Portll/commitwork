@@ -1,0 +1,13 @@
+{
+  "name": "scan-canary-dirty",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deliberately defective. Every finding here is planted and enumerated in EXPECTED.json.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "canary-install-hook": "1.0.0",
+    "lodash": "4.17.11",
+    "minimist": "0.0.8"
+  }
+}

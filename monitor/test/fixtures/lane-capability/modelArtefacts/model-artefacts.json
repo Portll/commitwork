@@ -1,0 +1,92 @@
+{
+  "tool": "model-artefacts",
+  "summary": {
+    "findings": 6,
+    "byRule": {
+      "dataset-config-remote-scheme": 2,
+      "dataset-config-template": 2,
+      "hf-unpinned-revision": 1,
+      "safetensors-header-invalid": 1
+    },
+    "filesScanned": 6,
+    "unreadable": 1,
+    "skippedOversize": 0,
+    "surfaces": {
+      "modelArtefacts": 1,
+      "safetensors": 1,
+      "datasetConfigs": 3,
+      "python": 1,
+      "kerasConfigs": 0,
+      "tfGraphs": 0
+    },
+    "pickleMembersWalked": 1,
+    "revisionNonLiteral": 0,
+    "templateInProse": 0,
+    "maxBytes": 268435456,
+    "kerasWithoutConfig": 0,
+    "tfGraphsWithoutNodes": 0,
+    "skippedPaths": [],
+    "unreadableFiles": [
+      {
+        "path": "models/weights.pkl",
+        "why": "pickle: no MARK at opcode 1"
+      }
+    ],
+    "oversizeFiles": [],
+    "kerasWithoutConfigFiles": [],
+    "tfGraphsWithoutNodesFiles": [],
+    "secondWitness": {
+      "tool": "modelscan",
+      "state": "ran",
+      "issues": 0,
+      "errors": 1
+    }
+  },
+  "findings": [
+    {
+      "rule": "dataset-config-remote-scheme",
+      "path": "README.md",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "detail": "1 remote scheme(s) in data path fields; first http:// at config.data_files.path line 4",
+      "line": 4
+    },
+    {
+      "rule": "dataset-config-template",
+      "path": "datasets/config.yaml",
+      "sev": "crit",
+      "cwe": "CWE-94",
+      "detail": "1 template marker(s) in string values; first at configs.data_files.path line 5",
+      "line": 5
+    },
+    {
+      "rule": "dataset-config-remote-scheme",
+      "path": "datasets/dataset_infos.json",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "detail": "1 remote scheme(s) in data path fields; first s3:// at default.data_files.1.path"
+    },
+    {
+      "rule": "dataset-config-template",
+      "path": "datasets/dataset_infos.json",
+      "sev": "crit",
+      "cwe": "CWE-94",
+      "detail": "1 template marker(s) in string values; first at default.data_files.0.path"
+    },
+    {
+      "rule": "safetensors-header-invalid",
+      "path": "models/model.safetensors",
+      "sev": "med",
+      "cwe": "CWE-502",
+      "detail": "header length 8295758548461186409 exceeds file size 247"
+    },
+    {
+      "rule": "hf-unpinned-revision",
+      "path": "src/loader.py",
+      "sev": "med",
+      "cwe": "CWE-1357",
+      "detail": "1 hub call(s) without a commit-sha revision; first from_pretrained line 3 (no revision=)",
+      "line": 3
+    }
+  ]
+}

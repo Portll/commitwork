@@ -1,0 +1,99 @@
+# What CodeQL is NOT allowed to index. Read into LGTM_INDEX_FILTERS by EVERY sast-codeql-* check in
+# security-baseline.json — as of 2026-08-26 that is seven lanes, not the two this header named until
+# today: sast-codeql (javascript-typescript), -java, -python, -ruby, -cpp, -csharp and -swift. Each
+# refuses to index at all if this file is unreadable, so the list only grows.
+#
+# ONE FILE, SEVEN LANGUAGES — and the excludes below are commitwork-shaped, not language-shaped.
+# `reports`, `map/data`, `sitemap/vendor` and `evaluations` are this repository's own generated and
+# evidence trees. They are applied to every scanned repo in the fleet regardless of language, which
+# is the over-exclusion risk already stated below, now multiplied by seven. What is NOT here is any
+# per-language build output — a python lane indexes `target/debug/build/**` and `.claude/worktrees/**`
+# today (measured 2026-08-26 on shodh-memory), because nothing in this file names them. Adding them
+# is a real improvement and a real risk in the same edit, so it needs its own measurement rather
+# than a guess: an exclude that removes a genuine source directory is a false clean, the worst
+# failure this platform has.
+#
+# WHY THIS EXISTS. Measured 2026-08-02: reports/commitwork-admin/rollup.json carried
+# sastCodeql = 2 crit / 638 high / 30 med. Of those 670 detail rows, THIRTY were real source
+# findings. The other 640 were commitwork's own generated output — 638 under reports/ and 2 under
+# map/data/ — roughly five findings per generated dashboard.html / runtime.html / timeline*.html,
+# multiplied by every area the fleet has ever swept.
+#
+# That single area was about half the fleet's entire high count, and it was self-amplifying: each
+# sweep writes more report HTML, which the next sweep indexes. The headline grew with the number of
+# areas scanned rather than with risk, and it seeded every consumer downstream of the rollup.
+#
+# THE ASYMMETRY THAT CAUSED IT. `sast` (semgrep) has always carried `--exclude reference --exclude
+# reports`. `sast-codeql` carried `--source-root=.` and no exclusions at all. Two SAST siblings in
+# one manifest, same purpose, divergent bounds — and CodeQL is the one that consults neither
+# .gitignore (where /reports/ is listed) nor the semgrep flag. It also writes its own database into
+# $CW_REPORT_DIR, which during commitwork's self-scan sits INSIDE --source-root, so a run indexed
+# the previous run's database. Only the self-scan hits this, which is why exactly one area was wrong
+# while twenty-five looked fine.
+#
+# THE TRADE-OFF, STATED RATHER THAN HIDDEN. These globs are applied to EVERY scanned repository, not
+# just commitwork's own checkout. A third-party repo in which `reports/` or `vendor/` is genuine
+# hand-written source would have that source silently dropped from deep SAST — an over-exclusion is
+# a false clean, which is the worst failure this platform has. Two things bound that risk: the set
+# below is deliberately narrow (only directories this fleet has evidence of being generated), and
+# every rule here is DISCLOSED by monitor/scan-scope.mjs so the panel states the cost on the page
+# rather than leaving it to whoever remembers. A bound nobody can see has not been paid, it has been
+# hidden. If you add a rule, add the evidence for it.
+#
+# THE EXTRACTOR'S OWN BASELINE IS A SECOND, UNDISCLOSED BOUND — and it is not all defensible.
+# codeql/javascript/tools/baseline-config.json drops **/node_modules/**, **/bower_components/**,
+# **/*.min.js and **/*-min.js before this file is even consulted (LGTM_INDEX_FILTERS is APPENDED to
+# those defaults, never replaces them). Inheriting that silently is the same invisible-bound defect
+# this file exists to fix, one layer down, so the decision is recorded here rather than assumed:
+#
+#  - node_modules / bower_components: ACCEPT the exclusion. Not because it is small, but because
+#    four lanes already cover it with a better instrument — deps-osv, deps-retire, npm-audit and
+#    supply-chain-guarddog all key on advisories and resolved versions, which is the correct way to
+#    judge a dependency. Re-deriving taint through a dependency tree costs a much larger database
+#    for a duplicate, less precise answer, and this fleet already has sweeps that fail by never
+#    finishing. The compensating control is NAMED, which is what makes this an accepted risk rather
+#    than a hidden one.
+#
+#  - *.min.js / *-min.js: DO NOT accept it silently. Measured 2026-08-02: every one of those four
+#    dependency lanes is gated on a package manifest (deps-osv on a lockfile, deps-retire and
+#    npm-audit on package.json, guarddog on package-lock.json). A VENDORED asset has no manifest
+#    entry by definition, so none of them ever looks at it. sitemap/vendor/three.min.js is 607,784
+#    bytes, roughly four years old, served from the published origin under /sitemap/*, and is
+#    covered by ZERO lanes — the audit's "unscannable by declaration" finding, still live. CodeQL
+#    would not help much either (results on one 200KB line are not remediable), but that is an
+#    argument for the RIGHT instrument, not for silence: a vendored bundle needs version and
+#    provenance identification against known CVEs, which is exactly what retire.js does and exactly
+#    what the package.json gate prevents it from doing here.
+#
+# So the minified exclusion stays in force at the CodeQL layer, and the gap it leaves is a TRACKED
+# COVERAGE HOLE rather than a quiet default: manifest-less vendored assets need their own lane, and
+# they must be reported as their own group rather than folded into first-party source counts. Until
+# that lane exists, monitor/scan-scope.mjs discloses this so the panel states the cost on the page.
+#
+# FORMAT: one `exclude:<path>` or `include:<path>` per line, later rules winning over earlier ones.
+# Blank lines and #-comments are stripped before the value is exported.
+#
+# THE SYNTAX IS NOT THE ONE IN GITHUB'S DOCS, and this cost a build to learn. LGTM_INDEX_FILTERS is
+# the RAW extractor filter format; the `paths-ignore` globs in code-scanning YAML are a DIFFERENT
+# layer that codeql/actions/tools/autobuild.sh converts into this one. A trailing `/**` is legal
+# there and illegal here — `exclude:reports/**` fails the build outright with "Illegal use of '**'
+# in exclude path" (observed 2026-08-02, exit 2 before any indexing). A directory path excludes
+# everything beneath it, so the trailing wildcard is not needed. These are root-relative literal
+# paths for that reason, not because a glob would have been imprecise.
+
+# commitwork's own generated report tree — gitignored (/reports/), regenerated every sweep, and the
+# direct source of the 638. Mirrors semgrep's long-standing `--exclude reports`.
+exclude:reports
+
+# The modernization map's generated output: map/data/<slug>/index.html and data.json are emitted by
+# map/generate.mjs. The engine SOURCE under map/*.mjs stays indexed — only the generated tree goes.
+exclude:map/data
+
+# Vendored third-party assets carried for offline/file:// rendering. The extractor baseline already
+# drops the minified ones; this covers an unminified vendored bundle, which sitemap/vendor/ has had.
+# Named explicitly rather than as `**/vendor` so the rule cannot quietly swallow a directory called
+# `vendor` that some scanned repo uses for real source.
+exclude:sitemap/vendor
+
+# Evaluation corpora and cycle artifacts: JSON/markdown evidence, never executed.
+exclude:evaluations

@@ -1,0 +1,7 @@
+# generated per-project map outputs (re-created by render.mjs)
+data/*/data.json
+data/*/index.html
+# NOTE (2026-07-26 docs consolidation): data/*/cve-history/ is TRACKED — it is the canonical
+# append-only CVE-history store (sync-map-history.mjs appends milestones here; the former
+# clientA-docs copy is retired). Do not re-ignore it: an ignored store dies silently with
+# the next clone.

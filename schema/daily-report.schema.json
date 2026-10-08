@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Daily remediation report",
+  "description": "The stored report for one batch of one area: the model's commitwork.daily-suggestions/1 output, validated, inside an envelope bin/daily-run.mjs computes from the digest (counts, coverage, provenance, run record). Report mode: suggestions are text for a person or session, never edits. Kept 90 days; the digest beside it 14.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "area",
+    "batch",
+    "previousBatch",
+    "digestId",
+    "generatedAt",
+    "summary",
+    "coverage",
+    "run",
+    "headline",
+    "suggestions",
+    "notActioned"
+  ],
+  "properties": {
+    "schema": {
+      "const": "commitwork.daily-report/1"
+    },
+    "area": {
+      "type": "string"
+    },
+    "batch": {
+      "type": "string",
+      "pattern": "^sweep-[0-9]{14}$"
+    },
+    "previousBatch": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "digestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "new",
+        "persisting",
+        "fixed",
+        "carried",
+        "omitted",
+        "voidLanes",
+        "gapDays",
+        "baselineRepos"
+      ],
+      "properties": {
+        "new": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "persisting": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fixed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "carried": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "omitted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "voidLanes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gapDays": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "baselineRepos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repo",
+          "lane",
+          "state"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string"
+          },
+          "lane": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "void",
+              "failed",
+              "skipped",
+              "timed-out",
+              "tool-changed"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "cli",
+        "attempts",
+        "costUsd",
+        "durationMs",
+        "authority",
+        "skillSha256"
+      ],
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "cli": {
+          "type": "string"
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "costUsd": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "durationMs": {
+          "type": "integer"
+        },
+        "authority": {
+          "type": "string",
+          "description": "The ruling that allows this automated spend while the remediation policy's budget is 0: operator 2026-10-02, report mode, no edits."
+        },
+        "skillSha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "sha256 of the skill text the model ran under; null when the suggestions came from a file."
+        }
+      }
+    },
+    "headline": {
+      "type": "string"
+    },
+    "suggestions": {
+      "type": "array"
+    },
+    "notActioned": {
+      "type": "array"
+    }
+  }
+}

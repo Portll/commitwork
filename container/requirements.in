@@ -1,0 +1,7 @@
+# The Python scanners in container/Dockerfile. requirements.txt is this file resolved with hashes;
+# container/README.md has the command that regenerates it.
+semgrep
+bandit
+flawfinder
+ruff
+zizmor

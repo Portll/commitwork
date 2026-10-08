@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portll/commitwork/bola-manifest.schema.json",
+  "title": "commitwork BOLA manifest",
+  "description": "Drives bin/bola-run.mjs: declares the actor matrix, how to mint each actor's credential, how object ownership is established (seed or declared), and how to autodiscover endpoints. Everything stack-specific lives here so a new backend is a new manifest, not a fork of the probe. Secrets are NEVER stored here — credential recipes name ENV VARS (fields ending in Env) whose values arrive at invocation.",
+  "type": "object",
+  "required": ["actors"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "repo": { "type": "string", "description": "Human label for the target this manifest probes." },
+    "note": { "type": "string" },
+    "base": { "type": "string", "description": "Target base URL. Overridable by --base or CW_TARGET_URL. No default — a probe that invents its target attacks whatever is listening." },
+    "actors": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The actor matrix. For full coverage: an anon baseline, two peer users (ideally in two tenants), and two admins. Each cell of attacker×owner maps to one vuln class.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "description": "Unique actor id, referenced by objects.owners / objects.items[].owner." },
+          "role": { "enum": ["anon", "user", "admin"], "description": "Privilege tier. anon → broken-auth tests; user↔user → BOLA; user→admin object → BFLA. Default: user." },
+          "tenant": { "type": "string", "description": "Tenant/org label. Two actors in DIFFERENT tenants exercise cross-tenant isolation. Default: default." },
+          "headers": {
+            "type": "object",
+            "description": "Custom name:value headers sent on EVERY request this actor makes, merged over the credential recipe's own (an explicit declaration wins). This is the escape hatch for apps whose tenancy or routing rides in a header — e.g. { \"X-Tenant-Id\": \"tenantA\" } — and for any per-account header the API requires. Values may embed ${ENV:NAME}, so a header carrying a secret still names it rather than holding it. Setting Authorization here replaces the recipe's token and re-derives the actor's identity key from what is actually sent.",
+            "additionalProperties": { "type": "string" }
+          },
+          "credential": {
+            "type": "object",
+            "description": "How to mint this actor. Omit (or type:none) for anon. SECRETS ARE NEVER INLINE: every field whose name ends in `Env` holds the NAME of an environment variable, and the value is read from the environment at invocation. A manifest that carries a password, token, or key is malformed even though JSON Schema cannot detect it. Which fields apply depends on `type` — the per-type requirements are enforced by the allOf below.",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "enum": ["none", "static-bearer", "api-key", "keycloak", "supabase", "login-post"] },
+
+              "tokenEnv": { "type": "string", "description": "static-bearer: env var holding the bearer token, sent as `Authorization: Bearer <value>`. Default: CW_BEARER." },
+
+              "header": { "type": "string", "description": "api-key: the header name to send the key in. Default: X-Api-Key." },
+              "valueEnv": { "type": "string", "description": "api-key: env var holding the key value. Default: CW_API_KEY." },
+
+              "url": { "type": "string", "description": "keycloak: issuer origin — the token endpoint is derived as <url>/realms/<realm>/protocol/openid-connect/token (default: env KC_URL, else http://localhost:8180). supabase (REQUIRED): the project origin; the grant is POSTed to <url>/auth/v1/token?grant_type=password. login-post (REQUIRED): the full login URL. May embed ${ENV:NAME}." },
+              "realm": { "type": "string", "description": "keycloak: realm name. Falls back to env KC_REALM when omitted." },
+              "client": { "type": "string", "description": "keycloak: client_id for the password (direct-access) grant — that client must have direct-access grants enabled. Falls back to env KC_CLIENT when omitted." },
+              "username": { "type": "string", "description": "keycloak: the login name. Not a secret, so it may be literal; may embed ${ENV:NAME}. Use usernameEnv instead if the account name itself is sensitive." },
+              "usernameEnv": { "type": "string", "description": "keycloak: env var holding the login name. Used only when `username` is absent." },
+              "email": { "type": "string", "description": "supabase: the account email. Not a secret, so it may be literal; may embed ${ENV:NAME}." },
+              "emailEnv": { "type": "string", "description": "supabase: env var holding the account email. Used only when `email` is absent." },
+              "passwordEnv": { "type": "string", "description": "keycloak / supabase (REQUIRED for both): env var holding the account password. There is no literal `password` field, by design." },
+              "apikeyEnv": { "type": "string", "description": "supabase: env var holding the project anon/public key, sent as the `apikey` header. Default: SUPABASE_ANON_KEY. Named via env even though it is publishable, so a manifest never carries a project key." },
+
+              "method": { "type": "string", "description": "login-post: HTTP method for the login request. Default: POST." },
+              "contentType": { "enum": ["json", "form"], "default": "json", "description": "login-post: encode `fields` as a JSON body or as application/x-www-form-urlencoded." },
+              "fields": { "type": "object", "description": "login-post: the login request body as key/value pairs. Values may embed ${ENV:NAME} — that is how the password reaches the request without being written here (e.g. { \"email\": \"a@example.test\", \"password\": \"${ENV:APP_PASS_A}\" })." },
+              "capture": {
+                "type": "object",
+                "description": "login-post: where the minted credential is found in the login response. Default: { mode: \"cookie\" }.",
+                "additionalProperties": false,
+                "properties": {
+                  "mode": { "enum": ["cookie", "token"], "default": "cookie", "description": "cookie = replay the Set-Cookie session on every probe. token = read a token out of the JSON body." },
+                  "tokenPath": { "type": "string", "description": "mode:token — dotted/bracket path to the token in the response body, e.g. \"access_token\" or \"data.session.token\"." },
+                  "scheme": { "type": "string", "default": "Bearer", "description": "mode:token — the Authorization scheme prefixed to the token." }
+                }
+              }
+            },
+            "allOf": [
+              { "if": { "properties": { "type": { "const": "keycloak" } }, "required": ["type"] },
+                "then": { "required": ["passwordEnv"] } },
+              { "if": { "properties": { "type": { "const": "supabase" } }, "required": ["type"] },
+                "then": { "required": ["url", "passwordEnv"] } },
+              { "if": { "properties": { "type": { "const": "login-post" } }, "required": ["type"] },
+                "then": { "required": ["url"] } }
+            ]
+          }
+        }
+      }
+    },
+    "objects": {
+      "type": "object",
+      "description": "How object ownership ground truth is established. Omit only if a discovery block carries the whole run (anon-exposure only).",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "enum": ["seed", "declared"], "description": "seed = each owner POSTs its own object and we capture the id (backend-agnostic, needs a writable/testbed target). declared = explicit path+owner pairs (no writes, safe on read-only targets, brittle)." },
+        "owners": { "type": "array", "items": { "type": "string" }, "description": "seed: which actors seed each type. Default: every non-anon minted actor." },
+        "types": {
+          "type": "array",
+          "description": "seed: object types to create.",
+          "items": {
+            "type": "object",
+            "required": ["name", "create", "idPath", "getPath"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "create": {
+                "type": "object",
+                "required": ["path"],
+                "additionalProperties": false,
+                "properties": {
+                  "path": { "type": "string", "description": "POST path to create an owned object." },
+                  "method": { "type": "string", "default": "POST" },
+                  "contentType": { "enum": ["json", "form"], "default": "json" },
+                  "body": { "description": "Request body. Strings may embed ${ENV:NAME}. Object bodies are JSON-encoded." }
+                }
+              },
+              "idPath": { "type": "string", "description": "Dotted/bracket path to the created id in the response body, e.g. \"id\" or \"data.0.id\"." },
+              "getPath": { "type": "string", "description": "GET path template with {id}, e.g. \"/orders/{id}\"." }
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "description": "declared: explicit owned objects.",
+          "items": {
+            "type": "object",
+            "required": ["path", "owner"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "description": "Concrete object path (path params substituted)." },
+              "owner": { "type": "string", "description": "Actor name that owns it." }
+            }
+          }
+        }
+      }
+    },
+    "discovery": {
+      "type": "object",
+      "description": "Feeds the anonymous exposure sweep only (ownership can't be inferred). Tries well-known spec paths; falls back to an explicit path list. Never guesses nouns.",
+      "additionalProperties": false,
+      "properties": {
+        "openapi": { "description": "Extra spec paths to try before the built-ins, or false to disable spec discovery.", "oneOf": [{ "type": "array", "items": { "type": "string" } }, { "const": false }] },
+        "paths": { "type": "array", "items": { "type": "string" }, "description": "Explicit object-level paths to sweep unauthenticated when no spec is reachable." }
+      }
+    },
+    "idorProbe": {
+      "type": "object",
+      "description": "Drives bin/idor-run.mjs. Holds identity fixed and varies the OBJECT REFERENCE — the id-walk half of CWE-639. Reuses `objects` to find an id the named actor legitimately owns; no separate discovery mechanism. Only applies to sequential integer ids — a non-numeric owned id (UUID-keyed resources) voids rather than guessing.",
+      "required": ["actor", "pathTemplate", "range"],
+      "additionalProperties": false,
+      "properties": {
+        "actor": { "type": "string", "description": "Which declared actor walks ids around its own — must match an actors[].name." },
+        "objectType": { "type": "string", "description": "Which objects.types[].name (or declared item type) to use as the owned baseline. Omit to use the first object this actor owns." },
+        "pathTemplate": { "type": "string", "pattern": ".*\\{id\\}.*", "description": "GET path template with {id}, e.g. \"/api/orders/{id}\". Must match the shape of the resolved object's own path closely enough for the id to be extracted from it." },
+        "range": {
+          "type": "object",
+          "required": ["from", "to"],
+          "additionalProperties": false,
+          "description": "Offsets from the owned id to try, e.g. {from:-5,to:5}. Bounded at CAP_IDOR_RANGE (25) in code — a wider range VOIDS rather than being silently truncated, since this fires real requests against a live target.",
+          "properties": {
+            "from": { "type": "integer" },
+            "to": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "massAssignProbe": {
+      "type": "object",
+      "description": "Drives bin/mass-assign-run.mjs. A WRITE-side probe, genuinely different from idorProbe/BOLA (which are read-side): does a create accept and PERSIST a clientControlled field it should not own — the mass-assignment half of CWE-639. teardownPath is REQUIRED; the probe refuses to run without a declared way to remove what it creates, because a true positive here means a real object now exists in the target.",
+      "required": ["actor", "createPath", "readPath", "teardownPath", "fields"],
+      "additionalProperties": false,
+      "properties": {
+        "actor": { "type": "string", "description": "Which declared actor attempts the escalation — any non-admin role suffices." },
+        "createPath": { "type": "string", "description": "POST path to create an object, with the probed field appended to the request body." },
+        "readPath": { "type": "string", "pattern": ".*\\{id\\}.*", "description": "GET path template with {id} to re-read the created object and check whether the field persisted." },
+        "teardownPath": { "type": "string", "pattern": ".*\\{id\\}.*", "description": "DELETE path template with {id}. REQUIRED — see the block description. Called unconditionally after every field probe, regardless of outcome." },
+        "idPath": { "type": "string", "description": "Dotted/bracket path to the created id in the create response body, e.g. \"id\" or \"data.id\". Used to fill {id} in readPath/teardownPath." },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Fields to probe, one create+reread+teardown round-trip per field.",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "description": "The field name to inject into the create body." },
+              "value": { "description": "The value to attempt. Any JSON-serialisable value." },
+              "expectRejected": { "type": "boolean", "default": true, "description": "true (default): this field should NOT be settable by the client — persisting is a finding. false: a POSITIVE CONTROL — this field SHOULD be settable, and NOT persisting is itself a (medium) finding, since it means the probe's own create/reread mechanism may be broken." }
+            }
+          }
+        }
+      }
+    }
+  }
+}

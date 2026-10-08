@@ -1,0 +1,28 @@
+{
+  "_comment": "SYNTHETIC EXAMPLE of the annotation store. The live store is a private record at monitor/private/annotations.json (CW_ANNOTATIONS overrides; absent means nothing is annotated). Append-only log of human judgments over findings: accept / false-positive / wont-fix / note. Applied by rollup.mjs AS-OF each slice's generated time. 'expires' (optional ISO date) re-opens a judgment for review. annotations[] are dependency waivers matched on id + package + repo; name the repo, because an omitted repo matches every repo in the fleet.",
+  "annotations": [
+    {
+      "id": "CVE-2026-0001",
+      "package": "org.example:example-parser",
+      "repo": "example-service",
+      "action": "accept",
+      "reason": "Synthetic example: the vulnerable entry point is never called by this service, and no fixed release existed at acceptance time.",
+      "who": "operator@example.test",
+      "at": "2026-01-15T00:00:00.000Z",
+      "expires": "2026-07-15T00:00:00.000Z"
+    }
+  ],
+  "_scannerComment": "Scanner-finding annotations (scannerFindings rows). STRICT matcher: every field of the category's identity tuple (monitor/detail-schema.mjs) plus repo is required. Written by bin/annotate.mjs or the panel.",
+  "scannerAnnotations": [
+    {
+      "category": "secrets",
+      "repo": "example-service",
+      "rule": "generic-api-key",
+      "file": "docs/setup.md",
+      "action": "false-positive",
+      "reason": "Synthetic example: a documented placeholder value in a setup guide, not a credential.",
+      "who": "operator@example.test",
+      "at": "2026-01-15T00:00:00.000Z"
+    }
+  ]
+}

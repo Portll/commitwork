@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.portll.net/schema/scanner-quirks.schema.json",
+  "title": "Declared scanner coverage bounds",
+  "$comment": "MIRRORED, not applied. monitor/scanner-quirks.mjs is what runs: it reads q.match to decide whether a quirk applies, q.rules to narrow it to named rules, and returns q.id. Required fields here are the ones that consumer depends on, NOT every field the current three entries happen to carry — three samples are not evidence that a field is mandatory, and requiring one on that basis would refuse a legitimate future quirk.",
+  "type": "object",
+  "required": ["quirks"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "note": { "type": "string" },
+    "principle": { "type": "string" },
+    "quirks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "match"],
+        "$comment": "A quirk records that a rule crashed, timed out or met a file it could not parse — so its zero is a coverage bound rather than a clean read. Getting one wrong publishes a coverage claim nobody measured.",
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "tool": { "type": "string" },
+          "engine": { "type": "string" },
+          "status": { "type": "string" },
+          "match": { "type": "object", "$comment": "Consumed by scanner-quirks.mjs:56 to decide whether this quirk applies to a finding." },
+          "measured": { "type": "object", "$comment": "What was observed, and when. A quirk asserted without a measurement is an opinion." },
+          "impact": { "type": "string" },
+          "mitigation": { "type": "string" },
+          "rules": { "type": "array", "items": { "type": "string" }, "$comment": "When present and non-empty, narrows the quirk to these rule ids (scanner-quirks.mjs:67)." },
+          "reproduction": { "type": "object" },
+          "upstream": { "type": "object" },
+          "openQuestions": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

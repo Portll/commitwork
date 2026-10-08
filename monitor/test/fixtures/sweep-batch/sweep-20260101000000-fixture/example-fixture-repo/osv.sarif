@@ -1,0 +1,40 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "osv-scanner",
+          "informationUri": "https://github.com/google/osv-scanner",
+          "rules": [
+            {
+              "id": "CVE-2000-00001",
+              "shortDescription": { "text": "CVE-2000-00001: a synthetic advisory about a package that does not exist" },
+              "properties": { "security-severity": "7.5" }
+            },
+            {
+              "id": "OSV-FIXTURE-0002",
+              "shortDescription": { "text": "OSV-FIXTURE-0002: a synthetic advisory with no public advisory id" },
+              "properties": { "security-severity": "4.3" }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CVE-2000-00001",
+          "level": "error",
+          "message": { "text": "Package 'example-fixture-dep@1.0.0' is vulnerable to CVE-2000-00001." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "package-lock.json" } } }]
+        },
+        {
+          "ruleId": "OSV-FIXTURE-0002",
+          "level": "warning",
+          "message": { "text": "Package 'example-fixture-other@2.3.4' is vulnerable to OSV-FIXTURE-0002." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "package-lock.json" } } }]
+        }
+      ]
+    }
+  ]
+}

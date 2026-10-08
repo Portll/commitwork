@@ -1,0 +1,184 @@
+name: commitwork security baseline
+description: Run commitwork's security baseline over a checkout, write its findings as SARIF, and upload them to code scanning.
+author: Portll
+
+inputs:
+  checks:
+    description: A check id or group of the security baseline, as `commitwork run` takes it (fast, all, supply-chain, deep, or one check).
+    required: false
+    default: 'fast'
+  path:
+    description: Directory of the repository to scan, relative to the workspace. SARIF paths are relative to it, so it should be the root of a checkout.
+    required: false
+    default: '.'
+  sarif:
+    description: Where to write the SARIF file, relative to the workspace. Empty writes it under the runner's temporary directory.
+    required: false
+    default: ''
+  upload-sarif:
+    description: "'true' uploads the SARIF to code scanning, which needs `security-events: write`; 'false' leaves it on disk."
+    required: false
+    default: 'true'
+  fail-on:
+    description: "The lowest SARIF level that fails the step: 'error' (critical and high), 'warning' (also medium), 'note' (any result), or 'none'."
+    required: false
+    default: 'error'
+  fail-on-unmeasured:
+    description: "'true' also fails the step when a lane did not measure, for instance because its scanner is not installed; 'false' reports each one as a warning."
+    required: false
+    default: 'false'
+  install-tools:
+    description: "'false' installs nothing; 'true' runs `commitwork setup --yes` for the scanners the selected lanes require; or a comma-separated list of scanner names to install."
+    required: false
+    default: 'false'
+  trust-repo-manifest:
+    description: "'true' passes --trust-repo-manifest, letting lanes that execute a script the scanned repository supplies run. Leave 'false' for any checkout whose contents you did not write."
+    required: false
+    default: 'false'
+
+outputs:
+  sarif:
+    description: Absolute path of the SARIF file, or empty when none was written.
+    value: ${{ steps.run.outputs.sarif }}
+  report-dir:
+    description: Directory holding each lane's own report and checks-status.json.
+    value: ${{ steps.run.outputs.report-dir }}
+  exit-code:
+    description: The exit status of `commitwork run`.
+    value: ${{ steps.run.outputs.exit-code }}
+  results:
+    description: Number of results in the SARIF.
+    value: ${{ steps.run.outputs.results }}
+  unmeasured:
+    description: Number of lanes that did not measure. They are neither clean nor findings.
+    value: ${{ steps.run.outputs.unmeasured }}
+  failed:
+    description: "'true' when the step fails under fail-on and fail-on-unmeasured, else 'false'."
+    value: ${{ steps.run.outputs.failed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check the inputs
+      shell: bash
+      env:
+        INPUT_CHECKS: ${{ inputs.checks }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_SARIF: ${{ inputs.sarif }}
+        INPUT_UPLOAD_SARIF: ${{ inputs.upload-sarif }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_FAIL_ON_UNMEASURED: ${{ inputs.fail-on-unmeasured }}
+        INPUT_INSTALL_TOOLS: ${{ inputs.install-tools }}
+        INPUT_TRUST_REPO_MANIFEST: ${{ inputs.trust-repo-manifest }}
+      run: |
+        set -euo pipefail
+        bad() { echo "::error::commitwork: $1"; exit 2; }
+        # A check id or group name; anything else could reach commitwork's parser as a flag.
+        case "$INPUT_CHECKS" in ''|-*|*[!a-z0-9-]*) bad "checks must be one check id or group name" ;; esac
+        case "$INPUT_PATH" in ''|-*) bad "path must be a directory that does not begin with a dash" ;; esac
+        case "$INPUT_SARIF" in -*) bad "sarif must not begin with a dash" ;; esac
+        case "$INPUT_PATH$INPUT_SARIF" in *$'\n'*|*$'\r'*) bad "path and sarif must be one line" ;; esac
+        case "$INPUT_FAIL_ON" in error|warning|note|none) ;; *) bad "fail-on must be error, warning, note or none" ;; esac
+        for pair in "upload-sarif=$INPUT_UPLOAD_SARIF" "fail-on-unmeasured=$INPUT_FAIL_ON_UNMEASURED" "trust-repo-manifest=$INPUT_TRUST_REPO_MANIFEST"; do
+          case "${pair#*=}" in true|false) ;; *) bad "${pair%%=*} must be true or false" ;; esac
+        done
+        case "$INPUT_INSTALL_TOOLS" in
+          true|false) ;;
+          ''|,*|*,|*,,*|*[!a-z0-9.,_-]*) bad "install-tools must be true, false, or a comma-separated list of scanner names" ;;
+        esac
+
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: '24'
+
+    - name: Install scanners
+      if: inputs.install-tools != 'false'
+      shell: bash
+      env:
+        INPUT_CHECKS: ${{ inputs.checks }}
+        INPUT_INSTALL_TOOLS: ${{ inputs.install-tools }}
+        CLI_PATH: ${{ github.action_path }}/bin/commitwork.mjs
+        HELPER_PATH: ${{ github.action_path }}/bin/lib/github-action.mjs
+        TEMP_DIR: ${{ runner.temp }}
+      run: |
+        set -euo pipefail
+        tools="$INPUT_INSTALL_TOOLS"
+        if [ "$tools" = true ]; then
+          tools=$(CW_REPORT_DIR="$TEMP_DIR/commitwork/tools" node "$HELPER_PATH" tools "$INPUT_CHECKS")
+        fi
+        if [ -z "$tools" ]; then
+          echo "commitwork: the selected lanes require no catalogued scanner"
+          exit 0
+        fi
+        echo "commitwork: installing $tools"
+        CW_REPORT_DIR="$TEMP_DIR/commitwork/setup" node "$CLI_PATH" setup --yes --only "$tools" < /dev/null
+
+    - name: Run the baseline
+      id: run
+      shell: bash
+      env:
+        INPUT_CHECKS: ${{ inputs.checks }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_SARIF: ${{ inputs.sarif }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_FAIL_ON_UNMEASURED: ${{ inputs.fail-on-unmeasured }}
+        INPUT_INSTALL_TOOLS: ${{ inputs.install-tools }}
+        INPUT_TRUST_REPO_MANIFEST: ${{ inputs.trust-repo-manifest }}
+        CLI_PATH: ${{ github.action_path }}/bin/commitwork.mjs
+        HELPER_PATH: ${{ github.action_path }}/bin/lib/github-action.mjs
+        WORKSPACE: ${{ github.workspace }}
+        TEMP_DIR: ${{ runner.temp }}
+      run: |
+        set -euo pipefail
+        case "$INPUT_PATH" in /*) repo="$INPUT_PATH" ;; *) repo="$WORKSPACE/$INPUT_PATH" ;; esac
+        if [ ! -d "$repo" ]; then echo "::error::commitwork: path $INPUT_PATH is not a directory"; exit 2; fi
+        repo=$(cd "$repo" && pwd -P)
+        slug=$(basename "$repo")
+        # One directory per invocation, so a second use of the action in the job keeps the first's files.
+        work=$(mktemp -d "$TEMP_DIR/commitwork.XXXXXX")
+        case "$INPUT_SARIF" in '') sarif="$work/commitwork.sarif" ;; /*) sarif="$INPUT_SARIF" ;; *) sarif="$WORKSPACE/$INPUT_SARIF" ;; esac
+        if [ -d "$sarif" ]; then echo "::error::commitwork: sarif names a directory, not a file"; exit 2; fi
+        # An earlier run's file must not be judged as this one's when the export fails.
+        rm -f -- "$sarif"
+        mkdir -p "$work/run/$slug" "$work/cwd"
+        if [ "$INPUT_INSTALL_TOOLS" != false ]; then export PATH="$HOME/.local/bin:$HOME/go/bin:$PATH"; fi
+
+        # The bundled baseline only. A repo-local commitwork.json is never read, and repo-supplied
+        # scripts run only when the caller opts in; an inherited trust variable does not opt in.
+        unset COMMITWORK_TRUST_REPO_MANIFEST COMMITWORK_MANIFEST COMMITWORK_REPO
+        args=(run "$INPUT_CHECKS" --manifest security-baseline --repo "$repo" --no-fail-fast)
+        if [ "$INPUT_TRUST_REPO_MANIFEST" = true ]; then args+=(--trust-repo-manifest); fi
+
+        # From a scratch directory, so nothing the CLI writes relative to its cwd lands in the checkout.
+        cd "$work/cwd"
+        code=0
+        CW_REPORT_DIR="$work/run/$slug" CW_PERF_FEEDBACK="$work/perf-feedback.jsonl" CW_SKIP_SETUP=1 \
+          node "$CLI_PATH" "${args[@]}" < /dev/null || code=$?
+        xcode=0
+        CW_REPORT_DIR="$work/export" node "$CLI_PATH" sarif --from "$work/run" --out "$sarif" < /dev/null || xcode=$?
+        {
+          echo "exit-code=$code"
+          echo "report-dir=$work/run/$slug"
+          echo "repo=$repo"
+        } >> "$GITHUB_OUTPUT"
+        node "$HELPER_PATH" report "$sarif" "$code" "$xcode" "$INPUT_FAIL_ON" "$INPUT_FAIL_ON_UNMEASURED"
+
+    - name: Upload the SARIF to code scanning
+      if: inputs.upload-sarif == 'true' && steps.run.outputs.sarif != ''
+      uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+      with:
+        sarif_file: ${{ steps.run.outputs.sarif }}
+        checkout_path: ${{ steps.run.outputs.repo }}
+
+    # Last, so the upload happens whatever the verdict.
+    - name: Apply fail-on
+      shell: bash
+      env:
+        FAILED: ${{ steps.run.outputs.failed }}
+      run: |
+        set -euo pipefail
+        case "$FAILED" in
+          false) exit 0 ;;
+          true) echo "::error::commitwork: the step fails; the reasons are in the run step's log and the job summary"; exit 1 ;;
+          *) echo "::error::commitwork reached no verdict"; exit 1 ;;
+        esac

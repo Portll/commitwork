@@ -1,0 +1,46 @@
+/* commitwork panel - colour-vision-deficiency palettes.  GENERATED, do not hand-edit.
+   Regenerate with bin/cvd-palette.mjs.  Method, provenance and limits below.
+
+   WHAT THIS FILE IS.  Token overrides keyed on :root[data-cvd].  "Normal" is the ABSENCE of the
+   attribute, so this file never defines it: the default palette stays in panel.css /
+   panel-light.css and is untouched by anything here.  Selecting a mode swaps semantic tokens only.
+
+   THE SELECTOR IS NOT THE ACCESSIBILITY FIX.  Colour-vision deficiency is very often undiagnosed,
+   so the reader best served by these palettes is the least likely to go looking for a dropdown.
+   An opt-in control serves people who already know.  The DEFAULT palette must therefore be safe on
+   its own, and this file is an improvement on a floor rather than a rescue from its absence.  Same
+   shape as the house explicit uncertainty rule: the safe state is the default, not the informed choice.
+
+   METHOD.  Colours are searched, not chosen.  Per condition and per theme, candidates are filtered
+   to AA 1.4.3 (>= 4.5:1) on that theme's background, then selected to maximise the minimum pairwise
+   CIELAB dE76 UNDER THAT CONDITION'S SIMULATION (Machado, Oliveira & Fernandes 2009, severity 1.0 -
+   the matrices Chrome DevTools uses).  Two palettes per condition, because a colour clearing 4.5:1
+   on #0f1319 generally cannot clear it on #f6f7f9 - the same reason panel-light.css exists.
+
+   USE THE AXIS THE DEFICIENCY LEAVES INTACT.  Protanopia and deuteranopia are RED-GREEN, so the
+   blue-yellow axis survives and these palettes move onto it; separating red from orange by
+   luminance fights the deficiency instead of routing around it.  Tritanopia is the mirror case -
+   blue-yellow is the lost axis - so it keeps the reds and moves only the KEV band.  One rule does
+   not serve all three, and the severity anchors here follow the operator's ruling of 2026-08-26.
+
+   LUMINANCE IS NOT LOCKED.  An earlier revision forced the severity ramp monotonic in luminance.
+   That suppressed the hue separation these palettes depend on and was removed on operator ruling.
+   Rank is carried by rankOf and by table order; colour carries identity, order carries rank.
+
+   ACHROMATOPSIA IS NOT FULLY SOLVED, AND THAT IS STATED RATHER THAN HIDDEN.  With no hue axis,
+   every token separates on luminance alone, and the greys clearing AA against #0f1319 span only
+   ~44 L* units - which cannot host eight semantic tokens with comfortable separation.  WITHIN each
+   group (severity / status / attribution) separation is usable; ACROSS groups it is not, and the
+   distinction rests on position and context rather than colour.  Extend with a non-colour channel
+   (the ::before dot, a glyph, a label) rather than a grey that does not exist. */
+/* protanopia — worst AA on this background 5.51:1 */
+:root[data-cvd="protanopia"]{--sev:#f26153;--crit:#f2fd42;--high:#9ad184;--med:#849abb;--low:#fc0efb;--live:#fdfdfd;--part:#f36023;--plan:#fd38c3;--machine:#9ac642;--attest:#c5aaa1}
+
+/* deuteranopia — worst AA on this background 5.47:1 */
+:root[data-cvd="deuteranopia"]{--sev:#fb570d;--crit:#fdfd16;--high:#58e784;--med:#63b0c6;--low:#6291fe;--live:#f2fdfd;--part:#32a174;--plan:#4d94d2;--machine:#5c9f3d;--attest:#e7f26e}
+
+/* tritanopia — worst AA on this background 5.50:1 */
+:root[data-cvd="tritanopia"]{--sev:#fb2bed;--crit:#fd631f;--high:#dd9402;--med:#b0d121;--low:#00fdd1;--live:#b16dff;--part:#7e82fd;--plan:#d854fd;--machine:#fdc6fd;--attest:#00b000}
+
+/* achromatopsia — worst AA on this background 6.01:1 */
+:root[data-cvd="achromatopsia"]{--sev:#e2e2e2;--crit:#fefefe;--high:#c9c9c9;--med:#aeaeae;--low:#969696}

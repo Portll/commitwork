@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.local/schema/annotation.schema.json",
+  "title": "commitwork annotation store",
+  "description": "Human judgments over findings, applied AS-OF each slice's generated time. Had no schema until 2026-08-23. The `determination` object is the Phase-3 extension of evaluations/PLAN-vex-determination-matrix-2026-08-22.md: it does NOT replace `action`, which is the lifecycle verdict, but records the STRUCTURED REASON behind it. Every determination it carries was already being written in `reason` as prose — one live entry says 'requires per-property @JsonIgnoreProperties usage pattern not present in these services' (unreachable by configuration) and 'no fixed release available at acceptance time' (no fix upstream), which is two axes of the model in a sentence nothing can read.",
+  "type": "object",
+  "required": ["annotations"],
+  "properties": {
+    "_comment": { "type": "string" },
+    "annotations": { "type": "array", "items": { "$ref": "#/$defs/annotation" } }
+  },
+  "$defs": {
+    "annotation": {
+      "type": "object",
+      "required": ["action", "reason", "who", "at"],
+      "properties": {
+        "id": { "type": "string", "description": "Advisory id. Omitted = wildcard." },
+        "package": { "type": "string", "description": "Omitted = wildcard." },
+        "repo": { "type": "string", "description": "Omitted = wildcard, which once suppressed a CVE fleet-wide (see the store's own comment). Prefer naming it." },
+        "action": { "type": "string", "enum": ["accept", "wont-fix", "false-positive", "resolved", "note", "incorrect-scan-result"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "who": { "type": "string", "minLength": 1 },
+        "at": { "type": "string" },
+        "expires": { "type": "string" },
+        "determination": { "$ref": "#/$defs/determination" }
+      }
+    },
+    "determination": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The structured why. Axes are INDEPENDENT and all optional — an operator states what they actually determined and nothing else. An axis left out is `unknown`, which is a real state and never an absence. Values are validated against cra/determination.mjs, and a reachability or exploitability claim is REFUSED without evidence carrying a matching method (the Phase-4 gate).",
+      "properties": {
+        "presence": { "type": "string", "enum": ["component_absent", "component_present_code_absent", "component_present_code_present"] },
+        "reachability": { "type": "string", "enum": ["unreachable_static", "unreachable_config", "unreachable_dependency", "unreachable_environment", "reachable", "reachability_unproven", "reachability_unknown"] },
+        "exploitability": { "type": "string", "enum": ["adversary_cannot_control", "mitigated_inline", "mitigated_compiler", "mitigated_runtime", "mitigated_perimeter", "exploitable", "exploitability_unknown"] },
+        "remediation": { "type": "string", "enum": ["fixed_verified", "fix_available_not_applied", "fix_planned", "no_fix_available_upstream", "will_not_fix_by_choice", "workaround_applied", "mitigation_applied", "rollback_applied", "under_investigation"] },
+        "evidence": {
+          "type": "array",
+          "description": "What supports the claim. Without a matching method the reachability/exploitability axes degrade to unknown rather than being published.",
+          "items": {
+            "type": "object",
+            "required": ["method"],
+            "properties": {
+              "source": { "type": "string" },
+              "method": { "type": "string", "enum": ["call_graph", "config_read", "manual_review", "vendor_statement", "dual_agent_adjudication", "scanner_default"] },
+              "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+              "detail": { "type": "string" },
+              "at": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

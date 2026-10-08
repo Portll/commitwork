@@ -1,0 +1,39 @@
+{
+ "tool": "cobolwork-inventory",
+ "schemaVersion": 3,
+ "summary": {
+  "toolVersion": "0.2.140",
+  "filesScanned": 3,
+  "programs": 5,
+  "programFiles": 3,
+  "copybookFiles": 1,
+  "jclFiles": 0,
+  "copiesResolved": 2,
+  "copiesMissing": 0,
+  "copiesSystem": 0,
+  "copiesRefused": 0,
+  "copiesRecursive": 0,
+  "filesUnreadable": 0,
+  "filesEbcdic": 0,
+  "notPrograms": 0,
+  "dirsUnreadable": 0,
+  "symlinks": {
+   "followed": 0,
+   "outside": 0,
+   "broken": 0
+  },
+  "withEmbeddedSql": 0,
+  "withCics": 0,
+  "withDli": 0,
+  "formats": {
+   "fixed": 3
+  },
+  "nosrc": false,
+  "coverageIncomplete": false
+ },
+ "missingCopybooks": {},
+ "refusedCopies": [],
+ "unreadable": [],
+ "ebcdic": [],
+ "recursiveCopybooks": {}
+}

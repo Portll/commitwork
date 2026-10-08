@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "pattern-scan baseline",
+  "description": "The set of pattern-scan observation identities that were already present when the baseline was seeded, so only the delta bites. Written by `node bin/pattern-scan.mjs --seed` and read back by the same file; both ends are this repository's. An identity is `path::scope::classId` and excludes the line number, permanently — see bin/lib/pattern-core.mjs identityOf(). This schema constrains SHAPE. It does not and cannot say whether the listed identities were correctly adjudicated; that is what the seeding run's `head` and `dirty` fields exist to let a reader check.",
+  "type": "object",
+  "required": ["schema", "head", "dirty", "forced", "bindingsSha256", "identities"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "enum": ["commitwork.pattern-baseline/1"],
+      "description": "Payload version. An unrecognised value must be refused rather than read as v1: a v2 baseline silently interpreted as v1 would grandfather the wrong set."
+    },
+    "seededAt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "No format pattern on purpose. CW_NOW feeds this, and restating the writer's timestamp rule here would be a second copy of it."
+    },
+    "head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "The commit the baseline describes. A baseline pinned to something that is not a commit anchors nothing, and a short sha here would silently fail every comparison against a full one."
+    },
+    "dirty": {
+      "type": "boolean",
+      "description": "Whether the seeding tree had uncommitted changes. Boolean, not a string: `\"false\"` is truthy and would read a clean seed as a dirty one."
+    },
+    "forced": {
+      "type": "boolean",
+      "description": "Whether --force overrode the refusal to seed from a dirty tree. This is the recorded override, so its type is load-bearing for the same reason as `dirty`."
+    },
+    "bindingsSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hash of monitor/detector-bindings.json as it was at seed time. What makes the baseline comparable to a later run at all."
+    },
+    "identities": {
+      "type": "array",
+      "description": "May be empty: nothing grandfathered is a real state, not a defect. Never absent — an absent list and an empty one would be indistinguishable, and only one of them is a decision.",
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\n]+::[^\\n]+::[CARPMGDWKEL][0-9]{1,2}$",
+        "description": "path::scope::classId. The prefix set is the taxonomy's ELEVEN family prefixes — C A R P M G D W K E L — and it is a hand-kept copy of monitor/failure-taxonomy.json's families[].prefix, which is why bin/test/detector-bindings-integrity.test.mjs now compares the two in both directions rather than trusting this line. `L` (collective_action, 'and each of these actors decided on its own') was numbered in taxonomy v9 and was missing here until 2026-09-01, by which point the registry held 173 classes across 11 families while this pattern still listed ten. It was LATENT, not live: with no L detector bound, no L identity could be produced. The failure shape had it gone live is worth stating because it is asymmetric — `--seed` writes the identity happily and the NEXT run's read-time validation refuses the whole baseline (exit 2), so the cost lands on a later, unrelated run rather than on the seed that caused it. Fail-closed, which is right; confusing, which is the part a comment can fix. A bare number or an unknown letter is a seeding bug, and a malformed identity matches nothing forever without ever saying so."
+      }
+    }
+  }
+}

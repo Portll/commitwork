@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "minifiedCode lane suppression allowlist",
+  "description": "Suppressions for the minifiedCode lane (bin/minify-detect.mjs). Applied by loadAllowlist() there; a document that fails this schema is treated exactly as an unreadable one — NOTHING is suppressed and summary.allowlistUnreadable says so. Every entry is strict: repo-optional, rule + file + expires mandatory. `expires` carries a date pattern because the code's expiry check is `Number.isFinite(Date.parse(x)) && Date.parse(x) < now`, so an UNPARSEABLE expiry fails the guard rather than the entry and suppresses forever, silently, without incrementing summary.allowlistExpired — a mandatory-expiry design that any non-date string walks straight past.",
+  "type": "object",
+  "required": ["allow"],
+  "additionalProperties": false,
+  "properties": {
+    "_comment": { "type": "string" },
+    "allow": {
+      "type": "array",
+      "description": "Empty is the normal state. An empty allowlist and an absent one are the same suppression set, but only one of them is a file somebody wrote.",
+      "items": {
+        "type": "object",
+        "required": ["rule", "file", "expires"],
+        "additionalProperties": false,
+        "properties": {
+          "repo": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$",
+            "description": "Scopes the entry to one scanned tree. ABSENT means the entry applies only to commitwork's own tree — absence is a real scope here, not a missing value, so it is not required."
+          },
+          "rule": { "type": "string", "minLength": 1 },
+          "file": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Repo-relative path, matched exactly against the scanned file. Required: an entry without it is dropped by the consumer without a word, and a suppression that silently does nothing is worse for its author than one that is refused."
+          },
+          "expires": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}",
+            "description": "YYYY-MM-DD, optionally with a time suffix. The pattern is the point: `never`, `TBD` or an empty string are all unparseable, and unparseable means the expiry comparison never fires, which converts a time-boxed suppression into a permanent one."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Not required, deliberately. Nothing reads it, so demanding it here would be this schema inventing policy rather than describing shape — but an entry without one is a suppression nobody has to justify. Recorded as a judgment call in evaluations/handoff-2026-08-26/08-schema-coverage.md."
+          },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

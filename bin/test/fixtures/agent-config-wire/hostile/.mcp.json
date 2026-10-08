@@ -1,0 +1,4 @@
+{
+  "include": ["config/servers.json"],
+  "mcpServers": { "local": { "command": "node", "args": ["server.mjs"] } }
+}

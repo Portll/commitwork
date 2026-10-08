@@ -1,0 +1,29 @@
+{
+  "$schema": "../schema/manifest.schema.json",
+  "repo": "(any Rust repository the operator opts in)",
+  "note": "Opt-in per project (projects[].manifest includes 'hermetic-tests'). The one lane here runs the repository's own test suite, so it executes repository code: it belongs only on repositories the operator owns and has declared.",
+  "groups": {
+    "all": ["test-hermetic"],
+    "tests": ["test-hermetic"]
+  },
+  "checks": [
+    {
+      "id": "test-hermetic",
+      "description": "The repository's cargo test suite, run the way a bare CI runner sees it: an empty HOME (every cache the code consults starts empty), debug info off, a target folder of its own, after the preparation steps the operator declared in the registry (projects[].hermeticTest.prepare). A developer's own cargo test inherits the developer's caches: on 2026-09-27 veld's suite passed locally while the runner failed 216 tests for want of a model this machine already held. Also reports what the build occupies against a hosted runner's free disk (CW_RUNNER_DISK_GB, default 14).",
+      "remediationPrompt": "You are remediating hermetic test findings from test-hermetic.json (findings[] with rule, path, sev, test, detail; path is the test binary's source file). Per rule: test-failed — the test failed with an empty HOME, debug info off and the operator's declared prepare steps; the detail carries its panic message. A test that passes on a developer machine but fails here usually depends on something that machine has and a runner does not: a model or cache under HOME, a tool on PATH, a file outside the repository, the network. Fix the dependency: make the test create what it needs in a temporary directory, or, where the dependency is genuine, ask the operator to add a prepare step to the registry. Do not skip or #[ignore] the test to clear the finding. build-failed — the suite did not compile; fix the compiler error. prepare-failed — a declared prepare step exited non-zero; the detail carries its last output. disk-headroom — the test build is close to a hosted runner's free disk; build tests without debug info (CARGO_PROFILE_DEV_DEBUG=0), or free space in the job before building.",
+      "egress": "registry",
+      "executesRepoCode": true,
+      "local": [
+        "node \"$CW_ROOT/bin/hermetic-test.mjs\" . > \"$CW_REPORT_DIR/test-hermetic.json\" 2>\"$CW_REPORT_DIR/test-hermetic.log\"; echo $? > \"$CW_REPORT_DIR/test-hermetic.json.exit\""
+      ],
+      "report": { "file": "test-hermetic.json", "format": "rule-counts" },
+      "requires": { "tools": ["node", "cargo"] },
+      "appliesIfExists": ["Cargo.toml"],
+      "groups": ["all", "tests"],
+      "timeoutSec": 5400,
+      "sandboxExtraReads": ["~/.rustup", "~/.cargo"],
+      "sandboxExtraWrites": ["~/.cargo/registry", "~/.cargo/git", "~/.cargo/.package-cache"],
+      "formatNotes": "test-hermetic.json is the in-house rule-counts shape: {tool:'test-hermetic', summary:{findings, byRule, filesScanned, testsRun, cargoExit, passed, failed, ignored, binaries, targetBytes, runnerDiskGb, prepareSteps, declaredBy, void, voidReason?}, findings:[{rule, path, sev, test?, step?, detail}]}. Rules: test-failed (path = the test binary's source, e.g. tests/handler_tests.rs; identity is (rule, path, test), never line), build-failed, prepare-failed, disk-headroom. Counts are summed over every test binary. EGRESS: registry — crates.io for cargo, plus whatever the operator's declared prepare steps fetch (veld: huggingface.co and github.com releases, pinned and SHA-256 verified by its own downloader)."
+    }
+  ]
+}

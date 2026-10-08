@@ -1,0 +1,137 @@
+{
+  "generated": "2026-07-19T17:00:00.000Z",
+  "sliceId": "sweep-test-1",
+  "sliceVersion": 1,
+  "kind": "sweep",
+  "repos": [
+    {
+      "name": "repo-a",
+      "findings": [
+        {
+          "tool": "osv",
+          "id": "CVE-2026-11111",
+          "cvss": 9.8,
+          "severity": "crit",
+          "package": "acme-lib",
+          "version": "1.0.0",
+          "path": "package-lock.json",
+          "title": "RCE in acme-lib",
+          "advisory": "https://osv.dev/CVE-2026-11111",
+          "kev": true,
+          "epss": 0.02,
+          "state": "persisting",
+          "bornSlice": "sweep-20260601000000",
+          "status": "persisting"
+        },
+        {
+          "tool": "osv",
+          "id": "CVE-2026-22222",
+          "cvss": 6.5,
+          "severity": "med",
+          "package": "widget-js",
+          "version": "2.1.0",
+          "path": "package-lock.json",
+          "title": "SSRF in widget-js",
+          "advisory": "https://osv.dev/CVE-2026-22222",
+          "kev": false,
+          "epss": 0.91,
+          "state": "born",
+          "bornSlice": "sweep-20260715000000",
+          "status": "born"
+        },
+        {
+          "tool": "osv",
+          "id": "CVE-2026-33333",
+          "cvss": 3.1,
+          "severity": "low",
+          "package": "leftover",
+          "version": "0.1.0",
+          "path": "package-lock.json",
+          "title": "low sev thing",
+          "kev": false,
+          "epss": null,
+          "state": "persisting",
+          "status": "persisting",
+          "bornSlice": "sweep-20260712000000"
+        },
+        {
+          "tool": "osv",
+          "id": "CVE-2026-88888",
+          "cvss": 9.5,
+          "severity": "crit",
+          "package": "grave-lib",
+          "version": "3.2.1",
+          "path": "package-lock.json",
+          "title": "critical but not known-exploited",
+          "advisory": "https://osv.dev/CVE-2026-88888",
+          "kev": false,
+          "epss": 0.01,
+          "state": "persisting",
+          "status": "persisting",
+          "bornSlice": "sweep-20260710000000"
+        }
+      ],
+      "scanners": {
+        "secrets": {
+          "ran": true,
+          "total": 0
+        },
+        "sastSemgrep": {
+          "ran": true,
+          "total": 0
+        },
+        "supplyChain": {
+          "ran": true,
+          "total": 0
+        },
+        "maliciousPackages": {
+          "ran": true,
+          "total": 0
+        }
+      }
+    },
+    {
+      "name": "repo-b",
+      "findings": [
+        {
+          "tool": "osv",
+          "id": "CVE-2026-44444",
+          "cvss": 8.1,
+          "severity": "high",
+          "package": "other-lib",
+          "version": "3.0.0",
+          "title": "exploited in other-lib",
+          "kev": true,
+          "epss": 0.4,
+          "state": "persisting",
+          "status": "persisting"
+        }
+      ],
+      "scanners": {
+        "secrets": {
+          "ran": true,
+          "total": 0
+        }
+      }
+    },
+    {
+      "name": "repo-c",
+      "findings": [
+        {
+          "tool": "osv",
+          "id": "CVE-2026-77777",
+          "cvss": 7.0,
+          "severity": "high",
+          "package": "maybe",
+          "version": "1.2.3",
+          "title": "near miss",
+          "kev": false,
+          "epss": 0.2,
+          "state": "persisting",
+          "status": "persisting"
+        }
+      ],
+      "scanners": {}
+    }
+  ]
+}

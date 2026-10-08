@@ -1,0 +1,33 @@
+{
+  "tool": "gradle-wrapper-verify",
+  "generatedAt": "2026-09-30T13:52:30.590Z",
+  "root": "/fixture/repo",
+  "ran": true,
+  "applicable": true,
+  "hasGradlew": true,
+  "scope": "wrapper-fetch-path",
+  "doesNotCover": [
+    "build.gradle configuration-time code",
+    "gradle.properties jvmargs",
+    "settings.gradle pluginManagement repositories",
+    "wrappers in sub-modules (root only)"
+  ],
+  "distributionUrl": "https://fake-gradle.example.com/dists/gradle-8.5-bin.zip",
+  "declaredVersion": "8.5",
+  "gradlewSha256": "961a72fc77f171ce85f6d0a1aa86b5f68324ae020c79845c80177de5b1883701",
+  "jarSha256": "d86ec87bac1145aa4458bd18cfc664584ac8f34ed4d040b35370428c75f58d6d",
+  "jarBytes": 40,
+  "checksumCheck": "no-reference-list",
+  "findings": [
+    {
+      "rule": "distribution-url-off-vendor",
+      "sev": "high",
+      "message": "distributionUrl points outside services.gradle.org: https://fake-gradle.example.com/dists/gradle-8.5-bin.zip — ./gradlew downloads and EXECUTES whatever is there, before any build logic is evaluated. A corporate mirror is legitimate; verify this one is."
+    },
+    {
+      "rule": "distribution-checksum-undeclared",
+      "sev": "low",
+      "message": "no distributionSha256Sum — Gradle supports pinning the distribution hash and this wrapper does not, so a substituted download would not be detected by Gradle itself"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "docsite manifest",
+  "description": "docsite/manifest.json — the routing and identity declaration for i.commitwork.online. slug and urlPath are IDENTITY: a urlPath never rotates on save or rebuild (capability URLs live in readers' bookmarks and history); only bin/docsite-new.mjs may mint one. kind 'md' entries are built from content/<slug>.md by bin/docsite-build.mjs; kind 'imported' entries are byte-exact snapshots under imported/ and are never rewritten by the build. state governs the publish bundle: draft = local only, hidden = deployed but unlisted, published = deployed and listed in the index/nav. Consumed at LOAD by lib/docsite-manifest.mjs, which validates before returning — a manifest that fails validation is an error, never an empty doc list.",
+  "type": "object",
+  "required": ["version", "docs"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "enum": [1] },
+    "note": { "type": "string" },
+    "docs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug", "urlPath", "title", "source", "kind", "state"],
+        "additionalProperties": false,
+        "properties": {
+          "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+          "urlPath": { "type": "string", "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9][a-z0-9-]{0,63})$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "source": { "type": "string", "pattern": "^(content|imported)/[A-Za-z0-9._/-]+$" },
+          "kind": { "enum": ["md", "imported"] },
+          "state": { "enum": ["draft", "hidden", "published"] },
+          "alias": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "description": "A readable public path served INSTEAD of urlPath, with urlPath kept as a 301 into it. urlPath stays the identity key and never rotates; the alias is presentation. Adding one is safe for existing links (they redirect); CHANGING one is not, and orphans every link handed out under the old alias." },
+          "label": { "type": "string", "description": "An editorial statement about the CONTENT, shown on the index in place of the build-freshness badge. Deliberately separate from `state` and from freshness: state is where the document deploys, freshness is whether the built HTML is current with its source, and label is how finished the writing is. A byte-fresh build of a draft is still a draft, and collapsing the three would make one of those questions unanswerable." },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

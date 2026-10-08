@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/cra-controls.schema.json",
+  "title": "CRA control crosswalk",
+  "type": "object",
+  "required": ["note", "frameworks", "checks", "evidenceSources", "toolAliases"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string", "minLength": 1 },
+    "frameworks": { "type": "object" },
+    "checks": { "type": "object", "additionalProperties": { "type": "object", "required": ["category", "nist80053", "soc2", "cra"], "additionalProperties": false, "properties": { "category": { "type": ["string", "null"] }, "nist80053": { "type": "array", "items": { "type": "string" } }, "soc2": { "type": "array", "items": { "type": "string" } }, "cra": { "type": "array", "items": { "type": "string" } } } } },
+    "evidenceSources": { "type": "object", "additionalProperties": { "type": "object", "required": ["when", "nist80053", "soc2", "cra"], "additionalProperties": false, "properties": { "when": { "type": "string", "minLength": 1 }, "nist80053": { "type": "array", "items": { "type": "string" } }, "soc2": { "type": "array", "items": { "type": "string" } }, "cra": { "type": "array", "items": { "type": "string" } } } } },
+    "toolAliases": { "type": "object", "additionalProperties": { "type": "string" } }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/approach-taxonomy-baseline.schema.json",
+  "title": "Approach-taxonomy coverage ratchet baseline",
+  "description": "The floor for monitor/test/approach-taxonomy-coverage.test.mjs. Two banks, both of which must be able to EMPTY: `undeclared` holds checks the fleet runs that monitor/approach-taxonomy.json does not describe, `orphans` holds approaches naming a check no manifest declares. Seeded from HEAD, never from a working tree — a floor seeded from a dirty tree bakes in another session's unlanded manifest and then describes a state no other checkout has.",
+  "type": "object",
+  "required": ["_comment", "version", "at", "declared", "described", "undeclared", "orphans"],
+  "additionalProperties": false,
+  "properties": {
+    "_comment": { "type": "string", "minLength": 1 },
+    "version": { "type": "integer", "minimum": 1 },
+    "at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" },
+    "declared": { "type": "integer", "minimum": 0, "description": "count of checks across the fleet manifests when seeded" },
+    "described": { "type": "integer", "minimum": 0, "description": "count of approaches in the taxonomy when seeded" },
+    "undeclared": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+      "description": "check ids with no taxonomy entry. A NEW id here fails the ratchet; an id that gains an entry must be removed or the floor is stale."
+    },
+    "orphans": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+      "description": "taxonomy entries naming a check no manifest declares — usually a lane whose manifest change is unlanded. Banked rather than red, and must be removed once the check is declared."
+    },
+    "note_2026_09_01": { "type": "string" }
+  }
+}

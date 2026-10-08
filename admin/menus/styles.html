@@ -1,0 +1,165 @@
+<style id="workspace-styles">
+/* Task-based workspace shell: shared login palette and button geometry. */
+.workspace-shell{--rail-width:13rem}
+.workspace-shell .bar{margin-bottom:0;background:var(--bg);z-index:20}
+.workspace-shell .bar>.row{max-width:none;min-height:4.75rem;padding:.85rem 1.5rem;gap:1rem}
+.scope-chip{display:inline-flex;align-items:center;min-height:2rem;padding:.3rem .75rem;border:1px solid var(--line2);border-left:3px solid var(--mut);font:600 .75rem var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);white-space:nowrap;max-width:24rem;overflow:hidden;text-overflow:ellipsis}
+.scope-chip[data-scope="project"]{border-left-color:var(--acc);background:var(--wash)}
+#sweep[hidden]{display:none}
+.bar-picker{display:inline-flex;align-items:center}
+.ru-top{display:flex;gap:1.5rem;flex-wrap:wrap;margin:.75rem 0 1rem}
+.ru-fig{margin:0;flex:1 1 18rem;max-width:32rem}.ru-fig figcaption{font-size:.75rem;color:var(--mut);margin-bottom:.35rem}
+.ru-chart .bar{fill:var(--acc)}.ru-chart .axis{stroke:var(--line2)}.ru-chart .lbl,.ru-clock .lbl{fill:var(--mut);font-size:6px;font-family:var(--mono)}
+.ru-clock{max-width:15rem}.ru-clock .hub{fill:var(--panel)}.ru-clock .lbl.big{fill:var(--ink);font-size:8.5px;font-weight:600}
+.ru-clock .seg.good,.ru-d.good,.ru-k.good{fill:var(--live);background:var(--live)}
+.ru-clock .seg.warn,.ru-d.warn,.ru-k.warn{fill:var(--part);background:var(--part)}
+.ru-clock .seg.broken,.ru-d.broken,.ru-k.broken{fill:var(--crit);background:var(--crit)}
+.ru-clock .seg.none,.ru-d.none,.ru-k.none{fill:var(--plan);background:var(--plan)}
+.ru-clock .seg.empty,.ru-d.empty,.ru-k.empty{fill:var(--line2);background:var(--line2)}
+.ru-clock .seg.na{fill:transparent;stroke:var(--line);stroke-width:.4}
+.ru-k{color:var(--bg);padding:0 .3rem;border-radius:2px;font-weight:600}
+.ru-strip{display:inline-flex;gap:2px;vertical-align:middle}
+.ru-d{display:inline-block;width:.55rem;height:.9rem;border-radius:1px}
+.ru-d.na{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.ru-cad{width:2.3rem;height:.9rem;vertical-align:middle}.ru-cad .frame{fill:none;stroke:var(--mut);stroke-width:.8}.ru-cad rect:not(.frame){fill:var(--line2)}.ru-cad rect.on{fill:var(--acc)}
+.ru-name.w-kev{color:var(--sev)}.ru-name.w-crit{color:var(--crit)}.ru-name.w-high{color:var(--high)}.ru-name.w-med{color:var(--med)}.ru-name.w-low{color:var(--low)}.ru-name.w-none{color:var(--live)}.ru-name.w-unknown{color:var(--mut)}
+.ru-next{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.ru-open{background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.workspace-shell .bar #proj{min-width:11rem;max-width:18rem;font-size:.875rem;border-radius:3px;min-height:2.5rem}
+.workspace-shell .bar .gen{font-variant-numeric:tabular-nums;white-space:nowrap}
+.rail-scope.active{color:var(--ink)}
+.rail-project{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--line)}
+#workspace-rail .workspace-link:disabled{opacity:.45;cursor:not-allowed;background:transparent}
+.workspace-shell .bar .gen{font-size:.75rem}
+.workspace-shell .bar .ctl-wrap{margin-left:auto}
+.workspace-shell .bar button{min-height:2.5rem;font-size:.875rem;border-radius:3px;padding:.5rem .85rem}
+/* Running, the same control stops the sweep: the rule at its foot turns from go to stop. */
+.workspace-shell #sweep.running{border-bottom-color:var(--crit)}
+.workspace-shell #menubtn{background:transparent;border-color:var(--line);color:var(--ink)}
+#nav-toggle{display:none}
+#workspace-rail{position:fixed;left:0;top:var(--barh,5rem);bottom:0;width:var(--rail-width);padding:1.5rem .875rem;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;z-index:15}
+.rail-label{padding:0 .75rem;margin-bottom:.75rem;font:600 .625rem var(--sans);text-transform:uppercase;letter-spacing:.14em;color:var(--mut)}
+.rail-manage{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--line)}
+#workspace-rail nav{display:flex;flex-direction:column;gap:.25rem}
+#workspace-rail .workspace-link,#workspace-rail .rail-link{display:block;text-align:left;text-decoration:none;width:100%;padding:.7rem .75rem;font:400 .875rem var(--sans);line-height:1.4;border:1px solid transparent;border-radius:3px;background:transparent;color:var(--mut);min-height:2.75rem;white-space:normal}
+#workspace-rail .active{color:var(--ink);border-left:2px solid var(--acc);border-radius:0;background:var(--wash)}
+#workspace-rail button:hover,#workspace-rail a:hover{color:var(--ink);background:var(--panel2)}
+.rail-operations{margin-top:.5rem;border-top:1px solid var(--line);padding:.75rem .5rem}
+.rail-operations summary{font-size:.8125rem;cursor:pointer;color:var(--mut)}
+.rail-operations button{font-size:.75rem;white-space:normal;margin-top:.5rem;min-height:2.5rem}
+.rail-operations .mut{font-size:.75rem;overflow-wrap:anywhere}
+.rail-operations .pop-h{font-size:.625rem}
+#workspace-content{margin-left:var(--rail-width);min-width:0;padding-bottom:2rem;outline:none}
+.workspace-context{padding:1.35rem 1.5rem .25rem;max-width:var(--colw);margin:auto}
+.workspace-location{font:.75rem var(--sans);color:var(--mut);overflow-wrap:anywhere;line-height:1.5}
+#workspace-help{font:.875rem/1.55 var(--sans);color:var(--mut);margin:.5rem 0}
+#workspace-content>.row.nav{display:flex;flex-direction:column;align-items:stretch;gap:.75rem;padding:.65rem 1.5rem 1rem;max-width:var(--colw);margin:0 auto 1.25rem;border-bottom:1px solid var(--line)}
+.workspace-shell #groups{flex:initial;gap:1rem;margin:0}
+.workspace-shell #groups .gtab{background:transparent;border:0;border-radius:0;font-size:.875rem;padding:.65rem .1rem;color:var(--mut);box-shadow:none}
+.workspace-shell #groups .gtab.pri{color:var(--ink);box-shadow:inset 0 -2px var(--acc)}
+#check-picker-row{display:flex;align-items:center;gap:.75rem;font:.8125rem var(--sans);color:var(--mut)}
+#check-picker{color:var(--ink);background:var(--panel);border:1px solid var(--line2);font-family:var(--sans);font-size:.875rem;min-height:2.5rem;max-width:100%;width:min(28rem,100%);border-radius:0}
+.workspace-shell #views{gap:.4rem;flex-wrap:wrap}
+.workspace-shell #views .vtab{font:400 .875rem var(--sans);padding:.5rem .65rem;min-height:2.5rem;max-width:none;border-radius:3px}
+.workspace-shell #views:has(>.vtab):not(:has(>.vtab:not(.ghide))){display:none}
+.workspace-shell [hidden]{display:none!important}
+.workspace-shell .pop{width:min(23rem,calc(100vw - 2rem));max-height:calc(100dvh - var(--barh,5rem) - 1rem);overflow-y:auto;padding:.75rem;background:var(--panel);border-radius:10px}
+.workspace-shell .pop button,.workspace-shell .pop a,.workspace-shell .pop select,.workspace-shell .pop .pop-lbl,.workspace-shell .pop .menu-view{font-size:.875rem}
+.workspace-shell .pop .mut,.workspace-shell .pop-acct .mut{font-size:.75rem;line-height:1.5}
+.workspace-shell .pop-acct b{font-size:.9375rem}
+.workspace-shell .pop-h{font-size:.625rem;margin-top:.75rem;padding:.5rem}
+.workspace-shell .pop-fld{padding:.4rem .5rem;flex-wrap:wrap}
+.workspace-shell .pop-fld .mut{font-size:.75rem}
+.workspace-shell .pop .theme-opt{padding:.5rem .4rem;min-height:2.5rem;font-size:.75rem}
+.workspace-shell .pop .theme-opt[aria-checked="true"]{color:var(--ink);background:var(--wash);box-shadow:inset 0 -2px var(--acc)}
+.workspace-shell .pop .row-actions button{min-height:2.5rem}
+.workspace-shell .pop-acct .avatar{width:2rem;height:2rem;font-size:.875rem}
+.account-security-controls{font-size:.875rem}
+.account-security-controls .sect{padding:1rem 0;border-top:1px solid var(--line);margin-top:1rem}
+.account-security-controls .pop-h{font:600 1rem var(--sans);color:var(--ink);padding:0;margin:0 0 .75rem;text-transform:none;letter-spacing:0}
+.account-security-controls .pk-fld{font-size:.875rem;max-width:30rem}
+.account-security-controls input{font-size:.875rem;border-radius:0;min-height:2.5rem}
+.account-security-controls button{font-size:.875rem;min-height:2.5rem;border-radius:3px}
+.account-security-controls .pk-fp{display:inline-flex;align-items:center;gap:.75rem;background:linear-gradient(180deg,var(--panel2),var(--panel));color:var(--head);border:1px solid var(--line2);border-bottom:2px solid var(--acc);padding:.75rem}
+.account-security-controls .pk-fp .pk-fp-ico{width:2rem;height:2rem}
+.account-security-controls .pf-once{overflow-wrap:anywhere}
+.workspace-shell #workspace-content section{border-radius:10px}
+.workspace-shell #workspace-content button{border-radius:3px}
+.workspace-link .vn,#groups .gtab .vn{display:inline-block;margin-left:.5rem;font:.75rem var(--mono);padding:0 .4rem;border:1px solid var(--line2);border-radius:999px;color:var(--mut)}
+.workspace-link .vn.warn,#groups .gtab .vn.warn{color:var(--ink);border-color:var(--acc)}
+.workspace-link .vn.crit,#groups .gtab .vn.crit{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.workspace-link .vn:empty,#groups .gtab .vn:empty{display:none}
+.workspace-shell :is(button,a,select,summary):focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+@media(max-width:1100px){
+  .workspace-shell .bar .gen{display:none}
+  .workspace-shell .bar>.row{gap:.65rem;padding:.75rem 1rem}
+  .workspace-shell .bar select{max-width:13rem}
+}
+@media(max-width:800px){
+  #nav-toggle{display:inline-flex;align-items:center}
+  #workspace-rail{display:none;width:min(19rem,calc(100vw - 2rem));box-shadow:12px 0 35px rgba(0,0,0,.25)}
+  .rail-open #workspace-rail{display:block}
+  body.rail-open::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:14}
+  #workspace-content{margin-left:0}
+  .workspace-shell .bar>.row{flex-wrap:wrap}
+  .workspace-shell .bar .mark{margin-right:auto}
+  .scope-chip{order:3;max-width:none;flex:1 1 auto}
+  .workspace-shell .bar .ctl-wrap{order:4;margin-left:0;flex:1 1 100%;align-items:stretch;min-width:0}
+  .workspace-shell .bar .ctl{gap:.4rem;flex-wrap:wrap}
+  /* the run control names its project, so its label grows past the viewport on a phone */
+  .workspace-shell .bar #sweep{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left}
+  .workspace-shell .bar button{font-size:.8125rem;padding:.45rem .55rem}
+  .workspace-shell .bar select{max-width:12rem}
+  .workspace-shell .bar .acct-name{max-width:6rem;overflow:hidden;text-overflow:ellipsis}
+  .workspace-shell .bar .ctl-note{white-space:normal;max-width:18rem}
+  .workspace-context{padding:1rem 1rem .25rem}
+  #workspace-content>.row.nav{padding:.5rem 1rem 1rem}
+  .workspace-shell #groups{gap:.85rem;flex-wrap:wrap}
+  #check-picker-row{align-items:flex-start;flex-direction:column;gap:.4rem}
+}
+@media(prefers-reduced-motion:reduce){.workspace-shell button{transition:none}}
+/* Findings feed (panel-feed.js). Tokens only; rows sit on the 4px grid at 2.25rem. */
+#view-feed table.feed{width:100%;border-collapse:collapse}
+#view-feed table.feed th,#view-feed table.feed td{padding:.375rem .5rem;border-bottom:1px solid var(--line);vertical-align:baseline;text-align:left}
+#view-feed tr.feed-row{min-height:2.25rem}
+#view-feed tr.feed-row.active td{background:var(--wash)}
+#view-feed tr.feed-row.selected td:first-child{box-shadow:inset .1875rem 0 0 var(--acc)}
+#view-feed .feed-open{background:none;border:0;padding:0;color:var(--head);font:inherit;cursor:pointer;text-align:left}
+#view-feed .feed-open:hover{text-decoration:underline}
+#view-feed tr.feed-members>td{background:var(--panel2)}
+#view-feed table.feed-sub{width:100%;border-collapse:collapse;font-size:.75rem}
+#view-feed table.feed-sub td{border-bottom:1px solid var(--line2);padding:.25rem .5rem}
+#view-feed .cw-feed-modes button[aria-pressed="true"]{border-color:var(--acc)}
+#view-feed .cw-feed-bulk{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+#view-feed .cw-feed-bulk input{flex:1 1 16rem;min-width:10rem}
+#view-feed tr.feed-skeleton td{color:var(--dim)}
+#view-feed .feed-sel{margin:0;vertical-align:middle}
+/* Command palette (panel-palette.js). The dialog is built at first open; these are its rules. */
+#cw-palette{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;background:color-mix(in srgb,var(--bg) 65%,transparent)}
+#cw-palette[hidden]{display:none}
+#cw-palette .cw-palette-box{width:min(40rem,92vw);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:.5rem;font-family:var(--sans)}
+#cw-palette-input{width:100%;box-sizing:border-box;padding:.75rem 1rem;font:inherit;font-size:.9375rem;color:var(--head);background:transparent;border:0;border-bottom:1px solid var(--line);outline:none}
+#cw-palette-list{list-style:none;margin:0;padding:.25rem 0;max-height:50vh;overflow:auto}
+#cw-palette-list li{display:flex;gap:.75rem;align-items:baseline;padding:.375rem 1rem;min-height:2rem;cursor:pointer}
+#cw-palette-list li[aria-selected="true"]{background:var(--wash)}
+#cw-palette-list li.cw-disabled,#cw-palette-list li.cw-empty{color:var(--dim);cursor:default}
+#cw-palette-list .cw-kind{font-family:var(--mono);font-size:.6875rem;color:var(--mut);min-width:4.5rem;text-transform:uppercase}
+#cw-palette-list .cw-label{color:var(--head)}
+#cw-palette-list .cw-hint{margin-left:auto;color:var(--mut);font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50%}
+#cw-palette-hint{padding:.375rem 1rem .625rem;color:var(--mut);font-size:.75rem;border-top:1px solid var(--line)}
+#cw-palette kbd{font-family:var(--mono);font-size:.6875rem;border:1px solid var(--line);border-radius:.25rem;padding:0 .3rem;color:var(--mut)}
+/* Guided setup (panel-journey.js). One list, one step per item, controls on the head line. */
+#view-journey ol.journey{list-style:none;margin:0;padding:0}
+#view-journey .journey-step{border-top:1px solid var(--line);padding:.75rem 0}
+#view-journey .journey-step.state-done .journey-body,#view-journey .journey-step.state-skipped .journey-body{color:var(--mut)}
+#view-journey .journey-head{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline}
+#view-journey .journey-controls{margin-left:auto;display:flex;gap:.5rem}
+#view-journey .journey-body{margin:.375rem 0 0 1.75rem}
+#view-journey .journey-body p{margin:.375rem 0}
+#view-journey ul.journey-tools{margin:.25rem 0 .5rem;padding-left:1.25rem}
+#view-journey pre.journey-cli{margin:.375rem 0 0;padding:.5rem .75rem;background:var(--panel2);border:1px solid var(--line2);border-radius:.25rem;font-size:.75rem;overflow:auto}
+#view-journey .journey-go{background:none;border:0;padding:0;color:var(--acc);font:inherit;cursor:pointer;text-decoration:underline}
+#view-journey .journey-ack,#view-journey .journey-unack{font-size:.75rem}
+#view-journey kbd{font-family:var(--mono);font-size:.6875rem;border:1px solid var(--line);border-radius:.25rem;padding:0 .3rem;color:var(--mut)}
+
+</style>

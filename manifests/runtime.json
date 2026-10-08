@@ -1,0 +1,230 @@
+{
+  "$schema": "../schema/manifest.schema.json",
+  "repo": "runtime (DAST / TLS / API-fuzz / authz) — needs a running target",
+  "note": "Dynamic checks against a LIVE endpoint. Set CW_TARGET_URL (or pass --url) and, for api-fuzz, CW_OPENAPI (a spec path or URL like $CW_TARGET_URL/v3/api-docs). For the authenticated BOLA matrix set CW_BEARER_A / CW_BEARER_B (two tenants' tokens). NO check carries a default target: the checks that need one declare requiresUrl, so a run without a URL records a visible coverage void instead of scanning whatever happens to be listening on localhost. Checks whose tool or target is absent skip visibly.",
+  "groups": {
+    "all": [
+      "dast-nuclei",
+      "authz-bola",
+      "tls-headers",
+      "tls-testssl",
+      "api-fuzz-schemathesis",
+      "cspm-github"
+    ],
+    "quick": [
+      "dast-nuclei",
+      "authz-bola",
+      "tls-headers"
+    ]
+  },
+  "ghaSafety": "Runtime checks are NOT in any project's sweep manifests (verified 2026-08-03: clientA's projects declare security-baseline+build-health+quality-gates, or security-baseline alone; the registry default is security-baseline), so a sweep / GHA `all` never invokes them. Every helper self-gates (fast exit 0 when its target/token is absent) and every command ends `|| true`. They run only via an explicit `commitwork run runtime`.",
+  "checks": [
+    {
+      "id": "dast-nuclei",
+      "egress": "target",
+      "sandboxExtraWrites": [
+        "~/nuclei-templates",
+        "~/.config/nuclei",
+        "~/Library/Caches/nuclei",
+        "~/.cache/nuclei"
+      ],
+      "description": "Templated DAST against the running target (Nuclei) — misconfig, exposures, default creds, known-exploit templates. Catches runtime issues (e.g. exposed Spring Boot actuators, default logins) that static CVE/SAST scans cannot see.",
+      "remediationPrompt": "You are remediating runtime findings from Nuclei DAST (nuclei.json, one JSON object per line: template-id, info.severity, matched-at). These are live exposures on the running target. Typical clusters: exposed Spring Boot actuators (/env, /threaddump, /heapdump) → restrict management.endpoints.web.exposure.include to health,info and require auth on the rest; default/known credentials → rotate and delete the default account; missing security headers, directory listing, exposed .git/.env, verbose stack traces, known-CVE fingerprints → patch or restrict at the app/edge. Fix highest severity first in config, not by hiding the path, then re-run against the running instance to confirm. Show the config diff per finding.",
+      "local": [
+        "nuclei -u \"$CW_TARGET_URL\" -jsonl -o \"$CW_REPORT_DIR/nuclei.jsonl\" -stats -silent >\"$CW_REPORT_DIR/nuclei.log\" 2>&1 || true"
+      ],
+      "report": {
+        "file": "nuclei.jsonl",
+        "format": "nuclei"
+      },
+      "requires": {
+        "tools": [
+          "nuclei"
+        ],
+        "services": [
+          "a running HTTP endpoint (CW_TARGET_URL)"
+        ]
+      },
+      "requiresUrl": true,
+      "groups": [
+        "all",
+        "quick"
+      ],
+      "notes": "Install: brew install nuclei. First run downloads the template store to ~/nuclei-templates.",
+      "formatNotes": "Nuclei requires template-id, templateID, or template field to identify a finding. Non-finding lines (errors, empty objects) occur but do not count. An empty file is clean; content with only non-findings is a void (tool failure or misconfiguration)."
+    },
+    {
+      "id": "authz-bola",
+      "egress": "target",
+      "description": "BOLA / IDOR / tenant-isolation probe. Enumerates object-level GET endpoints from the live OpenAPI and tests for unauthenticated exposure and whether the gateway TRUSTS a client-supplied X-Tenant-Id (cross-tenant leak). Set CW_BEARER_A/CW_BEARER_B for the authenticated cross-tenant matrix.",
+      "remediationPrompt": "You are fixing broken object-level authorization (BOLA/IDOR / cross-tenant leak) found by the authz-bola probe (authz-bola.json — summary + findings[] with type, path, detail). Highest breach-yield class. The defect: an endpoint returns a tenant- or user-owned object without checking the caller may see THAT object. Fix per endpoint in the owning service: enforce an object-level authorization check on every read/write, and derive the tenant/owner from the authenticated token claim — NEVER trust a client-supplied X-Tenant-Id header or a path id as proof of ownership. Return 404 (not 403) for objects the caller may not see, and add a cross-tenant negative test proving tenant A cannot read tenant B's resource. If only the unauthenticated slice ran, note the authenticated matrix (CW_BEARER_A/B, CW_TENANT_A/B) still needs running. Show the diff and the test.",
+      "local": [
+        "node $CW_ROOT/bin/authz-bola.mjs \"$CW_TARGET_URL\" > \"$CW_REPORT_DIR/authz-bola.json\" 2>\"$CW_REPORT_DIR/authz-bola.log\" || true"
+      ],
+      "report": {
+        "file": "authz-bola.json",
+        "format": "authz-bola"
+      },
+      "aliasOf": "dast-authz-bola",
+      "requires": {
+        "tools": [
+          "node"
+        ],
+        "services": [
+          "a running gateway (CW_TARGET_URL) + reachable /v3/api-docs"
+        ]
+      },
+      "requiresUrl": true,
+      "groups": [
+        "all",
+        "quick"
+      ],
+      "notes": "Highest breach-yield class (report item 10). The unauthenticated slice runs without tokens; the full tenant-A-token + forged-tenant-B matrix needs working Keycloak realms/tokens (bin/bola-tokens.sh mints them). Endpoints come from the live OpenAPI; if the spec is unreachable the probe writes {ran:false,skipped:true,reason} rather than guessing paths — name them with CW_BOLA_PATHS to probe anyway.",
+      "formatNotes": "BOLA probe outputs custom JSON {summary, findings: [{type, path, detail}]}. Type indicates breach class (unauth-read, unauth-write, cross-tenant, etc.). Without CW_BEARER_A/B, only unauthenticated slice runs — authenticated matrix (cross-tenant) requires bearer tokens and tenant scope variables."
+    },
+    {
+      "id": "bola-run",
+      "egress": "target",
+      "description": "Manifest-driven BOLA / IDOR / BFLA / cross-tenant probe (bin/bola-run.mjs) — the generic successor to authz-bola. Runs a bundled manifest's full actor matrix (anon/user/admin × 2 tenants) against CW_TARGET_URL, seeding owned objects so it catches path-, cookie- and RLS-based isolation breaks, not just X-Tenant-Id header-trust. Set CW_BOLA_MANIFEST to a bundled name (e.g. clientA); credentials resolve from the keychain via lib/secrets.mjs, so no token env is needed once bin/secrets.mjs holds them.",
+      "remediationPrompt": "You are fixing object-level authorization defects found by bola-run (authz-bola.json — summary + findings[] with type ∈ broken-auth|bola|bfla|cross-tenant|unauth-exposure, path, attacker, owner, detail). For each finding: the named attacker actor read an object owned by another actor. Fix in the owning service — enforce an authorization check on every read/write that derives the owner/tenant from the AUTHENTICATED principal (token claim / session), never from a path id, a client header, or a query param. bola = a peer user reached another user's object (horizontal); bfla = a user reached an admin-owned object (vertical priv-esc); cross-tenant = across the tenant boundary; broken-auth/unauth-exposure = reachable with no identity. Return 404 (not 403) for objects the caller may not see. Add the cross-identity negative test the matrix implies. Show the diff and the test. A coverage void (an actor that could not mint, an object that could not seed) is not a pass — resolve it so the cell actually runs.",
+      "local": [
+        "CW_BOLA_MANIFEST=\"${CW_BOLA_MANIFEST:-clientA}\" node $CW_ROOT/bin/bola-run.mjs --base \"$CW_TARGET_URL\" --out \"$CW_REPORT_DIR/authz-bola.json\" >\"$CW_REPORT_DIR/bola-run.log\" 2>&1 || true"
+      ],
+      "report": {
+        "file": "authz-bola.json",
+        "format": "authz-bola"
+      },
+      "requires": {
+        "tools": [
+          "node"
+        ],
+        "services": [
+          "a running local testbed (CW_TARGET_URL)"
+        ]
+      },
+      "requiresUrl": true,
+      "groups": [
+        "all"
+      ],
+      "notes": "Config lives in the bundled manifest (manifests/bola/<name>.json) — a new backend is a new manifest, not a fork. The panel's BOLA tab runs this per configured project (monitor/projects.json `bola` blocks) via monitor/bola-sweep.mjs. Writes the SAME authz-bola.json the rollup ingests. Fail-closed: no target / unminted actors / unseeded objects each record a {skipped} void rather than a clean pass. Credentials are named by the bundled manifest it runs (its ${ENV:NAME} placeholders and *Env fields, bin/bola-run.mjs secretNames()) and resolve via bin/secrets.mjs or the environment, so requires.secrets lists none: it holds env var names, and a sentence there read as an undeclared secret that blocked this check on every box.",
+      "formatNotes": "Same format as authz-bola (custom JSON). This is the full authenticated cross-tenant check variant. Requires CW_BEARER_A, CW_BEARER_B, CW_TENANT_A, CW_TENANT_B to test all four combinations. An unauthenticated-only run (no bearers) shows only that slice."
+    },
+    {
+      "id": "tls-testssl",
+      "egress": "target",
+      "description": "TLS configuration + security-header grading (testssl.sh) against an HTTPS target — protocol/cipher/cert posture a static scan can't assess.",
+      "local": [
+        "[ -n \"${CW_TLS_URL:-}\" ] || { echo 'skipped: no CW_TLS_URL. testssl needs an https:// listener — stand one up with bin/tls-proxy.sh up, or point CW_TLS_URL at the TLS-terminating edge. No report is written on purpose: an ungraded endpoint must read as not-scanned, never as a pass.' >\"$CW_REPORT_DIR/testssl-full.log\"; exit 0; }; testssl.sh --quiet --jsonfile \"$CW_REPORT_DIR/testssl-full.json\" \"$CW_TLS_URL\" >\"$CW_REPORT_DIR/testssl-full.log\" 2>&1 || true"
+      ],
+      "report": {
+        "file": "testssl-full.json",
+        "format": "json"
+      },
+      "requires": {
+        "tools": [
+          "testssl.sh"
+        ],
+        "services": [
+          "an HTTPS endpoint (CW_TLS_URL)"
+        ]
+      },
+      "requiresUrl": true,
+      "groups": [
+        "all"
+      ],
+      "notes": "Install: brew install testssl. Needs an HTTPS listener; the local gateway is HTTP-only, so this runs against the TLS-terminating edge in a hosted env. THREE things this check got wrong, all fixed together: (1) it read CW_TARGET_URL_TLS, a name set by nothing anywhere in the repo, while every other TLS component — bin/tls-headers-scan.mjs, bin/tls-proxy.sh, the sibling tls-headers check — uses CW_TLS_URL, so an operator following the printed instructions fed one of the two TLS checks and not the other; (2) it fell back to $CW_TARGET_URL, a plain-HTTP gateway, which is precisely the 'graded an HTTP-only gateway through a TLS-only tool and recorded pass' failure that manifests/security-baseline.json's tls-headers note records for its own duplicate of this check; (3) it wrote $CW_REPORT_DIR/testssl.json — the SAME path bin/tls-headers-scan.mjs writes — and declared report.format 'json', a pass-through that scores green on the file's mere existence, so tls-testssl could score a pass off an artifact the sibling check produced. The report file is now testssl-full.json, and with no CW_TLS_URL the check writes only a log: absence of a grade stays grey rather than becoming green."
+    },
+    {
+      "id": "api-fuzz-schemathesis",
+      "egress": "target",
+      "sandboxExtraWrites": [
+        "~/.hypothesis"
+      ],
+      "description": "Property-based API contract fuzzing (Schemathesis) driven by the OpenAPI spec — sends generated inputs to every operation and asserts the app never 500s / violates its own schema.",
+      "remediationPrompt": "You are fixing API contract violations found by Schemathesis fuzzing (schemathesis report/log). Each failure is a generated request that made an operation 500, return a status/shape its OpenAPI schema does not declare, or otherwise break its own contract. For each: reproduce with the printed curl, then decide whether the CODE is wrong (validate and reject bad input with a proper 4xx instead of crashing to 500; stop leaking stack traces; make the response match the declared schema) or the SPEC is wrong (the endpoint legitimately returns something the schema omits — fix the OpenAPI so the contract is honest). Prefer fixing input validation and error handling over loosening the schema. Never silence a real 500. Show the diff (handler and/or spec) and note the reproducing input.",
+      "local": [
+        "schemathesis run \"${CW_OPENAPI:-$CW_TARGET_URL/v3/api-docs}\" --url \"$CW_TARGET_URL\" --report ndjson --report-ndjson-path \"$CW_REPORT_DIR/schemathesis.ndjson\" >\"$CW_REPORT_DIR/schemathesis.log\" 2>&1 || true"
+      ],
+      "report": {
+        "file": "schemathesis.ndjson",
+        "format": "schemathesis"
+      },
+      "aliasOf": "api-fuzz",
+      "requires": {
+        "tools": [
+          "schemathesis"
+        ],
+        "services": [
+          "a running app + OpenAPI (CW_OPENAPI)"
+        ]
+      },
+      "requiresUrl": true,
+      "groups": [
+        "all"
+      ],
+      "notes": "Install: pipx install schemathesis. The live gateway serves a spec at /v3/api-docs.",
+      "formatNotes": "Schemathesis discovers API schema from OpenAPI/Swagger and fuzzes endpoints. Requires a running instance (CW_TARGET_URL) and schema endpoint (/v3/api-docs or equivalent). Empty schema means no endpoints discovered — not a clean scan, likely a configuration issue."
+    },
+    {
+      "id": "tls-headers",
+      "egress": "target",
+      "description": "Security-headers grade on the live HTTP gateway (HSTS/CSP/X-Frame/X-Content-Type/Referrer/Permissions) + optional full TLS-config grade (testssl) when CW_TLS_URL points at an https listener. Headers half needs no TLS; stand up a local https endpoint with bin/tls-proxy.sh up.",
+      "remediationPrompt": "You are fixing missing/weak security response headers and TLS posture found by the tls-headers scan (tls-headers.json — headers.missing[] and any TLS grade). Add the missing headers at the edge (reverse proxy / gateway filter) so every response carries them: Strict-Transport-Security (long max-age + includeSubDomains once HTTPS is enforced), Content-Security-Policy (start report-only, tighten default-src), X-Content-Type-Options: nosniff, X-Frame-Options: DENY (or CSP frame-ancestors), Referrer-Policy: strict-origin-when-cross-origin, and a locked-down Permissions-Policy. For the TLS half, disable legacy protocols/ciphers and fix cert/chain issues at the TLS-terminating edge. Apply once at the shared edge rather than per service. Show the config diff and note that HSTS should only go live after HTTPS is enforced.",
+      "local": [
+        "node $CW_ROOT/bin/tls-headers-scan.mjs > \"$CW_REPORT_DIR/tls-headers.json\" 2>\"$CW_REPORT_DIR/tls-headers.log\" || true"
+      ],
+      "report": {
+        "file": "tls-headers.json",
+        "format": "tls-headers"
+      },
+      "requires": {
+        "tools": [
+          "node"
+        ],
+        "services": [
+          "a running HTTP endpoint (CW_TARGET_URL); CW_TLS_URL for TLS grade"
+        ]
+      },
+      "requiresUrl": true,
+      "groups": [
+        "all",
+        "quick"
+      ],
+      "notes": "Self-gates: no CW_TARGET_URL (there is no default) or an unreachable target -> headers half writes {ran:false,skipped:true,reason}; no CW_TLS_URL/testssl -> TLS half likewise; with neither the report is a top-level {ran:false} void, not a grade. Never hangs. Writes into $CW_REPORT_DIR when the runner sets it (per-area), else reports/runtime-latest.",
+      "formatNotes": "TLS headers check tests live endpoint security (HSTS, X-Frame-Options, CSP, etc.). Requires CW_TARGET_URL and a running instance. Failing headers are not \"false positives\" — they are genuinely missing, not misdiagnosed."
+    },
+    {
+      "id": "cspm-github",
+      "egress": "github",
+      "sandboxExtraWrites": [
+        "~/.prowler",
+        "~/.config/prowler"
+      ],
+      "description": "CSPM without AWS — Prowler's GitHub provider on the merge repo (branch protection, 2FA, secret-scanning, actions perms). Token-gated.",
+      "remediationPrompt": "You are hardening GitHub org/repo posture from Prowler CSPM findings (cspm-github.json — failing checks). These are configuration, not code: enable branch protection on default branches (required reviews, required status checks, no force-push, no deletion), require 2FA org-wide, turn on secret scanning + push protection and Dependabot alerts, restrict GitHub Actions permissions (default read-only GITHUB_TOKEN, pin actions to a SHA, limit which actions can run), and remove stale admin/deploy keys. Most fixes are settings changes or a repo ruleset / org policy — describe the exact setting path and, where possible, the `gh api` call or ruleset JSON to apply it. Do not weaken a control to make a check pass. List each failing check with its concrete remediation.",
+      "local": [
+        "bash $CW_ROOT/bin/cspm-github.sh ${CW_CSPM_REPO:-} > \"$CW_REPORT_DIR/cspm-github-run.log\" 2>&1 || true"
+      ],
+      "report": {
+        "file": "cspm-github.json",
+        "format": "cspm-github"
+      },
+      "requires": {
+        "tools": [
+          "prowler"
+        ],
+        "secrets": [
+          "PROWLER_GITHUB_TOKEN"
+        ],
+        "services": [
+          "GitHub API"
+        ]
+      },
+      "groups": [
+        "all"
+      ],
+      "notes": "Target = $CW_CSPM_REPO, else the scanned checkout's github origin — no hardcoded repo, so a bare run can never posture-scan someone else's repo and file it under yours. Self-gates to exit 0 (writing {ran:false,skipped:true,reason}) if prowler/token/target absent. Token is env-only (dedicated PROWLER_GITHUB_TOKEN, NOT the ambient GITHUB_TOKEN) so a CI run can't broad-scan the org. Writes into $CW_REPORT_DIR when the runner sets it (per-area), else reports/runtime-latest.",
+      "formatNotes": "GitHub CSPM checks organization-level settings (branch protection, secret scanning enablement, etc.). Requires GitHub API access (token via GITHUB_TOKEN env). Failures report permission/scope issues, not missing controls."
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/tool-pins.schema.json",
+  "title": "Pinned tool releases",
+  "description": "The release of each first-party tool commitwork runs, by version, tag, asset URL, sha256 and commit. A pinned tool is resolved from its verified install under CW_TOOLS_ROOT (default ~/.commitwork/tools), never from PATH. Upgrading is an edit to this file in a commit. Read by lib/cobolwork-resolve.mjs and bin/cobolwork-pin.mjs.",
+  "type": "object",
+  "required": ["note", "tools"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "note": { "type": "string", "minLength": 1 },
+    "tools": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["repo", "version", "tag", "asset", "url", "sha256", "commit"],
+        "additionalProperties": false,
+        "properties": {
+          "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+          "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+          "tag": { "type": "string", "pattern": "^[A-Za-z0-9_.+-]+$" },
+          "asset": { "type": "string", "pattern": "^[A-Za-z0-9_.+-]+\\.tgz$" },
+          "url": {
+            "type": "string",
+            "pattern": "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/releases/download/[A-Za-z0-9_.+-]+/[A-Za-z0-9_.+-]+\\.tgz$",
+            "description": "Must equal https://github.com/<repo>/releases/download/<tag>/<asset>; the reader refuses a pin whose url and parts disagree."
+          },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Of the release asset. An install refuses other bytes before extracting anything." },
+          "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$", "description": "The commit the tag names, which the installed package's lib/revision.json must state." }
+        }
+      }
+    }
+  }
+}

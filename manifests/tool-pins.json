@@ -1,0 +1,15 @@
+{
+  "$schema": "../schema/tool-pins.schema.json",
+  "note": "The release commitwork runs of each first-party tool. A pinned tool is run from its verified install (node bin/cobolwork-pin.mjs --install), or from CW_<TOOL>_BIN when an operator or a test names one, and never from PATH. Upgrading is an edit to this file in a commit: --latest rewrites the entry from the latest release and prints the change; --install then refuses any bytes whose sha256 or stated commit differ from the entry.",
+  "tools": {
+    "cobolwork": {
+      "repo": "Portll/cobolwork",
+      "version": "0.9.0",
+      "tag": "v0.9.0",
+      "asset": "cobolwork-0.9.0.tgz",
+      "url": "https://github.com/Portll/cobolwork/releases/download/v0.9.0/cobolwork-0.9.0.tgz",
+      "sha256": "779cb7da3e0bf59125cd0c4e6c0cab7cc9fa0ed40dd52efb9d3e34110cd3350a",
+      "commit": "57512914141c6c3603e2ff72a1ad1068fb6e6ff2"
+    }
+  }
+}

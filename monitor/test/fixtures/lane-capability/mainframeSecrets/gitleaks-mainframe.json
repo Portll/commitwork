@@ -1,0 +1,42 @@
+[
+ {
+  "RuleID": "cobol-value-credential",
+  "Description": "COBOL data item named for a credential with a literal VALUE",
+  "StartLine": 5,
+  "EndLine": 5,
+  "StartColumn": 2,
+  "EndColumn": 57,
+  "Match": "       01 WS-TEST-PASSWORD PIC X(20) VALUE 'TestPass123'",
+  "Secret": "TestPass123",
+  "File": "src/TESTPROG.cbl",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 3.0271692,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "src/TESTPROG.cbl:cobol-value-credential:5"
+ },
+ {
+  "RuleID": "cobol-value-credential",
+  "Description": "COBOL data item named for a credential with a literal VALUE",
+  "StartLine": 8,
+  "EndLine": 8,
+  "StartColumn": 2,
+  "EndColumn": 58,
+  "Match": "       01 WS-DB-PASSWORD  PIC X(20) VALUE 'Pr0d!Pass2024'",
+  "Secret": "Pr0d!Pass2024",
+  "File": "src/MAINPROG.cbl",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 3.085055,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "src/MAINPROG.cbl:cobol-value-credential:8"
+ }
+]

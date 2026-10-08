@@ -1,0 +1,69 @@
+{
+  "repo": {
+    "full_name": "fake-org/fake-repo",
+    "commit": "0000000000000000000000000000000000000000"
+  },
+  "score": 5.8,
+  "checks": [
+    {
+      "name": "Branch-Protection",
+      "score": 0,
+      "reason": "No branch protection rules found for the default branch",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#branch-protection" }
+    },
+    {
+      "name": "Dangerous-Workflow",
+      "score": 1,
+      "reason": "Workflow file .github/workflows/ci.yml contains a script injection pattern",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#dangerous-workflow" }
+    },
+    {
+      "name": "Pinned-Dependencies",
+      "score": 3,
+      "reason": "2 of 5 dependencies are not pinned to a specific commit",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#pinned-dependencies" }
+    },
+    {
+      "name": "Token-Permissions",
+      "score": 4,
+      "reason": "Workflow grants write permissions to GITHUB_TOKEN",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#token-permissions" }
+    },
+    {
+      "name": "Signed-Releases",
+      "score": 6,
+      "reason": "Releases are not signed",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#signed-releases" }
+    },
+    {
+      "name": "Fuzzing",
+      "score": 7,
+      "reason": "No fuzzing harness detected",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#fuzzing" }
+    },
+    {
+      "name": "SAST",
+      "score": 8,
+      "reason": "No SAST tool detected in workflows",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#sast" }
+    },
+    {
+      "name": "Code-Review",
+      "score": 9,
+      "reason": "No code review process detected",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#code-review" }
+    },
+    {
+      "name": "License",
+      "score": 10,
+      "reason": "License file found",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#license" }
+    },
+    {
+      "name": "Maintained",
+      "score": 10,
+      "reason": "Repository is actively maintained",
+      "documentation": { "url": "https://github.com/ossf/scorecard/blob/v5.5.0/docs/checks.md#maintained" }
+    }
+  ]
+}

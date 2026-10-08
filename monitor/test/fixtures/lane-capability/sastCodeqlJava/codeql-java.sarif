@@ -1,0 +1,1116 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "organization": "GitHub",
+     "semanticVersion": "2.27.1",
+     "notifications": [
+      {
+       "id": "java/diagnostics/extraction-errors",
+       "name": "java/diagnostics/extraction-errors",
+       "shortDescription": {
+        "text": "Extraction errors"
+       },
+       "fullDescription": {
+        "text": "A list of extraction errors for files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "A list of extraction errors for files in the source code directory.",
+        "id": "java/diagnostics/extraction-errors",
+        "kind": "diagnostic",
+        "name": "Extraction errors"
+       }
+      },
+      {
+       "id": "java/diagnostics/successfully-extracted-files",
+       "name": "java/diagnostics/successfully-extracted-files",
+       "shortDescription": {
+        "text": "Extracted files"
+       },
+       "fullDescription": {
+        "text": "A list of all files in the source code directory that were extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "successfully-extracted-files"
+        ],
+        "description": "A list of all files in the source code directory that\n              were extracted.",
+        "id": "java/diagnostics/successfully-extracted-files",
+        "kind": "diagnostic",
+        "name": "Extracted files"
+       }
+      },
+      {
+       "id": "java/diagnostics/extraction-warnings",
+       "name": "java/diagnostics/extraction-warnings",
+       "shortDescription": {
+        "text": "Extraction warnings"
+       },
+       "fullDescription": {
+        "text": "A list of extraction warnings for files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "A list of extraction warnings for files in the source code directory.",
+        "id": "java/diagnostics/extraction-warnings",
+        "kind": "diagnostic",
+        "name": "Extraction warnings"
+       }
+      },
+      {
+       "id": "java/diagnostic/database-quality",
+       "name": "java/diagnostic/database-quality",
+       "shortDescription": {
+        "text": "Low Java analysis quality"
+       },
+       "fullDescription": {
+        "text": "Low Java analysis quality"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Low Java analysis quality",
+        "id": "java/diagnostic/database-quality",
+        "kind": "diagnostic",
+        "name": "Low Java analysis quality"
+       }
+      },
+      {
+       "id": "java/baseline/expected-extracted-files",
+       "name": "java/baseline/expected-extracted-files",
+       "shortDescription": {
+        "text": "Expected extracted files"
+       },
+       "fullDescription": {
+        "text": "Files appearing in the source archive that are expected to be extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "expected-extracted-files",
+         "telemetry"
+        ]
+       }
+      },
+      {
+       "id": "cli/file-coverage-baseline",
+       "name": "cli/file-coverage-baseline",
+       "shortDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "fullDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/platform",
+       "name": "cli/platform",
+       "shortDescription": {
+        "text": "Platform"
+       },
+       "fullDescription": {
+        "text": "Platform"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/build-mode",
+       "name": "cli/build-mode",
+       "shortDescription": {
+        "text": "Database build mode"
+       },
+       "fullDescription": {
+        "text": "Database build mode"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/sip-enablement",
+       "name": "cli/sip-enablement",
+       "shortDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "fullDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "java/autobuilder/buildless/mode-active",
+       "name": "java/autobuilder/buildless/mode-active",
+       "shortDescription": {
+        "text": "Java was extracted with build-mode set to 'none'"
+       },
+       "fullDescription": {
+        "text": "Java was extracted with build-mode set to 'none'"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "java/autobuilder/buildless/using-build-tool-advice",
+       "name": "java/autobuilder/buildless/using-build-tool-advice",
+       "shortDescription": {
+        "text": "Java analysis used build tool Maven to pick a JDK version and/or to recommend external dependencies"
+       },
+       "fullDescription": {
+        "text": "Java analysis used build tool Maven to pick a JDK version and/or to recommend external dependencies"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "java/autobuilder/buildless/depgraph-maven-plugin-failed",
+       "name": "java/autobuilder/buildless/depgraph-maven-plugin-failed",
+       "shortDescription": {
+        "text": "Java buildless mode failed to extract a dependency graph from Maven"
+       },
+       "fullDescription": {
+        "text": "Java buildless mode failed to extract a dependency graph from Maven"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "java/autobuilder/buildless/classpath-from-tool-failed",
+       "name": "java/autobuilder/buildless/classpath-from-tool-failed",
+       "shortDescription": {
+        "text": "Failed to extract dependency information from build tool tool Maven"
+       },
+       "fullDescription": {
+        "text": "Failed to extract dependency information from build tool tool Maven"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "java/autobuilder/buildless/jdk-system-default",
+       "name": "java/autobuilder/buildless/jdk-system-default",
+       "shortDescription": {
+        "text": "Java analysis used the system default JDK"
+       },
+       "fullDescription": {
+        "text": "Java analysis used the system default JDK"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "java/autobuilder/buildless/complete",
+       "name": "java/autobuilder/buildless/complete",
+       "shortDescription": {
+        "text": "Java analysis with build-mode 'none' completed"
+       },
+       "fullDescription": {
+        "text": "Java analysis with build-mode 'none' completed"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "java/extractor/summary",
+       "name": "java/extractor/summary",
+       "shortDescription": {
+        "text": "Java extractor telemetry"
+       },
+       "fullDescription": {
+        "text": "Java extractor telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      }
+     ],
+     "rules": [
+      {
+       "id": "java/weak-cryptographic-algorithm",
+       "name": "java/weak-cryptographic-algorithm",
+       "shortDescription": {
+        "text": "Use of a broken or risky cryptographic algorithm"
+       },
+       "fullDescription": {
+        "text": "Using broken or weak cryptographic algorithms can allow an attacker to compromise security."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "warning"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-327",
+         "external/cwe/cwe-328"
+        ],
+        "description": "Using broken or weak cryptographic algorithms can allow an attacker to compromise security.",
+        "id": "java/weak-cryptographic-algorithm",
+        "kind": "path-problem",
+        "name": "Use of a broken or risky cryptographic algorithm",
+        "precision": "high",
+        "problem.severity": "warning",
+        "security-severity": "7.5"
+       }
+      }
+     ]
+    },
+    "extensions": [
+     {
+      "name": "codeql/java-queries",
+      "semanticVersion": "1.11.7+94101634db019b00637dd5cfe241f7e570da290d",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/java-queries/1.11.7/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/java-queries/1.11.7/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/java-all",
+      "semanticVersion": "9.2.2+94101634db019b00637dd5cfe241f7e570da290d",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/java-queries/1.11.7/.codeql/libraries/codeql/java-all/9.2.2/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/java-queries/1.11.7/.codeql/libraries/codeql/java-all/9.2.2/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/threat-models",
+      "semanticVersion": "1.0.54+94101634db019b00637dd5cfe241f7e570da290d",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/java-queries/1.11.7/.codeql/libraries/codeql/threat-models/1.0.54/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/java-queries/1.11.7/.codeql/libraries/codeql/threat-models/1.0.54/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "invocations": [
+    {
+     "toolExecutionNotifications": [
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "src/main/java/com/example/Crypto.java",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "java/diagnostics/successfully-extracted-files",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "src/main/java/com/example/Crypto.java",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "java/baseline/expected-extracted-files",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T12:00:47.727630Z",
+       "descriptor": {
+        "id": "cli/file-coverage-baseline",
+        "index": 5
+       },
+       "properties": {
+        "attributes": {
+         "durationMilliseconds": 130
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T12:00:49.425424Z",
+       "descriptor": {
+        "id": "cli/platform",
+        "index": 6
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "name": "Mac OS X",
+         "version": "26.4"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T12:00:49.430557Z",
+       "descriptor": {
+        "id": "cli/build-mode",
+        "index": 7
+       },
+       "properties": {
+        "attributes": {
+         "buildMode": "none"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T12:00:49.440272Z",
+       "descriptor": {
+        "id": "cli/sip-enablement",
+        "index": 8
+       },
+       "properties": {
+        "attributes": {
+         "isEnabled": true
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Java was extracted with build-mode set to 'none'. This means that all Java source in the working directory will be scanned, with build tools such as Maven and Gradle only contributing information about external dependencies.",
+        "markdown": "Java was extracted with build-mode set to 'none'. This means that all Java source in the working directory will be scanned, with build tools such as Maven and Gradle only contributing information about external dependencies."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T12:00:50.102549Z",
+       "descriptor": {
+        "id": "java/autobuilder/buildless/mode-active",
+        "index": 9
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": true,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Java analysis used build tool Maven to pick a JDK version and/or to recommend external dependencies.",
+        "markdown": "Java analysis used build tool Maven to pick a JDK version and/or to recommend external dependencies."
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T12:00:50.167435Z",
+       "descriptor": {
+        "id": "java/autobuilder/buildless/using-build-tool-advice",
+        "index": 10
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Running the Maven plugin `com.github.ferstl:depgraph-maven-plugin:4.0.3-CodeQL-3:graph` failed. This means precise dependency information will be unavailable, and so dependencies will be guessed based on Java package names. Consider investigating why this plugin fails to run.",
+        "markdown": "Running the Maven plugin `com.github.ferstl:depgraph-maven-plugin:4.0.3-CodeQL-3:graph` failed. This means precise dependency information will be unavailable, and so dependencies will be guessed based on Java package names. Consider investigating why this plugin fails to run."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T12:00:50.310778Z",
+       "descriptor": {
+        "id": "java/autobuilder/buildless/depgraph-maven-plugin-failed",
+        "index": 11
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": true,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Build tool(s) should have been able to provide a recommended classpath but the attempt failed. Extraction will continue, but external dependencies will be inferred from the Java package names used. Consider troubleshooting the build tool error or using a build mode other than 'none'.",
+        "markdown": "Build tool(s) should have been able to provide a recommended classpath but the attempt failed. Extraction will continue, but external dependencies will be inferred from the Java package names used. Consider troubleshooting the build tool error or using a build mode other than 'none'."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T12:00:50.324883Z",
+       "descriptor": {
+        "id": "java/autobuilder/buildless/classpath-from-tool-failed",
+        "index": 12
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": true,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Java analysis used the system default JDK.",
+        "markdown": "Java analysis used the system default JDK."
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T12:00:50.342663Z",
+       "descriptor": {
+        "id": "java/autobuilder/buildless/jdk-system-default",
+        "index": 13
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Java analysis with build-mode 'none' completed.",
+        "markdown": "Java analysis with build-mode 'none' completed."
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T12:02:13.170883Z",
+       "descriptor": {
+        "id": "java/autobuilder/buildless/complete",
+        "index": 14
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Internal telemetry for the Java extractor.\n\nNo action needed.",
+        "markdown": "Internal telemetry for the Java extractor.\n\nNo action needed."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T12:01:52.037960Z",
+       "descriptor": {
+        "id": "java/extractor/summary",
+        "index": 15
+       },
+       "properties": {
+        "attributes": {
+         "java_vendor": "Homebrew",
+         "java_version": "25.0.4.1"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      }
+     ],
+     "executionSuccessful": true
+    }
+   ],
+   "artifacts": [
+    {
+     "location": {
+      "uri": "src/main/java/com/example/Crypto.java",
+      "uriBaseId": "%SRCROOT%",
+      "index": 0
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "java/weak-cryptographic-algorithm",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "java/weak-cryptographic-algorithm",
+      "index": 20
+     },
+     "message": {
+      "text": "Cryptographic algorithm [DES/ECB/PKCS5Padding](1) is insecure. It has a short key length of 56 bits, making it vulnerable to brute-force attacks. Consider using AES instead.\nCryptographic algorithm [DES/ECB/PKCS5Padding](1) is insecure. ECB mode, as in AES/ECB/NoPadding for example, is vulnerable to replay and other attacks. Consider using GCM instead."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main/java/com/example/Crypto.java",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 8,
+         "startColumn": 25,
+         "endColumn": 67
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "476391cf4c54fc7:1",
+      "primaryLocationStartColumnFingerprint": "16"
+     },
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main/java/com/example/Crypto.java",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 8,
+         "startColumn": 44,
+         "endColumn": 66
+        }
+       },
+       "message": {
+        "text": "DES/ECB/PKCS5Padding"
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "java/weak-cryptographic-algorithm",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "java/weak-cryptographic-algorithm",
+      "index": 20
+     },
+     "message": {
+      "text": "Cryptographic algorithm [DES](1) is insecure. It has a short key length of 56 bits, making it vulnerable to brute-force attacks. Consider using AES instead."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main/java/com/example/Crypto.java",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 9,
+         "startColumn": 42,
+         "endColumn": 71
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "c511b1f1ea62ed08:1",
+      "primaryLocationStartColumnFingerprint": "33"
+     },
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main/java/com/example/Crypto.java",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 9,
+         "startColumn": 65,
+         "endColumn": 70
+        }
+       },
+       "message": {
+        "text": "DES"
+       }
+      }
+     ]
+    }
+   ],
+   "columnKind": "utf16CodeUnits",
+   "properties": {
+    "semmle.formatSpecifier": "sarif-latest",
+    "metricResults": [
+     {
+      "rule": {
+       "id": "java/summary/lines-of-code-kotlin",
+       "index": 66
+      },
+      "ruleId": "java/summary/lines-of-code-kotlin",
+      "ruleIndex": 66,
+      "value": 0
+     },
+     {
+      "rule": {
+       "id": "java/summary/lines-of-code",
+       "index": 67
+      },
+      "ruleId": "java/summary/lines-of-code",
+      "ruleIndex": 67,
+      "value": 13,
+      "baseline": 13
+     },
+     {
+      "rule": {
+       "id": "java/summary/lines-of-code-java",
+       "index": 68
+      },
+      "ruleId": "java/summary/lines-of-code-java",
+      "ruleIndex": 68,
+      "value": 13
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api-taint",
+       "index": 69
+      },
+      "ruleId": "java/telemetry/supported-external-api-taint",
+      "ruleIndex": 69,
+      "value": 1,
+      "message": {
+       "text": "javax.crypto.spec.SecretKeySpec#SecretKeySpec(byte\\[\\],String)"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/external-libs",
+       "index": 72
+      },
+      "ruleId": "java/telemetry/external-libs",
+      "ruleIndex": 72,
+      "value": 6,
+      "message": {
+       "text": "rt.jar"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api-sinks",
+       "index": 73
+      },
+      "ruleId": "java/telemetry/supported-external-api-sinks",
+      "ruleIndex": 73,
+      "value": 1,
+      "message": {
+       "text": "java.lang.Runtime#exec(String)"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api-sinks",
+       "index": 73
+      },
+      "ruleId": "java/telemetry/supported-external-api-sinks",
+      "ruleIndex": 73,
+      "value": 1,
+      "message": {
+       "text": "javax.crypto.spec.SecretKeySpec#SecretKeySpec(byte\\[\\],String)"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 100,
+      "message": {
+       "text": "Percentage of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 100,
+      "message": {
+       "text": "Percentage of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 1000,
+      "message": {
+       "text": "Number of files with extension class"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 1,
+      "message": {
+       "text": "Number of files with extension java"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 1,
+      "message": {
+       "text": "Number of files with extension xml"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 1,
+      "message": {
+       "text": "Annotation processors enabled: false"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 13,
+      "message": {
+       "text": "Number of lines of code with extension java"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 11,
+      "message": {
+       "text": "Number of lines of code with extension xml"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 16,
+      "message": {
+       "text": "Total number of lines with extension java"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 11,
+      "message": {
+       "text": "Total number of lines with extension xml"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 1003,
+      "message": {
+       "text": "Number of files"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 27,
+      "message": {
+       "text": "Total number of lines"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 24,
+      "message": {
+       "text": "Number of lines of code"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 7,
+      "message": {
+       "text": "Number of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 31,
+      "message": {
+       "text": "Number of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 0,
+      "message": {
+       "text": "Number of expressions with unknown type"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/extraction-information",
+       "index": 74
+      },
+      "ruleId": "java/telemetry/extraction-information",
+      "ruleIndex": 74,
+      "value": 0,
+      "message": {
+       "text": "Number of calls with missing call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api",
+       "index": 75
+      },
+      "ruleId": "java/telemetry/supported-external-api",
+      "ruleIndex": 75,
+      "value": 1,
+      "message": {
+       "text": "javax.crypto.Cipher#doFinal(byte\\[\\])"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api",
+       "index": 75
+      },
+      "ruleId": "java/telemetry/supported-external-api",
+      "ruleIndex": 75,
+      "value": 1,
+      "message": {
+       "text": "java.lang.Runtime#getRuntime()"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api",
+       "index": 75
+      },
+      "ruleId": "java/telemetry/supported-external-api",
+      "ruleIndex": 75,
+      "value": 1,
+      "message": {
+       "text": "java.lang.Runtime#exec(String)"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api",
+       "index": 75
+      },
+      "ruleId": "java/telemetry/supported-external-api",
+      "ruleIndex": 75,
+      "value": 1,
+      "message": {
+       "text": "javax.crypto.Cipher#init(int,Key)"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api",
+       "index": 75
+      },
+      "ruleId": "java/telemetry/supported-external-api",
+      "ruleIndex": 75,
+      "value": 1,
+      "message": {
+       "text": "javax.crypto.Cipher#getInstance(String)"
+      }
+     },
+     {
+      "rule": {
+       "id": "java/telemetry/supported-external-api",
+       "index": 75
+      },
+      "ruleId": "java/telemetry/supported-external-api",
+      "ruleIndex": 75,
+      "value": 1,
+      "message": {
+       "text": "javax.crypto.spec.SecretKeySpec#SecretKeySpec(byte\\[\\],String)"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

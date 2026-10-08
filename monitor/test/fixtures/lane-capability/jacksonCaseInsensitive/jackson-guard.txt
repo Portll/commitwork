@@ -1,0 +1,3 @@
+GUARD FAILED — ACCEPT_CASE_INSENSITIVE_PROPERTIES enabled (opens jackson CVE-2026-54515):
+  src/main/java/app/JsonConfig.java:8: return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES).build();
+  src/main/resources/application.yml:4: accept-case-insensitive-properties: true

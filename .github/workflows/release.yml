@@ -1,0 +1,213 @@
+name: Release
+
+# A pushed v* tag is built, attested and published here, and only after the full CI passes on the
+# tagged commit. The file declares the pipeline; it holds no authority of its own. Pushing the tag,
+# approving the `release` environment and the repository settings this relies on are human acts,
+# listed in docs/RELEASE-RUNBOOK.md#release-workflow. bin/test/release-workflow.test.mjs holds the
+# shape: the tag check, SHA pins, per-job permissions and the environment gate.
+on:
+  push:
+    tags: ['v*']
+
+# One run per tag, never cancelled: a cancelled publish can leave a release with half its assets.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# Nothing by default; each job is granted what it uses.
+permissions: {}
+
+jobs:
+  version:
+    name: The tag names this commit's version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+    steps:
+      # Actions pinned to commit SHAs; the trailing comment names the release each SHA was resolved
+      # from, and bin/pin-actions.mjs verifies them against the upstream tags.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # origin/main is read below
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          # no cache: a release reads nothing a cache could have poisoned
+          package-manager-cache: false
+      # bin/release-tag.mjs is the one reading of "the tag a commit carries": v + package.json's
+      # version at that commit. A hand-pushed tag that disagrees with it, names a patch version (which
+      # every commit carries) or points off main is refused before anything is built.
+      - name: Tag, package.json version and main agree
+        id: plan
+        run: |
+          node bin/release-tag.mjs --ref "$GITHUB_SHA" --json > "$RUNNER_TEMP/plan.json"
+          version=$(jq -er .version "$RUNNER_TEMP/plan.json")
+          expected=$(jq -er .tag "$RUNNER_TEMP/plan.json")
+          kind=$(jq -er .kind "$RUNNER_TEMP/plan.json")
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json version $version at $GITHUB_SHA (expected $expected)"
+            exit 1
+          fi
+          if [ "$kind" = patch ]; then
+            echo "::error::$version is a patch version, which every commit carries; a release sets the minor or major (docs/RELEASING.md)"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_SHA is not on main; a release is cut from main"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: CI
+    needs: version
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository] ./ is the documented form for a reusable workflow in the same repository
+    secrets:
+      CW_RELEASE_SCOPE: ${{ secrets.CW_RELEASE_SCOPE }}
+
+  build:
+    name: Build the package and its SBOM
+    needs: [version, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          # no cache: a release reads nothing a cache could have poisoned
+          package-manager-cache: false
+      # The SBOM below is read from the packed tarball, which carries no lockfile and no
+      # node_modules. It is complete only while commitwork has no runtime dependencies, so a
+      # dependency appearing stops the release instead of shipping an SBOM that omits it.
+      - name: The package declares no runtime dependencies
+        run: |
+          node -e '
+            const p = JSON.parse(require("fs").readFileSync("package.json", "utf8"));
+            const held = ["dependencies", "optionalDependencies", "peerDependencies", "bundleDependencies", "bundledDependencies"]
+              .filter((k) => p[k] && Object.keys(p[k]).length);
+            if (held.length) { console.log("::error::package.json declares " + held.join(", ") + "; the SBOM step does not cover them"); process.exit(1); }
+          '
+      # npm pack is the artefact: the package.json files list is the reviewed publishable subset
+      # (bin/test/npm-pack-contents.test.mjs). private: true blocks npm publish, not pack.
+      # --ignore-scripts keeps `prepare` (a git-hook installer) out of the build. Packed twice
+      # because npm fixes every entry's mtime, so two packs of one tree must be byte-identical.
+      - name: Pack, twice, and compare
+        run: |
+          mkdir -p dist "$RUNNER_TEMP/again"
+          npm pack --ignore-scripts --pack-destination dist
+          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/again"
+          f="commitwork-$VERSION.tgz"
+          test -f "dist/$f" || { echo "::error::npm pack did not write $f"; exit 1; }
+          cmp "dist/$f" "$RUNNER_TEMP/again/$f" || { echo "::error::two packs of one tree differ; the build is not reproducible"; exit 1; }
+          sha256sum "dist/$f"
+      - name: CycloneDX SBOM of the tarball
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          file: dist/commitwork-${{ env.VERSION }}.tgz
+          format: cyclonedx-json
+          output-file: dist/commitwork-${{ env.VERSION }}.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+  attest:
+    name: Attest provenance and SBOM
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # id-token mints the Sigstore signing certificate; attestations stores the result. Nothing else.
+    permissions:
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: dist
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/commitwork-${{ env.VERSION }}.tgz
+      # actions/attest-sbom is deprecated in favour of actions/attest, which takes the same inputs.
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/commitwork-${{ env.VERSION }}.tgz
+          sbom-path: dist/commitwork-${{ env.VERSION }}.cdx.json
+
+  publish:
+    name: Publish the GitHub release
+    needs: [version, attest]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Required reviewers on this environment are the approval gate; they are set in the repository
+    # settings, not here.
+    environment: release
+    permissions:
+      contents: write
+      attestations: read
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # changelog.mjs reads the range back to the previous v* tag
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          # no cache: a release reads nothing a cache could have poisoned
+          package-manager-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: dist
+      # What is published must verify against this repository's attestation, read back from the
+      # API rather than taken from the attest job's success.
+      - name: The tarball verifies against its attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh attestation verify "dist/commitwork-$VERSION.tgz" --repo "$GITHUB_REPOSITORY"
+      # Exit 20 means no earlier v* tag, so the range has no start (the first release of a history);
+      # GitHub's generated notes stand in. Any other failure stops the release.
+      - name: Release notes
+        id: notes
+        run: |
+          rc=0
+          node bin/changelog.mjs --to "$GITHUB_REF_NAME" --stdout > "$RUNNER_TEMP/notes.md" || rc=$?
+          case "$rc" in
+            0) echo "flag=--notes-file=$RUNNER_TEMP/notes.md" >> "$GITHUB_OUTPUT" ;;
+            20) echo "::notice::no earlier v* tag; using GitHub's generated notes"
+                echo "flag=--generate-notes" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::bin/changelog.mjs exited $rc"; exit 1 ;;
+          esac
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES_FLAG: ${{ steps.notes.outputs.flag }}
+        # --verify-tag: publish onto the pushed tag, never create one.
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "commitwork $VERSION" "$NOTES_FLAG" \
+            "dist/commitwork-$VERSION.tgz" "dist/commitwork-$VERSION.cdx.json"

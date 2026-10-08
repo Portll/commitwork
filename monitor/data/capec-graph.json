@@ -1,0 +1,7419 @@
+{
+  "source": "capec.mitre.org",
+  "generated": "2026-08-23T08:49:45.631Z",
+  "patterns": {
+    "1": {
+      "name": "Accessing Functionality Not Properly Constrained by ACLs",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1191",
+        "1193",
+        "1220",
+        "1297",
+        "1311",
+        "1314",
+        "1315",
+        "1318",
+        "1320",
+        "1321",
+        "1327",
+        "276",
+        "285",
+        "434",
+        "693",
+        "732"
+      ],
+      "attack": [
+        "T1574.010"
+      ]
+    },
+    "2": {
+      "name": "Inducing Account Lockout",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "645"
+      ],
+      "attack": [
+        "T1531"
+      ]
+    },
+    "3": {
+      "name": "Using Leading 'Ghost' Character Sequences to Bypass Input Filters",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "179",
+        "180",
+        "181",
+        "183",
+        "184",
+        "20",
+        "41",
+        "697",
+        "707",
+        "74"
+      ]
+    },
+    "4": {
+      "name": "Using Alternative IP Address Encodings",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "173",
+        "291"
+      ]
+    },
+    "6": {
+      "name": "Argument Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "146",
+        "184",
+        "185",
+        "697",
+        "74",
+        "78"
+      ]
+    },
+    "7": {
+      "name": "Blind SQL Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "209",
+        "697",
+        "707",
+        "74",
+        "89"
+      ]
+    },
+    "8": {
+      "name": "Buffer Overflow in an API Call",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "20",
+        "680",
+        "697",
+        "733",
+        "74"
+      ]
+    },
+    "9": {
+      "name": "Buffer Overflow in Local Command-Line Utilities",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "20",
+        "680",
+        "697",
+        "733",
+        "74"
+      ]
+    },
+    "10": {
+      "name": "Buffer Overflow via Environment Variables",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "20",
+        "302",
+        "680",
+        "697",
+        "733",
+        "74",
+        "99"
+      ]
+    },
+    "11": {
+      "name": "Cause Web Server Misclassification",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "430"
+      ],
+      "attack": [
+        "T1036.006"
+      ]
+    },
+    "12": {
+      "name": "Choosing Message Identifier",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "201",
+        "306"
+      ]
+    },
+    "13": {
+      "name": "Subverting Environment Variable Values",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "15",
+        "20",
+        "200",
+        "285",
+        "302",
+        "353",
+        "73",
+        "74"
+      ],
+      "attack": [
+        "T1562.003",
+        "T1574.006",
+        "T1574.007"
+      ]
+    },
+    "14": {
+      "name": "Client-side Injection-induced Buffer Overflow",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "20",
+        "353",
+        "680",
+        "697",
+        "74"
+      ]
+    },
+    "15": {
+      "name": "Command Delimiters",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "138",
+        "140",
+        "146",
+        "154",
+        "157",
+        "184",
+        "185",
+        "697",
+        "77",
+        "78",
+        "93"
+      ]
+    },
+    "16": {
+      "name": "Dictionary-based Password Attack",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "262",
+        "263",
+        "307",
+        "308",
+        "309",
+        "521",
+        "654"
+      ]
+    },
+    "17": {
+      "name": "Using Malicious Files",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "270",
+        "272",
+        "282",
+        "285",
+        "59",
+        "693",
+        "732"
+      ],
+      "attack": [
+        "T1574.005",
+        "T1574.010"
+      ]
+    },
+    "18": {
+      "name": "XSS Targeting Non-Script Elements",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "80"
+      ]
+    },
+    "19": {
+      "name": "Embedding Scripts within Scripts",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1027.009",
+        "T1546.004",
+        "T1546.016"
+      ]
+    },
+    "20": {
+      "name": "Encryption Brute Forcing",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1204",
+        "326",
+        "327",
+        "693"
+      ]
+    },
+    "21": {
+      "name": "Exploitation of Trusted Identifiers",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "290",
+        "302",
+        "346",
+        "384",
+        "539",
+        "6",
+        "602",
+        "642",
+        "664"
+      ],
+      "attack": [
+        "T1134",
+        "T1528",
+        "T1539"
+      ]
+    },
+    "22": {
+      "name": "Exploiting Trust in Client",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "200",
+        "287",
+        "290",
+        "693"
+      ]
+    },
+    "23": {
+      "name": "File Content Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "20"
+      ]
+    },
+    "24": {
+      "name": "Filter Failure through Buffer Overflow",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "20",
+        "680",
+        "697",
+        "733",
+        "74"
+      ]
+    },
+    "25": {
+      "name": "Forced Deadlock",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1322",
+        "412",
+        "567",
+        "662",
+        "667",
+        "833"
+      ],
+      "attack": [
+        "T1499.004"
+      ]
+    },
+    "26": {
+      "name": "Leveraging Race Conditions",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1223",
+        "1254",
+        "1298",
+        "362",
+        "363",
+        "366",
+        "368",
+        "370",
+        "662",
+        "665",
+        "667",
+        "689"
+      ]
+    },
+    "27": {
+      "name": "Leveraging Race Conditions via Symbolic Links",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "367",
+        "61",
+        "662",
+        "667",
+        "689"
+      ]
+    },
+    "28": {
+      "name": "Fuzzing",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "74"
+      ]
+    },
+    "29": {
+      "name": "Leveraging Time-of-Check and Time-of-Use (TOCTOU) Race Conditions",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "362",
+        "366",
+        "367",
+        "368",
+        "370",
+        "662",
+        "663",
+        "665",
+        "691"
+      ]
+    },
+    "30": {
+      "name": "Hijacking a Privileged Thread of Execution",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "270"
+      ],
+      "attack": [
+        "T1055.003"
+      ]
+    },
+    "31": {
+      "name": "Accessing/Intercepting/Modifying HTTP Cookies",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "113",
+        "20",
+        "302",
+        "311",
+        "315",
+        "384",
+        "472",
+        "539",
+        "565",
+        "602",
+        "642"
+      ],
+      "attack": [
+        "T1539"
+      ]
+    },
+    "32": {
+      "name": "XSS Through HTTP Query Strings",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "80"
+      ]
+    },
+    "33": {
+      "name": "HTTP Request Smuggling",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "444"
+      ]
+    },
+    "34": {
+      "name": "HTTP Response Splitting",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "113",
+        "138",
+        "436",
+        "74"
+      ]
+    },
+    "35": {
+      "name": "Leverage Executable Code in Non-Executable Files",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "270",
+        "272",
+        "282",
+        "59",
+        "94",
+        "95",
+        "96",
+        "97"
+      ],
+      "attack": [
+        "T1027.006",
+        "T1027.009",
+        "T1564.009"
+      ]
+    },
+    "36": {
+      "name": "Using Unpublished Interfaces or Functionality",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1242",
+        "306",
+        "693",
+        "695"
+      ]
+    },
+    "37": {
+      "name": "Retrieve Embedded Sensitive Data",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1239",
+        "1258",
+        "1266",
+        "1272",
+        "1278",
+        "1301",
+        "1330",
+        "226",
+        "311",
+        "312",
+        "314",
+        "315",
+        "318",
+        "525"
+      ],
+      "attack": [
+        "T1005",
+        "T1552.004"
+      ]
+    },
+    "38": {
+      "name": "Leveraging/Manipulating Configuration File Search Paths",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "426",
+        "427"
+      ],
+      "attack": [
+        "T1574.007",
+        "T1574.009"
+      ]
+    },
+    "39": {
+      "name": "Manipulating Opaque Client-based Data Tokens",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "233",
+        "285",
+        "302",
+        "315",
+        "353",
+        "384",
+        "472",
+        "539",
+        "565"
+      ]
+    },
+    "40": {
+      "name": "Manipulating Writeable Terminal Devices",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "77"
+      ]
+    },
+    "41": {
+      "name": "Using Meta-characters in E-mail Headers to Inject Malicious Payloads",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "150",
+        "697",
+        "88"
+      ]
+    },
+    "42": {
+      "name": "MIME Conversion",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "119",
+        "120",
+        "20",
+        "74"
+      ]
+    },
+    "43": {
+      "name": "Exploiting Multiple Input Interpretation Layers",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "179",
+        "181",
+        "183",
+        "184",
+        "20",
+        "697",
+        "707",
+        "74",
+        "77",
+        "78"
+      ]
+    },
+    "44": {
+      "name": "Overflow Binary Resource File",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "119",
+        "120",
+        "697"
+      ]
+    },
+    "45": {
+      "name": "Buffer Overflow via Symbolic Links",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "20",
+        "285",
+        "302",
+        "680",
+        "697",
+        "74"
+      ]
+    },
+    "46": {
+      "name": "Overflow Variables and Tags",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "20",
+        "680",
+        "697",
+        "733",
+        "74"
+      ]
+    },
+    "47": {
+      "name": "Buffer Overflow via Parameter Expansion",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "118",
+        "119",
+        "120",
+        "130",
+        "131",
+        "20",
+        "680",
+        "697",
+        "74"
+      ]
+    },
+    "48": {
+      "name": "Passing Local Filenames to Functions That Expect a URL",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "241",
+        "706"
+      ]
+    },
+    "49": {
+      "name": "Password Brute Forcing",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "257",
+        "262",
+        "263",
+        "307",
+        "308",
+        "309",
+        "521",
+        "654"
+      ],
+      "attack": [
+        "T1110.001"
+      ]
+    },
+    "50": {
+      "name": "Password Recovery Exploitation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "522",
+        "640"
+      ]
+    },
+    "51": {
+      "name": "Poison Web Service Registry",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "285",
+        "693",
+        "74"
+      ]
+    },
+    "52": {
+      "name": "Embedding NULL Bytes",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "158",
+        "172",
+        "173",
+        "20",
+        "697",
+        "707",
+        "74"
+      ]
+    },
+    "53": {
+      "name": "Postfix, Null Terminate, and Backslash",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "158",
+        "172",
+        "173",
+        "20",
+        "697",
+        "707",
+        "74"
+      ]
+    },
+    "54": {
+      "name": "Query System for Information",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "209"
+      ]
+    },
+    "55": {
+      "name": "Rainbow Table Password Cracking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "261",
+        "262",
+        "263",
+        "308",
+        "309",
+        "521",
+        "654",
+        "916"
+      ],
+      "attack": [
+        "T1110.002"
+      ]
+    },
+    "57": {
+      "name": "Utilizing REST's Trust in the System Resource to Obtain Sensitive Data",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "287",
+        "300",
+        "693"
+      ],
+      "attack": [
+        "T1040"
+      ]
+    },
+    "58": {
+      "name": "Restful Privilege Elevation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "267",
+        "269"
+      ]
+    },
+    "59": {
+      "name": "Session Credential Falsification through Prediction",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "200",
+        "285",
+        "290",
+        "330",
+        "331",
+        "346",
+        "384",
+        "488",
+        "539",
+        "6",
+        "693"
+      ]
+    },
+    "60": {
+      "name": "Reusing Session IDs (aka Session Replay)",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "200",
+        "285",
+        "290",
+        "294",
+        "346",
+        "384",
+        "488",
+        "539",
+        "664",
+        "732"
+      ],
+      "attack": [
+        "T1134.001",
+        "T1550.004"
+      ]
+    },
+    "61": {
+      "name": "Session Fixation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "384",
+        "664",
+        "732"
+      ]
+    },
+    "62": {
+      "name": "Cross Site Request Forgery",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1275",
+        "306",
+        "352",
+        "664",
+        "732"
+      ]
+    },
+    "63": {
+      "name": "Cross-Site Scripting (XSS)",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "79"
+      ]
+    },
+    "64": {
+      "name": "Using Slashes and URL Encoding Combined to Bypass Validation Logic",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "177",
+        "20",
+        "22",
+        "697",
+        "707",
+        "73",
+        "74"
+      ]
+    },
+    "65": {
+      "name": "Sniff Application Code",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "318",
+        "319",
+        "693"
+      ],
+      "attack": [
+        "T1040"
+      ]
+    },
+    "66": {
+      "name": "SQL Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1286",
+        "89"
+      ]
+    },
+    "67": {
+      "name": "String Format Overflow in syslog()",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "120",
+        "134",
+        "20",
+        "680",
+        "697",
+        "74"
+      ]
+    },
+    "68": {
+      "name": "Subvert Code-signing Facilities",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1326",
+        "325",
+        "328"
+      ],
+      "attack": [
+        "T1553.002"
+      ]
+    },
+    "69": {
+      "name": "Target Programs with Elevated Privileges",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "15",
+        "250"
+      ]
+    },
+    "70": {
+      "name": "Try Common or Default Usernames and Passwords",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "262",
+        "263",
+        "308",
+        "309",
+        "521",
+        "654",
+        "798"
+      ],
+      "attack": [
+        "T1078.001"
+      ]
+    },
+    "71": {
+      "name": "Using Unicode Encoding to Bypass Validation Logic",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "176",
+        "179",
+        "180",
+        "183",
+        "184",
+        "20",
+        "692",
+        "697",
+        "74"
+      ]
+    },
+    "72": {
+      "name": "URL Encoding",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "177",
+        "20",
+        "73",
+        "74"
+      ]
+    },
+    "73": {
+      "name": "User-Controlled Filename",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "116",
+        "184",
+        "20",
+        "348",
+        "350",
+        "697",
+        "86",
+        "96"
+      ]
+    },
+    "74": {
+      "name": "Manipulating State",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1245",
+        "1253",
+        "1265",
+        "1271",
+        "315",
+        "353",
+        "372",
+        "693"
+      ]
+    },
+    "75": {
+      "name": "Manipulating Writeable Configuration Files",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "346",
+        "349",
+        "353",
+        "354",
+        "77",
+        "99"
+      ]
+    },
+    "76": {
+      "name": "Manipulating Web Input to File System Calls",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "15",
+        "22",
+        "23",
+        "272",
+        "285",
+        "346",
+        "348",
+        "59",
+        "73",
+        "74",
+        "77"
+      ]
+    },
+    "77": {
+      "name": "Manipulating User-Controlled Variables",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1321",
+        "15",
+        "285",
+        "302",
+        "473",
+        "94",
+        "96"
+      ]
+    },
+    "78": {
+      "name": "Using Escaped Slashes in Alternate Encoding",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "180",
+        "181",
+        "20",
+        "22",
+        "697",
+        "707",
+        "73",
+        "74"
+      ]
+    },
+    "79": {
+      "name": "Using Slashes in Alternate Encoding",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "173",
+        "180",
+        "181",
+        "185",
+        "20",
+        "200",
+        "22",
+        "697",
+        "707",
+        "73",
+        "74"
+      ]
+    },
+    "80": {
+      "name": "Using UTF-8 Encoding to Bypass Validation Logic",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "180",
+        "181",
+        "20",
+        "692",
+        "697",
+        "73",
+        "74"
+      ]
+    },
+    "81": {
+      "name": "Web Server Logs Tampering",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "116",
+        "117",
+        "150",
+        "20",
+        "221",
+        "276",
+        "279",
+        "75",
+        "93",
+        "96"
+      ]
+    },
+    "83": {
+      "name": "XPath Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "707",
+        "74",
+        "91"
+      ]
+    },
+    "84": {
+      "name": "XQuery Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "707",
+        "74"
+      ]
+    },
+    "85": {
+      "name": "AJAX Footprinting",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "113",
+        "116",
+        "184",
+        "20",
+        "348",
+        "692",
+        "79",
+        "86",
+        "96"
+      ]
+    },
+    "86": {
+      "name": "XSS Through HTTP Headers",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "80"
+      ]
+    },
+    "87": {
+      "name": "Forceful Browsing",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "285",
+        "425",
+        "693"
+      ]
+    },
+    "88": {
+      "name": "OS Command Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "697",
+        "78",
+        "88"
+      ]
+    },
+    "89": {
+      "name": "Pharming",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "346",
+        "350"
+      ]
+    },
+    "90": {
+      "name": "Reflection Attack in Authentication Protocol",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "301",
+        "303"
+      ]
+    },
+    "92": {
+      "name": "Forced Integer Overflow",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "120",
+        "122",
+        "128",
+        "190",
+        "196",
+        "680",
+        "697"
+      ]
+    },
+    "93": {
+      "name": "Log Injection-Tampering-Forging",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "117",
+        "150",
+        "75"
+      ]
+    },
+    "94": {
+      "name": "Adversary in the Middle (AiTM)",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "287",
+        "290",
+        "294",
+        "300",
+        "593"
+      ],
+      "attack": [
+        "T1557"
+      ]
+    },
+    "95": {
+      "name": "WSDL Scanning",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "538"
+      ]
+    },
+    "96": {
+      "name": "Block Access to Libraries",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "589"
+      ]
+    },
+    "97": {
+      "name": "Cryptanalysis",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1204",
+        "1240",
+        "1241",
+        "1279",
+        "327"
+      ]
+    },
+    "98": {
+      "name": "Phishing",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "451"
+      ],
+      "attack": [
+        "T1566",
+        "T1598"
+      ]
+    },
+    "100": {
+      "name": "Overflow Buffers",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "119",
+        "120",
+        "129",
+        "131",
+        "680",
+        "805"
+      ]
+    },
+    "101": {
+      "name": "Server Side Include (SSI) Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "74",
+        "97"
+      ]
+    },
+    "102": {
+      "name": "Session Sidejacking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "294",
+        "319",
+        "522",
+        "523",
+        "614"
+      ]
+    },
+    "103": {
+      "name": "Clickjacking",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1021"
+      ]
+    },
+    "104": {
+      "name": "Cross Zone Scripting",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "116",
+        "20",
+        "250",
+        "285",
+        "638"
+      ]
+    },
+    "105": {
+      "name": "HTTP Request Splitting",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "113",
+        "138",
+        "436",
+        "74"
+      ]
+    },
+    "107": {
+      "name": "Cross Site Tracing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "648",
+        "693"
+      ]
+    },
+    "108": {
+      "name": "Command Line Execution through SQL Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "114",
+        "20",
+        "74",
+        "78",
+        "89"
+      ]
+    },
+    "109": {
+      "name": "Object Relational Mapping Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "564",
+        "89"
+      ]
+    },
+    "110": {
+      "name": "SQL Injection through SOAP Parameter Tampering",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "89"
+      ]
+    },
+    "111": {
+      "name": "JSON Hijacking (aka JavaScript Hijacking)",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "345",
+        "346",
+        "352"
+      ]
+    },
+    "112": {
+      "name": "Brute Force",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "326",
+        "330",
+        "521"
+      ],
+      "attack": [
+        "T1110"
+      ]
+    },
+    "113": {
+      "name": "Interface Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1192"
+      ]
+    },
+    "114": {
+      "name": "Authentication Abuse",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1244",
+        "287"
+      ],
+      "attack": [
+        "T1548"
+      ]
+    },
+    "115": {
+      "name": "Authentication Bypass",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "287"
+      ],
+      "attack": [
+        "T1548"
+      ]
+    },
+    "116": {
+      "name": "Excavation",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1243",
+        "200"
+      ]
+    },
+    "117": {
+      "name": "Interception",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "319"
+      ]
+    },
+    "120": {
+      "name": "Double Encoding",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "177",
+        "181",
+        "183",
+        "184",
+        "20",
+        "692",
+        "697",
+        "74"
+      ]
+    },
+    "121": {
+      "name": "Exploit Non-Production Interfaces",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "1209",
+        "1259",
+        "1267",
+        "1270",
+        "1294",
+        "1295",
+        "1296",
+        "1302",
+        "1313",
+        "489"
+      ]
+    },
+    "122": {
+      "name": "Privilege Abuse",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1317",
+        "269",
+        "732"
+      ],
+      "attack": [
+        "T1548"
+      ]
+    },
+    "123": {
+      "name": "Buffer Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "119"
+      ]
+    },
+    "124": {
+      "name": "Shared Resource Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1189",
+        "1331"
+      ]
+    },
+    "125": {
+      "name": "Flooding",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "404",
+        "770"
+      ],
+      "attack": [
+        "T1498.001",
+        "T1499"
+      ]
+    },
+    "126": {
+      "name": "Path Traversal",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "22"
+      ]
+    },
+    "127": {
+      "name": "Directory Indexing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "276",
+        "285",
+        "288",
+        "424",
+        "425",
+        "693",
+        "732"
+      ],
+      "attack": [
+        "T1083"
+      ]
+    },
+    "128": {
+      "name": "Integer Attacks",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "682"
+      ]
+    },
+    "129": {
+      "name": "Pointer Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "682",
+        "822",
+        "823"
+      ]
+    },
+    "130": {
+      "name": "Excessive Allocation",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1325",
+        "404",
+        "770"
+      ],
+      "attack": [
+        "T1499.003"
+      ]
+    },
+    "131": {
+      "name": "Resource Leak Exposure",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "404"
+      ],
+      "attack": [
+        "T1499"
+      ]
+    },
+    "132": {
+      "name": "Symlink Attack",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "59"
+      ],
+      "attack": [
+        "T1547.009"
+      ]
+    },
+    "133": {
+      "name": "Try All Common Switches",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "912"
+      ]
+    },
+    "134": {
+      "name": "Email Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "150"
+      ]
+    },
+    "135": {
+      "name": "Format String Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "134",
+        "20",
+        "74"
+      ]
+    },
+    "136": {
+      "name": "LDAP Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "77",
+        "90"
+      ]
+    },
+    "137": {
+      "name": "Parameter Injection",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "88"
+      ]
+    },
+    "138": {
+      "name": "Reflection Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "470"
+      ]
+    },
+    "139": {
+      "name": "Relative Path Traversal",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "23"
+      ]
+    },
+    "140": {
+      "name": "Bypassing of Intermediate Forms in Multiple-Form Sets",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "372"
+      ]
+    },
+    "141": {
+      "name": "Cache Poisoning",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "345",
+        "346",
+        "348",
+        "349"
+      ],
+      "attack": [
+        "T1557.002"
+      ]
+    },
+    "142": {
+      "name": "DNS Cache Poisoning",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "345",
+        "346",
+        "348",
+        "349",
+        "350"
+      ],
+      "attack": [
+        "T1584.002"
+      ]
+    },
+    "143": {
+      "name": "Detect Unpublicized Web Pages",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "425"
+      ]
+    },
+    "144": {
+      "name": "Detect Unpublicized Web Services",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "425"
+      ]
+    },
+    "145": {
+      "name": "Checksum Spoofing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "354"
+      ]
+    },
+    "146": {
+      "name": "XML Schema Poisoning",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "15",
+        "472"
+      ]
+    },
+    "147": {
+      "name": "XML Ping of the Death",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "400",
+        "770"
+      ]
+    },
+    "148": {
+      "name": "Content Spoofing",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "345"
+      ],
+      "attack": [
+        "T1491"
+      ]
+    },
+    "149": {
+      "name": "Explore for Predictable Temporary File Names",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "377"
+      ]
+    },
+    "150": {
+      "name": "Collect Data from Common Resource Locations",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1239",
+        "1258",
+        "1266",
+        "1272",
+        "1323",
+        "1330",
+        "552"
+      ],
+      "attack": [
+        "T1003",
+        "T1119",
+        "T1213",
+        "T1530",
+        "T1555",
+        "T1602"
+      ]
+    },
+    "151": {
+      "name": "Identity Spoofing",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "287"
+      ]
+    },
+    "153": {
+      "name": "Input Data Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "20"
+      ]
+    },
+    "154": {
+      "name": "Resource Location Spoofing",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "451"
+      ]
+    },
+    "155": {
+      "name": "Screen Temporary Files for Sensitive Information",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "377"
+      ]
+    },
+    "157": {
+      "name": "Sniffing Attacks",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "311"
+      ]
+    },
+    "158": {
+      "name": "Sniffing Network Traffic",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311"
+      ],
+      "attack": [
+        "T1040",
+        "T1111"
+      ]
+    },
+    "159": {
+      "name": "Redirect Access to Libraries",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "706"
+      ],
+      "attack": [
+        "T1574.008"
+      ]
+    },
+    "160": {
+      "name": "Exploit Script-Based APIs",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "346"
+      ]
+    },
+    "161": {
+      "name": "Infrastructure Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "923"
+      ]
+    },
+    "162": {
+      "name": "Manipulating Hidden Fields",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "602"
+      ]
+    },
+    "163": {
+      "name": "Spear Phishing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "451"
+      ],
+      "attack": [
+        "T1534",
+        "T1566.001",
+        "T1566.002",
+        "T1566.003",
+        "T1598.001",
+        "T1598.002",
+        "T1598.003"
+      ]
+    },
+    "164": {
+      "name": "Mobile Phishing",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "451"
+      ]
+    },
+    "165": {
+      "name": "File Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "attack": [
+        "T1036.003"
+      ]
+    },
+    "166": {
+      "name": "Force the System to Reset Values",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1221",
+        "1232",
+        "306"
+      ]
+    },
+    "167": {
+      "name": "White Box Reverse Engineering",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1323"
+      ]
+    },
+    "168": {
+      "name": "Windows ::DATA Alternate Data Stream",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "212",
+        "69"
+      ]
+    },
+    "169": {
+      "name": "Footprinting",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1217",
+        "T1592",
+        "T1595"
+      ]
+    },
+    "170": {
+      "name": "Web Application Fingerprinting",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "497"
+      ]
+    },
+    "173": {
+      "name": "Action Spoofing",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "451"
+      ]
+    },
+    "174": {
+      "name": "Flash Parameter Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "88"
+      ]
+    },
+    "175": {
+      "name": "Code Inclusion",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "829"
+      ]
+    },
+    "176": {
+      "name": "Configuration/Environment Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1233",
+        "1234",
+        "1304",
+        "1328",
+        "15"
+      ]
+    },
+    "177": {
+      "name": "Create files with the same name as files protected with a higher classification",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "706"
+      ],
+      "attack": [
+        "T1036"
+      ]
+    },
+    "178": {
+      "name": "Cross-Site Flashing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "601"
+      ]
+    },
+    "179": {
+      "name": "Calling Micro-Services Directly",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "180": {
+      "name": "Exploiting Incorrectly Configured Access Control Security Levels",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1190",
+        "1191",
+        "1193",
+        "1220",
+        "1268",
+        "1280",
+        "1297",
+        "1311",
+        "1315",
+        "1318",
+        "1320",
+        "1321",
+        "732"
+      ],
+      "attack": [
+        "T1574.010"
+      ]
+    },
+    "181": {
+      "name": "Flash File Overlay",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1021"
+      ]
+    },
+    "182": {
+      "name": "Flash Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "184",
+        "20",
+        "697"
+      ]
+    },
+    "183": {
+      "name": "IMAP/SMTP Command Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "77"
+      ]
+    },
+    "184": {
+      "name": "Software Integrity Attack",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "494"
+      ]
+    },
+    "185": {
+      "name": "Malicious Software Download",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "494"
+      ]
+    },
+    "186": {
+      "name": "Malicious Software Update",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "494"
+      ],
+      "attack": [
+        "T1195.002"
+      ]
+    },
+    "187": {
+      "name": "Malicious Automated Software Update via Redirection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "494"
+      ],
+      "attack": [
+        "T1072"
+      ]
+    },
+    "188": {
+      "name": "Reverse Engineering",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1278"
+      ]
+    },
+    "189": {
+      "name": "Black Box Reverse Engineering",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1255",
+        "1300",
+        "203"
+      ]
+    },
+    "190": {
+      "name": "Reverse Engineer an Executable to Expose Assumed Hidden Functionality",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "912"
+      ]
+    },
+    "191": {
+      "name": "Read Sensitive Constants Within an Executable",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "798"
+      ],
+      "attack": [
+        "T1552.001"
+      ]
+    },
+    "192": {
+      "name": "Protocol Analysis",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "326"
+      ]
+    },
+    "193": {
+      "name": "PHP Remote File Inclusion",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "80",
+        "98"
+      ]
+    },
+    "194": {
+      "name": "Fake the Source of Data",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "287"
+      ]
+    },
+    "195": {
+      "name": "Principal Spoof",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "196": {
+      "name": "Session Credential Falsification through Forging",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "384",
+        "664"
+      ],
+      "attack": [
+        "T1134.002",
+        "T1134.003",
+        "T1606"
+      ]
+    },
+    "197": {
+      "name": "Exponential Data Expansion",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "770",
+        "776"
+      ]
+    },
+    "198": {
+      "name": "XSS Targeting Error Pages",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "81"
+      ]
+    },
+    "199": {
+      "name": "XSS Using Alternate Syntax",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "87"
+      ]
+    },
+    "200": {
+      "name": "Removal of filters: Input filters, output filters, data masking",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "201": {
+      "name": "Serialized Data External Linking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "829"
+      ]
+    },
+    "202": {
+      "name": "Create Malicious Client",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "602"
+      ]
+    },
+    "203": {
+      "name": "Manipulate Registry Information",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "15"
+      ],
+      "attack": [
+        "T1112",
+        "T1647"
+      ]
+    },
+    "204": {
+      "name": "Lifting Sensitive Data Embedded in Cache",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1239",
+        "1258",
+        "311",
+        "524"
+      ],
+      "attack": [
+        "T1005"
+      ]
+    },
+    "206": {
+      "name": "Signing Malicious Code",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "732"
+      ],
+      "attack": [
+        "T1553.002"
+      ]
+    },
+    "207": {
+      "name": "Removing Important Client Functionality",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "602"
+      ]
+    },
+    "208": {
+      "name": "Removing/short-circuiting 'Purse' logic: removing/mutating 'cash' decrements",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "602"
+      ]
+    },
+    "209": {
+      "name": "XSS Using MIME Type Mismatch",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "646",
+        "79"
+      ]
+    },
+    "212": {
+      "name": "Functionality Misuse",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1242",
+        "1246",
+        "1281"
+      ]
+    },
+    "215": {
+      "name": "Fuzzing for application mapping",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "209",
+        "532"
+      ]
+    },
+    "216": {
+      "name": "Communication Channel Manipulation",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "306"
+      ]
+    },
+    "217": {
+      "name": "Exploiting Incorrectly Configured SSL/TLS",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "201"
+      ]
+    },
+    "218": {
+      "name": "Spoofing of UDDI/ebXML Messages",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "345"
+      ]
+    },
+    "219": {
+      "name": "XML Routing Detour Attacks",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "441",
+        "610"
+      ]
+    },
+    "220": {
+      "name": "Client-Server Protocol Manipulation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "757"
+      ]
+    },
+    "221": {
+      "name": "Data Serialization External Entities Blowup",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "611"
+      ]
+    },
+    "222": {
+      "name": "iFrame Overlay",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1021"
+      ]
+    },
+    "224": {
+      "name": "Fingerprinting",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "226": {
+      "name": "Session Credential Falsification through Manipulation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "472",
+        "565"
+      ]
+    },
+    "227": {
+      "name": "Sustained Client Engagement",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "400"
+      ],
+      "attack": [
+        "T1499"
+      ]
+    },
+    "228": {
+      "name": "DTD Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "829"
+      ]
+    },
+    "229": {
+      "name": "Serialized Data Parameter Blowup",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ]
+    },
+    "230": {
+      "name": "Serialized Data with Nested Payloads",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "112",
+        "20",
+        "674",
+        "770"
+      ]
+    },
+    "231": {
+      "name": "Oversized Serialized Data Payloads",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "112",
+        "20",
+        "674",
+        "770"
+      ]
+    },
+    "233": {
+      "name": "Privilege Escalation",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1264",
+        "1311",
+        "269"
+      ],
+      "attack": [
+        "T1548"
+      ]
+    },
+    "234": {
+      "name": "Hijacking a privileged process",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "648",
+        "732"
+      ]
+    },
+    "237": {
+      "name": "Escaping a Sandbox by Calling Code in Another Language",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "693"
+      ]
+    },
+    "240": {
+      "name": "Resource Injection",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "99"
+      ]
+    },
+    "242": {
+      "name": "Code Injection",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "94"
+      ]
+    },
+    "243": {
+      "name": "XSS Targeting HTML Attributes",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "83"
+      ]
+    },
+    "244": {
+      "name": "XSS Targeting URI Placeholders",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "83"
+      ]
+    },
+    "245": {
+      "name": "XSS Using Doubled Characters",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "85"
+      ]
+    },
+    "247": {
+      "name": "XSS Using Invalid Characters",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "86"
+      ]
+    },
+    "248": {
+      "name": "Command Injection",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "77"
+      ]
+    },
+    "250": {
+      "name": "XML Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "707",
+        "74",
+        "91"
+      ]
+    },
+    "251": {
+      "name": "Local Code Inclusion",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "829"
+      ],
+      "attack": [
+        "T1055"
+      ]
+    },
+    "252": {
+      "name": "PHP Local File Inclusion",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "829"
+      ]
+    },
+    "253": {
+      "name": "Remote Code Inclusion",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "829"
+      ]
+    },
+    "256": {
+      "name": "SOAP Array Overflow",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "805"
+      ]
+    },
+    "261": {
+      "name": "Fuzzing for garnering other adjacent user/sensitive data",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "20"
+      ]
+    },
+    "263": {
+      "name": "Force Use of Corrupted Files",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "829"
+      ]
+    },
+    "267": {
+      "name": "Leverage Alternate Encoding",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "172",
+        "173",
+        "180",
+        "181",
+        "20",
+        "692",
+        "697",
+        "73",
+        "74"
+      ],
+      "attack": [
+        "T1027"
+      ]
+    },
+    "268": {
+      "name": "Audit Log Manipulation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "117"
+      ],
+      "attack": [
+        "T1070",
+        "T1562.002",
+        "T1562.003",
+        "T1562.008"
+      ]
+    },
+    "270": {
+      "name": "Modification of Registry Run Keys",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "15"
+      ],
+      "attack": [
+        "T1547.001",
+        "T1547.014"
+      ]
+    },
+    "271": {
+      "name": "Schema Poisoning",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "15"
+      ]
+    },
+    "272": {
+      "name": "Protocol Manipulation",
+      "abstraction": "Meta",
+      "status": "Draft"
+    },
+    "273": {
+      "name": "HTTP Response Smuggling",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "436",
+        "444",
+        "74"
+      ]
+    },
+    "274": {
+      "name": "HTTP Verb Tampering",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "302",
+        "654"
+      ]
+    },
+    "275": {
+      "name": "DNS Rebinding",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "350"
+      ]
+    },
+    "276": {
+      "name": "Inter-component Protocol Manipulation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "707"
+      ]
+    },
+    "277": {
+      "name": "Data Interchange Protocol Manipulation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "707"
+      ]
+    },
+    "278": {
+      "name": "Web Services Protocol Manipulation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "707"
+      ]
+    },
+    "279": {
+      "name": "SOAP Manipulation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "707"
+      ]
+    },
+    "285": {
+      "name": "ICMP Echo Request Ping",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "287": {
+      "name": "TCP SYN Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "290": {
+      "name": "Enumerate Mail Exchange (MX) Records",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "291": {
+      "name": "DNS Zone Transfers",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "292": {
+      "name": "Host Discovery",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1018"
+      ]
+    },
+    "293": {
+      "name": "Traceroute Route Enumeration",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "294": {
+      "name": "ICMP Address Mask Request",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "295": {
+      "name": "Timestamp Request",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1124"
+      ]
+    },
+    "296": {
+      "name": "ICMP Information Request",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "297": {
+      "name": "TCP ACK Ping",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "298": {
+      "name": "UDP Ping",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "299": {
+      "name": "TCP SYN Ping",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "300": {
+      "name": "Port Scanning",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1046"
+      ]
+    },
+    "301": {
+      "name": "TCP Connect Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "302": {
+      "name": "TCP FIN Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "303": {
+      "name": "TCP Xmas Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "304": {
+      "name": "TCP Null Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "305": {
+      "name": "TCP ACK Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "306": {
+      "name": "TCP Window Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "307": {
+      "name": "TCP RPC Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "308": {
+      "name": "UDP Scan",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "309": {
+      "name": "Network Topology Mapping",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1016",
+        "T1049",
+        "T1590"
+      ]
+    },
+    "310": {
+      "name": "Scanning for Vulnerable Software",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "200"
+      ]
+    },
+    "312": {
+      "name": "Active OS Fingerprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1082"
+      ]
+    },
+    "313": {
+      "name": "Passive OS Fingerprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1082"
+      ]
+    },
+    "317": {
+      "name": "IP ID Sequencing Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "318": {
+      "name": "IP 'ID' Echoed Byte-Order Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "319": {
+      "name": "IP (DF) 'Don't Fragment Bit' Echoing Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "320": {
+      "name": "TCP Timestamp Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "321": {
+      "name": "TCP Sequence Number Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "322": {
+      "name": "TCP (ISN) Greatest Common Divisor Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "323": {
+      "name": "TCP (ISN) Counter Rate Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "324": {
+      "name": "TCP (ISN) Sequence Predictability Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "325": {
+      "name": "TCP Congestion Control Flag (ECN) Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "326": {
+      "name": "TCP Initial Window Size Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "327": {
+      "name": "TCP Options Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "328": {
+      "name": "TCP 'RST' Flag Checksum Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "329": {
+      "name": "ICMP Error Message Quoting Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "330": {
+      "name": "ICMP Error Message Echoing Integrity Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ]
+    },
+    "331": {
+      "name": "ICMP IP Total Length Field Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "204"
+      ]
+    },
+    "332": {
+      "name": "ICMP IP 'ID' Field Error Message Probe",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "204"
+      ]
+    },
+    "383": {
+      "name": "Harvesting Information via API Event Monitoring",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "319",
+        "419",
+        "602"
+      ],
+      "attack": [
+        "T1056.004"
+      ]
+    },
+    "384": {
+      "name": "Application API Message Manipulation via Man-in-the-Middle",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "345",
+        "346",
+        "471",
+        "602"
+      ]
+    },
+    "385": {
+      "name": "Transaction or Event Tampering via Application API Manipulation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "345",
+        "346",
+        "471",
+        "602"
+      ]
+    },
+    "386": {
+      "name": "Application API Navigation Remapping",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "345",
+        "346",
+        "471",
+        "602"
+      ]
+    },
+    "387": {
+      "name": "Navigation Remapping To Propagate Malicious Content",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "345",
+        "346",
+        "471",
+        "602"
+      ]
+    },
+    "388": {
+      "name": "Application API Button Hijacking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "345",
+        "346",
+        "471",
+        "602"
+      ]
+    },
+    "389": {
+      "name": "Content Spoofing Via Application API Manipulation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "353"
+      ]
+    },
+    "390": {
+      "name": "Bypassing Physical Security",
+      "abstraction": "Meta",
+      "status": "Draft"
+    },
+    "391": {
+      "name": "Bypassing Physical Locks",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "392": {
+      "name": "Lock Bumping",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "393": {
+      "name": "Lock Picking",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "394": {
+      "name": "Using a Snap Gun Lock to Force a Lock",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "395": {
+      "name": "Bypassing Electronic Locks and Access Controls",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "397": {
+      "name": "Cloning Magnetic Strip Cards",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "398": {
+      "name": "Magnetic Strip Card Brute Force Attacks",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "399": {
+      "name": "Cloning RFID Cards or Chips",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "400": {
+      "name": "RFID Chip Deactivation or Destruction",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "401": {
+      "name": "Physically Hacking Hardware",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "1263"
+      ]
+    },
+    "402": {
+      "name": "Bypassing ATA Password Security",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "285"
+      ]
+    },
+    "406": {
+      "name": "Dumpster Diving",
+      "abstraction": "Detailed",
+      "status": "Stable"
+    },
+    "407": {
+      "name": "Pretexting",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1589"
+      ]
+    },
+    "410": {
+      "name": "Information Elicitation",
+      "abstraction": "Meta",
+      "status": "Draft"
+    },
+    "412": {
+      "name": "Pretexting via Customer Service",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "413": {
+      "name": "Pretexting via Tech Support",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "414": {
+      "name": "Pretexting via Delivery Person",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "415": {
+      "name": "Pretexting via Phone",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "416": {
+      "name": "Manipulate Human Behavior",
+      "abstraction": "Meta",
+      "status": "Stable"
+    },
+    "417": {
+      "name": "Influence Perception",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "418": {
+      "name": "Influence Perception of Reciprocation",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "420": {
+      "name": "Influence Perception of Scarcity",
+      "abstraction": "Detailed",
+      "status": "Stable"
+    },
+    "421": {
+      "name": "Influence Perception of Authority",
+      "abstraction": "Detailed",
+      "status": "Stable"
+    },
+    "422": {
+      "name": "Influence Perception of Commitment and Consistency",
+      "abstraction": "Detailed",
+      "status": "Stable"
+    },
+    "423": {
+      "name": "Influence Perception of Liking",
+      "abstraction": "Detailed",
+      "status": "Stable"
+    },
+    "424": {
+      "name": "Influence Perception of Consensus or Social Proof",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "425": {
+      "name": "Target Influence via Framing",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "426": {
+      "name": "Influence via Incentives",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "427": {
+      "name": "Influence via Psychological Principles",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "428": {
+      "name": "Influence via Modes of Thinking",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "429": {
+      "name": "Target Influence via Eye Cues",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "433": {
+      "name": "Target Influence via The Human Buffer Overflow",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "434": {
+      "name": "Target Influence via Interview and Interrogation",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "435": {
+      "name": "Target Influence via Instant Rapport",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "438": {
+      "name": "Modification During Manufacture",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "attack": [
+        "T1195"
+      ]
+    },
+    "439": {
+      "name": "Manipulation During Distribution",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1269"
+      ],
+      "attack": [
+        "T1195"
+      ]
+    },
+    "440": {
+      "name": "Hardware Integrity Attack",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "attack": [
+        "T1195.003",
+        "T1200"
+      ]
+    },
+    "441": {
+      "name": "Malicious Logic Insertion",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "284"
+      ]
+    },
+    "442": {
+      "name": "Infected Software",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "506"
+      ],
+      "attack": [
+        "T1195.001",
+        "T1195.002"
+      ]
+    },
+    "443": {
+      "name": "Malicious Logic Inserted Into Product by Authorized Developer",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "attack": [
+        "T1195.002",
+        "T1195.003"
+      ]
+    },
+    "444": {
+      "name": "Development Alteration",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "445": {
+      "name": "Malicious Logic Insertion into Product Software via Configuration Management Manipulation",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "attack": [
+        "T1195.001"
+      ]
+    },
+    "446": {
+      "name": "Malicious Logic Insertion into Product via Inclusion of Third-Party Component",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "attack": [
+        "T1195"
+      ]
+    },
+    "447": {
+      "name": "Design Alteration",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "448": {
+      "name": "Embed Virus into DLL",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "506"
+      ],
+      "attack": [
+        "T1027.009"
+      ]
+    },
+    "452": {
+      "name": "Infected Hardware",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "456": {
+      "name": "Infected Memory",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "1257",
+        "1260",
+        "1274",
+        "1312",
+        "1316"
+      ]
+    },
+    "457": {
+      "name": "USB Memory Attacks",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1299"
+      ],
+      "attack": [
+        "T1091",
+        "T1092"
+      ]
+    },
+    "458": {
+      "name": "Flash Memory Attacks",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1282"
+      ]
+    },
+    "459": {
+      "name": "Creating a Rogue Certification Authority Certificate",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "290",
+        "295",
+        "327"
+      ]
+    },
+    "460": {
+      "name": "HTTP Parameter Pollution (HPP)",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "147",
+        "235",
+        "88"
+      ]
+    },
+    "461": {
+      "name": "Web Services API Signature Forgery Leveraging Hash Function Extension Weakness",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "290",
+        "328"
+      ]
+    },
+    "462": {
+      "name": "Cross-Domain Search Timing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "208",
+        "352",
+        "385"
+      ]
+    },
+    "463": {
+      "name": "Padding Oracle Crypto Attack",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "209",
+        "347",
+        "354",
+        "514",
+        "649",
+        "696"
+      ]
+    },
+    "464": {
+      "name": "Evercookie",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "359"
+      ],
+      "attack": [
+        "T1606.001"
+      ]
+    },
+    "465": {
+      "name": "Transparent Proxy Abuse",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "441"
+      ],
+      "attack": [
+        "T1090.001"
+      ]
+    },
+    "466": {
+      "name": "Leveraging Active Adversary in the Middle Attacks to Bypass Same Origin Policy",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "300"
+      ]
+    },
+    "467": {
+      "name": "Cross Site Identification",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "352",
+        "359"
+      ]
+    },
+    "468": {
+      "name": "Generic Cross-Browser Cross-Domain Theft",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "149",
+        "177",
+        "707",
+        "838"
+      ]
+    },
+    "469": {
+      "name": "HTTP DoS",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770",
+        "772"
+      ],
+      "attack": [
+        "T1499.002"
+      ]
+    },
+    "470": {
+      "name": "Expanding Control over the Operating System from the Database",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "250",
+        "89"
+      ]
+    },
+    "471": {
+      "name": "Search Order Hijacking",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "427"
+      ],
+      "attack": [
+        "T1574.001",
+        "T1574.004",
+        "T1574.008"
+      ]
+    },
+    "472": {
+      "name": "Browser Fingerprinting",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "200"
+      ]
+    },
+    "473": {
+      "name": "Signature Spoof",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "20",
+        "290",
+        "327"
+      ],
+      "attack": [
+        "T1036.001",
+        "T1553.002"
+      ]
+    },
+    "474": {
+      "name": "Signature Spoofing by Key Theft",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "522"
+      ],
+      "attack": [
+        "T1552.004"
+      ]
+    },
+    "475": {
+      "name": "Signature Spoofing by Improper Validation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "295",
+        "327",
+        "347"
+      ]
+    },
+    "476": {
+      "name": "Signature Spoofing by Misrepresentation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "290"
+      ]
+    },
+    "477": {
+      "name": "Signature Spoofing by Mixing Signed and Unsigned Content",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311",
+        "319",
+        "693"
+      ]
+    },
+    "478": {
+      "name": "Modification of Windows Service Configuration",
+      "abstraction": "Detailed",
+      "status": "Usable",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1543.003",
+        "T1574.011"
+      ]
+    },
+    "479": {
+      "name": "Malicious Root Certificate",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1553.004"
+      ]
+    },
+    "480": {
+      "name": "Escaping Virtualization",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "693"
+      ],
+      "attack": [
+        "T1611"
+      ]
+    },
+    "481": {
+      "name": "Contradictory Destinations in Traffic Routing Schemes",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "923"
+      ],
+      "attack": [
+        "T1090.004"
+      ]
+    },
+    "482": {
+      "name": "TCP Flood",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ],
+      "attack": [
+        "T1498.001",
+        "T1499.001",
+        "T1499.002"
+      ]
+    },
+    "485": {
+      "name": "Signature Spoofing by Key Recreation",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "330"
+      ],
+      "attack": [
+        "T1552.004"
+      ]
+    },
+    "486": {
+      "name": "UDP Flood",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ]
+    },
+    "487": {
+      "name": "ICMP Flood",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ]
+    },
+    "488": {
+      "name": "HTTP Flood",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ],
+      "attack": [
+        "T1499.002"
+      ]
+    },
+    "489": {
+      "name": "SSL Flood",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ],
+      "attack": [
+        "T1499.002"
+      ]
+    },
+    "490": {
+      "name": "Amplification",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ],
+      "attack": [
+        "T1498.002"
+      ]
+    },
+    "491": {
+      "name": "Quadratic Data Expansion",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ]
+    },
+    "492": {
+      "name": "Regular Expression Exponential Blowup",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1333",
+        "400"
+      ]
+    },
+    "493": {
+      "name": "SOAP Array Blowup",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ]
+    },
+    "494": {
+      "name": "TCP Fragmentation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "404",
+        "770"
+      ]
+    },
+    "495": {
+      "name": "UDP Fragmentation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "404",
+        "770"
+      ]
+    },
+    "496": {
+      "name": "ICMP Fragmentation",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "404",
+        "770"
+      ]
+    },
+    "497": {
+      "name": "File Discovery",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1083"
+      ]
+    },
+    "498": {
+      "name": "Probe iOS Screenshots",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "359"
+      ]
+    },
+    "499": {
+      "name": "Android Intent Intercept",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "925"
+      ]
+    },
+    "500": {
+      "name": "WebView Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "749",
+        "940"
+      ]
+    },
+    "501": {
+      "name": "Android Activity Hijack",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "923"
+      ]
+    },
+    "502": {
+      "name": "Intent Spoof",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ]
+    },
+    "503": {
+      "name": "WebView Exposure",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ]
+    },
+    "504": {
+      "name": "Task Impersonation",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "1021"
+      ],
+      "attack": [
+        "T1036.004"
+      ]
+    },
+    "505": {
+      "name": "Scheme Squatting",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "506": {
+      "name": "Tapjacking",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1021"
+      ]
+    },
+    "507": {
+      "name": "Physical Theft",
+      "abstraction": "Meta",
+      "status": "Draft"
+    },
+    "508": {
+      "name": "Shoulder Surfing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "200",
+        "359"
+      ]
+    },
+    "509": {
+      "name": "Kerberoasting",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "262",
+        "263",
+        "294",
+        "308",
+        "309",
+        "521",
+        "522"
+      ],
+      "attack": [
+        "T1558.003"
+      ]
+    },
+    "510": {
+      "name": "SaaS User Request Forgery",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "346"
+      ]
+    },
+    "511": {
+      "name": "Infiltration of Software Development Environment",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.001"
+      ]
+    },
+    "516": {
+      "name": "Hardware Component Substitution During Baselining",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "517": {
+      "name": "Documentation Alteration to Circumvent Dial-down",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "518": {
+      "name": "Documentation Alteration to Produce Under-performing Systems",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "519": {
+      "name": "Documentation Alteration to Cause Errors in System Design",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "520": {
+      "name": "Counterfeit Hardware Component Inserted During Product Assembly",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "521": {
+      "name": "Hardware Design Specifications Are Altered",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "522": {
+      "name": "Malicious Hardware Component Replacement",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "523": {
+      "name": "Malicious Software Implanted",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1195.002"
+      ]
+    },
+    "524": {
+      "name": "Rogue Integration Procedures",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "528": {
+      "name": "XML Flood",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "770"
+      ],
+      "attack": [
+        "T1498.001",
+        "T1499.002"
+      ]
+    },
+    "529": {
+      "name": "Malware-Directed Internal Reconnaissance",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "530": {
+      "name": "Provide Counterfeit Component",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "531": {
+      "name": "Hardware Component Substitution",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "532": {
+      "name": "Altered Installed BIOS",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "attack": [
+        "T1495",
+        "T1542.001"
+      ]
+    },
+    "533": {
+      "name": "Malicious Manual Software Update",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "494"
+      ]
+    },
+    "534": {
+      "name": "Malicious Hardware Update",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "535": {
+      "name": "Malicious Gray Market Hardware",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "536": {
+      "name": "Data Injected During Configuration",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "284"
+      ]
+    },
+    "537": {
+      "name": "Infiltration of Hardware Development Environment",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "538": {
+      "name": "Open-Source Library Manipulation",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "494",
+        "829"
+      ],
+      "attack": [
+        "T1195.001"
+      ]
+    },
+    "539": {
+      "name": "ASIC With Malicious Functionality",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "540": {
+      "name": "Overread Buffers",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "125"
+      ]
+    },
+    "541": {
+      "name": "Application Fingerprinting",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "204",
+        "205",
+        "208"
+      ],
+      "attack": [
+        "T1592.002"
+      ]
+    },
+    "542": {
+      "name": "Targeted Malware",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1027",
+        "T1587.001"
+      ]
+    },
+    "543": {
+      "name": "Counterfeit Websites",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1036.005"
+      ]
+    },
+    "544": {
+      "name": "Counterfeit Organizations",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "545": {
+      "name": "Pull Data from System Resources",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1239",
+        "1243",
+        "1258",
+        "1266",
+        "1272",
+        "1278",
+        "1323",
+        "1330"
+      ],
+      "attack": [
+        "T1005",
+        "T1555.001"
+      ]
+    },
+    "546": {
+      "name": "Incomplete Data Deletion in a Multi-Tenant Environment",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1266",
+        "1272",
+        "284"
+      ]
+    },
+    "547": {
+      "name": "Physical Destruction of Device or Component",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "548": {
+      "name": "Contaminate Resource",
+      "abstraction": "Meta",
+      "status": "Draft"
+    },
+    "549": {
+      "name": "Local Execution of Code",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "829"
+      ]
+    },
+    "550": {
+      "name": "Install New Service",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1543"
+      ]
+    },
+    "551": {
+      "name": "Modify Existing Service",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "284",
+        "522"
+      ],
+      "attack": [
+        "T1543"
+      ]
+    },
+    "552": {
+      "name": "Install Rootkit ",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1014",
+        "T1542.003",
+        "T1547.006"
+      ]
+    },
+    "554": {
+      "name": "Functionality Bypass",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1299",
+        "424"
+      ]
+    },
+    "555": {
+      "name": "Remote Services with Stolen Credentials",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "262",
+        "263",
+        "294",
+        "308",
+        "309",
+        "521",
+        "522"
+      ],
+      "attack": [
+        "T1021",
+        "T1114.002",
+        "T1133"
+      ]
+    },
+    "556": {
+      "name": "Replace File Extension Handlers",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1546.001"
+      ]
+    },
+    "558": {
+      "name": "Replace Trusted Executable",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1505.005",
+        "T1546.008"
+      ]
+    },
+    "559": {
+      "name": "Orbital Jamming",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "560": {
+      "name": "Use of Known Domain Credentials",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1273",
+        "262",
+        "263",
+        "307",
+        "308",
+        "309",
+        "522",
+        "654"
+      ],
+      "attack": [
+        "T1078"
+      ]
+    },
+    "561": {
+      "name": "Windows Admin Shares with Stolen Credentials",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "262",
+        "263",
+        "294",
+        "308",
+        "309",
+        "521",
+        "522"
+      ],
+      "attack": [
+        "T1021.002"
+      ]
+    },
+    "562": {
+      "name": "Modify Shared File",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1080"
+      ]
+    },
+    "563": {
+      "name": "Add Malicious File to Shared Webroot",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ]
+    },
+    "564": {
+      "name": "Run Software at Logon",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1037",
+        "T1543.001",
+        "T1543.004",
+        "T1547"
+      ]
+    },
+    "565": {
+      "name": "Password Spraying",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "262",
+        "263",
+        "307",
+        "308",
+        "309",
+        "521",
+        "654"
+      ],
+      "attack": [
+        "T1110.003"
+      ]
+    },
+    "568": {
+      "name": "Capture Credentials via Keylogger",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1056.001"
+      ]
+    },
+    "569": {
+      "name": "Collect Data as Provided by Users",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1056"
+      ]
+    },
+    "571": {
+      "name": "Block Logging to Central Repository",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1562.002",
+        "T1562.006",
+        "T1562.008"
+      ]
+    },
+    "572": {
+      "name": "Artificially Inflate File Sizes",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1027.001"
+      ]
+    },
+    "573": {
+      "name": "Process Footprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1057"
+      ]
+    },
+    "574": {
+      "name": "Services Footprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1007"
+      ]
+    },
+    "575": {
+      "name": "Account Footprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1087"
+      ]
+    },
+    "576": {
+      "name": "Group Permission Footprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1069",
+        "T1615"
+      ]
+    },
+    "577": {
+      "name": "Owner Footprinting",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1033"
+      ]
+    },
+    "578": {
+      "name": "Disable Security Software",
+      "abstraction": "Standard",
+      "status": "Usable",
+      "cwe": [
+        "284"
+      ],
+      "attack": [
+        "T1556.006",
+        "T1562.001",
+        "T1562.002",
+        "T1562.004",
+        "T1562.007",
+        "T1562.008",
+        "T1562.009"
+      ]
+    },
+    "579": {
+      "name": "Replace Winlogon Helper DLL",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "15"
+      ],
+      "attack": [
+        "T1547.004"
+      ]
+    },
+    "580": {
+      "name": "System Footprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "204",
+        "205",
+        "208"
+      ],
+      "attack": [
+        "T1082"
+      ]
+    },
+    "581": {
+      "name": "Security Software Footprinting",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1518.001"
+      ]
+    },
+    "582": {
+      "name": "Route Disabling",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "583": {
+      "name": "Disabling Network Hardware",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "584": {
+      "name": "BGP Route Disabling",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "585": {
+      "name": "DNS Domain Seizure",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "586": {
+      "name": "Object Injection",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "502"
+      ]
+    },
+    "587": {
+      "name": "Cross Frame Scripting (XFS)",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1021"
+      ]
+    },
+    "588": {
+      "name": "DOM-Based XSS",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "20",
+        "79",
+        "83"
+      ]
+    },
+    "589": {
+      "name": "DNS Blocking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "300"
+      ]
+    },
+    "590": {
+      "name": "IP Address Blocking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "300"
+      ]
+    },
+    "591": {
+      "name": "Reflected XSS",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "79"
+      ]
+    },
+    "592": {
+      "name": "Stored XSS",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "79"
+      ]
+    },
+    "593": {
+      "name": "Session Hijacking",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "287"
+      ],
+      "attack": [
+        "T1185",
+        "T1550.001",
+        "T1563"
+      ]
+    },
+    "594": {
+      "name": "Traffic Injection",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "940"
+      ]
+    },
+    "595": {
+      "name": "Connection Reset",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "940"
+      ]
+    },
+    "596": {
+      "name": "TCP RST Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "940"
+      ]
+    },
+    "597": {
+      "name": "Absolute Path Traversal",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "36"
+      ]
+    },
+    "598": {
+      "name": "DNS Spoofing",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "599": {
+      "name": "Terrestrial Jamming",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "600": {
+      "name": "Credential Stuffing",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "262",
+        "263",
+        "307",
+        "308",
+        "309",
+        "522",
+        "654"
+      ],
+      "attack": [
+        "T1110.004"
+      ]
+    },
+    "601": {
+      "name": "Jamming",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "603": {
+      "name": "Blockage",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "604": {
+      "name": "Wi-Fi Jamming",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "605": {
+      "name": "Cellular Jamming",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "606": {
+      "name": "Weakening of Cellular Encryption",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "757"
+      ]
+    },
+    "607": {
+      "name": "Obstruction",
+      "abstraction": "Meta",
+      "status": "Draft"
+    },
+    "608": {
+      "name": "Cryptanalysis of Cellular Encryption",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "327"
+      ]
+    },
+    "609": {
+      "name": "Cellular Traffic Intercept",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "311"
+      ],
+      "attack": [
+        "T1111"
+      ]
+    },
+    "610": {
+      "name": "Cellular Data Injection",
+      "abstraction": "Standard",
+      "status": "Stable"
+    },
+    "611": {
+      "name": "BitSquatting",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "612": {
+      "name": "WiFi MAC Address Tracking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "201",
+        "300"
+      ]
+    },
+    "613": {
+      "name": "WiFi SSID Tracking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "201",
+        "300"
+      ]
+    },
+    "614": {
+      "name": "Rooting SIM Cards",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "327"
+      ]
+    },
+    "615": {
+      "name": "Evil Twin Wi-Fi Attack",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "300"
+      ]
+    },
+    "616": {
+      "name": "Establish Rogue Location",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1036.005"
+      ]
+    },
+    "617": {
+      "name": "Cellular Rogue Base Station",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "618": {
+      "name": "Cellular Broadcast Message Request",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "201"
+      ]
+    },
+    "619": {
+      "name": "Signal Strength Tracking",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "201"
+      ]
+    },
+    "620": {
+      "name": "Drop Encryption Level",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "757"
+      ],
+      "attack": [
+        "T1600"
+      ]
+    },
+    "621": {
+      "name": "Analysis of Packet Timing and Sizes",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "201"
+      ]
+    },
+    "622": {
+      "name": "Electromagnetic Side-Channel Attack",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "201"
+      ]
+    },
+    "623": {
+      "name": "Compromising Emanations Attack",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "201"
+      ]
+    },
+    "624": {
+      "name": "Hardware Fault Injection",
+      "abstraction": "Meta",
+      "status": "Stable",
+      "cwe": [
+        "1247",
+        "1248",
+        "1256",
+        "1319",
+        "1332",
+        "1334",
+        "1338",
+        "1351"
+      ]
+    },
+    "625": {
+      "name": "Mobile Device Fault Injection",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1247",
+        "1248",
+        "1256",
+        "1319",
+        "1332",
+        "1334",
+        "1338",
+        "1351"
+      ]
+    },
+    "626": {
+      "name": "Smudge Attack",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "627": {
+      "name": "Counterfeit GPS Signals",
+      "abstraction": "Standard",
+      "status": "Draft"
+    },
+    "628": {
+      "name": "Carry-Off GPS Attack",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "630": {
+      "name": "TypoSquatting",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "631": {
+      "name": "SoundSquatting",
+      "abstraction": "Detailed",
+      "status": "Draft"
+    },
+    "632": {
+      "name": "Homograph Attack via Homoglyphs",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1007"
+      ]
+    },
+    "633": {
+      "name": "Token Impersonation",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "1270",
+        "287"
+      ],
+      "attack": [
+        "T1134"
+      ]
+    },
+    "634": {
+      "name": "Probe Audio and Video Peripherals",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "267"
+      ],
+      "attack": [
+        "T1123",
+        "T1125"
+      ]
+    },
+    "635": {
+      "name": "Alternative Execution Due to Deceptive Filenames",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "162"
+      ],
+      "attack": [
+        "T1036.007"
+      ]
+    },
+    "636": {
+      "name": "Hiding Malicious Data or Code within Files",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "506"
+      ],
+      "attack": [
+        "T1001.002",
+        "T1027.003",
+        "T1027.004",
+        "T1218.001",
+        "T1221"
+      ]
+    },
+    "637": {
+      "name": "Collect Data from Clipboard",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "267"
+      ],
+      "attack": [
+        "T1115"
+      ]
+    },
+    "638": {
+      "name": "Altered Component Firmware",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "attack": [
+        "T1542.002"
+      ]
+    },
+    "639": {
+      "name": "Probe System Files",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "552"
+      ],
+      "attack": [
+        "T1039",
+        "T1552.001",
+        "T1552.003",
+        "T1552.004",
+        "T1552.006"
+      ]
+    },
+    "640": {
+      "name": "Inclusion of Code in Existing Process",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "114",
+        "829"
+      ],
+      "attack": [
+        "T1505.005",
+        "T1574.006",
+        "T1574.013",
+        "T1620"
+      ]
+    },
+    "641": {
+      "name": "DLL Side-Loading",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "706"
+      ],
+      "attack": [
+        "T1574.002"
+      ]
+    },
+    "642": {
+      "name": "Replace Binaries",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "732"
+      ],
+      "attack": [
+        "T1505.005",
+        "T1554",
+        "T1574.005"
+      ]
+    },
+    "643": {
+      "name": "Identify Shared Files/Directories on System",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "200",
+        "267"
+      ],
+      "attack": [
+        "T1135"
+      ]
+    },
+    "644": {
+      "name": "Use of Captured Hashes (Pass The Hash)",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "294",
+        "308",
+        "522",
+        "836"
+      ],
+      "attack": [
+        "T1550.002"
+      ]
+    },
+    "645": {
+      "name": "Use of Captured Tickets (Pass The Ticket)",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "294",
+        "308",
+        "522"
+      ],
+      "attack": [
+        "T1550.003"
+      ]
+    },
+    "646": {
+      "name": "Peripheral Footprinting",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1120"
+      ]
+    },
+    "647": {
+      "name": "Collect Data from Registries",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "285"
+      ],
+      "attack": [
+        "T1005",
+        "T1012",
+        "T1552.002"
+      ]
+    },
+    "648": {
+      "name": "Collect Data from Screen Capture",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "267"
+      ],
+      "attack": [
+        "T1113",
+        "T1513"
+      ]
+    },
+    "649": {
+      "name": "Adding a Space to a File Extension",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "46"
+      ],
+      "attack": [
+        "T1036.006"
+      ]
+    },
+    "650": {
+      "name": "Upload a Web Shell to a Web Server",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "287",
+        "553"
+      ],
+      "attack": [
+        "T1505.003"
+      ]
+    },
+    "651": {
+      "name": "Eavesdropping",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "200"
+      ],
+      "attack": [
+        "T1111"
+      ]
+    },
+    "652": {
+      "name": "Use of Known Kerberos Credentials",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "262",
+        "263",
+        "294",
+        "307",
+        "308",
+        "309",
+        "522",
+        "654",
+        "836"
+      ],
+      "attack": [
+        "T1558"
+      ]
+    },
+    "653": {
+      "name": "Use of Known Operating System Credentials",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "262",
+        "263",
+        "307",
+        "308",
+        "309",
+        "522",
+        "654"
+      ]
+    },
+    "654": {
+      "name": "Credential Prompt Impersonation",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "1021"
+      ],
+      "attack": [
+        "T1056",
+        "T1548.004"
+      ]
+    },
+    "655": {
+      "name": "Avoid Security Tool Identification by Adding Data",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1027.001"
+      ]
+    },
+    "656": {
+      "name": "Voice Phishing",
+      "abstraction": "Detailed",
+      "status": "Stable"
+    },
+    "657": {
+      "name": "Malicious Automated Software Update via Spoofing",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "494"
+      ],
+      "attack": [
+        "T1072"
+      ]
+    },
+    "660": {
+      "name": "Root/Jailbreak Detection Evasion via Hooking",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "829"
+      ],
+      "attack": [
+        "T1055"
+      ]
+    },
+    "661": {
+      "name": "Root/Jailbreak Detection Evasion via Debugging",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "489"
+      ]
+    },
+    "662": {
+      "name": "Adversary in the Browser (AiTB)",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "300",
+        "494"
+      ],
+      "attack": [
+        "T1185"
+      ]
+    },
+    "663": {
+      "name": "Exploitation of Transient Instruction Execution",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "1037",
+        "1264",
+        "1303"
+      ]
+    },
+    "664": {
+      "name": "Server Side Request Forgery",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "20",
+        "918"
+      ]
+    },
+    "665": {
+      "name": "Exploitation of Thunderbolt Protection Flaws",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "1188",
+        "288",
+        "345",
+        "353",
+        "862"
+      ],
+      "attack": [
+        "T1211",
+        "T1542.002",
+        "T1556"
+      ]
+    },
+    "666": {
+      "name": "BlueSmacking",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "404"
+      ],
+      "attack": [
+        "T1498.001",
+        "T1499.001"
+      ]
+    },
+    "667": {
+      "name": "Bluetooth Impersonation AttackS (BIAS)",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "290"
+      ]
+    },
+    "668": {
+      "name": "Key Negotiation of Bluetooth Attack (KNOB)",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "285",
+        "425",
+        "693"
+      ],
+      "attack": [
+        "T1565.002"
+      ]
+    },
+    "669": {
+      "name": "Alteration of a Software Update",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1195.002"
+      ]
+    },
+    "670": {
+      "name": "Software Development Tools Maliciously Altered",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1127",
+        "T1195.001"
+      ]
+    },
+    "671": {
+      "name": "Requirements for ASIC Functionality Maliciously Altered",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "672": {
+      "name": "Malicious Code Implanted During Chip Programming",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "673": {
+      "name": "Developer Signing Maliciously Altered Software",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.002"
+      ]
+    },
+    "674": {
+      "name": "Design for FPGA Maliciously Altered",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "675": {
+      "name": "Retrieve Data from Decommissioned Devices",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "1266"
+      ],
+      "attack": [
+        "T1052"
+      ]
+    },
+    "676": {
+      "name": "NoSQL Injection",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "1286",
+        "943"
+      ]
+    },
+    "677": {
+      "name": "Server Motherboard Compromise",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.003"
+      ]
+    },
+    "678": {
+      "name": "System Build Data Maliciously Altered",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "attack": [
+        "T1195.002"
+      ]
+    },
+    "679": {
+      "name": "Exploitation of Improperly Configured or Implemented Memory Protections",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1222",
+        "1252",
+        "1257",
+        "1260",
+        "1274",
+        "1282",
+        "1312",
+        "1316",
+        "1326"
+      ]
+    },
+    "680": {
+      "name": "Exploitation of Improperly Controlled Registers",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1224",
+        "1231",
+        "1233",
+        "1262",
+        "1283"
+      ]
+    },
+    "681": {
+      "name": "Exploitation of Improperly Controlled Hardware Security Identifiers",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1259",
+        "1267",
+        "1270",
+        "1294",
+        "1302"
+      ]
+    },
+    "682": {
+      "name": "Exploitation of Firmware or ROM Code with Unpatchable Vulnerabilities",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "1277",
+        "1310"
+      ]
+    },
+    "690": {
+      "name": "Metadata Spoofing",
+      "abstraction": "Meta",
+      "status": "Stable"
+    },
+    "691": {
+      "name": "Spoof Open-Source Software Metadata",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "494"
+      ],
+      "attack": [
+        "T1195.001",
+        "T1195.002"
+      ]
+    },
+    "692": {
+      "name": "Spoof Version Control System Commit Metadata",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "494"
+      ]
+    },
+    "693": {
+      "name": "StarJacking",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "494"
+      ]
+    },
+    "694": {
+      "name": "System Location Discovery",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "497"
+      ],
+      "attack": [
+        "T1614"
+      ]
+    },
+    "695": {
+      "name": "Repo Jacking",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "494",
+        "829"
+      ],
+      "attack": [
+        "T1195.001"
+      ]
+    },
+    "696": {
+      "name": "Load Value Injection",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1342"
+      ]
+    },
+    "697": {
+      "name": "DHCP Spoofing",
+      "abstraction": "Standard",
+      "status": "Stable",
+      "cwe": [
+        "923"
+      ],
+      "attack": [
+        "T1557.003"
+      ]
+    },
+    "698": {
+      "name": "Install Malicious Extension",
+      "abstraction": "Detailed",
+      "status": "Stable",
+      "cwe": [
+        "507",
+        "829"
+      ],
+      "attack": [
+        "T1176",
+        "T1505.004"
+      ]
+    },
+    "699": {
+      "name": "Eavesdropping on a Monitor",
+      "abstraction": "Meta",
+      "status": "Draft",
+      "cwe": [
+        "1300"
+      ]
+    },
+    "700": {
+      "name": "Network Boundary Bridging",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "attack": [
+        "T1599"
+      ]
+    },
+    "701": {
+      "name": "Browser in the Middle (BiTM)",
+      "abstraction": "Standard",
+      "status": "Draft",
+      "cwe": [
+        "294",
+        "345"
+      ]
+    },
+    "702": {
+      "name": "Exploiting Incorrect Chaining or Granularity of Hardware Debug Components",
+      "abstraction": "Detailed",
+      "status": "Draft",
+      "cwe": [
+        "1296"
+      ]
+    }
+  },
+  "byCwe": {
+    "6": [
+      "21",
+      "59"
+    ],
+    "15": [
+      "13",
+      "69",
+      "76",
+      "77",
+      "146",
+      "176",
+      "203",
+      "270",
+      "271",
+      "579"
+    ],
+    "20": [
+      "3",
+      "7",
+      "8",
+      "9",
+      "10",
+      "13",
+      "14",
+      "22",
+      "23",
+      "24",
+      "28",
+      "31",
+      "42",
+      "43",
+      "45",
+      "46",
+      "47",
+      "52",
+      "53",
+      "63",
+      "64",
+      "67",
+      "71",
+      "72",
+      "73",
+      "78",
+      "79",
+      "80",
+      "81",
+      "83",
+      "85",
+      "88",
+      "101",
+      "104",
+      "108",
+      "109",
+      "110",
+      "120",
+      "135",
+      "136",
+      "153",
+      "182",
+      "209",
+      "230",
+      "231",
+      "250",
+      "261",
+      "267",
+      "473",
+      "588",
+      "664"
+    ],
+    "22": [
+      "64",
+      "76",
+      "78",
+      "79",
+      "126"
+    ],
+    "23": [
+      "76",
+      "139"
+    ],
+    "36": [
+      "597"
+    ],
+    "41": [
+      "3"
+    ],
+    "46": [
+      "649"
+    ],
+    "59": [
+      "17",
+      "35",
+      "76",
+      "132"
+    ],
+    "61": [
+      "27"
+    ],
+    "69": [
+      "168"
+    ],
+    "73": [
+      "13",
+      "64",
+      "72",
+      "76",
+      "78",
+      "79",
+      "80",
+      "267"
+    ],
+    "74": [
+      "3",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "13",
+      "14",
+      "24",
+      "28",
+      "34",
+      "42",
+      "43",
+      "45",
+      "46",
+      "47",
+      "51",
+      "52",
+      "53",
+      "64",
+      "67",
+      "71",
+      "72",
+      "76",
+      "78",
+      "79",
+      "80",
+      "83",
+      "84",
+      "101",
+      "105",
+      "108",
+      "120",
+      "135",
+      "250",
+      "267",
+      "273"
+    ],
+    "75": [
+      "81",
+      "93"
+    ],
+    "77": [
+      "15",
+      "40",
+      "43",
+      "75",
+      "76",
+      "136",
+      "183",
+      "248"
+    ],
+    "78": [
+      "6",
+      "15",
+      "43",
+      "88",
+      "108"
+    ],
+    "79": [
+      "63",
+      "85",
+      "209",
+      "588",
+      "591",
+      "592"
+    ],
+    "80": [
+      "18",
+      "32",
+      "86",
+      "193"
+    ],
+    "81": [
+      "198"
+    ],
+    "83": [
+      "243",
+      "244",
+      "588"
+    ],
+    "85": [
+      "245"
+    ],
+    "86": [
+      "73",
+      "85",
+      "247"
+    ],
+    "87": [
+      "199"
+    ],
+    "88": [
+      "41",
+      "88",
+      "137",
+      "174",
+      "460"
+    ],
+    "89": [
+      "7",
+      "66",
+      "108",
+      "109",
+      "110",
+      "470"
+    ],
+    "90": [
+      "136"
+    ],
+    "91": [
+      "83",
+      "250"
+    ],
+    "93": [
+      "15",
+      "81"
+    ],
+    "94": [
+      "35",
+      "77",
+      "242"
+    ],
+    "95": [
+      "35"
+    ],
+    "96": [
+      "35",
+      "73",
+      "77",
+      "81",
+      "85"
+    ],
+    "97": [
+      "35",
+      "101"
+    ],
+    "98": [
+      "193"
+    ],
+    "99": [
+      "10",
+      "75",
+      "240"
+    ],
+    "112": [
+      "230",
+      "231"
+    ],
+    "113": [
+      "31",
+      "34",
+      "85",
+      "105"
+    ],
+    "114": [
+      "108",
+      "640"
+    ],
+    "116": [
+      "73",
+      "81",
+      "85",
+      "104"
+    ],
+    "117": [
+      "81",
+      "93",
+      "268"
+    ],
+    "118": [
+      "8",
+      "9",
+      "10",
+      "14",
+      "24",
+      "45",
+      "46",
+      "47"
+    ],
+    "119": [
+      "8",
+      "9",
+      "10",
+      "14",
+      "24",
+      "42",
+      "44",
+      "45",
+      "46",
+      "47",
+      "100",
+      "123"
+    ],
+    "120": [
+      "8",
+      "9",
+      "10",
+      "14",
+      "24",
+      "42",
+      "44",
+      "45",
+      "46",
+      "47",
+      "67",
+      "92",
+      "100"
+    ],
+    "122": [
+      "92"
+    ],
+    "125": [
+      "540"
+    ],
+    "128": [
+      "92"
+    ],
+    "129": [
+      "100"
+    ],
+    "130": [
+      "47"
+    ],
+    "131": [
+      "47",
+      "100"
+    ],
+    "134": [
+      "67",
+      "135"
+    ],
+    "138": [
+      "15",
+      "34",
+      "105"
+    ],
+    "140": [
+      "15"
+    ],
+    "146": [
+      "6",
+      "15"
+    ],
+    "147": [
+      "460"
+    ],
+    "149": [
+      "468"
+    ],
+    "150": [
+      "41",
+      "81",
+      "93",
+      "134"
+    ],
+    "154": [
+      "15"
+    ],
+    "157": [
+      "15"
+    ],
+    "158": [
+      "52",
+      "53"
+    ],
+    "162": [
+      "635"
+    ],
+    "172": [
+      "3",
+      "52",
+      "53",
+      "64",
+      "71",
+      "72",
+      "78",
+      "80",
+      "120",
+      "267"
+    ],
+    "173": [
+      "3",
+      "4",
+      "52",
+      "53",
+      "64",
+      "71",
+      "72",
+      "78",
+      "79",
+      "80",
+      "120",
+      "267"
+    ],
+    "176": [
+      "71"
+    ],
+    "177": [
+      "64",
+      "72",
+      "120",
+      "468"
+    ],
+    "179": [
+      "3",
+      "43",
+      "71"
+    ],
+    "180": [
+      "3",
+      "71",
+      "78",
+      "79",
+      "80",
+      "267"
+    ],
+    "181": [
+      "3",
+      "43",
+      "78",
+      "79",
+      "80",
+      "120",
+      "267"
+    ],
+    "183": [
+      "3",
+      "43",
+      "71",
+      "120"
+    ],
+    "184": [
+      "3",
+      "6",
+      "15",
+      "43",
+      "71",
+      "73",
+      "85",
+      "120",
+      "182"
+    ],
+    "185": [
+      "6",
+      "15",
+      "79"
+    ],
+    "190": [
+      "92"
+    ],
+    "196": [
+      "92"
+    ],
+    "200": [
+      "13",
+      "22",
+      "59",
+      "60",
+      "79",
+      "116",
+      "169",
+      "224",
+      "285",
+      "287",
+      "290",
+      "291",
+      "292",
+      "293",
+      "294",
+      "295",
+      "296",
+      "297",
+      "298",
+      "299",
+      "300",
+      "301",
+      "302",
+      "303",
+      "304",
+      "305",
+      "306",
+      "307",
+      "308",
+      "309",
+      "310",
+      "312",
+      "313",
+      "317",
+      "318",
+      "319",
+      "320",
+      "321",
+      "322",
+      "323",
+      "324",
+      "325",
+      "326",
+      "327",
+      "328",
+      "329",
+      "330",
+      "472",
+      "497",
+      "508",
+      "573",
+      "574",
+      "575",
+      "576",
+      "577",
+      "616",
+      "643",
+      "646",
+      "651"
+    ],
+    "201": [
+      "12",
+      "217",
+      "612",
+      "613",
+      "618",
+      "619",
+      "621",
+      "622",
+      "623"
+    ],
+    "203": [
+      "189"
+    ],
+    "204": [
+      "331",
+      "332",
+      "541",
+      "580"
+    ],
+    "205": [
+      "541",
+      "580"
+    ],
+    "208": [
+      "462",
+      "541",
+      "580"
+    ],
+    "209": [
+      "7",
+      "54",
+      "215",
+      "463"
+    ],
+    "212": [
+      "168"
+    ],
+    "221": [
+      "81"
+    ],
+    "226": [
+      "37"
+    ],
+    "233": [
+      "39"
+    ],
+    "235": [
+      "460"
+    ],
+    "241": [
+      "48"
+    ],
+    "250": [
+      "69",
+      "104",
+      "470"
+    ],
+    "257": [
+      "49"
+    ],
+    "261": [
+      "55"
+    ],
+    "262": [
+      "16",
+      "49",
+      "55",
+      "70",
+      "509",
+      "555",
+      "560",
+      "561",
+      "565",
+      "600",
+      "652",
+      "653"
+    ],
+    "263": [
+      "16",
+      "49",
+      "55",
+      "70",
+      "509",
+      "555",
+      "560",
+      "561",
+      "565",
+      "600",
+      "652",
+      "653"
+    ],
+    "267": [
+      "58",
+      "634",
+      "637",
+      "643",
+      "648"
+    ],
+    "269": [
+      "58",
+      "122",
+      "233"
+    ],
+    "270": [
+      "17",
+      "30",
+      "35"
+    ],
+    "272": [
+      "17",
+      "35",
+      "76"
+    ],
+    "276": [
+      "1",
+      "81",
+      "127"
+    ],
+    "279": [
+      "81"
+    ],
+    "282": [
+      "17",
+      "35"
+    ],
+    "284": [
+      "19",
+      "441",
+      "478",
+      "479",
+      "502",
+      "503",
+      "536",
+      "546",
+      "550",
+      "551",
+      "552",
+      "556",
+      "558",
+      "562",
+      "563",
+      "564",
+      "578"
+    ],
+    "285": [
+      "1",
+      "13",
+      "17",
+      "39",
+      "45",
+      "51",
+      "59",
+      "60",
+      "76",
+      "77",
+      "87",
+      "104",
+      "127",
+      "402",
+      "647",
+      "668"
+    ],
+    "287": [
+      "22",
+      "57",
+      "94",
+      "114",
+      "115",
+      "151",
+      "194",
+      "593",
+      "633",
+      "650"
+    ],
+    "288": [
+      "127",
+      "665"
+    ],
+    "290": [
+      "21",
+      "22",
+      "59",
+      "60",
+      "94",
+      "459",
+      "461",
+      "473",
+      "476",
+      "667"
+    ],
+    "291": [
+      "4"
+    ],
+    "294": [
+      "60",
+      "94",
+      "102",
+      "509",
+      "555",
+      "561",
+      "644",
+      "645",
+      "652",
+      "701"
+    ],
+    "295": [
+      "459",
+      "475"
+    ],
+    "300": [
+      "57",
+      "94",
+      "466",
+      "589",
+      "590",
+      "612",
+      "613",
+      "615",
+      "662"
+    ],
+    "301": [
+      "90"
+    ],
+    "302": [
+      "10",
+      "13",
+      "21",
+      "31",
+      "39",
+      "45",
+      "77",
+      "274"
+    ],
+    "303": [
+      "90"
+    ],
+    "306": [
+      "12",
+      "36",
+      "62",
+      "166",
+      "216"
+    ],
+    "307": [
+      "16",
+      "49",
+      "560",
+      "565",
+      "600",
+      "652",
+      "653"
+    ],
+    "308": [
+      "16",
+      "49",
+      "55",
+      "70",
+      "509",
+      "555",
+      "560",
+      "561",
+      "565",
+      "600",
+      "644",
+      "645",
+      "652",
+      "653"
+    ],
+    "309": [
+      "16",
+      "49",
+      "55",
+      "70",
+      "509",
+      "555",
+      "560",
+      "561",
+      "565",
+      "600",
+      "652",
+      "653"
+    ],
+    "311": [
+      "31",
+      "37",
+      "65",
+      "157",
+      "158",
+      "204",
+      "383",
+      "384",
+      "385",
+      "386",
+      "387",
+      "388",
+      "477",
+      "609"
+    ],
+    "312": [
+      "37"
+    ],
+    "314": [
+      "37"
+    ],
+    "315": [
+      "31",
+      "37",
+      "39",
+      "74"
+    ],
+    "318": [
+      "37",
+      "65"
+    ],
+    "319": [
+      "65",
+      "102",
+      "117",
+      "383",
+      "477"
+    ],
+    "325": [
+      "68"
+    ],
+    "326": [
+      "20",
+      "112",
+      "192"
+    ],
+    "327": [
+      "20",
+      "97",
+      "459",
+      "473",
+      "475",
+      "608",
+      "614"
+    ],
+    "328": [
+      "68",
+      "461"
+    ],
+    "330": [
+      "59",
+      "112",
+      "485"
+    ],
+    "331": [
+      "59"
+    ],
+    "345": [
+      "111",
+      "141",
+      "142",
+      "148",
+      "218",
+      "384",
+      "385",
+      "386",
+      "387",
+      "388",
+      "665",
+      "701"
+    ],
+    "346": [
+      "21",
+      "59",
+      "60",
+      "75",
+      "76",
+      "89",
+      "111",
+      "141",
+      "142",
+      "160",
+      "384",
+      "385",
+      "386",
+      "387",
+      "388",
+      "510"
+    ],
+    "347": [
+      "463",
+      "475"
+    ],
+    "348": [
+      "73",
+      "76",
+      "85",
+      "141",
+      "142"
+    ],
+    "349": [
+      "75",
+      "141",
+      "142"
+    ],
+    "350": [
+      "73",
+      "89",
+      "142",
+      "275"
+    ],
+    "352": [
+      "62",
+      "111",
+      "462",
+      "467"
+    ],
+    "353": [
+      "13",
+      "14",
+      "39",
+      "74",
+      "75",
+      "389",
+      "665"
+    ],
+    "354": [
+      "75",
+      "145",
+      "463"
+    ],
+    "359": [
+      "464",
+      "467",
+      "498",
+      "508"
+    ],
+    "362": [
+      "26",
+      "29"
+    ],
+    "363": [
+      "26"
+    ],
+    "366": [
+      "26",
+      "29"
+    ],
+    "367": [
+      "27",
+      "29"
+    ],
+    "368": [
+      "26",
+      "29"
+    ],
+    "370": [
+      "26",
+      "29"
+    ],
+    "372": [
+      "74",
+      "140"
+    ],
+    "377": [
+      "149",
+      "155"
+    ],
+    "384": [
+      "21",
+      "31",
+      "39",
+      "59",
+      "60",
+      "61",
+      "196"
+    ],
+    "385": [
+      "462"
+    ],
+    "400": [
+      "147",
+      "227",
+      "492"
+    ],
+    "404": [
+      "125",
+      "130",
+      "131",
+      "494",
+      "495",
+      "496",
+      "666"
+    ],
+    "412": [
+      "25"
+    ],
+    "419": [
+      "383"
+    ],
+    "424": [
+      "127",
+      "554"
+    ],
+    "425": [
+      "87",
+      "127",
+      "143",
+      "144",
+      "668"
+    ],
+    "426": [
+      "38"
+    ],
+    "427": [
+      "38",
+      "471"
+    ],
+    "430": [
+      "11"
+    ],
+    "434": [
+      "1"
+    ],
+    "436": [
+      "34",
+      "105",
+      "273"
+    ],
+    "441": [
+      "219",
+      "465"
+    ],
+    "444": [
+      "33",
+      "273"
+    ],
+    "451": [
+      "98",
+      "154",
+      "163",
+      "164",
+      "173"
+    ],
+    "470": [
+      "138"
+    ],
+    "471": [
+      "384",
+      "385",
+      "386",
+      "387",
+      "388"
+    ],
+    "472": [
+      "31",
+      "39",
+      "146",
+      "226"
+    ],
+    "473": [
+      "77"
+    ],
+    "488": [
+      "59",
+      "60"
+    ],
+    "489": [
+      "121",
+      "661"
+    ],
+    "494": [
+      "184",
+      "185",
+      "186",
+      "187",
+      "533",
+      "538",
+      "657",
+      "662",
+      "691",
+      "692",
+      "693",
+      "695"
+    ],
+    "497": [
+      "170",
+      "694"
+    ],
+    "502": [
+      "586"
+    ],
+    "506": [
+      "442",
+      "448",
+      "636"
+    ],
+    "507": [
+      "698"
+    ],
+    "514": [
+      "463"
+    ],
+    "521": [
+      "16",
+      "49",
+      "55",
+      "70",
+      "112",
+      "509",
+      "555",
+      "561",
+      "565"
+    ],
+    "522": [
+      "50",
+      "102",
+      "474",
+      "509",
+      "551",
+      "555",
+      "560",
+      "561",
+      "600",
+      "644",
+      "645",
+      "652",
+      "653"
+    ],
+    "523": [
+      "102"
+    ],
+    "524": [
+      "204"
+    ],
+    "525": [
+      "37"
+    ],
+    "532": [
+      "215"
+    ],
+    "538": [
+      "95"
+    ],
+    "539": [
+      "21",
+      "31",
+      "39",
+      "59",
+      "60"
+    ],
+    "552": [
+      "150",
+      "639"
+    ],
+    "553": [
+      "650"
+    ],
+    "564": [
+      "109"
+    ],
+    "565": [
+      "31",
+      "39",
+      "226"
+    ],
+    "567": [
+      "25"
+    ],
+    "589": [
+      "96"
+    ],
+    "593": [
+      "94"
+    ],
+    "601": [
+      "178"
+    ],
+    "602": [
+      "21",
+      "31",
+      "162",
+      "202",
+      "207",
+      "208",
+      "383",
+      "384",
+      "385",
+      "386",
+      "387",
+      "388"
+    ],
+    "610": [
+      "219"
+    ],
+    "611": [
+      "221"
+    ],
+    "614": [
+      "102"
+    ],
+    "638": [
+      "104"
+    ],
+    "640": [
+      "50"
+    ],
+    "642": [
+      "21",
+      "31"
+    ],
+    "645": [
+      "2"
+    ],
+    "646": [
+      "209"
+    ],
+    "648": [
+      "107",
+      "234"
+    ],
+    "649": [
+      "463"
+    ],
+    "654": [
+      "16",
+      "49",
+      "55",
+      "70",
+      "274",
+      "560",
+      "565",
+      "600",
+      "652",
+      "653"
+    ],
+    "662": [
+      "25",
+      "26",
+      "27",
+      "29"
+    ],
+    "663": [
+      "29"
+    ],
+    "664": [
+      "21",
+      "60",
+      "61",
+      "62",
+      "196"
+    ],
+    "665": [
+      "26",
+      "29"
+    ],
+    "667": [
+      "25",
+      "26",
+      "27"
+    ],
+    "674": [
+      "230",
+      "231"
+    ],
+    "680": [
+      "8",
+      "9",
+      "10",
+      "14",
+      "24",
+      "45",
+      "46",
+      "47",
+      "67",
+      "92",
+      "100"
+    ],
+    "682": [
+      "128",
+      "129"
+    ],
+    "689": [
+      "26",
+      "27"
+    ],
+    "691": [
+      "29"
+    ],
+    "692": [
+      "71",
+      "80",
+      "85",
+      "120",
+      "267"
+    ],
+    "693": [
+      "1",
+      "17",
+      "20",
+      "22",
+      "36",
+      "51",
+      "57",
+      "59",
+      "65",
+      "74",
+      "87",
+      "107",
+      "127",
+      "237",
+      "477",
+      "480",
+      "668"
+    ],
+    "695": [
+      "36"
+    ],
+    "696": [
+      "463"
+    ],
+    "697": [
+      "3",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "14",
+      "15",
+      "24",
+      "41",
+      "43",
+      "44",
+      "45",
+      "46",
+      "47",
+      "52",
+      "53",
+      "64",
+      "67",
+      "71",
+      "73",
+      "78",
+      "79",
+      "80",
+      "88",
+      "92",
+      "120",
+      "182",
+      "267"
+    ],
+    "706": [
+      "48",
+      "159",
+      "177",
+      "641"
+    ],
+    "707": [
+      "3",
+      "7",
+      "43",
+      "52",
+      "53",
+      "64",
+      "78",
+      "79",
+      "83",
+      "84",
+      "250",
+      "276",
+      "277",
+      "278",
+      "279",
+      "468"
+    ],
+    "732": [
+      "1",
+      "17",
+      "60",
+      "61",
+      "62",
+      "122",
+      "127",
+      "180",
+      "206",
+      "234",
+      "642"
+    ],
+    "733": [
+      "8",
+      "9",
+      "10",
+      "24",
+      "46"
+    ],
+    "749": [
+      "500"
+    ],
+    "757": [
+      "220",
+      "606",
+      "620"
+    ],
+    "770": [
+      "125",
+      "130",
+      "147",
+      "197",
+      "229",
+      "230",
+      "231",
+      "469",
+      "482",
+      "486",
+      "487",
+      "488",
+      "489",
+      "490",
+      "491",
+      "493",
+      "494",
+      "495",
+      "496",
+      "528"
+    ],
+    "772": [
+      "469"
+    ],
+    "776": [
+      "197"
+    ],
+    "798": [
+      "70",
+      "191"
+    ],
+    "805": [
+      "100",
+      "256"
+    ],
+    "822": [
+      "129"
+    ],
+    "823": [
+      "129"
+    ],
+    "829": [
+      "175",
+      "201",
+      "228",
+      "251",
+      "252",
+      "253",
+      "263",
+      "538",
+      "549",
+      "640",
+      "660",
+      "695",
+      "698"
+    ],
+    "833": [
+      "25"
+    ],
+    "836": [
+      "644",
+      "652"
+    ],
+    "838": [
+      "468"
+    ],
+    "862": [
+      "665"
+    ],
+    "912": [
+      "133",
+      "190"
+    ],
+    "916": [
+      "55"
+    ],
+    "918": [
+      "664"
+    ],
+    "923": [
+      "161",
+      "481",
+      "501",
+      "697"
+    ],
+    "925": [
+      "499"
+    ],
+    "940": [
+      "500",
+      "594",
+      "595",
+      "596"
+    ],
+    "943": [
+      "676"
+    ],
+    "1007": [
+      "632"
+    ],
+    "1021": [
+      "103",
+      "181",
+      "222",
+      "504",
+      "506",
+      "587",
+      "654"
+    ],
+    "1037": [
+      "663"
+    ],
+    "1188": [
+      "665"
+    ],
+    "1189": [
+      "124"
+    ],
+    "1190": [
+      "180"
+    ],
+    "1191": [
+      "1",
+      "180"
+    ],
+    "1192": [
+      "113"
+    ],
+    "1193": [
+      "1",
+      "180"
+    ],
+    "1204": [
+      "20",
+      "97"
+    ],
+    "1209": [
+      "121"
+    ],
+    "1220": [
+      "1",
+      "180"
+    ],
+    "1221": [
+      "166"
+    ],
+    "1222": [
+      "679"
+    ],
+    "1223": [
+      "26"
+    ],
+    "1224": [
+      "680"
+    ],
+    "1231": [
+      "680"
+    ],
+    "1232": [
+      "166"
+    ],
+    "1233": [
+      "176",
+      "680"
+    ],
+    "1234": [
+      "176"
+    ],
+    "1239": [
+      "37",
+      "150",
+      "204",
+      "545"
+    ],
+    "1240": [
+      "97"
+    ],
+    "1241": [
+      "97"
+    ],
+    "1242": [
+      "36",
+      "212"
+    ],
+    "1243": [
+      "116",
+      "545"
+    ],
+    "1244": [
+      "114"
+    ],
+    "1245": [
+      "74"
+    ],
+    "1246": [
+      "212"
+    ],
+    "1247": [
+      "624",
+      "625"
+    ],
+    "1248": [
+      "624",
+      "625"
+    ],
+    "1252": [
+      "679"
+    ],
+    "1253": [
+      "74"
+    ],
+    "1254": [
+      "26"
+    ],
+    "1255": [
+      "189"
+    ],
+    "1256": [
+      "624",
+      "625"
+    ],
+    "1257": [
+      "456",
+      "679"
+    ],
+    "1258": [
+      "37",
+      "150",
+      "204",
+      "545"
+    ],
+    "1259": [
+      "121",
+      "681"
+    ],
+    "1260": [
+      "456",
+      "679"
+    ],
+    "1262": [
+      "680"
+    ],
+    "1263": [
+      "401"
+    ],
+    "1264": [
+      "233",
+      "663"
+    ],
+    "1265": [
+      "74"
+    ],
+    "1266": [
+      "37",
+      "150",
+      "545",
+      "546",
+      "675"
+    ],
+    "1267": [
+      "121",
+      "681"
+    ],
+    "1268": [
+      "180"
+    ],
+    "1269": [
+      "439"
+    ],
+    "1270": [
+      "121",
+      "633",
+      "681"
+    ],
+    "1271": [
+      "74"
+    ],
+    "1272": [
+      "37",
+      "150",
+      "545",
+      "546"
+    ],
+    "1273": [
+      "560"
+    ],
+    "1274": [
+      "456",
+      "679"
+    ],
+    "1275": [
+      "62"
+    ],
+    "1277": [
+      "682"
+    ],
+    "1278": [
+      "37",
+      "188",
+      "545"
+    ],
+    "1279": [
+      "97"
+    ],
+    "1280": [
+      "180"
+    ],
+    "1281": [
+      "212"
+    ],
+    "1282": [
+      "458",
+      "679"
+    ],
+    "1283": [
+      "680"
+    ],
+    "1286": [
+      "66",
+      "676"
+    ],
+    "1294": [
+      "121",
+      "681"
+    ],
+    "1295": [
+      "121"
+    ],
+    "1296": [
+      "121",
+      "702"
+    ],
+    "1297": [
+      "1",
+      "180"
+    ],
+    "1298": [
+      "26"
+    ],
+    "1299": [
+      "457",
+      "554"
+    ],
+    "1300": [
+      "189",
+      "699"
+    ],
+    "1301": [
+      "37"
+    ],
+    "1302": [
+      "121",
+      "681"
+    ],
+    "1303": [
+      "663"
+    ],
+    "1304": [
+      "176"
+    ],
+    "1310": [
+      "682"
+    ],
+    "1311": [
+      "1",
+      "180",
+      "233"
+    ],
+    "1312": [
+      "456",
+      "679"
+    ],
+    "1313": [
+      "121"
+    ],
+    "1314": [
+      "1"
+    ],
+    "1315": [
+      "1",
+      "180"
+    ],
+    "1316": [
+      "456",
+      "679"
+    ],
+    "1317": [
+      "122"
+    ],
+    "1318": [
+      "1",
+      "180"
+    ],
+    "1319": [
+      "624",
+      "625"
+    ],
+    "1320": [
+      "1",
+      "180"
+    ],
+    "1321": [
+      "1",
+      "77",
+      "180"
+    ],
+    "1322": [
+      "25"
+    ],
+    "1323": [
+      "150",
+      "167",
+      "545"
+    ],
+    "1325": [
+      "130"
+    ],
+    "1326": [
+      "68",
+      "679"
+    ],
+    "1327": [
+      "1"
+    ],
+    "1328": [
+      "176"
+    ],
+    "1330": [
+      "37",
+      "150",
+      "545"
+    ],
+    "1331": [
+      "124"
+    ],
+    "1332": [
+      "624",
+      "625"
+    ],
+    "1333": [
+      "492"
+    ],
+    "1334": [
+      "624",
+      "625"
+    ],
+    "1338": [
+      "624",
+      "625"
+    ],
+    "1342": [
+      "696"
+    ],
+    "1351": [
+      "624",
+      "625"
+    ]
+  },
+  "dropped": {
+    "deprecated": 57
+  },
+  "count": 558
+}

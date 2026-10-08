@@ -1,0 +1,155 @@
+# commitwork — gitleaks configuration
+#
+# WHY THIS FILE EXISTS. On 2026-08-20 a belt-and-braces sweep of `evaluations/` ran three ways.
+# gitleaks (dir mode, cwd-relative) returned 0 findings. trufflehog returned 2, both placeholders.
+# A hand-rolled pattern pass found the one real secret in the tree: a live GlitchTip DSN —
+# `https://<32-hex-key>@app.glitchtip.com/…` — quoted as audit evidence in three files.
+#
+# Neither tool carries a DSN / userinfo-URL rule in its default set. That is the entire gap, and
+# closing it HERE rather than only in `bin/secrets-sweep.mjs` is the smallest change with the
+# largest reach: gitleaks already walks git HISTORY, which the Node scanner deliberately does not,
+# and it already runs in CI. A rule here covers commits nobody will ever re-scan by hand.
+#
+# See docs/SECRETS-SWEEP.md for the method this belongs to.
+
+title = "commitwork"
+
+[extend]
+# Keep every upstream rule. This file ADDS the class they miss; it does not replace their corpus,
+# and a config that quietly narrowed the default rule set would be a false clean wearing a
+# helpful face.
+useDefault = true
+
+# ── the class both scanners missed ──────────────────────────────────────────────────────────
+#
+# A DSN is a URL whose USERINFO is the credential. Sentry and GlitchTip use the shape; so do AMQP,
+# Mongo, Postgres and Redis. The conventional rule keys on `user:pass@host`, because that is where
+# a password obviously lives — and a DSN has no password component at all. The secret sits where a
+# parser expects a username, so it reads as an ordinary URL to a human and to a tool.
+#
+# This rule therefore matches userinfo with NO password, where the "username" is key-shaped: at
+# least 16 characters and high-entropy. The GlitchTip key was 32 hex characters, which is why a
+# `user:pass@` rule sailed straight past it.
+#
+# NOTE ON THE REGEX ENGINE. gitleaks is Go, so this is RE2 — there is no lookahead and no
+# lookbehind, and the first draft of this rule panicked the binary outright with
+# "invalid or unsupported Perl syntax: `(?!`". Both constraints the lookaheads were expressing are
+# recoverable without them:
+#
+#   "no password component"  — the userinfo character class simply excludes `:`, so a
+#                              `user:pass@host` string cannot match this rule at all.
+#   "contains a digit /      — expressed as an ENTROPY floor on the captured group, which is the
+#    is not a plain word"      RE2-native way to say it and a better test besides: it rejects a
+#                              long lowercase username without needing to enumerate what a key
+#                              looks like.
+[[rules]]
+id = "commitwork-dsn-userinfo"
+description = "Credential in URL userinfo (Sentry/GlitchTip DSN and friends) — no password component"
+regex = '''\b[a-zA-Z][a-zA-Z0-9+.-]{1,20}://([A-Za-z0-9_.\-]{16,256})@[A-Za-z0-9._-]+'''
+secretGroup = 1
+keywords = ["://"]
+entropy = 3.35
+
+[rules.allowlist]
+regexTarget = "match"
+regexes = [
+  # RFC 2606 reserved hosts, and the shapes a documentation example takes. The test is applied to
+  # the MATCH here rather than to the line: a real key on example.com is still a real key, so this
+  # allowlist deliberately names hosts only where the userinfo is itself obviously fabricated.
+  '''://(?:x{8,}|0{8,}|<[^>]+>|\$\{[^}]+\})@''',
+  '''://[A-Za-z0-9_.\-]{16,256}@(?:localhost|127\.0\.0\.1)''',
+]
+
+# ── the classic connection string ───────────────────────────────────────────────────────────
+# gitleaks' defaults cover several of these by provider. This is the generic shape, so a Postgres
+# or AMQP URI with an inline password is caught even when the host is not one anybody recognises.
+[[rules]]
+id = "commitwork-userinfo-password"
+description = "Credential in URL userinfo with an explicit password component (connection string)"
+regex = '''\b(?:postgres|postgresql|mysql|mongodb\+srv|mongodb|redis|rediss|amqp|amqps|ftp|https?)://[^\s/@:"'`<>]{1,64}:([^\s/@"'`<>]{8,256})@[A-Za-z0-9._-]+'''
+secretGroup = 1
+keywords = ["://"]
+
+[rules.allowlist]
+regexTarget = "match"
+regexes = [
+  # `user:pass@host` is how every tutorial writes the shape, and it is not a leak.
+  '''://(?:user|username|admin|root|USER|<[^>]+>):(?:pass|password|secret|changeme|<[^>]+>)@''',
+  '''://[^\s/@:]+:\$\{[^}]+\}@''',
+]
+
+# ── repository-wide allowlist ───────────────────────────────────────────────────────────────
+[allowlist]
+description = "Paths whose contents are declared synthetic, and generated stores that are not authored here"
+paths = [
+  # This file names the very patterns it hunts for; scanning it finds its own regexes.
+  '''\.gitleaks\.toml$''',
+  # The scanner's own corpus. It carries the `secrets-sweep-fixture` declaration that
+  # bin/secrets-sweep.mjs reads, and this is the gitleaks half of the same statement — every
+  # credential in it is synthetic and exists so the scanner can find it.
+  '''bin/test/secrets-sweep\.test\.mjs$''',
+  # The rule bodies in the scanner itself.
+  '''bin/secrets-sweep\.mjs$''',
+  # The canary's planted corpus: synthesized shapes with the right prefixes and no account behind
+  # any of them. It exists to be found by bin/secrets-sweep.mjs, which is a different question from
+  # whether this repository is leaking one.
+  '''bin/secrets-canary\.mjs$''',
+  # `gitleaks dir` walks the DISK, not the index, so it does not honour .gitignore — pointing it
+  # at this repository without this line sends it through 421,797 generated report files across
+  # 28 GB and it does not finish. They are gitignored, therefore never pushed, therefore not a
+  # publication channel. `gitleaks git` (history mode) never sees them at all.
+  '''^reports/''',
+  '''^node_modules/''',
+  # The agent harness directory: gitignored, never pushed, and full of session transcripts that
+  # quote whatever a session was looking at. It produced 3,722 of 3,738 findings on this
+  # repository — 99.6% — which is not a scanner reporting a problem, it is a scanner being made
+  # useless. With it excluded the same run returns 16, and the DSN findings are legible instead of
+  # buried. Nothing here is a publication channel.
+  '''^\.claude/''',
+  # The dirty scan canary. It plants a published, non-functional AWS example key and a fabricated
+  # DSN so that the secrets lane can be shown to FIRE — and if those plants counted toward this
+  # repository's own posture, a fixture designed to produce findings would be reported as this
+  # repository having them. Excluded here, asserted in bin/test/scan-canary.test.mjs, and pointed
+  # at explicitly by the canary run. That is the difference between an exclusion and a suppression:
+  # the findings are still someone's job, just not this scan's.
+  # fixtures/scan-canary/clean/ is deliberately NOT excluded — it is the negative control, and
+  # excluding it would mean its silence proved nothing.
+  '''^fixtures/scan-canary/dirty/''',
+  # Declared-synthetic data: the canary's expected-findings list quotes the plants, and the monitor's
+  # fixture corpora reproduce finding rows. GitHub secret scanning skips the same paths
+  # (.github/secret_scanning.yml) and manifests/gitleaks.toml carries the same declaration for the
+  # fleet lane.
+  '''^fixtures/scan-canary/EXPECTED\.json$''',
+  '''^monitor/test/fixtures/''',
+  # Connection strings with a made-up password, handed to a detector as input.
+  '''^bin/test/tls-proxy\.test\.mjs$''',
+  '''^monitor/test/detail-schema\.test\.mjs$''',
+]
+
+# ── sourcegraph-access-token: git object ids in URL paths ─────────────────────────────────────
+# The default rule also matches a bare 40-hex string once "sourcegraph" appears anywhere in the
+# fragment, and a history scan reads a whole patch as one fragment. A govulncheck report credits a
+# "Sourcegraph Code Intelligence Team" once, and every Go commit id in its go.googlesource.com URLs
+# then read as a token: 3 rows from one fixture on 2026-10-04. A 40-hex segment after /+/, /commit/,
+# /tree/ or /blob/ is a git object id. An sgp_ token, and bare hex anywhere else, still match.
+[[rules]]
+id = "sourcegraph-access-token"
+
+[[rules.allowlists]]
+description = "git object ids in repository URL paths"
+regexTarget = "line"
+regexes = ['''(?:/\+/|/commits?/|/tree/|/blob/)[0-9a-f]{40}\b''']
+
+# ── generic-api-key: worklist slugs ──────────────────────────────────────────────────────────
+# The rule reads `"key": "<value>"` as an assignment of a secret. In the programme worklist that
+# field is an item's slug (`consolidation-24-14`). Scoped to the one file; a slug anywhere else
+# still matches.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "programme worklist item slugs"
+condition = "AND"
+paths = ['''(?:^|/)monitor/program-worklist\.json$''']
+regexTarget = "line"
+regexes = ['''"key":\s*"[a-z0-9]+(?:-[a-z0-9]+)+"''']

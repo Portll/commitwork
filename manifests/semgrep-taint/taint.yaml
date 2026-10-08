@@ -1,0 +1,86 @@
+# Local taint rules for the sast lane.
+#
+# WHY THESE EXIST. Measured 2026-08-25: --pro-intrafile is a real capability — a rule requiring
+# interprocedural taint within one file finds a flow the OSS engine misses (1 finding vs 0 on the
+# same source). But running p/default, p/owasp-top-ten and p/security-audit produced BYTE-IDENTICAL
+# output with and without the flag: same 368 rules, same single finding, same rule id. The engine
+# was engaging and had nothing to do, because those packs are pattern-heavy.
+#
+# So the fleet was gated on a Semgrep account for a capability its own rule selection could not
+# exercise. The fix is not to drop the engine; it is to give it work, from rules WE control and can
+# read, rather than hoping a registry pack contains some. A pack whose contents we cannot enumerate
+# is a dependency whose coverage we cannot state — and stating coverage we cannot verify is the
+# defect this repository is organised against.
+#
+# EVERY RULE HERE MUST FAIL WITHOUT --pro-intrafile. That is the entry condition, asserted by
+# monitor/test/semgrep-taint.test.mjs: a rule that the OSS engine also finds belongs in a pattern
+# pack, not here, because it would make the Pro dependency look load-bearing when it is not.
+#
+# Sources and sinks are deliberately narrow. A broad source list produces findings that are true and
+# useless, which trains an operator to stop reading the lane — class A4, alarm fatigue.
+
+rules:
+  - id: cw-env-to-shell
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Environment input reaches a shell execution sink. The value crosses at least one function
+      boundary, so the flow is invisible to pattern matching and to the OSS engine.
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      confidence: HIGH
+      commitwork: requires-pro-intrafile
+    pattern-sources:
+      - pattern: process.env.$X
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $CP.execSync(...)
+          - pattern: $CP.exec(...)
+          - pattern: $CP.spawnSync(...)
+
+  - id: cw-req-to-shell
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request input reaches a shell execution sink across a function boundary. This is the shape a
+      pattern rule cannot see: neither the read nor the exec is suspicious alone.
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      confidence: HIGH
+      commitwork: requires-pro-intrafile
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.body
+          - pattern: $REQ.query
+          - pattern: $REQ.params
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $CP.execSync(...)
+          - pattern: $CP.exec(...)
+
+  - id: cw-env-to-shell-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Environment input reaches a shell execution sink across a function boundary in Python.
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      confidence: HIGH
+      commitwork: requires-pro-intrafile
+    pattern-sources:
+      - pattern-either:
+          - pattern: os.environ[...]
+          - pattern: os.environ.get(...)
+          - pattern: os.getenv(...)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: os.system(...)
+          - pattern: subprocess.call(...)
+          - pattern: subprocess.run(..., shell=True, ...)
+          - pattern: subprocess.Popen(..., shell=True, ...)

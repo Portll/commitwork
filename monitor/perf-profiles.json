@@ -1,0 +1,834 @@
+{
+  "version": 1,
+  "note": "Hardware profiles and per-scanner cost classes for the scanner performance panel. A profile declares a machine's CAPABILITY; a scanner declares its COST; the tuning is derived from the two by monitor/perf-tuning.mjs. It is deliberately not a profile-by-scanner matrix: 11 profiles by 43 checks is 473 cells nobody could keep true, and the first one that went stale would be indistinguishable from a deliberate setting. Every number here is a declared default, not a measurement, except where measuredFrom names a commit. Scanners may declare minDepth to override their cost class: cost is what a run costs, depth is what a run is for, and the two come apart (a secret scan is expensive and belongs at triage depth). Profiles carry modelMatch patterns so the CPU model string is asked first; a name match beats an arithmetic one, and where the real machine has more cores or memory than the profile declares, the MEASURED figure is used and the profile supplies only disk class and container availability.",
+  "measuredFrom": {
+    "coresPerJobHigh": "2026-08-22: eleven concurrent sweeps on an 18-core machine drove load to 87 with 1 GB free of 48, and per-repo throughput fell from 2.6 to 30 minutes. 2026-08-23: --jobs 8 on the same machine held load 96-106. Semgrep alone takes ~2 cores per repository at full intensity, which is where coresPerJob = 2.5 at intensity 5 comes from.",
+    "slotsDefault": "monitor/sweep-slot.mjs DEFAULT_SLOTS = 4, fleet-wide."
+  },
+  "diskClasses": {
+    "nvme": {
+      "label": "NVMe SSD",
+      "jobsMultiplier": 1,
+      "note": "Scanners are IO-heavy on checkout and extraction; NVMe is the assumed baseline."
+    },
+    "sata-ssd": {
+      "label": "SATA SSD",
+      "jobsMultiplier": 0.75,
+      "note": "Roughly a quarter fewer parallel repositories before IO becomes the limit."
+    },
+    "hdd": {
+      "label": "Spinning disk",
+      "jobsMultiplier": 0.34,
+      "note": "Container image extraction and git checkout dominate. Parallelism past 2 makes a mechanical disk slower, not faster."
+    },
+    "network": {
+      "label": "Network or external volume",
+      "jobsMultiplier": 0.34,
+      "note": "Treated as a spinning disk: latency, not bandwidth, is the constraint."
+    }
+  },
+  "profiles": {
+    "auto": {
+      "id": "auto",
+      "label": "Auto-detect this machine",
+      "vendor": "detected",
+      "cores": null,
+      "threads": null,
+      "ramGB": null,
+      "diskClass": null,
+      "containers": null,
+      "note": "Reads the running machine and matches the nearest declared profile. Chosen defaults are shown so they can be overridden."
+    },
+    "m4-pro": {
+      "id": "m4-pro",
+      "label": "Apple M4 Pro",
+      "vendor": "apple",
+      "arch": "arm64",
+      "cores": 12,
+      "threads": 12,
+      "ramGB": 24,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "12-core (8 performance + 4 efficiency) at 24 GB is the common configuration; the 14-core/48 GB part is faster but the defaults here hold for both. Containers run under a virtual machine, which costs roughly 2 cores and 4 GB before any scanner starts.",
+      "modelMatch": [
+        "apple m4 pro",
+        "apple m4 max"
+      ]
+    },
+    "m5-pro": {
+      "id": "m5-pro",
+      "label": "Apple M5 Pro",
+      "vendor": "apple",
+      "arch": "arm64",
+      "cores": 18,
+      "threads": 18,
+      "ramGB": 48,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "Measured 2026-08-24 on the machine this fleet runs on: the CPU model string reports \"Apple M5 Pro\" and the host carries 18 cores and 48 GB. The earlier entry was a projection from the M4 Pro at 14 cores and 32 GB and is superseded by the reading. Containers run under a virtual machine, which costs roughly 2 cores and 4 GB before any scanner starts.",
+      "modelMatch": [
+        "apple m5 pro",
+        "apple m5 max"
+      ]
+    },
+    "m3-pro": {
+      "id": "m3-pro",
+      "label": "Apple M3 Pro",
+      "vendor": "apple",
+      "arch": "arm64",
+      "cores": 11,
+      "threads": 11,
+      "ramGB": 18,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "11-core / 18 GB. Memory rather than cores is the binding constraint once the container VM and a local model are both resident.",
+      "modelMatch": [
+        "apple m3 pro",
+        "apple m3 max"
+      ]
+    },
+    "apple-air": {
+      "id": "apple-air",
+      "label": "Apple silicon laptop, base (M1/M2/M3/M4 Air)",
+      "vendor": "apple",
+      "arch": "arm64",
+      "cores": 8,
+      "threads": 8,
+      "ramGB": 16,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "The floor case for a modern laptop, and passively cooled: sustained multi-core load throttles within minutes, so the depth ceiling matters more here than the job count.",
+      "modelMatch": [
+        "apple m1",
+        "apple m2",
+        "apple m3",
+        "apple m4",
+        "apple m5"
+      ]
+    },
+    "ryzen5-5600x": {
+      "id": "ryzen5-5600x",
+      "label": "AMD Ryzen 5 5600X / 5600 desktop",
+      "vendor": "amd",
+      "arch": "x64",
+      "cores": 6,
+      "threads": 12,
+      "ramGB": 32,
+      "diskClass": "sata-ssd",
+      "containers": true,
+      "note": "6 cores / 12 threads. Named from the request for a 'Ryzen 5 5600 XT' — the 5600 XT is a graphics card; the CPUs in that family are the 5600, 5600X and 5600G, and this profile covers all three. Under Windows, containers run through WSL2, which costs about 2 GB before any scanner starts.",
+      "modelMatch": [
+        "ryzen 5 5600",
+        "ryzen 5 3600",
+        "ryzen 5 7600"
+      ]
+    },
+    "ryzen7-desktop": {
+      "id": "ryzen7-desktop",
+      "label": "AMD Ryzen 7 / Intel i5 desktop, 8-core",
+      "vendor": "amd",
+      "arch": "x64",
+      "cores": 8,
+      "threads": 16,
+      "ramGB": 32,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "The common self-built desktop: 8 cores, 32 GB, NVMe. Comfortably runs every lane including the containerised ones.",
+      "modelMatch": [
+        "ryzen 7",
+        "ryzen 9",
+        "core i5",
+        "i5-1"
+      ]
+    },
+    "core-i7-2026": {
+      "id": "core-i7-2026",
+      "label": "Intel Core Ultra 7, current generation",
+      "vendor": "intel",
+      "arch": "x64",
+      "cores": 16,
+      "threads": 22,
+      "ramGB": 32,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "Hybrid performance and efficiency cores. Core count overstates capacity here: the efficiency cores are markedly slower on the single-threaded parsing that dominates several lanes, so jobs are derived from performance cores rather than the total.",
+      "modelMatch": [
+        "core ultra 7",
+        "core ultra 9",
+        "core i7",
+        "i7-1",
+        "core i9"
+      ]
+    },
+    "dgx-spark": {
+      "id": "dgx-spark",
+      "label": "NVIDIA DGX Spark",
+      "vendor": "nvidia",
+      "arch": "arm64",
+      "cores": 20,
+      "threads": 20,
+      "ramGB": 128,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "20 Arm cores with 128 GB of unified memory. Memory stops being the constraint entirely, so every lane can run at full depth concurrently and a local model can stay resident beside them. The GPU is not used by any scanner today; it is available to the LLM-assisted remediation path.",
+      "modelMatch": [
+        "gb10",
+        "dgx spark",
+        "grace blackwell"
+      ]
+    },
+    "dgx-spark-dual": {
+      "id": "dgx-spark-dual",
+      "label": "NVIDIA DGX Spark, two linked",
+      "vendor": "nvidia",
+      "arch": "arm64",
+      "cores": 40,
+      "threads": 40,
+      "ramGB": 256,
+      "diskClass": "nvme",
+      "containers": true,
+      "note": "Two units over the high-speed interconnect. The job count derived here assumes both are scanning the same fleet from one scheduler; commitwork does not yet distribute a sweep across two hosts, so treat this as the ceiling once it does, not as something the current scheduler achieves.",
+      "modelMatch": []
+    },
+    "legacy-hdd": {
+      "id": "legacy-hdd",
+      "label": "Older machine on a spinning disk",
+      "vendor": "generic",
+      "arch": "x64",
+      "cores": 4,
+      "threads": 8,
+      "ramGB": 8,
+      "diskClass": "hdd",
+      "containers": false,
+      "note": "4 cores, 8 GB, mechanical disk, no container runtime. Every containerised lane is unavailable rather than slow, and the panel says so instead of showing them as passing. This profile exists because 'runs on consumer hardware' has to mean something at the bottom of the range, not only at the top.",
+      "modelMatch": []
+    }
+  },
+  "costClasses": {
+    "light": {
+      "coresPerRun": 0.25,
+      "ramGB": 0.25,
+      "timeoutMs": 300000,
+      "minDepth": 1,
+      "note": "Seconds. Text or config parsing, no index built."
+    },
+    "medium": {
+      "coresPerRun": 1,
+      "ramGB": 1,
+      "timeoutMs": 900000,
+      "minDepth": 2,
+      "note": "Under a couple of minutes on a normal repository."
+    },
+    "heavy": {
+      "coresPerRun": 2,
+      "ramGB": 3,
+      "timeoutMs": 2700000,
+      "minDepth": 3,
+      "note": "Minutes. Usually a container, a full history walk, or a network fetch."
+    },
+    "very-heavy": {
+      "coresPerRun": 3,
+      "ramGB": 6,
+      "timeoutMs": 14400000,
+      "minDepth": 4,
+      "note": "Builds a database or fuzzes a live target. Tens of minutes to hours; this is the class that decides whether a nightly finishes."
+    }
+  },
+  "scanners": {
+    "secrets": {
+      "cost": "heavy",
+      "container": false,
+      "note": "Walks the whole git history.",
+      "minDepth": 1,
+      "depthLadder": [
+        {
+          "label": "recent",
+          "note": "the newest 1,000 commits (trufflehog --max-depth=1000)"
+        },
+        {
+          "label": "full",
+          "note": "the whole git history — the lane as it ran before ladders"
+        }
+      ]
+    },
+    "secrets-gitleaks": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "secrets-betterleaks": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "sast": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "Semgrep with --pro-intrafile takes about 2 cores per repository and is the single largest contributor to sweep wall-clock.",
+      "minDepth": 2,
+      "depthLadder": [
+        {
+          "label": "default",
+          "note": "p/default plus the local taint rules"
+        },
+        {
+          "label": "owasp",
+          "note": "adds p/owasp-top-ten"
+        },
+        {
+          "label": "full",
+          "note": "adds p/security-audit — the lane as it ran before ladders"
+        }
+      ]
+    },
+    "sast-opengrep": {
+      "cost": "heavy",
+      "container": false,
+      "minDepth": 4,
+      "note": "WAS very-heavy AND standby:true; both were wrong and both are corrected from measurement. Measured 2026-08-26 over 5 repositories of the the sample corpus corpus against semgrep 1.172.0 on identical packs: 176s total against semgrep's 806s, worst single repository 94s, and 16s where semgrep took 125s. It is the FASTEST of the SAST engines here, not the most expensive. `standby` is dropped because it made this the only lane in the `compare` group disabled by default — sast-auto sits in the same group without the flag, and the asymmetry read as 'spare tyre' when the measurement says 'equal engine'. minDepth is pinned at 4 explicitly so dropping the cost class does not silently enable it a depth earlier than the lane it is compared against."
+    },
+    "sast-codeql": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "Builds a database before it can query."
+    },
+    "sast-joern": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "MEMORY-HUNGRY, and that is the binding constraint rather than cores: Joern runs on the JVM and builds a whole-program code-property-graph that it must hold resident to query. The very-heavy class declares 6 GB, and the derivation budgets ramGB minus 4, so this lane is disabled by RAM on any profile under 10 GB — legacy-hdd (8 GB, budget 4) refuses it by name at every depth. That is deliberate: an OOM mid-graph leaves a partial CPG and no artifact, which classifies noscan, but it also costs the whole sweep the time it spent getting there.",
+      "minDepth": 4
+    },
+    "sast-bearer": {
+      "cost": "heavy",
+      "container": false,
+      "note": "A single Go binary, no server and no database build, so it is heavy rather than very-heavy — it walks the tree and runs its rules in process. Classed above medium because it resolves and classifies data flows across files rather than matching patterns line by line.",
+      "minDepth": 3
+    },
+    "sast-codeql-java": {
+      "cost": "very-heavy",
+      "container": false
+    },
+    "sast-codeql-python": {
+      "cost": "very-heavy",
+      "container": false
+    },
+    "sast-codeql-ruby": {
+      "cost": "very-heavy",
+      "container": false
+    },
+    "lint-go-golangci": {
+      "cost": "medium",
+      "container": false,
+      "note": "Declared medium alongside gosec, which it runs beside on the same modules — but MEASURED ONLY on a two-file fixture (2 issues, seconds), so this is a placeholder that should be re-measured on a large workspace before it is trusted. golangci-lint type-checks the packages it lints, so a cold module graph is the slow case, not the file count. Unlike clippy it does not execute build.rs or proc-macros, so it does not carry that lane's untrusted-execution question; cgo is the only path to a compiler and only for packages that use it."
+    },
+    "sast-python-bandit": {
+      "cost": "light",
+      "container": false,
+      "note": "NOT MEASURED on a real corpus repo — declared light because Bandit is a pure AST walk with no compilation and no module-graph resolution (unlike golangci-lint or clippy), verified on a two-file fixture in milliseconds, but that is the same fixture-only caveat golangci-lint's own entry states and should be re-measured on the the sample corpus corpus before this class is trusted for a large Python codebase. No untrusted-execution question at all: Bandit never imports or runs the scanned code, only parses it."
+    },
+    "lint-python-ruff": {
+      "cost": "light",
+      "container": false,
+      "note": "NOT MEASURED on a real corpus repo — same placeholder caveat as sast-python-bandit. ruff is written for speed (Rust implementation) and, restricted to --select E,F,W,C90, is doing strictly less work than Bandit's full rule set, so light is if anything conservative, but it is still a guess pending real measurement."
+    },
+    "sast-ruby-brakeman": {
+      "cost": "medium",
+      "container": false,
+      "note": "NOT MEASURED on a real corpus repo — declared medium rather than light because Brakeman builds a call graph across controllers/models/views (data-flow tracing for its taint checks), doing more work than Bandit's pure per-file AST walk; MEASURED ONLY on a two-controller fixture (~1.2s). Re-measure on the the sample corpus corpus before this class is trusted for a large Rails app. No untrusted-execution question: Brakeman parses the app, it does not require or run it."
+    },
+    "deps-ruby-bundler-audit": {
+      "cost": "light",
+      "container": false,
+      "note": "Reads Gemfile.lock against the cached ruby-advisory-db (git checkout under ~/.local/share/ruby-advisory-db). MEASURED 2026-09-01 on a 2-gem fixture: under 2s with the DB already cloned; the first-ever run on a box adds a one-time clone of ~1,400 files, which took ~15s here. Same shape as deps-rust-audit."
+    },
+    "sast-php-phpcs": {
+      "cost": "light",
+      "container": false,
+      "note": "MEASURED 2026-09-02 on ten real PHP repositories (pulled that day; the the sample corpus corpus has ZERO repos with composer.json, which is why this stayed a fixture guess for so long). phpcs 4.x + pheromone/phpcs-security-audit: a small PHP library 130 files 0.39s/65 MB/143 findings; a PHP logging library 227 0.57s/37 MB/308; a mid-sized PHP application 1232 4.14s/62 MB/317; a PHP ORM 1484 2.95s/55 MB/240; a large PHP framework 3053 10.64s/151 MB/2309. LIGHT CONFIRMED on the binding constraint: peak RSS 151 MB against the 256 MB ceiling, and wall time in seconds. ONE HONEST QUALIFICATION: it is single-threaded (user/wall ~0.92), so it consumes close to a FULL core rather than the 0.25 this class declares — do not plan four concurrent phpcs runs per core. RAM, not cores, is what keeps it light."
+    },
+    "mobile-manifest": {
+      "cost": "light",
+      "container": false,
+      "note": "MEASURED 2026-09-02 on the sample corpus, confirming the previous unmeasured `light`. firebase_flutterfire (109 manifests among 4,171 files) 0.32s, and under /usr/bin/time 0.52s wall / 0.24s CPU / 55 MB peak RSS, 19 results; facebook_fresco (61 manifests among 2,980 files) 0.34s, 6 results. Comfortably inside light (0.25 cores, 0.25 GB): ~0.5 cores for half a second and RSS at a fifth of the declared ceiling. Pure file parse — a tolerant tag scan over AndroidManifest.xml / Info.plist, no build, no network, no container."
+    },
+    "lint-java-pmd": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "MEASURED 2026-09-02 on the sample corpus, replacing a one-file-fixture guess of `light`. Three Java repos, PMD 7.27.0, the shipped four-ruleset command: a mid-sized Java service 754 files -> 8.3s wall / 37.9s user / 3.94 GB peak RSS; a JVM RPC library 1682 -> 24.7s / 99.9s / 7.51 GB; a large Java project 2616 -> 33.5s / 127.4s / 8.60 GB. Consistently ~4 CORES (user/wall 4.0-4.6x) and never below 3.94 GB even on the smallest sample. The old `light` class declared 0.25 cores and 0.25 GB — under by ~17x and ~16x respectively, which on a scheduler that multiplies by concurrency is an over-schedule, not a rounding error. WALL TIME IS THE MISLEADING NUMBER HERE: 8-34s reads as `light` (\"seconds\"), while the binding constraint is memory and cores, exactly as sast-joern records for the same reason. CAVEAT on the RAM figure: with no -Xmx the JVM grows toward 25% of physical (48 GB on this box), so peak RSS is partly heap reservation and would be lower on a smaller machine — the CORE figure is demand-driven and is the one to trust. CONSEQUENCE, deliberate: very-heavy carries minDepth 4, so this lane stops running in shallower sweeps. That is the correct outcome for a 4-core 8 GB lane, but it IS a scheduling change and not just a relabel."
+    },
+    "sast-go-gosec": {
+      "cost": "medium",
+      "container": false
+    },
+    "deps-go-govulncheck": {
+      "cost": "medium",
+      "container": false
+    },
+    "deps-osv": {
+      "cost": "heavy",
+      "container": true
+    },
+    "deps-reachability": {
+      "cost": "very-heavy",
+      "container": true,
+      "note": "Container with the network severed; builds a dependency graph."
+    },
+    "deps-jvm": {
+      "cost": "medium",
+      "container": false
+    },
+    "deps-gradle-declared": {
+      "cost": "medium",
+      "container": false,
+      "note": "Fetches a transitive closure from deps.dev."
+    },
+    "gradle-wrapper": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2
+    },
+    "deps-retire": {
+      "cost": "medium",
+      "container": false,
+      "minDepth": 2
+    },
+    "supply-chain-socket": {
+      "cost": "medium",
+      "container": false,
+      "needsToken": "SOCKET_CLI_API_TOKEN"
+    },
+    "supply-chain-guarddog": {
+      "cost": "heavy",
+      "container": true
+    },
+    "npm-audit": {
+      "cost": "medium",
+      "container": false
+    },
+    "yarn-audit": {
+      "cost": "medium",
+      "container": false
+    },
+    "iac-config": {
+      "cost": "medium",
+      "container": false,
+      "minDepth": 1
+    },
+    "dockerfile-lint": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "actions-actionlint": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2
+    },
+    "actions-zizmor": {
+      "cost": "medium",
+      "container": false
+    },
+    "shell-lint": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2
+    },
+    "sbom": {
+      "cost": "medium",
+      "container": false
+    },
+    "sbom-syft": {
+      "cost": "heavy",
+      "container": false,
+      "minDepth": 3
+    },
+    "authz-test": {
+      "cost": "light",
+      "container": false
+    },
+    "dast-nuclei": {
+      "cost": "heavy",
+      "container": false,
+      "runtime": true
+    },
+    "dast-authz-bola": {
+      "cost": "medium",
+      "container": false,
+      "runtime": true
+    },
+    "tls-headers": {
+      "cost": "medium",
+      "container": false,
+      "runtime": true
+    },
+    "api-fuzz": {
+      "cost": "very-heavy",
+      "container": false,
+      "runtime": true
+    },
+    "jackson-caseinsensitive-guard": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "cspm-github": {
+      "cost": "heavy",
+      "container": false,
+      "note": "Network-bound against the GitHub API, not CPU-bound.",
+      "minDepth": 2
+    },
+    "posture-scorecard": {
+      "cost": "medium",
+      "container": false,
+      "note": "Network-bound.",
+      "minDepth": 2
+    },
+    "a11y-wcag": {
+      "cost": "medium",
+      "container": false,
+      "minDepth": 3
+    },
+    "stub-detect": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "minify-detect": {
+      "cost": "medium",
+      "container": false,
+      "minDepth": 2
+    },
+    "vendor-scan": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "deps-updates": {
+      "cost": "heavy",
+      "container": true
+    },
+    "deps-renovate": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2
+    },
+    "deno-lint": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2
+    },
+    "deno-check": {
+      "cost": "medium",
+      "container": false,
+      "minDepth": 3
+    },
+    "sast-elixir-sobelow": {
+      "cost": "medium",
+      "container": false,
+      "minDepth": 2,
+      "note": "Sobelow's own analysis is AST-only and fast; the cost is mix loading the project. Declared, not measured — no Elixir toolchain on this machine."
+    },
+    "lint-haskell-hlint": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2,
+      "note": "Parses source, builds no index, needs no GHC build. minDepth 2 matches deno-lint, the other light linter gated on a language marker. Declared, not measured — hlint is not installed on this machine."
+    },
+    "lint-rust-clippy": {
+      "cost": "medium",
+      "container": false,
+      "minDepth": 2,
+      "note": "Declared medium as briefed, but this class is optimistic and should be measured before it is trusted: the lane type-checks the crate, so a cold cargo build of a large workspace can exceed medium's 900s timeout. `heavy` (2700s) is the honest class if a measurement disagrees. Not containerised today, which is itself the open question — see the check's notes on executing build.rs from an untrusted tree."
+    },
+    "sast-codeql-cpp": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "Builds a CodeQL database. Extraction is degraded under build-mode none but the cost is unchanged."
+    },
+    "sast-codeql-swift": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "Autobuild compiles the tree and needs full Xcode. The heaviest lane in the fleet."
+    },
+    "sast-codeql-csharp": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "Builds a CodeQL database. Does not compile the tree, but the buildless extractor runs its own NuGet restore, so wall clock includes a package fetch and the lane needs network — a cold restore on a large solution dominates the run."
+    },
+    "format-rust-rustfmt": {
+      "cost": "light",
+      "container": false,
+      "note": "MEASURED 2026-09-18 on veld (222 deviating files, 1,527 hunks): 2.05s wall / 1.87s user. rustfmt parses each file; no compile, no build.rs, no network."
+    },
+    "deps-rust-audit": {
+      "cost": "light",
+      "container": false,
+      "note": "Reads Cargo.lock against the cached RustSec advisory DB. MEASURED 2026-08-28 on internal-c (719 deps): 5.5s with the DB cached; the first-ever run adds a one-time git clone of the advisory DB."
+    },
+    "sast-codeql-rust": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "Builds a CodeQL database, buildless (no build.rs / proc-macro execution). MEASURED 2026-08-26 on internal-c (1,091 .rs files): 5m46s database create + 24m24s analyze — the analyze dominates, and the check's timeoutSec (3600) bounds the pair."
+    },
+    "sast-auto": {
+      "cost": "very-heavy",
+      "container": false,
+      "minDepth": 4,
+      "note": "Same cost as the sast lane it is measured against."
+    },
+    "dep-provenance": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "weak-random": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Pure text walk over source extensions, no index and no network. MEASURED 2026-08-28: 228 ms on internal-c (397 files), 156 ms on commitwork (748 files). Same class as its sibling stub-detect, and for the same reason."
+    },
+    "node-hazards": {
+      "cost": "light",
+      "container": false,
+      "note": "MEASURED 2026-09-02 on this repository: 963 JS/TS/template files in 0.25s wall. A per-line regex pass with no build, no network, no container and no parse — the walk dominates, not the matching. Directory exclusions come from bin/scan-exclusions.mjs so it never descends node_modules. Re-measure on the the sample corpus corpus before this class is trusted for a very large front-end monorepo, where the file count rather than the per-file cost is what would move it."
+    },
+    "sast-cobol-cobolwork": {
+      "cost": "heavy",
+      "container": false,
+      "note": "MEASURED 2026-09-21 over the public COBOL corpus: 78 files 1.3s, 161 files 1.7s, 1,232 files 15s, 2,838 files 21s, 619 files 44s, and 4,086 files (ElettraIT__Tangram4.0) 1,911s for a complete scan, on a 16 GB machine with other work running. Heavy for that tail, not for the typical repository, which is seconds; the check declares timeoutSec 2700 because the runner's 1800s default would kill the complete Tangram run. Time does not follow file count - 2,838 files took 21s and 619 took 44s - and Tangram carries 49,705 unresolved COPY statements; whether those are the cost is not established. An earlier Tangram run finished in 845s only because cobolwork's memory guard stopped five rule sets early, so a fast large run is worth checking for partial coverage before believing it. No network, no container, no build."
+    },
+    "sast-c-cppcheck": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "AST pass over C/C++ sources. No compilation database, no build, no container, no network — measured seconds on a small fixture."
+    },
+    "sast-c-flawfinder": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Lexical scan of C/C++ sources. Cheapest lane of the C set; it reads text and matches function names."
+    },
+    "deps-content": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Reads one package-lock.json and one package.json per locked package; no walk, no network, no build. MEASURED 2026-09-15: 58-84 ms wall over three runs each on a 70-package lockfile and on the 2-package canary — process start dominates."
+    },
+    "agent-instructions": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Per-line regex pass over instruction files only (CLAUDE.md, AGENTS.md, .cursorrules, copilot-instructions, README.md, docs/**/*.md); no build, no network, no parse. MEASURED 2026-09-15 on this repository: 33 files in 0.28 s wall, 0.14 s user — process start dominates. Directory exclusions come from bin/scan-exclusions.mjs, so node_modules is never walked."
+    },
+    "model-artefacts": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Directory walk plus an opcode pass over pickle-family files, a header-only read of safetensors, and line walks over dataset yaml/json and python; no network, no build, no container. Whole-file reads are capped by CW_MODEL_MAX_BYTES (256 MiB default; over-cap files are declared skippedOversize). MEASURED 2026-09-15 on this repository: 345-802 ms wall over three runs (4 surface files; the walk dominates). Re-measure on a checkpoint-heavy repository before trusting this class there: cost scales with total pickle bytes walked, not file count."
+    },
+    "sast-php-psalm": {
+      "cost": "medium",
+      "container": false,
+      "note": "MEASURED 2026-09-02 in degraded mode on ten real PHP repos, and the distribution is BIMODAL rather than sized by the repo. Typical: a small PHP library 1.8s, a PHP logging library 1.5s, a PHP HTTP client 1.6s, a PHP social application 2.6s (1,847 files, 4.9s wall / 7.07s user / 262 MB peak RSS under time -l), composer 3.8s, a PHP ORM 3.7s, a large PHP framework 45s (3,053 files), a very large PHP framework 46s (11,309 files). Outlier: a mid-sized PHP application (1,232 files) did NOT complete in 2700s. Note the shape — a very large PHP framework is 9x larger than a mid-sized PHP application and finished 58x faster — so wall time does not track file count and a per-repo estimate from size will be wrong. medium (1 core, 1 GB) matches the typical case on resources: ~1.4 cores and 262 MB measured. The outlier is not a cost class, it is a timebox: the check carries timeoutSec 2700 and a timed-out run grades NOSCAN, verified 2026-09-02 by running classifyReport over the killed run's report dir (log present, no sarif, no exit file) and getting {sev:noscan, summary:\"no output (tool absent/failed)\"}. FULL mode (a repo shipping vendor/) is unmeasured — no subject with vendor/ exists yet."
+    },
+    "commit-provenance": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Two git subprocesses, no tree walk, no network. MEASURED 2026-09-15 on commitwork under load average ~20: `git log -n 200` with identities and bodies is 86 ms, and the scan end to end is under a second in the ordinary case. The cost that is NOT light is signature verification: %G? makes git run the configured verifier once per SIGNED commit (~50 ms each here, gpg.format=ssh), so the same 200 commits took 11 s with it. The lane therefore reads %G? only when manifests/branch-protection.json lists the repo with requireSigned:true, and a repo that turns that on should expect roughly 50 ms per signed commit within CW_PROVENANCE_DEPTH."
+    },
+    "commit-velocity": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "One git subprocess (`git log -n 500 --name-only` with author and date), no tree walk, no network, no signature verification. Same class as commit-provenance's ordinary case: under a second on this checkout at depth 500. Landed without a profile; a lane with no cost class is invisible to tuning, which the perf-tuning test enforces."
+    },
+    "agent-config": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Reads at most five JSON files at the target root, the files their include arrays name inside the tree (at most 256, each under CW_AGENT_CONFIG_MAX_BYTES) and .claude/hooks/** and .claude/commands/**; never walks the source tree, no network, no container. MEASURED 2026-09-15 on fixtures/scan-canary: well under one second wall for either tree, dominated by node start-up."
+    },
+    "actions-gaps": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Reads .github/workflows/*.yml at the root only (no recursion — GitHub reads none either), one block-YAML pass per file, no network, no container, no tree walk. MEASURED 2026-09-16: 0.12-0.13 s wall over three runs on this repository (3 workflows) and 0.15 s on a 22-workflow repository (41 jobs); node start-up dominates. Files over 1 MiB are declared skipped rather than read."
+    },
+    "actions-health": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Network-bound, not CPU-bound: 2 + CW_ACTIONS_HEALTH_JOB_RUNS (default 10) gh api calls per repository, no tree walk, no container. MEASURED 2026-09-28 on three repositories: a few seconds each, dominated by API round-trips."
+    },
+    "cobol-inventory": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "secrets-cobol-jcl": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1
+    },
+    "sast-codeql-go": {
+      "cost": "very-heavy",
+      "container": false,
+      "note": "MEASURED 2026-10-04 on a 1,818-file Go repository: 1,472s wall (24.5 min) end to end, 1.3 MB SARIF, database 2.6 GB before the analyze step removes it. The lane runs CodeQL's go-extractor per module rather than tracing a build, so the cost is extraction plus analyze and no compilation. A one-file seed is 36s, which is node and CodeQL start-up; treat that as the floor and the 24-minute figure as what a real Go repository costs. timeoutSec 5400 leaves headroom over the measured run. COVERAGE IS NOT THE SAME AS COST HERE: that same run extracted 1,441 of 1,818 files by CodeQL's own count (79%), so a clean result from this lane is partial until the shortfall is explained."
+    }
+  },
+  "depthLevels": [
+    {
+      "level": 1,
+      "label": "Triage",
+      "description": "Secrets, obvious misconfiguration and hygiene only. Seconds per repository. Answers 'is anything on fire', not 'is this safe'."
+    },
+    {
+      "level": 2,
+      "label": "Standard",
+      "description": "Adds dependency advisories and workflow auditing. The level most repositories want on every commit."
+    },
+    {
+      "level": 3,
+      "label": "Full",
+      "description": "Adds container-based supply-chain analysis and full history. The default, and what a nightly sweep should run."
+    },
+    {
+      "level": 4,
+      "label": "Deep",
+      "description": "Adds data-flow analysis, which builds a database per language. Minutes to hours per repository."
+    },
+    {
+      "level": 5,
+      "label": "Exhaustive",
+      "description": "Everything, including runtime lanes against a live target and property-based API fuzzing. Intended for a release gate, not a loop."
+    }
+  ],
+  "intensityLevels": [
+    {
+      "level": 1,
+      "label": "Background",
+      "description": "One repository at a time, reduced rule sets. Leaves the machine usable for other work."
+    },
+    {
+      "level": 2,
+      "label": "Light",
+      "description": "Conservative parallelism. Safe on a passively cooled laptop."
+    },
+    {
+      "level": 3,
+      "label": "Balanced",
+      "description": "The default. Parallelism derived from cores and disk, holding roughly half the machine in reserve."
+    },
+    {
+      "level": 4,
+      "label": "Committed",
+      "description": "Most of the machine. Expect other work to be slow while a sweep runs."
+    },
+    {
+      "level": 5,
+      "label": "Saturate",
+      "description": "Full rule sets and maximum parallelism. On a shared or thermally limited machine this is usually SLOWER end to end than level 4, because contention costs more than the extra parallelism buys. Measured on this fleet 2026-08-22: throughput fell from 2.6 to 30 minutes per repository."
+    }
+  ],
+  "outsideRunner": {
+    "comment-schema": {
+      "what": "Slop Bucket: comment blocks over the schema limit, each with a drafted shorter replacement.",
+      "module": "bin/comment-schema.mjs",
+      "runs": "on demand from the panel (/comments/, POST /api/comments/sweep); never in a sweep",
+      "tools": [],
+      "view": "comments"
+    },
+    "races": {
+      "what": "Concurrency-bug pass: semgrep race rules, CodeQL concurrency queries, SpotBugs, Infer and ESLint.",
+      "module": "bin/races.mjs",
+      "runs": "after each sweep, from monitor/sweep.mjs",
+      "tools": [
+        "semgrep",
+        "codeql",
+        "spotbugs",
+        "infer",
+        "eslint"
+      ]
+    },
+    "build-health": {
+      "what": "Toolchain, format, lint and dead-code health against the tools each repository declares for itself.",
+      "module": "bin/build-health.mjs",
+      "runs": "as its own manifest (manifests/build-health.json) for projects that list it",
+      "tools": [
+        "prettier",
+        "eslint",
+        "depcheck",
+        "golangci-lint",
+        "ruff",
+        "cargo",
+        "gofmt",
+        "docker"
+      ]
+    },
+    "secret-verify": {
+      "what": "Re-checks trufflehog and gitleaks hits against the provider to mark each one verified or not.",
+      "module": "monitor/secret-verify.mjs",
+      "runs": "after the secrets lanes, on their findings",
+      "tools": [
+        "trufflehog",
+        "gitleaks"
+      ]
+    },
+    "app-vuln": {
+      "what": "CVEs in applications installed on this machine: a syft SBOM of each app, matched by grype.",
+      "module": "monitor/app-vuln.mjs",
+      "runs": "host sweep, not per repository",
+      "tools": [
+        "syft",
+        "grype"
+      ]
+    },
+    "scan-images": {
+      "what": "Container images scanned for CVEs with trivy image.",
+      "module": "bin/commitwork.mjs",
+      "runs": "commitwork scan-images, on request",
+      "tools": [
+        "trivy"
+      ]
+    },
+    "workflow-harden": {
+      "what": "zizmor --fix=safe over GitHub workflows: a remediation that edits files, not a scan.",
+      "module": "monitor/workflow-harden.mjs",
+      "runs": "on request",
+      "tools": [
+        "zizmor"
+      ]
+    },
+    "stpa-sweep": {
+      "what": "STPA re-derivation of the panel and remediation control loop from current code.",
+      "module": "monitor/stpa-sweep.mjs",
+      "runs": "on demand from the panel (/stpa/)",
+      "tools": [],
+      "view": "stpa"
+    },
+    "bola-sweep": {
+      "what": "Fleet-wide BOLA probe across declared live targets; the per-repo lane is dast-authz-bola.",
+      "module": "monitor/bola-sweep.mjs",
+      "runs": "on demand from the panel (/bola/)",
+      "tools": [],
+      "view": "bola"
+    },
+    "host-posture": {
+      "what": "This machine: host baseline, egress baseline, config integrity and disk encryption.",
+      "module": "monitor/host-baseline.mjs",
+      "runs": "host sweep, not per repository",
+      "tools": []
+    },
+    "package-inventory": {
+      "what": "Installed scanner and package versions against their upstream releases.",
+      "module": "monitor/package-inventory.mjs",
+      "runs": "on the panel's packages page",
+      "tools": [
+        "brew",
+        "npm"
+      ]
+    }
+  }
+}

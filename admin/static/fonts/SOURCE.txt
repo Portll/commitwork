@@ -1,0 +1,46 @@
+IBM Plex — vendored, not fetched.
+=================================
+
+These eight .woff2 files are served from this panel's own origin (/static/fonts/...). They are NOT
+loaded from Google Fonts or any other CDN, and that is a requirement rather than a preference:
+this repo ships self-contained artifacts, and the panel's report-only CSP already declares
+`default-src 'self'`. A CDN font would have made that policy unenforceable the day someone tried to
+enforce it — the fonts would be the violation.
+
+LICENCE
+  SIL Open Font License 1.1 (LICENSE-IBM-Plex.txt, shipped beside these files as the OFL requires).
+  Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex".
+  Commercial use, embedding in software and redistribution are all permitted. The conditions that
+  bind us: keep this licence text with the fonts, do not sell the fonts on their own, and do not
+  use the reserved name "Plex" on a modified version. We modify nothing — these are the upstream
+  bytes, copied unaltered.
+
+PROVENANCE (verified 2026-08-27)
+  @ibm/plex-sans 1.1.0   registry.npmjs.org  tarball sha512
+    58f82f3ba61f8f6c3961b87202bd6dbfde51533e0b44996a37e0a662f06095a6d
+    7b5eb9f3f50f513d04004c75ef9920a7516c5243a0a179790cdf8699db81971
+  @ibm/plex-mono 2.5.0   registry.npmjs.org  tarball sha512
+    49304920fc4fa263983e604c3bbcf94ca3c9528b4017dbb780052e993a9583082
+    b00ef8ae0544d87432586ca098ca8492ac31b049475d3f6e4e229e48ffc1cd7
+  Both packages declare "license": "OFL-1.1" in their registry metadata, and the LICENSE.txt in the
+  two tarballs is byte-identical, which is why only one copy is kept here.
+  The npm packages are the SOURCE, not a dependency: nothing installs them, package.json does not
+  name them, and the panel has no runtime dependency of any kind. Re-derive with
+    curl -sL https://registry.npmjs.org/@ibm/plex-sans/-/plex-sans-1.1.0.tgz | tar xz
+
+WHICH FILES, AND WHY ONLY THESE
+  Upstream ships 208 .woff2 files — every weight, both slopes, split by unicode block. Vendoring
+  all of them would be 7.7 MB for a panel that renders English. What is here is the Latin1 split of
+  the weights this stylesheet actually asks for:
+    Sans  400 Regular · 400 Italic · 500 Medium · 600 SemiBold · 700 Bold
+    Mono  400 Regular · 600 SemiBold · 700 Bold
+  188 KB in total. Italic is present because three rules set font-style:italic and a synthesised
+  oblique of a real italic face is visibly wrong; the bold faces are present so nothing is
+  synthesised either.
+
+THE unicode-range IS LOAD-BEARING, NOT AN OPTIMISATION
+  Because only the Latin1 split is here, every @font-face in panel.css carries the unicode-range
+  upstream declares for it. Without it the browser would consider IBM Plex a candidate for EVERY
+  character and draw tofu for the ones this subset does not contain — which is exactly the set the
+  panel's status glyphs live in (⧅ ✓ ✕ ■ ▶ ↻ ≡ ⏺). With it, those characters fall through to the
+  next family in the stack, as they did before Plex arrived.

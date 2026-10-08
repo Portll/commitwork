@@ -1,0 +1,56 @@
+{
+  "$comment": [
+    "A history DESCRIPTION, not a repository. fixtures/scan-canary cannot carry a nested .git, so",
+    "bin/lib/provenance-fixture.mjs materialises these steps into a temporary git repo (real",
+    "commits, real identities, a real --no-ff merge) before bin/commit-provenance.mjs runs over it.",
+    "Every identity is synthetic: example.test addresses, names that belong to nobody.",
+    "What it plants, and which rule each feeds:",
+    "  - a commit whose author and committer are two different humans -> author-committer-mismatch",
+    "  - a commit authored by dependabot[bot] with no bot registered -> machine-author-unregistered",
+    "  - a merge commit authored by that bot with no 'authorized by' marker -> bot-authored-merge",
+    "  - requireSigned on the default branch while every commit is unsigned -> unsigned-on-protected-branch"
+  ],
+  "repo": "example/canary-dirty",
+  "defaultBranch": "main",
+  "steps": [
+    {
+      "op": "commit",
+      "id": "init",
+      "author": { "name": "Ada Example", "email": "ada@example.test" },
+      "message": "initial import"
+    },
+    {
+      "op": "commit",
+      "id": "mismatch",
+      "author": { "name": "Ada Example", "email": "ada@example.test" },
+      "committer": { "name": "Bob Example", "email": "bob@example.test" },
+      "message": "rebased onto main by a second maintainer"
+    },
+    { "op": "branch", "name": "deps/bump", "from": "main" },
+    {
+      "op": "commit",
+      "id": "bot-commit",
+      "branch": "deps/bump",
+      "author": { "name": "dependabot[bot]", "email": "dependabot@example.test" },
+      "message": "bump a dependency"
+    },
+    {
+      "op": "merge",
+      "id": "bot-merge",
+      "into": "main",
+      "from": "deps/bump",
+      "author": { "name": "dependabot[bot]", "email": "dependabot@example.test" },
+      "message": "merge deps/bump into main"
+    }
+  ],
+  "branchProtection": { "requireSigned": true },
+  "expect": {
+    "commits": 4,
+    "byRule": {
+      "unsigned-on-protected-branch": 4,
+      "bot-authored-merge": 1,
+      "author-committer-mismatch": 1,
+      "machine-author-unregistered": 2
+    }
+  }
+}

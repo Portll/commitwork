@@ -1,0 +1,50 @@
+# Directories that are BUILD OUTPUT or VENDORED CODE, and are therefore not the repository.
+#
+# ONE LIST, MANY LANES. Before this file existed each tree-walking lane carried its own copy and
+# they disagreed: bin/stub-detect.mjs's SKIP_DIRS held ten entries including `target`; shell-lint's
+# `grep -v` held three and did NOT hold `target`; sast-joern held none at all. Same question, three
+# answers, and the two that were wrong were wrong in the direction that publishes findings.
+#
+# WHY IT EXISTS — measured 2026-08-28 on shodh-memory, which is Rust/TS/Python and has no C of its
+# own:
+#
+#   sast-joern  656 of 656 findings under target/debug/build/ — vendored C headers emitted by
+#               dependency build scripts (lz4-sys and friends). ZERO in the repository's own source.
+#               Re-running the shipped lane line with the exclusion: 656 -> 0, with
+#               `ScanPass completed` still in the log, so the lane reads a GENUINE CLEAN.
+#   shell-lint  153 of 167 rows under ./target, 14 under ./scripts.
+#
+# THE DETERMINISM HALF, which matters more than either count. `target/` is untracked. Whether it
+# exists and what it holds depends on whether somebody built the repo before the sweep. The
+# 2026-08-27 sweep of shodh-memory found 14 shellLint rows; the 2026-08-28 sweep of the SAME COMMIT
+# found 167 — because a session had run `cargo check` in between. Same inputs must give the same
+# outputs, and an untracked build directory is not an input.
+#
+# manifests/codeql-filters.txt asked for exactly this measurement before adding build output to the
+# CodeQL side ("Adding them is a real improvement and a real risk in the same edit, so it needs its
+# own measurement rather than a guess"). The measurement above is that evidence. It is NOT applied
+# to the CodeQL lanes by this file — those consume codeql-filters.txt in a different syntax and
+# under a stricter refusal, and widening them is a separate change with a separate blast radius.
+#
+# THE RISK, STATED. These names are matched as PATH SEGMENTS in every scanned repository. A repo in
+# which `target/` or `build/` is genuine hand-written source would have it silently dropped, and an
+# over-exclusion is a false clean — the worst failure this platform has. Two bounds: the list holds
+# only names this fleet has evidence of being generated, and it is deliberately SHORT. `out`, `bin`
+# and `obj` are NOT here despite being conventional build directories, because `bin/` is real source
+# in this very repository and the same is true across the fleet.
+#
+# FORMAT: one directory NAME per line, matched as a full path segment, OR a relative PATH of such
+# names (`a/b`), matched only where the whole path ends on a segment boundary — so `.claude/worktrees`
+# excludes that one directory and never a `worktrees/` of the target's own. Blank lines and
+# #-comments ignored. Consumed via bin/scan-exclusions.mjs, which renders it per tool and gives
+# the JS walkers dirExcluder() — never re-typed inline.
+
+node_modules      # every JS dependency tree; four dependency lanes judge these properly instead
+target            # Cargo. The measured case above.
+vendor            # Go and PHP vendoring, plus hand-vendored assets
+dist              # conventional bundler output
+build             # conventional build output (Gradle, CMake, many others)
+.gradle           # Gradle's own cache
+.git              # not source, and walking it is slow
+reports           # commitwork's own generated report tree — gitignored, regenerated every sweep
+.claude/worktrees # a nested agent worktree is this repository checked out again: measured 2026-09-16, 26 of 26 agent-instructions and model-artefacts rows on commitwork named one

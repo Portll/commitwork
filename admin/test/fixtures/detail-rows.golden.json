@@ -1,0 +1,137 @@
+{
+  "secrets": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "file": "src/app/main.js",
+      "line": 42,
+      "sev": "high",
+      "commit": "deadbeefcafe1234",
+      "redacted": true
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td class=\"mut\">src/app/main.js</td><td class=\"tnum\">42</td><td><span class=\"pill\">high</span></td><td class=\"mut\"><code>deadbeefca</code></td><td class=\"mut\">—</td><td class=\"mut\">—</td><td class=\"mut\">—</td><td class=\"ann\"></td>",
+    "cols": 10
+  },
+  "maliciousPackages": {
+    "fixture": {
+      "repo": "clientD",
+      "id": "MAL-2025-47",
+      "package": "@ctrl/tinycolor",
+      "version": "4.1.1",
+      "ecosystem": "x-value",
+      "advisory": "https://osv.dev/vulnerability/MAL-2025-47"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>@ctrl/tinycolor</code></td><td class=\"tnum\">4.1.1</td><td class=\"mut\">x-value</td><td><a href=\"https://osv.dev/vulnerability/MAL-2025-47\" target=\"_blank\" rel=\"noopener\" class=\"txt-acc\">MAL-2025-47</a></td>",
+    "cols": 5
+  },
+  "supplyChain": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "package": "@ctrl/tinycolor",
+      "version": "4.1.1",
+      "ecosystem": "x-value",
+      "sev": "high",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td>@ctrl/tinycolor<span class=\"mut\"> @4.1.1</span></td><td class=\"mut\">x-value</td><td><span class=\"pill\">high</span></td><td class=\"mut\">a detail message</td>",
+    "cols": 6
+  },
+  "supplyChainHeuristic": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "package": "@ctrl/tinycolor",
+      "version": "4.1.1",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td>@ctrl/tinycolor<span class=\"mut\"> @4.1.1</span></td><td class=\"mut\">a detail message</td>",
+    "cols": 4
+  },
+  "actionsPosture": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "file": "src/app/main.js",
+      "line": 42,
+      "sev": "high",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td><span class=\"pill\">high</span></td><td><code class=\"t-loc\">src/app/main.js:42</code></td><td class=\"mut cell-msg\">a detail message</td>",
+    "cols": 5
+  },
+  "sastGo": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "file": "src/app/main.js",
+      "line": 42,
+      "sev": "high",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td><span class=\"pill\">high</span></td><td><code class=\"t-loc\">src/app/main.js:42</code></td><td class=\"mut cell-msg\">a detail message</td>",
+    "cols": 5
+  },
+  "shellLint": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "file": "src/app/main.js",
+      "line": 42,
+      "sev": "high",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td><span class=\"pill\">high</span></td><td><code class=\"t-loc\">src/app/main.js:42</code></td><td class=\"mut cell-msg\">a detail message</td>",
+    "cols": 5
+  },
+  "actionsLint": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "file": "src/app/main.js",
+      "line": 42,
+      "sev": "high",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td><span class=\"pill\">high</span></td><td><code class=\"t-loc\">src/app/main.js:42</code></td><td class=\"mut cell-msg\">a detail message</td>",
+    "cols": 5
+  },
+  "dockerfile": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "file": "src/app/main.js",
+      "line": 42,
+      "sev": "high",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td><span class=\"pill\">high</span></td><td><code class=\"t-loc\">src/app/main.js:42</code></td><td class=\"mut cell-msg\">a detail message</td>",
+    "cols": 5
+  },
+  "dast": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "path": "src/app/main.js",
+      "port": "x-value",
+      "proto": "x-value",
+      "sev": "high",
+      "name": "x-value"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td><span class=\"pill\">high</span></td><td><code class=\"t-loc\">src/app/main.js</code></td><td class=\"mut\">x-value</td>",
+    "cols": 5
+  },
+  "minifiedCode": {
+    "fixture": {
+      "repo": "clientD",
+      "rule": "some-rule-id",
+      "file": "src/app/main.js",
+      "sev": "high",
+      "capped": true,
+      "metric": "x-value",
+      "message": "a detail message"
+    },
+    "html": "<td><b class=\"name\">clientD</b></td><td><code>some-rule-id</code></td><td><span class=\"pill\">high</span></td><td><code class=\"t-loc\">src/app/main.js</code> <span class=\"mut\">(capped)</span></td><td class=\"mut\">x-value — a detail message</td>",
+    "cols": 5
+  }
+}

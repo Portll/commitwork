@@ -1,0 +1,62 @@
+{
+  "comment": "The declared socket surface of this box's commitwork-relevant processes. monitor/port-bind.mjs asserts the OBSERVED binds against these rows — declaration split from authority: this file states intent, it grants nothing and applies nothing. iface is a CLASS (loopback|any); auth is the expected unauthenticated answer at probePath (challenged = 401/403/redirect), null = no assertion, observed posture recorded only. required:false everywhere — a service that is down renders absent, its own state, never a finding and never clean.",
+  "binds": [
+    {
+      "port": 7878,
+      "iface": "loopback",
+      "purpose": "admin panel — published server (cloudflared origin for commitwork.portll.net)",
+      "owner": "commitwork",
+      "entryMatch": "admin/serve.mjs",
+      "auth": "challenged",
+      "probePath": "/api/settings",
+      "required": false
+    },
+    {
+      "port": 7879,
+      "iface": "loopback",
+      "purpose": "admin panel — operator server (bootstrap + operator-only routes; CW_ADMIN_LOCAL_PORT, default published+1)",
+      "owner": "commitwork",
+      "entryMatch": "admin/serve.mjs",
+      "auth": null,
+      "probePath": null,
+      "required": false
+    },
+    {
+      "port": 7980,
+      "iface": "loopback",
+      "purpose": "external overwatch SPINE (consumed by commitwork; not this repo's process)",
+      "owner": "overwatch",
+      "entryMatch": null,
+      "auth": null,
+      "probePath": null,
+      "required": false
+    },
+    {
+      "port": 1234,
+      "iface": "loopback",
+      "purpose": "LM Studio OpenAI-compatible endpoint (consumed: adjudication/reducer verdicts)",
+      "owner": "engine",
+      "entryMatch": null,
+      "auth": null,
+      "probePath": null,
+      "required": false
+    },
+    {
+      "port": 11434,
+      "iface": "loopback",
+      "purpose": "ollama endpoint (host listener only — REMOVED from fleet consumption 2026-08-27, see manifests/llm-hosts.json removed[]; still watched as a bind)",
+      "owner": "engine",
+      "entryMatch": null,
+      "auth": null,
+      "probePath": null,
+      "required": false
+    }
+  ],
+  "stdio": [
+    {
+      "purpose": "mcp/server.mjs — MCP over stdio by design",
+      "entryMatch": "mcp/server.mjs",
+      "note": "a TCP listener whose command line names this entry violates the declaration"
+    }
+  ]
+}

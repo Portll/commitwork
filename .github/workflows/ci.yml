@@ -1,0 +1,427 @@
+name: CI
+
+# commitwork had NO CI at all until 2026-08-09 — 115 test files run only when a human remembered
+# to type the command. That is external overwatch layer's BACKLOG F4, open since 2026-08-02 and re-measured on the
+# day this file was written. A suite nothing runs is a memory of quality, not a control over it,
+# and this repository's entire product is the argument that unenforced claims are defects.
+#
+# WHAT MAKES THIS RUNNABLE AT ALL. Fifteen tests read the LIVE FLEET off the machine they run on:
+# the registry's declared repository paths, ~/.cloudflared, and a checkout declared in
+# monitor/projects.json. A runner has one checkout at a path that changes per run and no fleet, so
+# those tests used to fail here for reasons no commit could fix — five red tests nobody can go
+# green is exactly how a check gets switched off. They now SKIP WITH A STATED REASON when the fleet
+# is absent, and run in full on the fleet machine. Nothing is silently excluded: `npm test` runs
+# every file, and the reasons appear in this job's log.
+#
+# Deliberately NOT here: a real sweep. The sweep has no per-check timeout (F3) and once blocked
+# 8h31m on one repository, taking the remaining 5 of 20 with it. CI is the worst place to
+# rediscover that, and a 6-hour job that gets cancelled teaches nobody anything.
+
+on:
+  # release.yml runs this file as its gate on a v* tag.
+  workflow_call:
+    secrets:
+      CW_RELEASE_SCOPE:
+        required: false
+  push:
+    # Branches only: a tag is tested by release.yml's call above, and a second run of the same tag
+    # here would take the same concurrency group and cancel it.
+    branches: ['**']
+    # Skip pushes that change only prose. Test fixtures are markdown too, so they are re-included last
+    # (later patterns win). Measured 2026-09-18: 287 CI runs in 35 days, most pushes to main.
+    paths:
+      - '**'
+      - '!**/*.md'
+      - '!docs/**'
+      - '**/test/fixtures/**'
+  pull_request:
+    # Skip pushes that change only prose. Test fixtures are markdown too, so they are re-included last
+    # (later patterns win). Measured 2026-09-18: 287 CI runs in 35 days, most pushes to main.
+    paths:
+      - '**'
+      - '!**/*.md'
+      - '!docs/**'
+      - '**/test/fixtures/**'
+
+# A newer push to the same ref cancels the run it supersedes; only the latest commit's result is read,
+# and every superseded minute is billed on a private repository.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every job reads the tree and publishes nothing; a token with write scopes here is the credential a
+# poisoned dependency or a compromised action would move on.
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Test suite (${{ matrix.os }}, Node ${{ matrix.node }})
+    # Supported majors: 22 is the floor package.json engines.node declares (maintenance LTS until
+    # 2027-04-30) and 24 is active LTS. bin/test/node-floor.test.mjs holds the lowest version here,
+    # the engines floor and the CLI's refusal to one declaration, and requires every OS to run it.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: ['22', '24']
+    runs-on: ${{ matrix.os }}
+    # macOS has never run this suite on a hosted runner. It reports without blocking until its first
+    # measured green runs; then this line goes. Linux stays required.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    timeout-minutes: 30
+    steps:
+      # Actions pinned to commit SHAs, not tags: a tag can be silently repointed by the action
+      # owner (the trivy-action / tj-actions compromise class). The trailing comment names the
+      # release each SHA was resolved from via `git ls-remote --tags`.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # the history guards read real history; a depth-1 clone makes them skip with the reason
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # node:sqlite, zlib zstd and node --test's glob form are all used. The floor is real, not habitual.
+          node-version: ${{ matrix.node }}
+      # The release-name gates need the private redaction maps, which never enter the tree. They come
+      # from one secret, a base64 gzipped tar of the three maps, set from the sidecar with:
+      #   tar -czf - -C <sidecar> monitor/release-redactions.json monitor/publish-redactions.json \
+      #     identity/repo-identities.json | base64 | gh secret set CW_RELEASE_SCOPE
+      # This log is public. Every report those gates print masks the name it found, which
+      # bin/test/release-names-output.test.mjs holds. Pushes only: a pull request's code never runs
+      # with the maps.
+      - name: Load the release-name maps
+        # Linux only: the maps are about tree content, not platform, so one OS is enough to hold
+        # the secret; elsewhere the release-name gates skip and say so.
+        if: github.event_name == 'push' && runner.os == 'Linux'
+        env:
+          RELEASE_SCOPE: ${{ secrets.CW_RELEASE_SCOPE }}
+        run: |
+          if [ -z "$RELEASE_SCOPE" ]; then
+            echo "::notice::CW_RELEASE_SCOPE is not set, so the release-name gates skip and say so"
+            exit 0
+          fi
+          dir="$RUNNER_TEMP/release-scope"
+          mkdir -p "$dir"
+          printf '%s' "$RELEASE_SCOPE" | base64 -d | tar -xzf - -C "$dir"
+          {
+            echo "CW_RELEASE_REDACTIONS=$dir/monitor/release-redactions.json"
+            echo "CW_PUBLISH_REDACTIONS=$dir/monitor/publish-redactions.json"
+            echo "CW_REPO_IDENTITIES=$dir/identity/repo-identities.json"
+          } >> "$GITHUB_ENV"
+      # No `npm ci`. commitwork declares zero runtime dependencies, and this job is part of what
+      # keeps it that way — an install step would quietly absorb the day that changes.
+      - name: Run the suite
+        run: npm test
+
+  # The Linux lane sandbox, measured. The suite above runs without bwrap, so its sandbox tests skip
+  # with a reason; this job installs bubblewrap and passt and runs them for real, so open lanes
+  # reaching host loopback, the host's addresses or /run sockets (review 2026-10-07 D1) is a red
+  # build here rather than a skip. A skip of a Linux confinement test in this job is a failure.
+  linux-sandbox:
+    name: Linux lane sandbox (bwrap + pasta)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Install bubblewrap and passt
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap passt
+          # Ubuntu 24.04 can restrict unprivileged user namespaces through AppArmor. This job measures
+          # the sandbox, not the host policy, so it lifts the restriction and says so.
+          if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null)" = "1" ]; then
+            echo "::notice::lifting kernel.apparmor_restrict_unprivileged_userns for this job"
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          bwrap --ro-bind / / --unshare-net --die-with-parent -- /bin/true
+          pasta --version
+      - name: Sandbox tests, with no Linux skip allowed
+        run: |
+          set -o pipefail
+          node --test bin/test/sandbox-netns-live.test.mjs bin/test/sandbox-net.test.mjs \
+            bin/test/sandbox-host.test.mjs bin/test/lane-env-confinement.test.mjs 2>&1 | tee "$RUNNER_TEMP/sandbox.log"
+          if grep -E 'bwrap and pasta confinement is NOT verified|bwrap cannot create a namespace|pasta \(package passt\) is absent' "$RUNNER_TEMP/sandbox.log"; then
+            echo "::error::a Linux confinement test skipped in the job that exists to run it"
+            exit 1
+          fi
+
+  syntax:
+    name: Every module parses (Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+      # Cheap, and it catches the class of breakage that makes the suite above fail to even start,
+      # with a clearer message than a test runner gives for the same fault.
+      #
+      # workflows/ IS EXCLUDED, AND THE REASON IS THAT THE CHECK IS WRONG THERE, not the code.
+      # Those files are Workflow scripts, not Node modules: the runtime wraps the body in an async
+      # function, so `export const meta = {...}` followed by a top-level `return` or `await` is
+      # legal and `node --check` rejects it. Running it anyway would have made this job red on its
+      # first run over a correct file — the same false positive external overwatch layer's own artifact gate hit
+      # on day one (G7 counting markup inside a JS string), and the lesson recorded there holds: a
+      # check that cries wolf gets switched off, which is worse than not having it. Excluded by
+      # path, declared here, and the count is printed so the exclusion cannot grow unnoticed.
+      - name: node --check every module
+        run: |
+          fail=0 checked=0 skipped=0
+          # An assignment, not a pipe in the for list: bash -e fails the step when git does, where a
+          # failing git inside `$(git … | grep …)` yielded zero files and a green job.
+          modules=$(git ls-files -- '*.mjs' ':(exclude,glob)**/node_modules/**')
+          for f in $modules; do
+            case "$f" in
+              workflows/*) skipped=$((skipped+1)); continue ;;
+            esac
+            checked=$((checked+1))
+            node --check "$f" || { echo "::error file=$f::does not parse"; fail=1; }
+          done
+          echo "checked $checked module(s); skipped $skipped Workflow script(s) under workflows/ — see the note in this file"
+          [ "$checked" -gt 0 ] || { echo "::error::no module was checked"; exit 1; }
+          exit $fail
+
+  windows:
+    name: Windows portability (Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+    runs-on: windows-latest
+    # 30, not the 20 the Linux jobs use: a Windows runner's process spawn is markedly slower and
+    # this job runs the suite twice — once serially for verdicts, once for side effects.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+
+      # WHY THIS JOB EXISTS. On 2026-09-04 a Windows cycle closed TWENTY-THREE defects, every one
+      # of them invisible on Linux and none of them findable by reading: separator mismatches that
+      # made BOTH structural gates flag everything, CRLF that silently disabled seven line-based
+      # parsers, `import(absolutePath)` that stopped most of the suite from running at all, and
+      # `npm` — which is `npm.cmd` here — being unspawnable. The root cause was singular and
+      # boring: the code had never been EXECUTED on its second platform. Fixing that without a
+      # runner just schedules defect twenty-four.
+      #
+      # WHY IT IS NOT `npm test`, YET. The full suite is not reproducible on any machine right now:
+      # two consecutive runs of the same tree gave 191 and 504 unique failures, because ~83 test
+      # files read live ambient state (`reports/`, the ledgers, the lock files) instead of fixtures.
+      # Gating on a number that moves by 300 between runs would be red forever, and this file
+      # already records what happens then — "a check that cries wolf gets switched off, which is
+      # worse than not having it". So this job gates on what IS deterministic, and the full Windows
+      # suite joins it once the fixtures work lands. That is a stated sequence, not an exemption.
+
+      # 1. Every module parses. The Linux job does this with a shell loop; PowerShell needs its own,
+      #    and having it here is not duplication — it is the check catching Windows-only syntax and
+      #    path faults at the cheapest possible point.
+      - name: node --check every module
+        shell: pwsh
+        run: |
+          $fail = 0; $checked = 0; $skipped = 0
+          foreach ($f in (git ls-files '*.mjs')) {
+            if ($f -like 'workflows/*') { $skipped++; continue }   # Workflow scripts, not modules — see the Linux job
+            $checked++
+            node --check $f
+            if ($LASTEXITCODE -ne 0) { Write-Output "::error file=$f::does not parse"; $fail = 1 }
+          }
+          Write-Output "checked $checked module(s); skipped $skipped Workflow script(s)"
+          if ($checked -eq 0) { Write-Output "::error::no module was checked"; exit 1 }
+          exit $fail
+
+      # 2. The platform contract itself. These suites ARE the Windows contract — shell resolution,
+      #    the Node repo walk, the process-tree kill, batch-shim spawning, the path hazards, the
+      #    listener lens, the installer's manager shapes, and the two structural gates that were
+      #    blind here. All are fixture-driven and deterministic, so this list must be GREEN.
+      - name: The Windows contract holds
+        shell: pwsh
+        run: |
+          node --test --test-concurrency=1 `
+            lib/test/posix-shell.test.mjs `
+            lib/test/proc-tree.test.mjs `
+            lib/test/repo-walk.test.mjs `
+            lib/test/win-spawn.test.mjs `
+            lib/test/win-path-safety.test.mjs `
+            lib/test/untrusted-text.test.mjs `
+            monitor/test/port-bind-windows.test.mjs `
+            monitor/test/port-bind.test.mjs `
+            bin/test/install-catalog-managers.test.mjs `
+            bin/test/install-catalog.test.mjs `
+            bin/test/esm-specifier-shape.test.mjs `
+            bin/test/tracked-imports.test.mjs `
+            bin/test/docs-doctor.test.mjs `
+            bin/test/measured.test.mjs `
+            bin/test/test-run.test.mjs `
+            bin/test/scan-exclusions-regex.test.mjs
+
+      # 3. THE SUITE MUST NOT MODIFY THE WORKING TREE. Cheap, deterministic, and it would have
+      #    caught two of the twenty-three on their first run:
+      #      W19 — a Windows path interpolated unquoted into a POSIX shell lost its backslashes,
+      #            became RELATIVE, and the redirect wrote into the repository root.
+      #      W23 — cmd.exe read the `>` of an arrow function `()=>{}` on a command line as an output
+      #            redirection and created a file literally named `{}` in the repository root.
+      #    Both wrote junk into `git status` on every run for months, on a project whose whole
+      #    subject is noticing what changed. A test that dirties the tree is a defect regardless of
+      #    whether it passes.
+      #
+      #    NOTE WHAT THIS STEP CANNOT SEE, because the same blind spot has bitten this repo before:
+      #    `reports/` and `.claude/` are BOTH GITIGNORED, so `git status` is structurally incapable
+      #    of reporting the pollution that actually breaks reproducibility — production code spawned
+      #    by tests appending to the live `reports/perf-feedback.jsonl`. That is the identical
+      #    ignore-rule blind spot CLAUDE.md records for the durability check. The ignored paths are
+      #    covered instead by bin/test-run.mjs, which fingerprints them around the run and fails if
+      #    one moved; the two checks together cover tracked AND ignored, and neither alone does.
+      - name: The suite leaves the tree clean
+        shell: pwsh
+        run: |
+          # Default concurrency, not the runner's serial mode: this step reads SIDE EFFECTS, never
+          # assertions, so results are discarded and there is nothing for parallelism to
+          # destabilise. The serial run belongs in the step above, where the verdicts matter.
+          node --test "bin/**/*.test.mjs" "lib/**/*.test.mjs" 2>&1 | Out-Null
+          $dirty = (git status --porcelain)
+          if ($dirty) {
+            Write-Output "::error::the test suite modified the working tree:"
+            $dirty | ForEach-Object { Write-Output "  $_" }
+            exit 1
+          }
+          Write-Output "working tree clean after the suite"
+
+      # 4. The install path a Windows operator actually walks. `setup` with no TTY and no --yes is
+      #    report-only by contract, so this asserts the REPORT rather than installing anything: it
+      #    must run, and it must resolve a POSIX shell from the Git that the runner already has.
+      #    `doctor` is where a missing shell becomes visible, and a Windows operator's first signal
+      #    used to be 68 unexplained check failures instead.
+      - name: The install path reports honestly
+        shell: pwsh
+        run: |
+          node bin/commitwork.mjs setup
+          $out = node bin/commitwork.mjs doctor --manifest security-baseline 2>&1 | Out-String
+          Write-Output $out
+          if ($out -notmatch 'POSIX shell') { Write-Output '::error::doctor does not report the POSIX shell prerequisite'; exit 1 }
+          if ($out -match '(?m)^\s*✗ POSIX shell') {
+            Write-Output '::error::no POSIX shell resolved on a runner that has Git for Windows — the git-adjacent lookup regressed'
+            exit 1
+          }
+
+  smoke:
+    name: It starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # The suite above is entirely unit-level: it proves functions behave, never that the CLI
+      # runs or the panel serves. commitwork has no compile step — zero runtime dependencies is
+      # the point — so "does it build" has no meaning here and "does it boot" is the equivalent
+      # question. Nothing was asking it.
+      #
+      # bin/smoke.mjs asserts the panel's AUTH BOUNDARY, not merely that something responded:
+      # the operator port must serve a real HTML document and the published port must refuse an
+      # unauthenticated request. The second is the one worth having — a smoke test that only
+      # checks for a response passes just as happily when auth has been switched off, on the port
+      # a tunnel publishes. The smoke pins an absent auth store, so the panel it boots is
+      # unbootstrapped on every runner and the refusal is the 503 bootstrap answer; a box with an
+      # operator account answers 401.
+      - name: CLI resolves and the panel boots
+        run: node bin/smoke.mjs
+
+  installer:
+    name: Installer on Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # On Linux `commitwork setup` installs through Homebrew when brew is on PATH, else pipx, npm,
+      # cargo, gem, composer and go, with apt or dnf after them. This job exercises the pipx route
+      # end to end: a report-only run must exit 0 without a prompt, and a real install must leave
+      # a tool that runs and that doctor then sees.
+      - name: Report-only setup never prompts
+        run: mkdir -p "$HOME" && node bin/commitwork.mjs setup < /dev/null
+        env:
+          HOME: ${{ runner.temp }}/home
+      - name: Install one scanner through pipx
+        run: |
+          node bin/commitwork.mjs setup --yes --only flawfinder
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: The installed scanner runs and doctor sees it
+        run: |
+          flawfinder --version
+          report=$(node bin/commitwork.mjs doctor --manifest security-baseline)
+          printf '%s\n' "$report" | grep -E '✓ flawfinder'
+
+  docs:
+    name: Documentation freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # docs-doctor compares each durable doc's `verified-against` stamp against the commits
+          # that have touched it since. With the default shallow clone it cannot see them and
+          # reports drift that does not exist.
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # THIS JOB GATES ON GREY, WARNS ON ORANGE, AND THE ASYMMETRY IS DELIBERATE.
+      #
+      # docs-doctor exits 1 for orange (a stamped doc whose stamp is behind) and 2 for grey-only
+      # (a durable doc with NO stamp at all).
+      #
+      # This shape was chosen because docs-doctor was measured ORANGE at HEAD on 2026-08-12
+      # (workflows/MULTI-AGENT-PROTOCOL.md behind a committed change) — a job gating on exit 0
+      # would have been red on its first run over another session's drift, which is the failure
+      # the syntax job above names in its own words: a check that cries wolf gets switched off,
+      # which is worse than not having it. By the time this job was written that stamp had been
+      # refreshed by another session and docs-doctor was green.
+      #
+      # The asymmetry stays, and the re-measurement strengthens the case rather than removing it:
+      # on a tree where many sessions commit concurrently, a stamp falls behind its doc routinely
+      # and transiently. Gating on orange would put CI red on a condition that resolves itself,
+      # and train everyone to ignore it. Grey is gated because grey is the worse class — an
+      # unstamped durable doc has never been verified AT ALL, which is this repository's entire
+      # thesis about unenforced claims. Orange ratchets to a gate when orange stops being the
+      # normal condition of a shared tree; the gate exists and is runnable before it is enforced,
+      # exactly as quality-gates does for qg-boot-test-pass.
+      #
+      # `rc=0` and `|| rc=$?` ARE LOAD-BEARING. GitHub runs `run:` steps as `bash -e {0}`, so a
+      # bare invocation aborts the step the instant docs-doctor exits non-zero and the case
+      # statement below is never reached — the job would fail on orange and reintroduce exactly
+      # the problem this shape exists to avoid. `|| ...` suppresses -e; initialising rc keeps a
+      # green run (which never assigns it) from falling through to the catch-all.
+      - name: docs-doctor — grey blocks, orange warns
+        run: |
+          rc=0
+          node bin/docs-doctor.mjs || rc=$?
+          case "$rc" in
+            0) echo "docs: all durable docs stamped and fresh" ;;
+            1) echo "::warning title=Documentation drift::orange — one or more stamps are behind their doc. Re-verify and refresh the stamp. Not blocking yet." ;;
+            2) echo "::error title=Unstamped durable doc::grey — a durable doc carries no verified-against stamp, so it has never been verified. Blocking."; exit 1 ;;
+            *) echo "::error title=docs-doctor failed::exited $rc, which is neither 0, 1 nor 2 — treating an unrecognised outcome as failure rather than assuming it passed."; exit 1 ;;
+          esac

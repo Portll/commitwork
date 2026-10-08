@@ -1,0 +1,66 @@
+{
+  "$schema": "../schema/manifest.schema.json",
+  "repo": "quality-gates (per-service consolidation quality bar)",
+  "note": "Non-CVE per-service gates (build-health precedent): does each ACTIVE service meet the consolidated-service bar — full-context boot test, consumer-contract tests, hand-written OpenAPI spec with the drift check wired, CI coverage. File-existence/grep only; never builds or runs anything (qg-boot-test-pass READS an executed build-health boottest report — still no execution here). Checks SELF-GATE on tree shape (appliesIfExists is evaluated by `scan` only — the sweep goes through `run`, which does NOT evaluate it), so non-Java trees emit status n/a, never a false MISSING; since 2026-07-20 Java trees WITHOUT a Spring Boot app (libraries, SPI jars) also emit structural n/a for boot/openapi gates. Judgment-call exemptions on trees a gate structurally applies to live in monitor/gate-exemptions.json (annotations.json-pattern overlay applied by rollup; raw statuses stay raw). Every command ends `|| true`; the JSON report carries the real status and monitor/rollup.mjs attaches it per repo (r.qualityGates) exactly like r.buildHealth. Superseded (rollback-standby) and retired services never reach these checks — the sweep drops them from scope via projects.json lifecycle/exclude.",
+  "groups": {
+    "all": ["qg-boot-test", "qg-contract-tests", "qg-openapi", "qg-ci"],
+    "boot-pass": ["qg-boot-test-pass"]
+  },
+  "groupsNote": "qg-boot-test-pass is DELIBERATELY not in `all` yet — Phase C of the 2026-07-20 boot/contract plan flips it into the sweep groups once executed boottest batches accrue. Ratchet discipline: the gate exists and is runnable (group boot-pass) before it is enforced.",
+  "checks": [
+    {
+      "id": "qg-boot-test",
+      "egress": "none",
+      "description": "Full-context boot test present: >=1 src/test/**/*BootTest.java containing @SpringBootTest AND a registered `bootTest` Gradle task (fleet pattern: default `test` excludes tag 'boot'). status: present | partial (file XOR task) | MISSING | n/a (non-Java).",
+      "local": ["node $CW_ROOT/bin/quality-gates.mjs boot-test . > \"$CW_REPORT_DIR/quality-gates-boottest.json\" 2>\"$CW_REPORT_DIR/quality-gates-boottest.log\" || true"],
+      "report": { "file": "quality-gates-boottest.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["build.gradle", "build.gradle.kts", "pom.xml"],
+      "groups": ["all"],
+      "notes": "Ground truth: a client service's src/test/java/**/boot/*BootTest.java + tasks.register('bootTest', Test) in its build.gradle (default test has excludeTags 'boot')."
+    },
+    {
+      "id": "qg-boot-test-pass",
+      "egress": "none",
+      "description": "EXECUTED-boot-test reader (plan A1, 2026-07-20): reads the latest build-health `boottest` report for this service from commitwork reports/* and stamps the staleness contract — batch id, executedAt, age vs CW_BOOTTEST_MAX_AGE_DAYS (default 7), serviceTreeSha at-run vs now. status: present (fresh executed pass) | RED (executed, failed) | STALE (executed pass, aged out or sha-mismatch) | MISSING (void — never executed) | n/a (non-Java / no boot app). Never re-greps source; can NEVER go green without an executed bootTest.",
+      "local": ["node $CW_ROOT/bin/quality-gates.mjs boot-test-pass . > \"$CW_REPORT_DIR/quality-gates-boottest-pass.json\" 2>\"$CW_REPORT_DIR/quality-gates-boottest-pass.log\" || true"],
+      "report": { "file": "quality-gates-boottest-pass.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["build.gradle", "build.gradle.kts", "pom.xml"],
+      "groups": ["boot-pass"],
+      "notes": "Reader/executor split keeps this manifest's never-executes charter intact: execution lives in build-health `boottest` (run-ci stage 2, groups ci|boot)."
+    },
+    {
+      "id": "qg-contract-tests",
+      "egress": "none",
+      "description": "Consumer-contract tests present: >=1 src/test/**/*ContractTest.java (Feign client + MockWebServer pattern, e.g. DocumentServiceClientContractTest). status: present | MISSING | n/a. A service with no cross-service Feign clients may legitimately be MISSING — annotate, never fake present.",
+      "local": ["node $CW_ROOT/bin/quality-gates.mjs contract-tests . > \"$CW_REPORT_DIR/quality-gates-contracts.json\" 2>\"$CW_REPORT_DIR/quality-gates-contracts.log\" || true"],
+      "report": { "file": "quality-gates-contracts.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["build.gradle", "build.gradle.kts", "pom.xml"],
+      "groups": ["all"]
+    },
+    {
+      "id": "qg-openapi",
+      "egress": "none",
+      "description": "Interface spec + drift wiring: api/openapi.yml|yaml|json present in the service dir AND the drift check is wired for THIS service (monorepo root has buildout/scripts/openapi-drift-check.sh and the service dir name appears in buildout/scripts/openapi_drift_check.py or a root .github/workflows/*.yml). status: present (spec+wired) | partial (spec only) | MISSING | n/a.",
+      "local": ["node $CW_ROOT/bin/quality-gates.mjs openapi . > \"$CW_REPORT_DIR/quality-gates-openapi.json\" 2>\"$CW_REPORT_DIR/quality-gates-openapi.log\" || true"],
+      "report": { "file": "quality-gates-openapi.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["build.gradle", "build.gradle.kts", "pom.xml"],
+      "groups": ["all"],
+      "notes": "Presence/wiring only — it does NOT run the drift diff (that is CI's openapi-drift-check job; running it here would duplicate the gate, not verify it exists)."
+    },
+    {
+      "id": "qg-ci",
+      "egress": "none",
+      "description": "CI covers this service: the service dir name appears in a workflow under <monorepo root>/.github/workflows/ (clientA: ci.yml build-and-test matrix), or the service carries its own .github/workflows/. status: present | MISSING | n/a.",
+      "local": ["node $CW_ROOT/bin/quality-gates.mjs ci . > \"$CW_REPORT_DIR/quality-gates-ci.json\" 2>\"$CW_REPORT_DIR/quality-gates-ci.log\" || true"],
+      "report": { "file": "quality-gates-ci.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["build.gradle", "build.gradle.kts", "pom.xml", "package.json"],
+      "groups": ["all"],
+      "notes": "Monorepo root resolved via `git rev-parse --show-toplevel` from inside the service dir (service dirs are not their own git repos)."
+    }
+  ]
+}

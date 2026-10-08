@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "note": "Detector→class bindings. DELIBERATELY NOT inside failure-taxonomy.json: that registry's sha256 is the freshness key for the taxonomy tables, so a binding edit stored there would invalidate the taxonomy database and read as taxonomy drift. This file carries its own hash. Every classId here is validated against the registry at load; an unknown id is a hard failure, and a class the registry holds with no binding is `unscanned`, which is a state, not a pass.",
+  "coverageStates": {
+    "complete": "Every predicate the binding declares for this class has a detector that ran.",
+    "partial": "The class declares a finite predicate list and only some of those predicates have a detector that ran.",
+    "unspecified": "A detector ran for this class but the class's full predicate list has never been enumerated, so completeness is not a question this file can answer.",
+    "unscanned": "No detector bound to this class ran. Absence of findings here is absence of evidence."
+  },
+  "detectors": [
+    {
+      "id": "env-at-module-load",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "M9",
+      "covers": "process.env reached without crossing a function boundary, so the value is frozen at import and any test that sets it afterwards proves nothing",
+      "complete": false,
+      "siblingPredicates": [
+        "Date.now/new Date/Math.random on a write path",
+        "locale-sensitive formatting"
+      ],
+      "note": "The house rule this decides is stated in CLAUDE.md: read the env at CALL time, never at module load."
+    },
+    {
+      "id": "catch-empty-return",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "C11",
+      "covers": "a catch body that returns an empty or success-shaped value without discriminating ENOENT from any other error",
+      "complete": false,
+      "siblingPredicates": [
+        "bare `catch {` with no return — held by bin/bare-catch-ratchet.mjs",
+        "`.catch(() => null)` on a promise chain"
+      ],
+      "note": "Disjoint from bin/bare-catch-ratchet.mjs BY CONSTRUCTION, not by assertion: this detector requires a BOUND catch, `catch (e) {`, because the ratchet's pattern is /\\bcatch\\s*\\{/ and matches every unbound form. The first edition claimed the split was body-vs-return and was wrong — 144 of the first run's findings were sites the ratchet already held under its baseline. Measured 2026-08-23."
+    },
+    {
+      "id": "catch-continue-undiscriminated",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "A20",
+      "covers": "a bound catch that skips the item — `continue`, or a skip/ignore counter — without branching on the error, so a refusal, a rate limit and a genuine absence produce one indistinguishable outcome",
+      "complete": false,
+      "siblingPredicates": [
+        "a `.catch()` handler on a promise chain that resolves to a skip",
+        "two callers of ONE handler needing opposite responses — the cross-call-site form of A20, which no lexical predicate over a single file can see"
+      ],
+      "note": "Population is the complement of catch-empty-return's (C11) and cause-discarded's (A24): a body that returns an empty value or throws is excluded here, so the three counts add without double-counting a site. That disjointness is ASSERTED in bin/test/pattern-core.test.mjs by running all three over one another's fixtures, not assumed — M19 applied to the detectors themselves. Added 2026-09-06 from the ed.15 remediation audit."
+    },
+    {
+      "id": "fanout-swallows-item",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "K7",
+      "covers": "a catch inside a `for … of` fan-out loop that neither rethrows nor records the failure (no push, no exitCode, no failure marker), so the aggregate completes and exits 0 with an unknown number of members having done nothing",
+      "complete": false,
+      "siblingPredicates": [
+        "`forEach` and `Promise.all`/`allSettled` callbacks — not matched; the predicate is braced for-of only",
+        "a shell `for` loop or `xargs` fan-out in a .sh lane",
+        "an aggregate that reads only the LAST item's status"
+      ],
+      "note": "Stating the three uncovered shapes is why this is `partial` and not a false `complete`. Added 2026-09-06 from the ed.15 remediation audit; R7 in the register closes K7 as PARTIAL and this is the SRC half of it."
+    },
+    {
+      "id": "exit-status-unread",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "C2",
+      "covers": "a spawnSync result whose output is consumed while its status, error and signal are never read — bound or destructured — so a command that refused and exited non-zero is parsed as though it had answered",
+      "complete": false,
+      "siblingPredicates": [
+        "`process.exit(n)` whose non-zero code no caller branches on",
+        "a CI step whose `continue-on-error: true` makes the exit code unread by construction",
+        "execSync/execFileSync — DELIBERATELY out of population: they throw on non-zero, so their status has a subscriber by construction and requiring a `.status` read of them would manufacture findings (A10)"
+      ],
+      "note": "Reported structural only when the OUTPUT is consumed, which is the sharp case: the caller parsed stdout and never asked whether the command succeeded. A binding used for nothing at all is a dead binding, a different defect, and is not reported. Added 2026-09-06 from the ed.15 remediation audit."
+    },
+    {
+      "id": "cause-discarded",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "A24",
+      "covers": "a bound catch that throws a NEW error whose expression never mentions the caught error or anything derived from it, so the emitted message names the operation and the reason is discarded",
+      "complete": false,
+      "siblingPredicates": [
+        "a cause dropped at a LOG rather than a throw",
+        "a cause carried into a message but truncated below the discriminating detail",
+        "an error crossing a process or HTTP boundary that serialises only `message`"
+      ],
+      "note": "`{ cause: e }`, an interpolated `${e.message}` and any binding derived from the error all count as carrying it — the question is whether the cause SURVIVES, not how it is formatted. The throw expression is read from the ORIGINAL source, since the lexer blanks template contents and reading the stripped text would report every interpolated cause as discarded. Added 2026-09-06 from the ed.15 remediation audit."
+    },
+    {
+      "id": "test-asserts-nothing",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "R1",
+      "covers": "a test body containing no assertion, so the guard passes on every input including the one it was written about",
+      "complete": false,
+      "siblingPredicates": [
+        "a guard on a branch reached only when the failure did not occur",
+        "a module no test imports or spawns",
+        "a test that asserts a MARKER is set rather than that anything obeys it — it HAS assertions, so this detector reports it clean. Found 2026-08-23: `admin/test/passkey-route.test.mjs` asserted the button ships `hidden` and that PublicKeyCredential appears in the script, both true for the whole life of a button that rendered anyway, because `.sso{display:flex}` beat the UA stylesheet's `[hidden]{display:none}` on ORIGIN. Fixed the same day.",
+        "COVERED as of 2026-08-23 by the sibling detector `test-loop-unguarded`, below."
+      ]
+    },
+    {
+      "id": "test-loop-unguarded",
+      "version": 1,
+      "substrate": "SRC",
+      "classId": "R1",
+      "covers": "assertions inside a loop over a DERIVED collection with nothing asserting the collection is non-empty — an empty derivation passes having checked nothing",
+      "complete": false,
+      "siblingPredicates": [
+        "the marker/effect statement itself: does the assertion establish what the test's NAME claims — needs a reader, not mechanically decidable"
+      ],
+      "reportOnly": true,
+      "note": "HEURISTIC by design, which is how report-only is implemented: adjudicate() routes anything softer than structural to `undetermined`, so it counts and never publishes. Promoting it to structural IS the decision to gate. Do that after the standing sites are cleared — a gate firing 20 times on arrival gets baselined, which banks the defect as the floor (another session's condition, accepted). Second predicate of the class, raised from the passkey [hidden] defect; the first predicate is the statement and is not decidable, so both live under one id rather than becoming two classes."
+    },
+    {
+      "id": "untracked-durable-record",
+      "version": 1,
+      "substrate": "HIST",
+      "classId": "D6",
+      "covers": "a file under a declared durable-record path that git does not track, so it exists in exactly one working tree",
+      "complete": true,
+      "note": "Complete: D6's own description names the condition exactly, and `git ls-files --others` decides it."
+    },
+    {
+      "id": "unreachable-citation",
+      "version": 1,
+      "substrate": "HIST",
+      "classId": "D2",
+      "covers": "a SHA cited in a tracked document that rev-parse resolves and no branch contains — reachable today, gone at the next gc",
+      "complete": false,
+      "siblingPredicates": [
+        "a cited SHA that no longer resolves at all (that is a dangling citation, not an unreachable one)"
+      ]
+    },
+    {
+      "id": "rule-dominance",
+      "version": 1,
+      "substrate": "ART",
+      "classId": "A10",
+      "covers": "one rule accounting for a disproportionate share of one severity bucket in the issue store — the defect signature named in CLAUDE.md",
+      "complete": false,
+      "siblingPredicates": [
+        "a detector whose findings are all false on adjudication"
+      ],
+      "params": {
+        "minBucket": 20,
+        "dominanceShare": 0.5
+      },
+      "note": "Findings with no rule are UNDETERMINED, never clean: dominance is undefined without a rule to attribute the share to."
+    },
+    {
+      "id": "freshness-state",
+      "version": 1,
+      "substrate": "ART",
+      "classId": "M2",
+      "covers": "rollup.freshness.state in (stale, expired, unknown) as classified by monitor/freshness.mjs — fresh within one cadence + 2 h grace, stale past that, expired past two cadences + grace, unknown when the timestamp is missing or unparseable (never fresh)",
+      "complete": false,
+      "siblingPredicates": [
+        "liveness `hung` / `never-swept` — monitor/liveness.mjs",
+        "sweep-health `overrunning` — monitor/sweep-health.mjs STATES"
+      ],
+      "note": "Populating instance: a deadman check (2026-08-03) classified freshness on the re-stamped `generated` and understated staleness by ~43 h. Measured 2026-08-23 in monitor/issues.json lastIngest: 32 areas, 4 last ingested from slices dated 2026-08-13 — internal-d sweep-20260813012231, shodh-memory sweep-20260813012238, client-a sweep-20260813011855, commitwork-remote sweep-20260813012546 — ten days before this reading; every other area's slice is 2026-08-15 or later. This binding is also the denominator K2's remark that liveness has caught nothing, once, never had."
+    },
+    {
+      "id": "sla-breach-unactioned",
+      "version": 1,
+      "substrate": "ART",
+      "classId": "K9",
+      "covers": "an open issue in monitor/issues.json with slaDueAt < now and no claim, attemptCount of 0, and no `paged` event within one SLA tier length (SLA_TIERS at monitor/lifecycle.mjs:12 — crit 7 d, high 30 d, med 90 d, low 180 d)",
+      "complete": true,
+      "note": "Complete: K9's own description names the condition exactly and the issue store holds every term of it. The `paged` event type is minted by monitor/issue-escalate.mjs (mirrors cra/escalate.mjs, de-duplicated on {issueId, slaDueAt}); this binding names the same type so the two agree. Measured 2026-08-23: 977 open, 14 with slaDueAt < now, 0 claimed, 0 with attemptCount > 0, 0 `paged` events — no event of that type exists in the store yet — and monitor/lifecycle.mjs:212 writes `escalated: false` as a literal. Re-score K9 once the actuator lands, not before."
+    },
+    {
+      "id": "suppression-expired",
+      "version": 1,
+      "substrate": "ART",
+      "classId": "E2",
+      "covers": "rollup.scannerAnnotationStatus.expired non-empty — a scanner annotation whose `expires` <= the slice's generated time, filed as expired by monitor/rollup.mjs (line 1253 at 2026-08-23 head) before any match is attempted, so a lapsed record never suppresses",
+      "complete": false,
+      "siblingPredicates": [
+        "a deferred/exception map with no staleness predicate — 2026-08-22: the DEFERRED map deferred a file \"until it lands\", the file landed the same day with both banned patterns live, and the test stayed green for a day; no code detector exists for this half"
+      ],
+      "note": "The house rule behind the first predicate is `requireExpires` at bin/annotate.mjs:93 and admin/routes/annotations.mjs:93: a suppression can never land as a permanent blindfold. An empty `expired` array is a measured zero; an ABSENT scannerAnnotationStatus is UNDETERMINED, not clean. The spatial half of E2 (a tuple surviving a fork, rename or vendored copy) stays derived and is bound here to nothing."
+    },
+    {
+      "id": "sweep-health-state",
+      "version": 1,
+      "substrate": "ART",
+      "classId": "M8",
+      "covers": "monitor/sweep-health.mjs STATES `hung` (marker standing, pid dead — the sweep died without publishing, at any age) and `overrunning` (pid alive past hangMs — a long sweep, reported as its own state and never as a hang)",
+      "complete": false,
+      "siblingPredicates": [
+        "scan-level non-termination — a lane that never returns inside its own run; no scan carries a timeout or a no-output-is-not-clean check (remediation 14, still open), no detector"
+      ],
+      "note": "Discriminates on pid, not age. Measured 2026-08-20: the genuinely hung markers (client-a pid 36023, clientB pid 90944) had dead pids. Measured 2026-08-23: a 605-minute healthy client-a run that monitor/liveness.mjs labelled HUNG for ~6 h against INFLIGHT_MAX_MS_DEFAULT (4 h) was alive throughout, and was then moved to weekly. sweep-health's `unknown` (pid missing or unprobeable) is its own state and is folded into neither."
+    },
+    {
+      "id": "self-adjudication",
+      "version": 1,
+      "substrate": "ART",
+      "classId": "G12",
+      "covers": "an adjudication recorded by an instrument with no independent party on the same record — no human hand (who) and no separate attribution check (attributionCorrect). Canary records are excluded: a planted expectation decided before the run IS the independent party, and including them put 94% of the population under one harness, which is a defect signature in the instrument rather than a finding. Measured 2026-08-26 over the live verdict journal: 403 non-canary adjudications across 8 parties, largest 108. Emits an OBSERVATION, never a verdict — self-adjudication is not evidence the verdict is wrong, only that nothing independent has confirmed it."
+    }
+  ],
+  "withheld": [
+    {
+      "id": "registry-schedule-drift",
+      "classId": "K8",
+      "reason": "monitor/projects.json declares 6 named projects PLUS `roots` that expand on the filesystem. The set difference against the ~40 repos with artifact evidence would have published ~35 findings, every one of them an artifact of comparing an unexpanded declaration against an expanded reality. The predicate is right and the declared set is not resolvable at single-repo scope, so it is withheld rather than published. bin/lib/pattern-core.mjs still carries the implementation and its test; only the binding is withheld.",
+      "unblockedBy": "root expansion via monitor/discover.mjs, matching the resolution monitor/sweep.mjs already performs"
+    },
+    {
+      "id": "reasoning-verdict-contradiction",
+      "classId": "G1",
+      "reason": "NOT BUILDABLE ON THIS EVIDENCE Overwatch-layer, measured 2026-08-26. G1 needs a reasoning trace beside the verdict it produced. The verdict journal declares exactly the right fields — machineVerdict, model, promptId — on 2,364 finding-adjudication records, and every one of them is NULL: 2364 present, 0 non-null. Nothing in the fleet writes a model-mediated verdict into this journal today. A detector here would read an empty column forever and report clean, which is the class it is meant to catch. The gap is upstream: adjudication is not yet recording the model, the prompt, or the machine verdict. Bind this when those fields are fed, not before."
+    },
+    {
+      "id": "verdict-unqueryable",
+      "classId": "G7",
+      "reason": "NO POPULATION ONCE THE PREDICATE WAS CORRECTED, measured 2026-08-26. A first pass counted 580 records carrying a verdict with no findingKey and no basis. That predicate was wrong: 523 of the 580 are keyed by `gate` and the remaining 57 (suppression-label) are keyed by `target`. Both are queryable, just not by the key the predicate looked for. The real count is approximately zero, and a detector built on the first predicate would have published 580 false findings about a journal that is in fact addressable."
+    },
+    {
+      "id": "run-to-run-instability",
+      "classId": "G11",
+      "reason": "NO POPULATION, measured 2026-08-26. G11 needs the same subject adjudicated more than once with a different answer. Across the journal, 0 of 73 findingKeys carry more than one distinct outcome. That is not evidence the fleet is stable — it is evidence that re-adjudication of the same key barely happens, so the question has no sample. A detector would return zero on an empty denominator, and a zero over no population is the shape this repository refuses to publish as clean."
+    }
+  ]
+}

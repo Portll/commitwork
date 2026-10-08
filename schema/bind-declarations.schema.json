@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portll/commitwork/bind-declarations.schema.json",
+  "title": "commitwork declared socket surface",
+  "description": "The declared binds monitor/port-bind.mjs asserts observed sockets against. Applied at read time by readDeclarations() — an invalid declaration file refuses to load rather than asserting a surface nobody declared.",
+  "type": "object",
+  "required": ["binds", "stdio"],
+  "additionalProperties": false,
+  "properties": {
+    "comment": { "type": "string" },
+    "binds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["port", "iface", "purpose", "owner", "entryMatch", "auth", "probePath", "required"],
+        "additionalProperties": false,
+        "properties": {
+          "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "iface": { "enum": ["loopback", "any"], "description": "the declared bind class; observed 'addressed'/'any' over a declared 'loopback' is the finding" },
+          "purpose": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "entryMatch": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }], "description": "substring the pid's command line must carry; null = no process assertion" },
+          "auth": { "oneOf": [{ "const": "challenged" }, { "type": "null" }], "description": "expected unauthenticated answer at probePath; null = observed only, nothing asserted" },
+          "probePath": { "oneOf": [{ "type": "string", "pattern": "^/" }, { "type": "null" }] },
+          "required": { "type": "boolean", "description": "false everywhere today: a down service is 'absent', its own state" }
+        }
+      }
+    },
+    "stdio": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["purpose", "entryMatch"],
+        "additionalProperties": false,
+        "properties": {
+          "purpose": { "type": "string", "minLength": 1 },
+          "entryMatch": { "type": "string", "minLength": 1 },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

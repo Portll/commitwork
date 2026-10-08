@@ -1,0 +1,6 @@
+{
+  "ran": true,
+  "verdicts": [
+    { "file": "src/example-fixture.js", "line": 7, "rule": "generic-api-key", "verified": false }
+  ]
+}

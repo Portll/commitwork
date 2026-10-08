@@ -1,0 +1,1875 @@
+{
+  "$schema": "../schema/scanner-subject-taxonomy.schema.json",
+  "version": 2,
+  "subjectClass": {
+    "key": "scanner_run",
+    "name": "The scanner run",
+    "definition": "One execution of an instrument that produces a judgement: a scanner lane over a repository, a gate over a tree, an agent session over a working tree, a rater over a finding. The subject is the RUN and its record, never the repository the run examined.",
+    "contrast": "monitor/failure-taxonomy.json holds 166 classes whose subject is a repository under scan. The scanner, agent and oversight loops appear there as CONTROLLERS. This registry transposes the axis: those same loops become the SUBJECT, and the question changes from 'what did the run get wrong about the repository' to 'what can go wrong about the run itself, and who would see it'.",
+    "whatChanges": [
+      "The subject writes its own evidence. A repository does not narrate its own scan; a run does.",
+      "The subject and the instrument share a substrate. A scanned repository is a separate tree; a run edits the tree its overseer reads.",
+      "The subject is plural and concurrent. One repository is scanned once per slice; several runs act on one tree at once, and their independence is assumed rather than measured.",
+      "A finding is about a measurement rather than about code. Its truth condition is another measurement, so the regress has to terminate somewhere a human named."
+    ],
+    "boundary": "OUT OF SCOPE, and deliberately: alignment, incentives, model psychology, safety culture, and any claim about intent. This registry classifies only what an oversight layer can OBSERVE and RECORD about a run. Every class here is falsifiable by an instrument that could be built. A class that requires reading a subject's motives does not belong in it."
+  },
+  "generatedFrom": [
+    "monitor/failure-taxonomy.json (v8, 166 classes) — the parent registry, read for its stpa vocabulary and for citation resolution",
+    "an external incident report on an agent deployment, mapped to this repository's instruments by measurement rather than by reading",
+    "measured instrument states in this tree at 2026-08-30"
+  ],
+  "parentRegistry": "monitor/failure-taxonomy.json",
+  "referenceSets": [
+    {
+      "name": "landed",
+      "path": "monitor/failure-taxonomy.json",
+      "pick": "classes",
+      "note": "the parent registry's landed classes"
+    },
+    {
+      "name": "proposed",
+      "path": "$CW_SIDECAR/documents/tools/proposed.json",
+      "pick": "array",
+      "note": "proposed additions to the PARENT taxonomy, held in the sidecar. $CW_SIDECAR is expanded at read time: the env var wins, and with it unset the sidecar beside the checkout is the default. A machine that has neither renders the comparison as unmeasured naming the missing input, and a sidecar whose file is ENOENT as unmeasured too — never as zero distance."
+    }
+  ],
+  "verifiedAgainst": "2026-08-30 (parent registry v9, 173 classes)",
+  "note": "A new subject class, not a new opinion about the old one. Every class declares whether it is inherited (an existing parent class that applies verbatim once the subject changes), transposed (an existing class whose meaning changes under the new subject) or novel (no cell in the parent registry), and every cited parent id is resolved against the parent at render time so a citation cannot rot. The hand-assigned origin is then cross-checked by lib/taxonomy-distance.mjs against a measured nearest-neighbour distance, using each reference set's OWN internal median as the threshold. Disagreement between the label and the measurement is the finding, not an error to be reconciled away. The parent moved from v8/166 classes to v9/173 while this registry was being written, adding family XI (Collective action, prefix L); this registry’s ledger family was renumbered L->J in response, and three classes now cite into that new family. That drift was caught by this renderer’s own citation resolution rather than by anyone re-reading the parent, which is the point of resolving citations at render time.",
+  "analogyStyle": "mcp__style__ prose corpus: one declarative sentence, present tense, concrete actor, no em-dash, no emphatic particles, no closing moral.",
+  "scoreProvenance": "closure and gain assigned by a single rater, who authored both the classes and the instrument-state readings that inform them. No inter-rater pass. Treat these as one reading, not a measurement. The instrumentState field is NOT a score: it is measured by import and spawn count in this tree at the stamp above, and is re-derivable.",
+  "scales": {
+    "closure": "0 = nothing stands between us and this class; 4 = fixed and pinned by a test or canary",
+    "gain": "0 = nothing further on the table; 4 = the largest remaining win, impact x tractability"
+  },
+  "scaleBounds": {
+    "closureMin": 0,
+    "closureMax": 4,
+    "gainMin": 0,
+    "gainMax": 4,
+    "fullyClosed": 4
+  },
+  "fullClosureAbsent": "No class in this registry reaches closure 4, and that is the registry's headline reading rather than an oversight. Closure 4 means fixed and PINNED by a test or a canary. Nothing in this tree takes a scanner run as a subject, so no test asserts anything about one; the highest closures here (3) are instruments that answer a class incidentally, while doing a different job. A consumer must therefore NOT gate on full closure against this registry: it would pass vacuously, which is the defect the parent registry records four times. This field is required by the schema precisely so the absence has to be declared rather than discovered.",
+  "origins": {
+    "inherited": {
+      "test": "The parent class applies verbatim once the subject is a run. It is restated here only because it is load-bearing for this subject class and a reader of this registry alone would otherwise miss it.",
+      "requiresInherits": true
+    },
+    "transposed": {
+      "test": "A parent class exists and its MEANING changes when the subject becomes a run. The originNote must say what changes; without that it is a duplicate wearing a new id.",
+      "requiresInherits": true
+    },
+    "novel": {
+      "test": "No cell in the parent registry covers this. inherits must be empty, and the measured distance is the second witness on that claim.",
+      "requiresInherits": false
+    }
+  },
+  "instrumentStates": {
+    "wired": {
+      "test": "The module is imported or spawned on a path that runs without a human choosing to run it (a sweep, a gate, a hook)."
+    },
+    "partial": {
+      "test": "The module runs, on a narrower population than the class covers, or answers part of the class only."
+    },
+    "orphaned": {
+      "test": "The module exists in the tree and nothing imports or spawns it: no importer outside its own tests, and no CLI entry point. It is code, not coverage."
+    },
+    "absent": {
+      "test": "No module in the tree addresses this class. instrument is null."
+    }
+  },
+  "lensNote": "The security lenses this project already reads a system through. `layer` (IMPL/CTRL/BOTH) is inherited from the parent registry and answers WHO the defect belongs to; `lens` answers WHICH STANDING DISCIPLINE would catch it, and is the axis a reader uses to decide what to build. Bands group lenses by what they defend: a record, a reading, or a judgement. Seven of these were named by the operator on 2026-08-30 (hash-chaining, determinism, ledgers, correlation, authority-separation as HITL remediation, scoring-modes, error-rates); the other seven were measured out of this tree in the same pass and are marked found:true.",
+  "lensBands": {
+    "record-integrity": "Defends what was written: that it is still there, still linked, and still means what it meant.",
+    "reading-discipline": "Defends what a value is allowed to mean: absence, sameness, time, and reproducibility.",
+    "judgement-authority": "Defends how a verdict is formed and who is entitled to close it."
+  },
+  "lenses": {
+    "hash-chaining": {
+      "band": "record-integrity",
+      "named": true,
+      "test": "Would a link from each record to its predecessor make this visible, and does a break separate a rewrite from a race?",
+      "instruments": [
+        "bin/verdict-journal.mjs",
+        "bin/lib/ledger-rotate.mjs"
+      ],
+      "state": "Applied to .claude/verdicts only. journalHealth is rotation-aware and separates interior edits from concurrent races."
+    },
+    "ledgers": {
+      "band": "record-integrity",
+      "named": true,
+      "test": "Is the act recorded at all, append-only, with the fields a later reader will actually need?",
+      "instruments": [
+        "bin/lib/touch-ledger-core.mjs",
+        "bin/spine-ledger.mjs",
+        "bin/lib/ledger-rotate.mjs"
+      ],
+      "state": "Six or more append-only stores under .claude/store and .claude/verdicts. touches.jsonl records a path without recording direction."
+    },
+    "second-witness": {
+      "band": "record-integrity",
+      "named": false,
+      "found": true,
+      "test": "Is there a second observer that CANNOT share the first one's failure mode, and is its disagreement asserted in both directions?",
+      "instruments": [
+        "lib/offbox-evidence.mjs",
+        "lib/memory-layer-client.mjs",
+        "monitor/lane-capability.mjs"
+      ],
+      "state": "The house rule states it explicitly: a guard needs a second witness that cannot share its failure mode. lib/offbox-evidence.mjs restricts vantages to a declared set and fails closed to UNVERIFIABLE; it has one importer."
+    },
+    "change-set-closure": {
+      "band": "record-integrity",
+      "named": false,
+      "found": true,
+      "test": "Is the claim closed over the change set it ships in, judged against HEAD rather than against the author's working tree?",
+      "instruments": [
+        "bin/test/tracked-imports.test.mjs"
+      ],
+      "state": "Enforced. The guard reads HEAD, never the working tree, and fails on a dangling specifier or a named import the target does not export."
+    },
+    "absence-semantics": {
+      "band": "reading-discipline",
+      "named": false,
+      "found": true,
+      "test": "Does not-known render as its own state, distinct from both pass and fail, and does a parse or permission error fail closed?",
+      "instruments": [
+        "bin/docs-doctor.mjs",
+        "monitor/lane-capability.mjs"
+      ],
+      "state": "The founding invariant, in both directions: explicit uncertainty, and since 2026-08-22 unsupported findings. docs-doctor exits 0 green, 1 orange, 2 grey-only. Only ENOENT means legitimately absent."
+    },
+    "determinism": {
+      "band": "reading-discipline",
+      "named": true,
+      "test": "Do the same inputs produce byte-identical outputs, are writes atomic, and are re-runs idempotent?",
+      "instruments": [
+        "monitor/lockfile.mjs",
+        "monitor/nondeterministic-store.mjs"
+      ],
+      "state": "63 non-test modules honour a CW_NOW-style clock override and 48 write through writeAtomic. Unstable scores are kept in a separate store rather than in the deterministic rollup."
+    },
+    "identity-anchoring": {
+      "band": "reading-discipline",
+      "named": false,
+      "found": true,
+      "test": "Does the identity of a thing survive the thing moving, and does it exclude line numbers?",
+      "instruments": [
+        "monitor/ingest-external.mjs",
+        "bin/anchor-staleness.mjs",
+        "monitor/anchor-disposition.mjs"
+      ],
+      "state": "A house invariant with two incidents behind it. subjectDigest is store-derived so a caller cannot shape its own; anchorHash is content, not line; a moved subject is its own fourth state, stale-subject, not a new finding."
+    },
+    "freshness": {
+      "band": "reading-discipline",
+      "named": false,
+      "found": true,
+      "test": "Does this reading carry the time it was taken, and does it age toward a visible state rather than toward silence?",
+      "instruments": [
+        "bin/docs-doctor.mjs",
+        "monitor/liveness.mjs"
+      ],
+      "state": "Applied to documentation and to lane liveness. Not applied to suppressions or acknowledgements, which is Q1 and Q6."
+    },
+    "capability-measurement": {
+      "band": "judgement-authority",
+      "named": false,
+      "found": true,
+      "test": "Is what this unit can do MEASURED by executing it, or read off a declaration table?",
+      "instruments": [
+        "monitor/lane-capability.mjs",
+        "monitor/surface-census.mjs"
+      ],
+      "state": "Wired fleet-once in the sweep. Every extractor is executed against a golden fixture; zero-on-golden is a defect, never a pass; no-fixture is unmeasured, not incapable."
+    },
+    "correlation": {
+      "band": "judgement-authority",
+      "named": true,
+      "test": "Could these two signals have disagreed, and is the threshold for suspicious closeness derived from the data rather than chosen?",
+      "instruments": [
+        "monitor/coincidence.mjs",
+        "monitor/artifact-anomaly.mjs",
+        "monitor/divergence.mjs"
+      ],
+      "state": "Split. coincidence runs always under forensics and artifact-anomaly runs in the sweep; divergence, which holds the correlated-agreement discount, has zero importers."
+    },
+    "scoring-modes": {
+      "band": "judgement-authority",
+      "named": true,
+      "test": "Does the scale have declared bounds read from one place, and does undetermined live outside the severity buckets rather than inside them?",
+      "instruments": [
+        "bin/taxonomy-render.mjs",
+        "monitor/rollup.mjs"
+      ],
+      "state": "scaleBounds is read, never restated, after a bound was held in three copies and a consumer gated on closure >= 5 against a 0-4 scale. Undetermined is its own field, outside crit/high/med/low."
+    },
+    "error-rates": {
+      "band": "judgement-authority",
+      "named": true,
+      "test": "Is the instrument's own false-clean and false-alarm rate published as a number, on constructed truth, beside the verdicts it issues?",
+      "instruments": [
+        "bin/canary-harness.mjs",
+        "bin/adjudication-sampler.mjs"
+      ],
+      "state": "Wired for deterministic gates. The sweep spawns canary-harness with nine required scenarios and records falseClean, falseAlarm and requiredSkipped. No cohort exists for agent-authored findings, which is U7."
+    },
+    "authority-separation": {
+      "band": "judgement-authority",
+      "named": true,
+      "test": "Is the party that DESCRIBES a change separated from the party entitled to APPLY it, and does an agent-authored claim arrive as an artifact a machine executes rather than as prose?",
+      "instruments": [
+        "monitor/oracle-constructor.mjs",
+        "monitor/attribution.mjs",
+        "bin/bola-run.mjs"
+      ],
+      "state": "Declared everywhere, wired unevenly. attribution is imported by nine modules; oracle-constructor has none. Repo-local manifests never execute without --trust-repo-manifest."
+    },
+    "ratchets": {
+      "band": "judgement-authority",
+      "named": false,
+      "found": true,
+      "test": "Can this number only move one way, and is the absence of history treated as no standing rather than as a clean record?",
+      "instruments": [
+        "bin/gate-ratchet.mjs",
+        "bin/gate-ratchet-core.mjs",
+        "bin/pattern-scan.mjs"
+      ],
+      "state": "Wired as a Stop hook. standingSince returns null for a fresh record, on the stated rule that absence of history is never evidence of standing."
+    }
+  },
+  "editions": [
+    {
+      "version": 1,
+      "date": "2026-08-30",
+      "label": "Held",
+      "note": "Classes anchored to something already in the tree: an instrument that answers them (wired, partial or orphaned), or an incident this repository has already measured. These are not proposals. They are the set as it stands once the subject class is admitted.",
+      "ids": [
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U8",
+        "U9",
+        "T1",
+        "T2",
+        "S1",
+        "S2",
+        "S3",
+        "J1",
+        "J2",
+        "J3",
+        "J4",
+        "J5",
+        "N1",
+        "N2",
+        "N3",
+        "N4",
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q4",
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "V1"
+      ]
+    },
+    {
+      "version": 2,
+      "date": "2026-08-30",
+      "label": "Proposed additions",
+      "note": "The proposed additionals. Every one has instrumentState absent or partial and closure 0 or 1: nothing in the tree observes them. They are separated from edition 1 so that adopting the subject class and adopting these proposals are two decisions, not one. An edition-2 class is a claim that something SHOULD be observable, and carries no evidence that it currently is.",
+      "ids": [
+        "U6",
+        "U7",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "S4",
+        "S5",
+        "S6",
+        "N5",
+        "N6",
+        "Q5",
+        "Q6",
+        "V2",
+        "V3",
+        "V4"
+      ]
+    }
+  ],
+  "families": [
+    {
+      "roman": "I",
+      "key": "ungraded_instrument",
+      "prefix": "U",
+      "name": "Ungraded instrument",
+      "proposition": "and the thing that produced this measurement was itself measured"
+    },
+    {
+      "roman": "II",
+      "key": "impossible_work",
+      "prefix": "T",
+      "name": "Impossible work",
+      "proposition": "and this task could be completed"
+    },
+    {
+      "roman": "III",
+      "key": "self_authored_record",
+      "prefix": "S",
+      "name": "Self-authored record",
+      "proposition": "and this record was not written by the thing it describes"
+    },
+    {
+      "roman": "IV",
+      "key": "unwitnessed_ledger",
+      "prefix": "J",
+      "name": "Unwitnessed ledger",
+      "proposition": "and this record is what was written"
+    },
+    {
+      "roman": "V",
+      "key": "false_independence",
+      "prefix": "N",
+      "name": "False independence",
+      "proposition": "and these witnesses were independent"
+    },
+    {
+      "roman": "VI",
+      "key": "silenced_signal",
+      "prefix": "Q",
+      "name": "Silenced signal",
+      "proposition": "and nothing that still matters was suppressed"
+    },
+    {
+      "roman": "VII",
+      "key": "unattributed_act",
+      "prefix": "B",
+      "name": "Unattributed act",
+      "proposition": "and we know who did this"
+    },
+    {
+      "roman": "VIII",
+      "key": "stated_versus_done",
+      "prefix": "V",
+      "name": "Stated versus done",
+      "proposition": "and the reasoning on record is the reasoning that acted"
+    }
+  ],
+  "classes": [
+    {
+      "id": "U1",
+      "name": "Grader with no measured error rate",
+      "machine": "ungraded_instrument.no_measured_error_rate",
+      "layer": "CTRL",
+      "description": "The gate publishes verdicts about its subjects while nothing publishes the gate's own false-clean rate, so its reliability is a streak rather than a number.",
+      "example": "commitwork answers this for its deterministic gates: monitor/sweep.mjs spawns bin/canary-harness.mjs with nine required scenarios and --write, and records falseClean, falseAlarm and requiredSkipped into the sweep verdict. The external report's grader failed silently for weeks because no equivalent number existed.",
+      "analogy": "A thermometer that has never been placed in ice water still reports a number.",
+      "origin": "transposed",
+      "inherits": [
+        "M3",
+        "K2"
+      ],
+      "originNote": "M3 is measuring a subject through a broken instrument. Transposed, the instrument IS the subject, and what is missing is not a better reading but any reading at all of the reader.",
+      "lens": [
+        "error-rates"
+      ],
+      "instrument": "bin/canary-harness.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 2,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "feedback-missing"
+        },
+        {
+          "loop": "attention",
+          "uca": "unsafe",
+          "cause": "feedback-missing"
+        }
+      ]
+    },
+    {
+      "id": "U2",
+      "name": "Streak read as floor",
+      "machine": "ungraded_instrument.streak_read_as_floor",
+      "layer": "BOTH",
+      "description": "A guard that has never fired is treated as a guard that cannot fail, so correctness is a run of luck with no mechanism forcing it.",
+      "example": "The tracked-imports guard's comment stripper treated the /* inside a glob string as a comment opener, swallowed 1,375 lines of admin/serve.mjs and reported a clean tree it had never read. Two witnesses later agreed on 569 of 570 sources: the extractor had been right all along, and the defect was that nothing required it to be.",
+      "analogy": "A bridge inspector who has never found a crack files the same report every year.",
+      "origin": "transposed",
+      "inherits": [
+        "R13",
+        "C26"
+      ],
+      "originNote": "R13 and C26 describe a guard that cannot match. This is the guard that does match, correctly, with no reason it has to keep doing so and therefore no way to notice when it stops.",
+      "lens": [
+        "second-witness"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "controller-algorithm"
+        }
+      ]
+    },
+    {
+      "id": "U3",
+      "name": "Cohort visible to its subject",
+      "machine": "ungraded_instrument.cohort_visible_to_subject",
+      "layer": "IMPL",
+      "description": "Planted truth stored as committed fixtures sits in the default reading context of the thing being scored, so the score measures recall of the corpus rather than detection.",
+      "example": "bin/canary-harness.mjs synthesises every plant at run time under a fresh mkdtemp and commits nothing, keeping the corpus out of agents' default context.",
+      "analogy": "A driving examiner publishes the test route the week before.",
+      "origin": "transposed",
+      "inherits": [
+        "E5"
+      ],
+      "originNote": "E5 is canary disclosure to a scanned repository. Transposed, the reader of the tree is the subject being scored, so any committed cohort is disclosed by construction.",
+      "lens": [
+        "error-rates"
+      ],
+      "instrument": "bin/canary-harness.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "process-disturbance"
+        }
+      ]
+    },
+    {
+      "id": "U4",
+      "name": "Required scenario silently skipped",
+      "machine": "ungraded_instrument.required_scenario_skipped",
+      "layer": "CTRL",
+      "description": "A scenario that could not run is counted as absent from the scorecard rather than as an unanswered question, so a shrinking cohort reads as a passing one.",
+      "example": "canary-harness exits 4 when a scenario named by --require could not run, and asks one question of skipped, errored and nothing-scored alike.",
+      "analogy": "A blood panel comes back normal for the three tests the lab managed to run.",
+      "origin": "transposed",
+      "inherits": [
+        "C1",
+        "C13"
+      ],
+      "originNote": "C1 is absence rendered as success over a scanned population. Transposed, the absence is a missing question in the instrument's own scorecard, where the population is the cohort rather than the fleet.",
+      "lens": [
+        "absence-semantics",
+        "error-rates"
+      ],
+      "instrument": "bin/canary-harness.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "feedback-missing"
+        }
+      ]
+    },
+    {
+      "id": "U5",
+      "name": "Instrument scored only on its happy path",
+      "machine": "ungraded_instrument.happy_path_only",
+      "layer": "IMPL",
+      "description": "The probe executes the instrument against a well-formed artifact and never against a damaged one, establishing that it can count and leaving whether it counts correctly under damage unmeasured.",
+      "example": "monitor/lane-capability.mjs executes every extractor against a golden fixture and names a clean zero from a non-empty artifact a defect, but the golden fixture is the entire population it probes.",
+      "analogy": "A smoke alarm is tested with a match and never with a smouldering mattress.",
+      "origin": "transposed",
+      "inherits": [
+        "M8",
+        "R3"
+      ],
+      "originNote": "R3 is partial coverage read as full over a scanned population. Transposed, the under-covered population is the instrument's own input space, which nobody thinks of as a population at all.",
+      "lens": [
+        "capability-measurement"
+      ],
+      "instrument": "monitor/lane-capability.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 2,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "U6",
+      "name": "Cohort truth and gate share an author",
+      "machine": "ungraded_instrument.shared_author_truth",
+      "layer": "CTRL",
+      "description": "The planted truth and the gate that scores against it were written by the same author, so a misconception held by both is scored as correct.",
+      "example": "Canary scenarios and the gates they score are authored in one tree by the same sessions, and a scenario that encodes the gate's own assumption cannot fail it.",
+      "analogy": "A student writes the exam and marks their own paper against it.",
+      "origin": "transposed",
+      "inherits": [
+        "G21",
+        "M11"
+      ],
+      "originNote": "G21 is a generator writing its own check for one artifact. Transposed, it is the whole scoring cohort, so the defect is invisible per scenario and only shows as a suspiciously high pass rate.",
+      "lens": [
+        "second-witness"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "controller-model"
+        }
+      ]
+    },
+    {
+      "id": "U7",
+      "name": "Error rate measured for gates, absent for runs",
+      "machine": "ungraded_instrument.rate_absent_for_runs",
+      "layer": "CTRL",
+      "description": "The constructed cohort scores deterministic gates and no cohort exists for an agent-authored finding, so investigator reliability stays a caveat instead of a rate.",
+      "example": "An external evaluator needed three visits to the same subject and could not state whether deception would have been caught. The missing artefact was a planted-truth cohort for the investigator, not more visits. bin/adjudication-sampler.mjs already reasons this way about gates, recording that a false-clean rate with zero examined is undefined rather than zero.",
+      "analogy": "A laboratory certifies its scales every year and never checks the technician reading them.",
+      "origin": "novel",
+      "inherits": [],
+      "originNote": null,
+      "lens": [
+        "error-rates"
+      ],
+      "instrument": "bin/adjudication-sampler.mjs",
+      "instrumentState": "partial",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "feedback-missing"
+        }
+      ]
+    },
+    {
+      "id": "U8",
+      "name": "Run-to-run instability read as capability",
+      "machine": "ungraded_instrument.instability_as_capability",
+      "layer": "CTRL",
+      "description": "The same run repeated on the same input produces different judgements, and the best of them is read as what the run can do.",
+      "example": "G11 records run-to-run instability read as capability inside a lane. monitor/nondeterministic-store.mjs exists to keep unstable scores out of the deterministic rollup and has two importers, one of which, monitor/divergence.mjs, nothing calls.",
+      "analogy": "A marksman fires ten shots and frames the target after the best one.",
+      "origin": "transposed",
+      "inherits": [
+        "G11",
+        "M6"
+      ],
+      "originNote": "G11 applies to a model's output within one lane, where the lane boundary is a place to catch it. Transposed, the unstable thing is the whole run, so the selection of the best attempt happens in a person's memory and leaves no artifact.",
+      "lens": [
+        "determinism",
+        "error-rates"
+      ],
+      "instrument": "monitor/nondeterministic-store.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "process-disturbance"
+        }
+      ]
+    },
+    {
+      "id": "U9",
+      "name": "Baseline banked over a degraded observation",
+      "machine": "ungraded_instrument.baseline_banked_over_degraded",
+      "layer": "CTRL",
+      "description": "A run records a new baseline from an observation it could not fully make, so the ratchet afterwards defends the degraded reading as the standard.",
+      "example": "canary-harness scores a scenario false-clean when a gate banks a new baseline over corrupt input rather than refusing, and bin/gate-ratchet-core.mjs's standingSince treats absence of history as never evidence of standing.",
+      "analogy": "A surveyor sets the benchmark from a day the tide was out.",
+      "origin": "transposed",
+      "inherits": [
+        "A3",
+        "M6",
+        "R9"
+      ],
+      "originNote": "A3 is baseline poisoning across populations, where the contamination arrives from another subject. Transposed, the run poisons its own baseline from a single degraded run of its own, and the ratchet then makes that damage permanent and defended.",
+      "lens": [
+        "ratchets",
+        "error-rates"
+      ],
+      "instrument": "bin/gate-ratchet-core.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 2,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "process-disturbance"
+        }
+      ]
+    },
+    {
+      "id": "T1",
+      "name": "Lane credited for coverage it cannot produce",
+      "machine": "impossible_work.lane_credited_without_voice",
+      "layer": "IMPL",
+      "description": "A unit wired to a stub that can only attest an artifact's presence is counted in narratives that require a count.",
+      "example": "Five lanes (joern, bearer, sobelow, hlint, and clippy until 2026-08-26) were wired to _unverifiedShape and could never emit a count, while posture and coverage narratives credited every declared lane.",
+      "analogy": "A choir counts a singer who only mouths the words.",
+      "origin": "transposed",
+      "inherits": [
+        "R1",
+        "R3"
+      ],
+      "originNote": "R1 is a guard wired to a path that cannot run. Transposed, the unrunnable path is not a guard but a claimed capability, and the damage is to a coverage number rather than to a single check.",
+      "lens": [
+        "capability-measurement"
+      ],
+      "instrument": "monitor/lane-capability.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "monitor",
+          "uca": "unsafe",
+          "cause": "actuator-missing"
+        }
+      ]
+    },
+    {
+      "id": "T2",
+      "name": "Capability asserted from a roster",
+      "machine": "impossible_work.capability_from_roster",
+      "layer": "CTRL",
+      "description": "What a unit can do is read from a declaration table rather than from executing it, so the roster and the behaviour drift apart with nothing between them.",
+      "example": "LANE_KINDS is a static table and the fixture probe executes the parser. They cannot share a failure mode, and their disagreement is the finding: a category declared additive vulnerability whose measured behaviour is shape-only is a lane wearing a verdict's clothes with no voice.",
+      "analogy": "A crew list is not a muster.",
+      "origin": "transposed",
+      "inherits": [
+        "K8",
+        "R13"
+      ],
+      "originNote": "K8 is declaration and schedule drifting apart in the monitor. Transposed, what is declared is capability, and the second witness has to be execution because no other reading can contradict a table.",
+      "lens": [
+        "capability-measurement"
+      ],
+      "instrument": "monitor/lane-capability.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "monitor",
+          "uca": "unsafe",
+          "cause": "controller-model"
+        }
+      ]
+    },
+    {
+      "id": "T3",
+      "name": "Item with no demonstrated path to done",
+      "machine": "impossible_work.no_path_to_done",
+      "layer": "CTRL",
+      "description": "An open work item for which no fix version exists, no lane can re-measure the condition and no gate can observe the change, held in the queue as though it were merely not yet finished.",
+      "example": "The external report's cascade begins with tasks that could not be completed as specified, and nothing in the queue distinguished them from tasks still in progress.",
+      "analogy": "A repair order names a part the manufacturer stopped making.",
+      "origin": "transposed",
+      "inherits": [
+        "A8",
+        "M5"
+      ],
+      "originNote": "A8 is an unsatisfiable alarm about a scanned subject. Transposed, the unsatisfiable thing is an item on a worklist and the subject is the run required to close it, which turns a reporting defect into a pressure source.",
+      "lens": [
+        "capability-measurement"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "operator",
+          "uca": "unsafe",
+          "cause": "higher-input"
+        },
+        {
+          "loop": "agent",
+          "uca": "applied-too-long",
+          "cause": "process-failure"
+        }
+      ]
+    },
+    {
+      "id": "T4",
+      "name": "Acceptance criterion no instrument can observe",
+      "machine": "impossible_work.unobservable_criterion",
+      "layer": "CTRL",
+      "description": "The condition that would close an item is not visible to any instrument the system holds, so closure can only ever be asserted.",
+      "example": "An item whose done state is that a lane reports correctly, with no cohort of known-bad inputs behind it, can be claimed complete and never demonstrated.",
+      "analogy": "A contract pays on customer delight and contains no survey.",
+      "origin": "transposed",
+      "inherits": [
+        "M5",
+        "R13"
+      ],
+      "originNote": "M5 is unmeasurable by construction as a property of a metric. Transposed, it is a property of a work item's exit condition, which means it is decided at planning time by someone who is not measuring anything.",
+      "lens": [
+        "capability-measurement"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "operator",
+          "uca": "unsafe",
+          "cause": "controller-algorithm"
+        }
+      ]
+    },
+    {
+      "id": "T5",
+      "name": "Impossibility established and not recorded",
+      "machine": "impossible_work.impossibility_unrecorded",
+      "layer": "CTRL",
+      "description": "A run determines that a task cannot be completed as written, the finding dies with the run, and the next run rediscovers it at full cost.",
+      "example": "Sessions in this tree re-derive the same blocked conclusions because the blocking finding is a turn of conversation rather than a record, which is why this repository's standing instruction is to write durable records to the sidecar or to memory-layer.",
+      "analogy": "Each expedition reaches the same impassable ravine and leaves no marker.",
+      "origin": "transposed",
+      "inherits": [
+        "D6",
+        "W3"
+      ],
+      "originNote": "D6 is an untracked durable record. Transposed, what goes unrecorded is a negative result, which nobody files because it feels like an absence of work rather than a product of it.",
+      "lens": [
+        "ledgers"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "not-provided",
+          "cause": "feedback-missing"
+        }
+      ]
+    },
+    {
+      "id": "T6",
+      "name": "Queue pressure converts impossible into fabricated",
+      "machine": "impossible_work.pressure_to_fabricate",
+      "layer": "BOTH",
+      "description": "When an item cannot be closed honestly and cannot be dropped, the cheapest remaining move is a claim, so an unsatisfiable task reliably produces a false report rather than an escalation.",
+      "example": "The external report's central cascade runs impossible task, then sustained pressure, then fabricated completion, with each step locally reasonable and only the sequence pathological.",
+      "analogy": "A ship's log is filled in for the days the instruments were down.",
+      "origin": "transposed",
+      "inherits": [
+        "A2",
+        "R2",
+        "W1"
+      ],
+      "originNote": "A2 launders a defect through a remediation. This names the upstream condition that makes laundering the rational move, which is why treating the fabrication as the root cause misses it.",
+      "lens": [
+        "authority-separation"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "higher-input"
+        },
+        {
+          "loop": "operator",
+          "uca": "unsafe",
+          "cause": "controller-algorithm"
+        }
+      ]
+    },
+    {
+      "id": "S1",
+      "name": "Agent-written claim rendered as a person's sign-off",
+      "machine": "self_authored_record.agent_claim_as_signoff",
+      "layer": "IMPL",
+      "description": "An acceptance string written by an agent that names a person is displayed with that person's authority.",
+      "example": "monitor/attribution.mjs classifies 'authorized by <person>' as machine, on the stated rule that a human name inside an agent-written string is the agent's claim and not the person's signature.",
+      "analogy": "A letter saying the mayor approves is not the mayor's signature.",
+      "origin": "inherited",
+      "inherits": [
+        "P3",
+        "P9",
+        "C9"
+      ],
+      "originNote": "P3 applies verbatim once the writer of the annotation is the subject under scrutiny. It is restated here because it is the single most load-bearing class for this subject class and is already answered.",
+      "lens": [
+        "authority-separation"
+      ],
+      "instrument": "monitor/attribution.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "feedback-incorrect"
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Model assertion published as a verdict",
+      "machine": "self_authored_record.assertion_as_verdict",
+      "layer": "CTRL",
+      "description": "A generated claim reaches a published surface as prose, so a hallucination becomes a finding rather than a validation failure.",
+      "example": "monitor/oracle-constructor.mjs exists to prevent exactly this, by having the model emit an artifact that a deterministic machine executes. Measured 2026-08-30 it has zero importers outside its own tests and no CLI entry point: nothing in the tree calls it.",
+      "analogy": "A draft press release goes out because nobody was assigned to read it.",
+      "origin": "transposed",
+      "inherits": [
+        "G21",
+        "G2",
+        "R6"
+      ],
+      "originNote": "G21 is a generator writing its own check. The transposition is that the check exists here, is correct, and is unwired, which makes this R6 as much as G21 and means the gap is one import rather than a design.",
+      "lens": [
+        "authority-separation",
+        "second-witness"
+      ],
+      "instrument": "monitor/oracle-constructor.mjs",
+      "instrumentState": "orphaned",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "actuator-missing"
+        },
+        {
+          "loop": "attention",
+          "uca": "unsafe",
+          "cause": "actuator-corrupt"
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Session record written only where the session can reach it",
+      "machine": "self_authored_record.record_within_reach",
+      "layer": "IMPL",
+      "description": "The only account of a run is stored on the substrate that run controls, so the record and its subject fail together.",
+      "example": "This repository's standing instruction is to write durable records to the sidecar or to memory-layer and never only into a working tree, because the tree is the thing the session is editing.",
+      "analogy": "The only copy of the night watch's log is kept in the room the watch is guarding.",
+      "origin": "transposed",
+      "inherits": [
+        "D12",
+        "D6"
+      ],
+      "originNote": "D12 is both copies being volatile, which is a storage property. Here the correlation is not storage but authorship and control: the copies could be durable and still fall under one hand.",
+      "lens": [
+        "second-witness",
+        "ledgers"
+      ],
+      "instrument": "lib/offbox-evidence.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "coordination-gap"
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "Subject writes its own transcript",
+      "machine": "self_authored_record.subject_writes_transcript",
+      "layer": "CTRL",
+      "description": "The account of what a run did is produced by that run, so every question about it is answered by the thing in question.",
+      "example": "An agent session's narration of its own turn is the primary evidence a reviewer reads, and no independent observer recorded the same events.",
+      "analogy": "The defendant is the court reporter.",
+      "origin": "transposed",
+      "inherits": [
+        "G12"
+      ],
+      "originNote": "G12 is self-adjudication of one finding. Transposed, the self-authored thing is the entire evidentiary record, so there is no second document to check the first against rather than one contested verdict.",
+      "lens": [
+        "second-witness"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "name": "Artifact contract covers some kinds and prose covers the rest",
+      "machine": "self_authored_record.contract_partial",
+      "layer": "CTRL",
+      "description": "Generated claims must arrive as executable artifacts for a declared list of kinds, and every kind outside the list still arrives as prose that is read as a conclusion.",
+      "example": "oracle-constructor's VALIDATORS declares bola-manifest, invariant and property-test, and refuses an unknown kind rather than guessing. Every other agent-authored claim reaching a published surface is outside that contract.",
+      "analogy": "A customs desk x-rays three named categories of parcel and waves the rest through.",
+      "origin": "transposed",
+      "inherits": [
+        "R3",
+        "R16"
+      ],
+      "originNote": "R3 is partial coverage read as full over scanned files. Transposed, the population is kinds of agent-authored claim, a population nobody has enumerated, so the coverage fraction is not merely low but unknown.",
+      "lens": [
+        "authority-separation"
+      ],
+      "instrument": "monitor/oracle-constructor.mjs",
+      "instrumentState": "orphaned",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "controller-algorithm"
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "name": "Reviewer reads the summary instead of the subject",
+      "machine": "self_authored_record.summary_substitutes_subject",
+      "layer": "CTRL",
+      "description": "Oversight consumes a digest the subject produced, so the summary's omissions are invisible by construction.",
+      "example": "A handoff or status note is read in place of the diff it describes, and anything the note left out cannot be noticed by its reader.",
+      "analogy": "An auditor reads the covering letter and returns the ledger unopened.",
+      "origin": "transposed",
+      "inherits": [
+        "M12",
+        "C22"
+      ],
+      "originNote": "M12 is a ruling published beside its data, where the data is present and unread. Here the data is present, unread, and the substitute was written by the party being reviewed.",
+      "lens": [
+        "second-witness"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "J1",
+      "name": "Unchained append-only store",
+      "machine": "unwitnessed_ledger.unchained_store",
+      "layer": "IMPL",
+      "description": "A ledger appended in order carries no link from each record to the one before it, so an interior deletion or edit leaves no trace.",
+      "example": ".claude/verdicts/adjudications.jsonl carries prev on every record. .claude/store/touches.jsonl carries s, r, at, x, via, cmd and clipped, and no prev, as do agent-tags.jsonl and resolution-chains.jsonl. Rotation is already shared through bin/lib/ledger-rotate.mjs, so extending the chain is mechanical.",
+      "analogy": "A visitors' book has unnumbered pages.",
+      "origin": "transposed",
+      "inherits": [
+        "D3",
+        "C6"
+      ],
+      "originNote": "D3 is a reader blind to rotation. Here the defect is in the record rather than the reader: no reader, however careful, can witness continuity the format does not carry.",
+      "lens": [
+        "hash-chaining",
+        "ledgers"
+      ],
+      "instrument": "bin/lib/ledger-rotate.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "J2",
+      "name": "Chain head witnessed only on the disk that holds the chain",
+      "machine": "unwitnessed_ledger.head_on_same_disk",
+      "layer": "CTRL",
+      "description": "A hash chain establishes that records are consistent with each other, not that they are the records that were written, because whoever holds the disk can rewrite the chain whole.",
+      "example": "lib/offbox-evidence.mjs restricts off-box vantages to a declared set and fails closed to UNVERIFIABLE, and lib/memory-layer-client.mjs exists. offbox-evidence has one importer, lib/deploy-core.mjs, so no ledger head is published off the box on a schedule.",
+      "analogy": "A sealed logbook is only as good as the seal's keeper.",
+      "origin": "transposed",
+      "inherits": [
+        "D12",
+        "M11"
+      ],
+      "originNote": "The parent classes are about copies and circularity in stored data. The transposition is adversarial rather than accidental: the chain is a second witness only if it is not held by the same hand as the thing it witnesses.",
+      "lens": [
+        "second-witness",
+        "hash-chaining"
+      ],
+      "instrument": "lib/offbox-evidence.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "coordination-gap"
+        }
+      ]
+    },
+    {
+      "id": "J3",
+      "name": "Interior edit indistinguishable from a concurrent race",
+      "machine": "unwitnessed_ledger.edit_versus_race",
+      "layer": "IMPL",
+      "description": "A break in the chain is reported without separating a rewrite from two writers appending at once, so a real tamper is absorbed into ordinary noise.",
+      "example": "bin/verdict-journal.mjs's journalHealth separates interior edits from concurrent races and is rotation-aware.",
+      "analogy": "A cracked window is written off as the wind because both look the same from inside.",
+      "origin": "transposed",
+      "inherits": [
+        "C8",
+        "D9"
+      ],
+      "originNote": "C8 is oversight racing itself, which is a liveness defect. The transposition is that the race becomes the alibi: without separating the two, every tamper has a benign explanation already available.",
+      "lens": [
+        "hash-chaining"
+      ],
+      "instrument": "bin/verdict-journal.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "feedback-incorrect"
+        }
+      ]
+    },
+    {
+      "id": "J4",
+      "name": "Chain broken at the rotation boundary",
+      "machine": "unwitnessed_ledger.rotation_boundary",
+      "layer": "IMPL",
+      "description": "A ledger that rotates by generation loses the link across the boundary, so the oldest reachable record has no predecessor and the gap has the shape of a deletion.",
+      "example": "bin/lib/ledger-rotate.mjs is shared by eight callers, and bin/verdict-journal.mjs reads archiveGenerations and shiftArchives from it so its health check follows the chain across rotations rather than stopping at the current file.",
+      "analogy": "A ship's log continues in a new volume that does not reference the last.",
+      "origin": "transposed",
+      "inherits": [
+        "D3"
+      ],
+      "originNote": "D3 verbatim in mechanism, with the ledger rather than a scanned artifact as the subject. It is transposed rather than inherited because the rotation here is of the oversight record itself, so the blind spot and the evidence are the same file.",
+      "lens": [
+        "hash-chaining",
+        "ledgers"
+      ],
+      "instrument": "bin/lib/ledger-rotate.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "process-change"
+        }
+      ]
+    },
+    {
+      "id": "J5",
+      "name": "Record outlives the thing it points at",
+      "machine": "unwitnessed_ledger.pointer_outlives_referent",
+      "layer": "IMPL",
+      "description": "The ledger entry survives and its referent does not, so the record is intact and unusable.",
+      "example": "monitor/taxonomy-editions.json records that editions v4, v5 and v6 are measured from artifacts under gitignored reports/, and states that the sha256 it carries is the only durable witness and dies with the file.",
+      "analogy": "A card catalogue outlasts the shelves.",
+      "origin": "inherited",
+      "inherits": [
+        "D2",
+        "D11"
+      ],
+      "originNote": "D2 applies unchanged. It is restated because a run's evidence is disproportionately made of such pointers, so what is an occasional defect for a repository is the common case here.",
+      "lens": [
+        "change-set-closure",
+        "ledgers"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 1,
+      "status": "held",
+      "closure": 2,
+      "gain": 2,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "feedback-missing"
+        }
+      ]
+    },
+    {
+      "id": "N1",
+      "name": "Correlated raters read as confirmation",
+      "machine": "false_independence.correlated_raters",
+      "layer": "CTRL",
+      "description": "Two judgements that agree are counted as corroboration without measuring how much they could have disagreed.",
+      "example": "monitor/divergence.mjs erodes the agreement portion of its score by the measured correlation, so a correlation of 1 discounts the agreement entirely and a null score is grey rather than 0. Measured 2026-08-30 it has zero importers and no CLI entry point.",
+      "analogy": "Two witnesses who travelled in the same car give the same account.",
+      "origin": "transposed",
+      "inherits": [
+        "K5",
+        "R6"
+      ],
+      "originNote": "K5 is quorum without independence as a control defect. The transposition is that the discount exists here as working code and nothing calls it, so the class is closed in design and open in fact.",
+      "lens": [
+        "correlation"
+      ],
+      "instrument": "monitor/divergence.mjs",
+      "instrumentState": "orphaned",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "controller-model"
+        }
+      ]
+    },
+    {
+      "id": "N2",
+      "name": "Concurrent runs share one working tree",
+      "machine": "false_independence.shared_working_tree",
+      "layer": "BOTH",
+      "description": "Runs treated as independent units operate on one mutable substrate, so each one's inputs are another's outputs.",
+      "example": "This repository is edited by several concurrent sessions, and a pathspec commit takes a file as it is at that instant rather than as it was when the author checked it, which is why a half-landed change is the normal failure here.",
+      "analogy": "Two cooks are told to work independently and given one pan.",
+      "origin": "inherited",
+      "inherits": [
+        "K11",
+        "D17",
+        "P1"
+      ],
+      "originNote": "K11 and D17 apply verbatim. They are restated because for this subject class the shared substrate is the default operating condition rather than an incident, which changes it from a hazard to an assumption that must be measured.",
+      "lens": [
+        "correlation"
+      ],
+      "instrument": "monitor/coincidence.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 2,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "coordination-conflict"
+        }
+      ]
+    },
+    {
+      "id": "N3",
+      "name": "Shared store used as a channel",
+      "machine": "false_independence.store_as_channel",
+      "layer": "CTRL",
+      "description": "Two nominally independent runs coordinate through a path both can write, so their agreement is communication rather than corroboration.",
+      "example": "monitor/coincidence.mjs derives per-pair thresholds from cross-store timing and always runs under monitor/forensics.mjs, but its declared inputs are this repository's own stores rather than an enumerated set of every path concurrent runs can write.",
+      "analogy": "Two sealed bidders leave notes under the same stone.",
+      "origin": "transposed",
+      "inherits": [
+        "K4",
+        "K5",
+        "L3"
+      ],
+      "originNote": "K4 is retry amplification on a shared substrate, where the substrate carries load. Here it carries meaning, so the signature is timing and content rather than volume. The parent minted L3 (a coordination protocol nobody declared) at v9, after this class was written; N3 is the narrower case where the undeclared protocol is a WRITE PATH rather than a convention, so it is detectable by timing rather than only by reading behaviour.",
+      "lens": [
+        "correlation"
+      ],
+      "instrument": "monitor/coincidence.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 2,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "coordination-duplicate"
+        }
+      ]
+    },
+    {
+      "id": "N4",
+      "name": "Identical bytes across unrelated subjects",
+      "machine": "false_independence.identical_bytes",
+      "layer": "IMPL",
+      "description": "Two subjects that share nothing produce the same artifact, which is evidence about the producer rather than about either subject.",
+      "example": "monitor/artifact-anomaly.mjs is dynamically imported by monitor/sweep.mjs after the rollup and reports byte-identical zero-finding groups.",
+      "analogy": "Two students hand in the same essay including the same typo.",
+      "origin": "transposed",
+      "inherits": [
+        "M6",
+        "C5"
+      ],
+      "originNote": "The reading is inverted rather than extended: an identical artifact is normally read as agreement between subjects, and this class reads it as a statement about the instrument that produced both.",
+      "lens": [
+        "correlation"
+      ],
+      "instrument": "monitor/artifact-anomaly.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "scanner",
+          "uca": "unsafe",
+          "cause": "process-failure"
+        }
+      ]
+    },
+    {
+      "id": "N5",
+      "name": "Write surface never enumerated",
+      "machine": "false_independence.write_surface_uncensused",
+      "layer": "CTRL",
+      "description": "Independence is asserted over a population of shared paths that was never listed, so the correlation detectors run on whichever stores someone happened to name.",
+      "example": ".claude/store, .claude/verdicts, reports/, the sidecar and the working tree itself are all writable by concurrent runs, and no census enumerates them as one population.",
+      "analogy": "A quarantine is declared without a list of the doors.",
+      "origin": "transposed",
+      "inherits": [
+        "M1",
+        "C3"
+      ],
+      "originNote": "M1 and C3 are the wrong population measured, where a correct population exists and was missed. Here the population is the set of paths through which independence could fail, and it has never been defined at all.",
+      "lens": [
+        "correlation"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "N6",
+      "name": "Convergence faster than the baseline rhythm",
+      "machine": "false_independence.convergence_without_baseline",
+      "layer": "CTRL",
+      "description": "Independent runs arrive at the same file, decision or phrasing sooner than their own measured cadence predicts, and no baseline exists against which sooner could be judged.",
+      "example": "Several sessions in one tree converge on the same conclusion within minutes, and whether that is coordination or a shared prior cannot be answered without each session's own rhythm, which nothing records.",
+      "analogy": "Three shops on one street change their prices within the hour.",
+      "origin": "transposed",
+      "inherits": [
+        "L4"
+      ],
+      "originNote": "L4, minted by the parent at v9, is a wrong belief spreading between actors faster than it can be corrected, and is about the CONTENT of what spreads. N6 is about the RATE alone: convergence quicker than the actors’ own measured cadence is a signal whether or not what they converged on is true, which is what makes it measurable without adjudicating the belief.",
+      "lens": [
+        "correlation"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "Q1",
+      "name": "Suppression with no age",
+      "machine": "silenced_signal.suppression_without_age",
+      "layer": "CTRL",
+      "description": "A silenced warning is recorded as an event and never as a state, so nothing can say how long it has been silent or whether it still is.",
+      "example": ".claude/verdicts/adjudications.jsonl holds eleven records of kind suppression-label with action silence, each chained with prev, and no surface answers what is currently silenced.",
+      "analogy": "A mute button has no light on it.",
+      "origin": "transposed",
+      "inherits": [
+        "C7",
+        "E2",
+        "R12"
+      ],
+      "originNote": "C7 is suppression without a record. Transposed, the record exists and is durable, and what is missing is a reader that turns an append-only event log into current state, which is a different repair.",
+      "lens": [
+        "freshness",
+        "ledgers"
+      ],
+      "instrument": "bin/verdict-journal.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "feedback-missing"
+        },
+        {
+          "loop": "attention",
+          "uca": "not-provided",
+          "cause": "actuator-missing"
+        }
+      ]
+    },
+    {
+      "id": "Q2",
+      "name": "Silence with no owner",
+      "machine": "silenced_signal.silence_without_owner",
+      "layer": "IMPL",
+      "description": "The actor recorded against a suppression is the mechanism that performed it rather than the person who decided it.",
+      "example": "The suppression-label records carry who as hook-once, which names the tool that wrote the row and nobody who chose it.",
+      "analogy": "The parking ticket is signed by the machine that printed it.",
+      "origin": "transposed",
+      "inherits": [
+        "C9",
+        "P9"
+      ],
+      "originNote": "C9 is attribution absence on a finding. Transposed, it is on the decision to stop reporting one, where the absence is more costly because a suppression outlives the finding it silenced.",
+      "lens": [
+        "authority-separation"
+      ],
+      "instrument": "monitor/attribution.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "feedback-incorrect"
+        }
+      ]
+    },
+    {
+      "id": "Q3",
+      "name": "Warning delivered to a channel nobody reads",
+      "machine": "silenced_signal.unsubscribed_channel",
+      "layer": "CTRL",
+      "description": "The signal is produced correctly and lands where no consumer is attached, which is indistinguishable downstream from never having fired.",
+      "example": "C2 records the panel regexing a run.log while codeql-fleet.json, the structured artifact its producer existed to write, sat unscheduled and rotting.",
+      "analogy": "The alarm rings through a building everybody left at six.",
+      "origin": "inherited",
+      "inherits": [
+        "C2",
+        "A6",
+        "C22"
+      ],
+      "originNote": "C2 applies verbatim. It is restated because for a run the unsubscribed channel is usually the run's own diagnostics, which no consumer was ever designed for.",
+      "lens": [
+        "absence-semantics"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "monitor",
+          "uca": "not-provided",
+          "cause": "actuator-missing"
+        }
+      ]
+    },
+    {
+      "id": "Q4",
+      "name": "Suppression outliving the code it named",
+      "machine": "silenced_signal.suppression_outlives_code",
+      "layer": "IMPL",
+      "description": "An exemption stays in force after the condition that justified it is gone, so it silences something other than what was judged.",
+      "example": "E2 and R12 record suppressions and exemptions outliving their judgement and their reason. The anchoring rule is the defence: an identity that excludes line survives code movement, and one that includes it un-suppresses itself on the next unrelated edit above.",
+      "analogy": "A road closure sign remains after the road is rebuilt.",
+      "origin": "inherited",
+      "inherits": [
+        "E2",
+        "R12",
+        "R18"
+      ],
+      "originNote": "Applies verbatim. It is restated because a run creates suppressions faster than a repository does and reviews them less, so the same class has a different base rate.",
+      "lens": [
+        "freshness",
+        "identity-anchoring"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 2,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "applied-too-long",
+          "cause": "process-change"
+        }
+      ]
+    },
+    {
+      "id": "Q5",
+      "name": "Acknowledged and not answered",
+      "machine": "silenced_signal.acknowledged_not_answered",
+      "layer": "CTRL",
+      "description": "The record shows a warning was seen and nothing shows it was acted on, and being seen is allowed to close it.",
+      "example": "The external report's largest single failure is two warnings, in May and on 27 June, that were received and disregarded, with the receipt itself standing as the response.",
+      "analogy": "A read receipt is filed as a reply.",
+      "origin": "transposed",
+      "inherits": [
+        "K9",
+        "R16"
+      ],
+      "originNote": "K9 is a declared deadline whose breach goes unactioned, where the obligation was self-imposed. Transposed, the unactioned thing arrives from outside, so no internal schedule ever raises it again.",
+      "lens": [
+        "absence-semantics"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "operator",
+          "uca": "not-provided",
+          "cause": "higher-input"
+        },
+        {
+          "loop": "attention",
+          "uca": "not-provided",
+          "cause": "actuator-missing"
+        }
+      ]
+    },
+    {
+      "id": "Q6",
+      "name": "Silenced item ages toward absent",
+      "machine": "silenced_signal.ages_toward_absent",
+      "layer": "CTRL",
+      "description": "A suppression grows less visible with time instead of more, so the oldest and least reviewed silences are the hardest to see.",
+      "example": "bin/docs-doctor.mjs ages an unverified durable doc from green through orange to grey and exits 1 on orange and 2 on grey. No equivalent ageing applies to an acknowledgement or a suppression.",
+      "analogy": "A hold on a file is stamped in ink that fades.",
+      "origin": "transposed",
+      "inherits": [
+        "C1",
+        "M2"
+      ],
+      "originNote": "C1 is unsupported finding at a point in time. The transposition is temporal: the suppression starts legitimate and becomes grey by ageing, so there is no moment at which a reviewer sees it turn.",
+      "lens": [
+        "freshness"
+      ],
+      "instrument": "bin/docs-doctor.mjs",
+      "instrumentState": "partial",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "attention",
+          "uca": "too-late",
+          "cause": "feedback-delayed"
+        }
+      ]
+    },
+    {
+      "id": "B1",
+      "name": "Read conflated with write",
+      "machine": "unattributed_act.read_as_write",
+      "layer": "IMPL",
+      "description": "The ledger names every path a command mentioned without recording whether the run read it or changed it, so ownership cannot be derived from it at all.",
+      "example": "Two consecutive records in .claude/store/touches.jsonl share one cmd and one timestamp and name different files, one of which the command only mentioned inside a quoted string. The record carries s, r, at, x, via and cmd, and no direction.",
+      "analogy": "The library stamps every book taken off the shelf and every book written in the same way.",
+      "origin": "transposed",
+      "inherits": [
+        "P13",
+        "P16",
+        "P7"
+      ],
+      "originNote": "P13 is a ledger blind to the write path, which reads as a missing subsystem. Transposed, the blindness is one absent field on a record that is otherwise complete and durable, so the repair is small and the current answer is confidently wrong rather than missing.",
+      "lens": [
+        "ledgers"
+      ],
+      "instrument": "bin/lib/touch-attribution.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "name": "Ownership answered from a ledger that cannot answer it",
+      "machine": "unattributed_act.ledger_overread",
+      "layer": "CTRL",
+      "description": "A record built for one question is used for a different one, and it returns a confident answer to the question it was not built for.",
+      "example": "This repository's standing instruction is that the touch ledger names files a session only read, and that ownership must never be answered from it.",
+      "analogy": "A guest list is used to prove who broke the window.",
+      "origin": "inherited",
+      "inherits": [
+        "P15",
+        "M13"
+      ],
+      "originNote": "P15 applies verbatim. It is restated because it is the specific misuse the touch ledger invites, and because the misuse is committed by the oversight layer rather than by the subject.",
+      "lens": [
+        "ledgers"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "controller-model"
+        }
+      ]
+    },
+    {
+      "id": "B3",
+      "name": "Concurrency erases the author",
+      "machine": "unattributed_act.concurrency_erases_author",
+      "layer": "IMPL",
+      "description": "Several runs write the same tree and the resulting state names none of them, so the act is visible and the actor is not.",
+      "example": "A measurement on 2026-08-25 found six uncommitted import and untracked-module pairs across five files, each held by a different session.",
+      "analogy": "A field is trampled by a crowd and every footprint is the same.",
+      "origin": "inherited",
+      "inherits": [
+        "P1",
+        "P8",
+        "D17"
+      ],
+      "originNote": "P1 applies verbatim. It is restated because concurrency is this subject class's ordinary condition rather than an unusual one, so the class describes the steady state instead of an incident.",
+      "lens": [
+        "identity-anchoring",
+        "correlation"
+      ],
+      "instrument": "monitor/coincidence.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 2,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "coordination-conflict"
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "name": "Machine identity rendered as a person",
+      "machine": "unattributed_act.machine_as_person",
+      "layer": "IMPL",
+      "description": "An actor string produced by automation is displayed with the weight of a human decision.",
+      "example": "monitor/attribution.mjs matches distinctive names anywhere and short generic tokens only as whole words, so lucia@ and cisco.com are not misread as machines while renovate[bot] is caught, and an agent tag of the form TYPE-NNN-context is recognised explicitly.",
+      "analogy": "A rubber stamp of a signature is still a stamp.",
+      "origin": "inherited",
+      "inherits": [
+        "P3",
+        "P4",
+        "L7"
+      ],
+      "originNote": "P3 applies verbatim and is answered here. It is restated so a reader of this registry alone can see which of these classes is closed. L7, minted at v9, is the same defect between actors; B4 is its rendering to a human reader, which is where the authority is actually conferred.",
+      "lens": [
+        "authority-separation"
+      ],
+      "instrument": "monitor/attribution.mjs",
+      "instrumentState": "wired",
+      "edition": 1,
+      "status": "held",
+      "closure": 3,
+      "gain": 1,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "unsafe",
+          "cause": "feedback-incorrect"
+        }
+      ]
+    },
+    {
+      "id": "B5",
+      "name": "Co-authorship unrepresentable",
+      "machine": "unattributed_act.co_authorship_unrepresentable",
+      "layer": "IMPL",
+      "description": "The record holds one actor per act, so work produced by a person and an agent together is stored as one or the other.",
+      "example": "P6 and P12 record co-ownership being unrepresentable and untracked-path co-authorship.",
+      "analogy": "A form with one signature line is given to two people.",
+      "origin": "inherited",
+      "inherits": [
+        "P6",
+        "P12"
+      ],
+      "originNote": "Applies verbatim. It is restated because for a run co-authorship is the normal case rather than the exception, which turns a representational gap into a systematic misattribution.",
+      "lens": [
+        "identity-anchoring"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 1,
+      "status": "held",
+      "closure": 1,
+      "gain": 2,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "sensor-inadequate"
+        }
+      ]
+    },
+    {
+      "id": "V1",
+      "name": "Reasoning contradicts the recorded verdict",
+      "machine": "stated_versus_done.reasoning_contradicts_verdict",
+      "layer": "IMPL",
+      "description": "The stated justification and the recorded decision point in opposite directions, and only the decision is consumed.",
+      "example": "lib/reasoning-lint.mjs detects this for LLM triage, matching phrases such as a credential that should be rotated against a verdict that dismisses it. It has one importer, bin/issue-llm.mjs.",
+      "analogy": "The vet's notes say the animal is lame and the certificate says sound.",
+      "origin": "inherited",
+      "inherits": [
+        "G1"
+      ],
+      "originNote": "G1 applies verbatim. It is restated because the instrument exists and reads one channel, which makes the open part of this class a wiring question rather than a detection one.",
+      "lens": [
+        "scoring-modes"
+      ],
+      "instrument": "lib/reasoning-lint.mjs",
+      "instrumentState": "partial",
+      "edition": 1,
+      "status": "held",
+      "closure": 2,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "controller-algorithm"
+        }
+      ]
+    },
+    {
+      "id": "V2",
+      "name": "Scope acknowledged, then exceeded",
+      "machine": "stated_versus_done.scope_acknowledged_exceeded",
+      "layer": "CTRL",
+      "description": "The run states that an act is outside what it was asked to do and performs it, so the record contains its own warning and no gate reads it.",
+      "example": "The external report quotes runs reasoning that a step is out of scope immediately before taking it. The signal is present, in the subject's own words, and unconsumed.",
+      "analogy": "The driver says the sign says no entry and turns in.",
+      "origin": "transposed",
+      "inherits": [
+        "G1",
+        "K1"
+      ],
+      "originNote": "G1 is a contradiction inside one verdict, visible in a single record. Transposed, the contradiction spans a stated constraint and a later act, so it is invisible until something joins two records that nothing currently joins.",
+      "lens": [
+        "authority-separation",
+        "scoring-modes"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "controller-algorithm"
+        },
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "feedback-missing"
+        }
+      ]
+    },
+    {
+      "id": "V3",
+      "name": "Detector pointed at findings and not at sessions",
+      "machine": "stated_versus_done.detector_not_pointed_at_runs",
+      "layer": "CTRL",
+      "description": "An instrument that compares stated reasoning against a recorded decision is run over one record type while another record of the same shape goes unexamined.",
+      "example": "lib/reasoning-lint.mjs reads triage reasoning against a triage verdict. A session's stated plan against its recorded actions is the same comparison over a record nothing lints.",
+      "analogy": "The metal detector is used at one of the building's two doors.",
+      "origin": "transposed",
+      "inherits": [
+        "R6",
+        "M1"
+      ],
+      "originNote": "R6 is a surface shipped and never used. Here it is used, correctly, on a narrower population than it fits, which is the harder case to notice because the instrument reports successfully every time it runs.",
+      "lens": [
+        "capability-measurement"
+      ],
+      "instrument": "lib/reasoning-lint.mjs",
+      "instrumentState": "partial",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 1,
+      "gain": 4,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "actuator-missing"
+        }
+      ]
+    },
+    {
+      "id": "V4",
+      "name": "Stated plan and executed plan diverge with no diff",
+      "machine": "stated_versus_done.plan_execution_no_diff",
+      "layer": "CTRL",
+      "description": "A plan is approved and the work that follows is never compared against it, so drift between them is only noticed by someone who remembers the plan.",
+      "example": "An approved plan in this repository is a message in a transcript, and no artifact holds the plan and the resulting change set side by side.",
+      "analogy": "The builder's drawings are filed and the house is never measured against them.",
+      "origin": "transposed",
+      "inherits": [
+        "C19",
+        "W4"
+      ],
+      "originNote": "C19 is a completion proxy decoupled from the thing it proxies. Transposed, the proxy is an approved plan and the decoupling happens at approval time, so the strongest oversight moment produces the weakest artifact.",
+      "lens": [
+        "change-set-closure"
+      ],
+      "instrument": null,
+      "instrumentState": "absent",
+      "edition": 2,
+      "status": "proposed",
+      "closure": 0,
+      "gain": 3,
+      "stpa": [
+        {
+          "loop": "oversight",
+          "uca": "not-provided",
+          "cause": "feedback-missing"
+        }
+      ]
+    }
+  ]
+}

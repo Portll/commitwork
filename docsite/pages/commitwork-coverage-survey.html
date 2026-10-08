@@ -1,0 +1,1008 @@
+<!doctype html>
+<!-- Imported source, maintained by hand: a recovered page with no Markdown behind it. bin/docsite-build.mjs copies it to docsite/pages/ unchanged. Its shell is kept equal to lib/docsite-page.mjs by hand. src-sha256:cce771b27aef -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>commitwork Coverage Survey — commitwork docs</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgYXJpYS1oaWRkZW49InRydWUiIGZvY3VzYWJsZT0iZmFsc2UiPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE2IiBmaWxsPSIjRkZGRkZGIi8+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTQuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTAxMDExIiBzdHJva2Utd2lkdGg9IjEiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjIwIiByPSIyLjQiIGZpbGw9IiNDOUEyMjciLz48Y2lyY2xlIGN4PSIyMSIgY3k9IjExIiByPSIyLjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0M5QTIyNyIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48cGF0aCBkPSJNMTMuNyAxOC4zIEwxOS4zIDEyLjciIHN0cm9rZT0iI0M5QTIyNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIGZpbGw9Im5vbmUiLz48L3N2Zz4=">
+<style>
+:root{
+  --bg:#f4f3ef;--panel:#ffffff;--panel2:#eae8e2;--line:#d8d5cc;--line2:#b9b6aa;
+  --head:#101011;--ink:#1c1d1f;--mut:#5f5d57;--dim:#69675f;
+  --acc:#885f25;--acc2:#6e5220;--wash:rgba(136,95,37,.10);--on-acc:#ffffff;--ok:#047734;--crit:#c32b25;--sev:#7b2ff7;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+/* ONE KNOB FOR THE WHOLE DOCUMENT. Everything below is expressed in rem/em/ch, so the root
+   font-size is the only thing that sets scale — change --doc-scale and the headings, gutters,
+   rules, badges and the column all move together instead of drifting apart. That is what makes
+   this a grid rather than a pile of tuned numbers: at 1 it is the old 15px page exactly, at 2 it
+   is that page at 200%. The measure is held by p{max-width:84ch}, which is in CHARACTERS, so the
+   line length a reader actually sees stays constant as the type grows — scaling a column in px
+   would have doubled the words per line and made the larger type harder to read, not easier. */
+:root{--doc-scale:2}
+html{font-size:calc(100% * var(--doc-scale))}
+body{margin:0;padding:0 0 5rem;background:var(--bg);color:var(--ink);font:0.9375rem/1.62 var(--sans)}
+.wrap{max-width:55rem;margin:0 auto;padding:0 1.5rem}
+.skip{position:absolute;left:-9999px}.skip:focus{position:static;display:inline-block;padding:.5rem}
+header.site{border-bottom:1px solid var(--line);padding:1.1rem 0;margin-bottom:2.2rem}
+header.site .wrap{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap}
+.brand{color:var(--head);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:.31rem}
+.brand .seal{width:1.35rem;height:1.35rem;flex:none}
+nav.docs a{color:var(--mut);text-decoration:none;margin-right:1rem}
+nav.docs a[aria-current="page"]{color:var(--acc)}
+nav.docs a:hover{color:var(--ink)}
+h1{font-size:1.9rem;line-height:1.2;margin:0 0 .5rem;color:var(--head);letter-spacing:-.015em}
+h2{font-size:1.28rem;color:var(--head);margin:2.4rem 0 .35rem;letter-spacing:-.01em}
+h3{font-size:1.02rem;color:var(--head);margin:1.8rem 0 .3rem}
+h4,h5,h6{color:var(--head);margin:1.4rem 0 .3rem}
+p{max-width:84ch}
+a{color:var(--acc)}
+code{font:.88em var(--mono);background:var(--panel2);padding:.1em .35em;border-radius:3px;color:var(--head)}
+pre.cb{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.9rem 1rem;overflow-x:auto}
+pre.cb code{background:none;padding:0}
+blockquote{border-left:3px solid var(--line2);margin:1rem 0;padding:.1rem 0 .1rem 1rem;color:var(--mut)}
+.tw{overflow-x:auto;margin:1.2rem 0}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--line);padding:.45rem .7rem;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--head)}
+hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
+ul,ol{padding-left:1.4rem}
+.callout{background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acc);border-radius:6px;padding:.7rem 1rem;margin:1.2rem 0}
+figure.svgfig{margin:1.4rem 0;text-align:center}
+figure.svgfig img{max-width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px}
+.badge{display:inline-block;font:600 .6875rem/1 var(--mono);letter-spacing:.06em;padding:.3em .55em;border-radius:4px;border:1px solid var(--line2);color:var(--mut);vertical-align:middle;margin-left:.6rem}
+.badge.warn{color:var(--crit);border-color:var(--crit)}
+footer.site{border-top:1px solid var(--line);margin-top:3rem;padding-top:1rem}
+footer.site .wrap{font:.75rem/1.6 var(--mono);color:var(--dim)}
+.doclist{list-style:none;padding:0}
+.doclist li{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:.8rem 1rem;margin:.6rem 0}
+.doclist a{color:var(--head);text-decoration:none;font-weight:600}
+.doclist .fresh{font:.6875rem/1 var(--mono);margin-left:.6rem}
+.fresh.stale{color:var(--crit)}.fresh.unknown{color:var(--mut)}.fresh.fresh{color:var(--ok)}
+/* .fresh.fresh is the same class written twice, so it matches EVERY .fresh badge, not only the
+   fresh ones — which painted the DRAFT label the success green. A draft wearing the colour that
+   means "good and current" is the exact inversion this project bans, so the label rule is declared
+   AFTER it and wins on source order at equal specificity. The green stays for real freshness in
+   the local drafting view, where it is answering the question it was written for. */
+.fresh.label{color:var(--mut);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+sup.ref-cite{font-size:.72em}
+sup.ref-cite a{color:var(--acc);text-decoration:none}
+sup.ref-cite a:hover{text-decoration:underline}
+sup.ref-cite.ref-undefined{color:var(--crit)}
+.references{margin-top:2.4rem;padding-top:1.2rem;border-top:1px solid var(--line)}
+.references h2{margin-top:0}
+.reflist{list-style:none;padding:0;counter-reset:none}
+.reflist li{padding:.5rem 0;border-bottom:1px solid var(--line);font-size:.92em}
+.reflist li:last-child{border-bottom:0}
+.ref-back{color:var(--mut);font:.85em var(--mono);text-decoration:none;margin-right:.4rem}
+.ref-back:hover{color:var(--acc)}
+.ref-title{color:var(--ink);font-weight:600}
+.ref-link{color:var(--acc);text-decoration:none;margin-left:.3rem}
+.ref-link:hover{text-decoration:underline}
+.ref-desc{margin:.25rem 0 0;color:var(--mut);max-width:74ch}
+/* A hint, not a button: the docsite bundle runs under script-src 'self' (see editor/edit.html),
+   so an inline onclick would be blocked by CSP and the control would do nothing while looking
+   like it worked. The print stylesheet below is the actual feature; the browser's own print
+   command drives it, and needs no script at all. */
+.pdf{color:var(--dim);font:11px/1 var(--mono);letter-spacing:.04em;margin-left:auto;
+  border:1px solid var(--line);border-radius:4px;padding:.35em .6em}
+
+/* Print. The PDF is this stylesheet under @media print — there is no second renderer and no
+   headless browser, so what prints is what the page already is (zero runtime dependencies).
+   Paper is its own medium: the reader's theme, the chrome and the controls are all screen
+   furniture, and a px measure sized for a monitor is wrong on A4. */
+@media print{
+  :root{--bg:#fff;--panel:#fff;--panel2:#f4f4f2;--ink:#111;--head:#000;--mut:#444;--dim:#555;
+        --line:#bbb;--line2:#999}
+  body{padding:0;font-size:10.5pt;line-height:1.42}
+  .wrap{max-width:none;padding:0}
+  header.site,footer.site,nav.docs,.skip,.pdf{display:none!important}
+  main{margin:0}
+  h1{font-size:19pt;margin:0 0 .4em}h2{font-size:13pt;margin:1.4em 0 .3em}h3{font-size:11pt}
+  h1,h2,h3,h4{break-after:avoid;page-break-after:avoid}
+  table{font-size:9pt;width:100%}
+  thead{display:table-header-group}
+  tr,figure.svgfig,.callout,pre.cb{break-inside:avoid;page-break-inside:avoid}
+  th,td{padding:.28em .45em}
+  a{color:inherit;text-decoration:none}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:8pt;color:#555;word-break:break-all}
+  figure.svgfig img{border:1px solid #ccc}
+  .badge{border-color:#999;color:#444}
+  @page{margin:16mm 14mm 18mm}
+}
+</style>
+<style>
+  /* The page's own names are aliases onto the docsite palette above (PAPER_CSS, docs/THEME.md §11).
+     --warn is the light --part, which PAPER_CSS does not carry; bin/test/house-palette-guard.test.mjs
+     holds it equal to lib/brand-tokens.mjs. */
+  :root {
+    color-scheme: light;
+    --ground:        var(--bg);
+    --surface:       var(--panel);
+    --surface-sunk:  var(--panel2);
+    --ink-soft:      var(--mut);
+    --ink-faint:     var(--dim);
+    --rule:          var(--line);
+    --rule-strong:   var(--line2);
+    --accent:        var(--acc);
+    --accent-soft:   var(--wash);
+    --chip-bg:       var(--panel2);
+    --chip-edge:     var(--line);
+    --chip-ink:      var(--acc2);
+    --ok-soft:       color-mix(in srgb, var(--ok) 10%, transparent);
+    --warn:          #955906;
+    --warn-soft:     color-mix(in srgb, var(--warn) 12%, transparent);
+    --void:          var(--dim);
+    --void-soft:     var(--panel2);
+    --alarm:         var(--crit);
+    --alarm-soft:    color-mix(in srgb, var(--crit) 10%, transparent);
+
+    --measure: 68ch;
+    --step-0: 1rem;
+    --step-1: 1.15rem;
+    --step-2: 1.45rem;
+    --step-3: 1.95rem;
+    --step-4: 2.6rem;
+    --step-5: 3.4rem;
+  }
+
+  
+
+  
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 3rem); }
+  .prose { max-width: var(--measure); }
+
+  /* ─── masthead ─────────────────────────────────────────── */
+
+  /* Flat paper. This carried a 64px graph-paper grid (two repeating-linear-gradients) plus an
+     ::after fade whose only job was to wash it out again — decoration that read as a checkerboard
+     behind the title and competed with the tables below it, which are the actual grid on this page. */
+  .masthead {
+    position: relative;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .masthead .wrap { position: relative; z-index: 1; padding-block: clamp(3rem, 8vw, 5.5rem) clamp(2rem, 5vw, 3rem); }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.1rem;
+    display: flex; align-items: center; gap: 0.7rem;
+  }
+  .eyebrow::after {
+    content: ""; flex: 1; height: 1px; background: var(--rule-strong); max-width: 220px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Serif", ui-serif, Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(var(--step-4), 6vw, var(--step-5));
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0 0 1.1rem;
+  }
+  .standfirst {
+    font-family: "IBM Plex Serif", ui-serif, Georgia, serif;
+    font-size: var(--step-2);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 56ch;
+    margin: 0 0 2rem;
+  }
+  .dateline {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.76rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+    margin: 0;
+  }
+
+  /* ─── headline counters ────────────────────────────────── */
+
+  .counters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-top: 2.5rem;
+  }
+  .counter { background: var(--surface); padding: 1.1rem 1.2rem 1.2rem; }
+  .counter dt {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 0 0 0.55rem;
+  }
+  .counter dd {
+    margin: 0;
+    font-size: var(--step-3);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .counter .sub {
+    display: block;
+    font-size: 0.76rem; font-weight: 400; color: var(--ink-faint);
+    margin-top: 0.5rem; letter-spacing: 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .counter.is-ok dd { color: var(--ok); }
+  .counter.is-warn dd { color: var(--warn); }
+  .counter.is-alarm dd { color: var(--alarm); }
+
+  /* ─── sections ─────────────────────────────────────────── */
+
+  section { padding-block: clamp(2.75rem, 6vw, 4.25rem); border-bottom: 1px solid var(--rule); }
+  section:last-of-type { border-bottom: 0; }
+
+  h2 {
+    font-family: "IBM Plex Serif", ui-serif, Georgia, serif;
+    font-size: var(--step-3);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin: 0 0 0.6rem;
+  }
+  h3 {
+    font-size: var(--step-1);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin: 2.25rem 0 0.6rem;
+  }
+  h4 {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 500;
+    margin: 1.9rem 0 0.7rem;
+  }
+  h3.lv4 {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 500;
+    margin: 1.9rem 0 0.7rem;
+  }
+  p { margin: 0 0 1rem; }
+  a { color: var(--accent); text-underline-offset: 2px; text-decoration-thickness: 1px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+  }
+  a code { color: var(--accent); border-color: var(--accent); }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.78em;
+    font-weight: 500;
+    line-height: 1;
+    background: var(--chip-bg);
+    color: var(--chip-ink);
+    border: 1px solid var(--chip-edge);
+    padding: 0.22em 0.5em 0.26em;
+    border-radius: 4px;
+    font-variant-ligatures: none;
+    overflow-wrap: break-word;
+  }
+
+  /* ─── matrix ───────────────────────────────────────────── */
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    margin: 1.5rem 0 0.9rem;
+  }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+
+  /* FULL WIDTH, NO SIDEWAYS SCROLL. 16 scanner columns plus the language column overflowed at
+     any realistic viewport, so the matrix lived inside a horizontal scroller and a reader had to
+     drag to learn whether a lane was covered. table-layout:fixed divides the width evenly and the
+     vertical headers already make narrow columns legible. */
+  .matrix { table-layout: fixed; width: 100%; }
+  .matrix th, .matrix td {
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 0;
+    text-align: center;
+  }
+  .matrix thead tr.axis th {
+    padding: 0.4rem 0; font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; border-bottom: 1px solid var(--rule);
+  }
+  .matrix thead tr.axis td.lang { background: var(--surface-sunk); }
+  .matrix thead th {
+    background: var(--surface-sunk);
+    vertical-align: bottom;
+    padding: 0.85rem 0 0.75rem;
+    font-weight: 500;
+  }
+  .matrix .vert {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    margin: 0 auto;
+    height: 8.5em;
+    color: var(--ink-soft);
+  }
+  .matrix th.lang, .matrix td.lang {
+    position: sticky; left: 0; z-index: 2;
+    background: var(--surface);
+    text-align: left;
+    padding: 0.45rem 0.85rem;
+    white-space: nowrap;
+    border-right: 1px solid var(--rule-strong);
+    width: 15%; min-width: 0;   /* was min-width:172px, which alone forced the overflow */
+  }
+  .matrix thead th.lang { background: var(--surface-sunk); z-index: 3; }
+  .matrix tbody tr:nth-child(even) td { background: var(--surface-sunk); }
+  .matrix tbody tr:nth-child(even) td.lang { background: var(--surface-sunk); }
+
+  .rank {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem; color: var(--ink-faint); margin-right: 0.5rem;
+  }
+  .langname { font-weight: 500; }
+  .delta {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem; margin-left: 0.45rem; color: var(--ink-faint);
+  }
+  .delta.up { color: var(--ok); }
+  .delta.down { color: var(--alarm); }
+
+  .cell { display: block; padding: 0.42rem 0.7rem; font-size: 1.02rem; line-height: 1.3; }
+  .cell.on   { color: var(--ok); }
+  .cell.off  { color: var(--warn); background: var(--warn-soft); }
+  .cell.pro  { color: var(--alarm); background: var(--alarm-soft); }
+  .cell.none { color: var(--void); }
+  .matrix tbody tr:nth-child(even) td .cell.off { background: var(--warn-soft); }
+
+  /* ─── legend ───────────────────────────────────────────── */
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 0.6rem 1.6rem;
+    font-size: 0.84rem; color: var(--ink-soft);
+    padding: 0.9rem 0 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .glyph { font-size: 1rem; }
+  .glyph.on { color: var(--ok); }
+  .glyph.pro { color: var(--alarm); }
+  .glyph.off { color: var(--warn); }
+  .glyph.none { color: var(--void); }
+
+  /* ─── inventory ────────────────────────────────────────── */
+
+  .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 1.6rem; }
+  .cat { background: var(--surface); padding: 1.25rem 1.35rem 1.4rem; }
+  .cat h3.lv5 {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem; letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 0.9rem; font-weight: 500;
+  }
+  .cat ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+  .cat li { display: grid; grid-template-columns: 1.15rem 1fr; gap: 0.6rem; align-items: start; }
+  .cat .st { font-size: 0.95rem; line-height: 1.5; }
+  .cat .st.on { color: var(--ok); }
+  .cat .st.off { color: var(--warn); }
+  .tool { font-size: 0.95rem; }
+  .tool .langs {
+    display: block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.71rem; color: var(--ink-faint); margin-top: 0.1rem;
+  }
+  .tool .desc { display: block; font-size: 0.86rem; color: var(--ink-soft); margin-top: 0.18rem; }
+  .can { font-style: italic; }
+  .cannot { font-weight: 700; font-style: normal; }
+
+  /* ─── callouts ─────────────────────────────────────────── */
+
+  .finding {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--alarm);
+    background: var(--surface);
+    padding: 1.35rem 1.5rem 1.5rem;
+    margin: 1.6rem 0;
+  }
+  .finding.good { border-left-color: var(--ok); }
+  .finding.note { border-left-color: var(--accent); }
+  .finding h3 { margin-top: 0; }
+  .finding p:last-child { margin-bottom: 0; }
+  .tag {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.67rem; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.2rem 0.5rem; border-radius: 2px;
+    background: var(--alarm-soft); color: var(--alarm);
+    margin-bottom: 0.7rem;
+  }
+  .finding.good .tag { background: var(--ok-soft); color: var(--ok); }
+  .finding.note .tag { background: var(--accent-soft); color: var(--accent); }
+
+  pre {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.79rem;
+    line-height: 1.65;
+    background: var(--surface-sunk);
+    border: 1px solid var(--rule);
+    padding: 0.95rem 1.1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  pre .hl { color: var(--alarm); font-weight: 600; }
+  pre .dim { color: var(--ink-faint); }
+
+  /* ─── plain data tables ────────────────────────────────── */
+
+  .data { font-size: 0.88rem; }
+  .data th, .data td { border-bottom: 1px solid var(--rule); padding: 0.6rem 0.9rem; text-align: left; vertical-align: top; }
+  .data thead th {
+    background: var(--surface-sunk);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase; font-weight: 500;
+    color: var(--ink-faint);
+  }
+  .data td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .data code { background: none; border: 0; color: inherit; padding: 0; font-size: 0.85em; }
+  .ver { color: var(--ink-faint); font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.8rem; }
+
+  ul.body { padding-left: 1.15rem; margin: 0 0 1rem; }
+  ul.body li { margin-bottom: 0.5rem; }
+
+  footer { padding-block: 2.5rem 3.5rem; color: var(--ink-faint); font-size: 0.83rem; }
+  footer a { color: var(--ink-soft); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 620px) {
+    .matrix th.lang, .matrix td.lang { min-width: 140px; }
+    .cell { padding: 0.4rem 0.45rem; }
+  }
+</style>
+</head>
+<body data-src-sha256="cce771b27aef8403a0465db1cc1df7ddd15d7d92e3773d35782f8b4633bbdb81">
+<!--email_off-->
+<a class="skip" href="#main">Skip to content</a>
+<header class="site"><div class="wrap"><a class="brand" href="/"><img class="seal" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgYXJpYS1oaWRkZW49InRydWUiIGZvY3VzYWJsZT0iZmFsc2UiPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE2IiBmaWxsPSIjRkZGRkZGIi8+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTQuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTAxMDExIiBzdHJva2Utd2lkdGg9IjEiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjIwIiByPSIyLjQiIGZpbGw9IiNDOUEyMjciLz48Y2lyY2xlIGN4PSIyMSIgY3k9IjExIiByPSIyLjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0M5QTIyNyIgc3Ryb2tlLXdpZHRoPSIxLjMiLz48cGF0aCBkPSJNMTMuNyAxOC4zIEwxOS4zIDEyLjciIHN0cm9rZT0iI0M5QTIyNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIGZpbGw9Im5vbmUiLz48L3N2Zz4=">commitwork docs</a><nav class="docs" aria-label="Documents"><a href="/taxonomy-reference/">A Taxonomy of LLM Failure</a><a href="/stpa-hazop-field-guide/">STPA / HAZOP++ Field Guide</a><a href="/commitwork-coverage-survey/" aria-current="page">commitwork Coverage Survey</a><a href="/privacy/">Privacy</a><a href="/licensing/">Licensing and contact</a></nav><span class="pdf" aria-hidden="true">⌘P → PDF</span></div></header>
+<main id="main"><div class="wrap">
+<h1>commitwork Coverage Survey</h1>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Scanner inventory &amp; coverage</p>
+    <p class="standfirst">Every security tool in the tree, which languages each one reaches, and which lanes were drawn but could not run.</p>
+    <p class="dateline">Measured 26 August 2026 · branch main · 53 checks · 43 published lanes</p>
+
+    <aside class="snapshot-notice" style="border:1px solid var(--line2);border-left:4px solid var(--acc);background:var(--panel2);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.95em">
+      <p style="margin:0 0 .5rem;font-weight:600">This is a dated snapshot, and parts of it have been overtaken.</p>
+      <p style="margin:0 0 .6rem">Every figure and finding below was measured on 26 August 2026 and is reported in the
+        present tense. Re-checked on 4 October 2026, six statements no longer describe the tree. They are
+        left in place rather than edited, because the measurement is the document; this notice is the
+        correction.</p>
+      <ul style="margin:0 0 .6rem;padding-left:1.2rem">
+        <li><strong>joern is wired and installed.</strong> The page's &ldquo;still blocked: 1, joern only&rdquo; tile
+          and its &ldquo;the lane stays unwired deliberately&rdquo; section both predate that. <code>sast-joern</code>
+          is now in the <code>all</code> and <code>deep</code> groups.</li>
+        <li><strong>The SARIF one-line fix described as outstanding has landed.</strong>
+          <code>monitor/sarif-read.mjs</code> now admits <code>note</code>-level notifications whose
+          descriptor id is <code>Missing plugin</code>.</li>
+        <li><strong>grype drives a lane.</strong> The page says it is version-tracked but drives none;
+          <code>monitor/app-vuln.mjs</code> has shelled it since 27 August 2026.</li>
+        <li><strong>Rust has a source-to-sink lane.</strong> <code>sast-codeql-rust</code> did not exist when this
+          was written.</li>
+        <li><strong><code>docs/TOP-100.md</code> is no longer a dangling reference.</strong> The &ldquo;loose thread&rdquo;
+          section records it as absent from the tree; it was committed on 28 August 2026.</li>
+        <li><strong>The CodeQL coverage distribution has moved, and not in this page's direction.</strong> The
+          section names C++ and Swift as the lanes reading less than they claim. Re-measured, C++, Java and
+          JS/TS all carry runs below the 0.90 floor. Treat the shape as the finding and the per-language
+          counts as expired.</li>
+      </ul>
+      <p style="margin:0">Two counts on this page — <strong>53 checks</strong> and <strong>43 published lanes</strong> —
+        are the 26 August figures and have since risen. They are not restated here with today's numbers
+        because a count pinned in a document goes stale within the week. Read them from the source instead:
+        the check count is the length of <code>checks</code> in <code>manifests/security-baseline.json</code>,
+        and the lane count is the number of keys in <code>LANE_KINDS</code> (<code>monitor/lane-kinds.mjs</code>,
+        which is where they moved from <code>monitor/extractors.mjs</code>).</p>
+    </aside>
+
+    <dl class="counters">
+      <div class="counter is-ok">
+        <dt>Runnable now</dt>
+        <dd>49<span class="sub">of 50 scheduled</span></dd>
+      </div>
+      <div class="counter is-alarm">
+        <dt>Still blocked</dt>
+        <dd>1<span class="sub">joern only</span></dd>
+      </div>
+      <div class="counter">
+        <dt>Installed today</dt>
+        <dd>14<span class="sub">CLIs + 1 mix archive</span></dd>
+      </div>
+      <div class="counter">
+        <dt>Cannot report</dt>
+        <dd>5<span class="sub">lanes, by design</span></dd>
+      </div>
+    </dl>
+  </div>
+</header>
+
+<main>
+
+<section id="matrix">
+  <div class="wrap">
+    <div class="prose">
+      <h2>Language coverage matrix</h2>
+      <p>Rows are ordered by GitHub Octoverse 2025 rank.</p>
+    </div>
+
+    <div class="scroller">
+      <table class="matrix">
+        <thead>
+          <tr class="axis">
+            <td class="lang" aria-hidden="true"></td>
+            <th colspan="16" scope="colgroup">Scanner</th>
+          </tr>
+          <tr>
+            <th class="lang">Language</th>
+            <th><span class="vert">TruffleHog</span></th>
+            <th><span class="vert">Gitleaks</span></th>
+            <th><span class="vert">Semgrep</span></th>
+            <th><span class="vert">CodeQL</span></th>
+            <th><span class="vert">Joern</span></th>
+            <th><span class="vert">Bearer</span></th>
+            <th><span class="vert">gosec</span></th>
+            <th><span class="vert">govulncheck</span></th>
+            <th><span class="vert">OSV-Scanner</span></th>
+            <th><span class="vert">dep-scan</span></th>
+            <th><span class="vert">Trivy</span></th>
+            <th><span class="vert">Retire.js</span></th>
+            <th><span class="vert">Syft</span></th>
+            <th><span class="vert">GuardDog</span></th>
+            <th><span class="vert">Socket</span></th>
+            <th><span class="vert">native lint</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="lang"><span class="rank">01</span><span class="langname">TypeScript</span><span class="delta up">▲2</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell off">○</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">02</span><span class="langname">Python</span><span class="delta down">▼1</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell off">○</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">03</span><span class="langname">JavaScript</span><span class="delta down">▼1</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell off">○</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">04</span><span class="langname">Java</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell off">○</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">05</span><span class="langname">C#</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">06</span><span class="langname">PHP</span><span class="delta up">▲1</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell off">○</span></td><td><span class="cell off">○</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">07</span><span class="langname">Shell</span><span class="delta up">▲1</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td></tr>
+
+          <tr><td class="lang"><span class="rank">08</span><span class="langname">C++</span><span class="delta down">▼2</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">09</span><span class="langname">HCL</span><span class="delta up">▲5</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">10</span><span class="langname">Go</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell off">○</span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">C</span><span class="delta down">▼</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">Ruby</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">Rust</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">Kotlin</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell off">○</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">Swift</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell off">○</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">Dart</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">Elixir</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell pro">○</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td></tr>
+
+          <tr><td class="lang"><span class="rank">—</span><span class="langname">Haskell</span><span class="delta">—</span></td>
+            <td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td><td><span class="cell none"></span></td><td><span class="cell none"></span></td><td><span class="cell on">●</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span><span class="glyph on">●</span> wired and running</span>
+      <span><span class="glyph off">○</span> unwired — lane exists, cannot run</span>
+      <span><span class="glyph pro">○</span> requires <code>--pro-languages</code> flag</span>
+      <span><span class="glyph none">·</span> blank — no lane drawn</span>
+    </div>
+
+    <div class="prose">
+      <h3 class="lv4">Reading the last column</h3>
+      <p><span class="langname">native lint</span> collects the per-language tools that exist for exactly one row: <code>shellcheck</code> for Shell, <code>clippy</code> for Rust, <code>hlint</code> for Haskell, <code>sobelow</code> for Elixir. All four now run. Semgrep shows hollow for Elixir for a specific reason set out below, and blank for Haskell because no Semgrep Haskell rules exist at all.</p>
+    </div>
+  </div>
+</section>
+
+<section id="finding">
+  <div class="wrap">
+    <div class="prose">
+      <h2>The Elixir lane reports a clean scan of a file it never parsed</h2>
+    </div>
+
+    <div class="finding">
+      <span class="tag">False clean · measured</span>
+      <p>Semgrep 1.153.0 lists <code>elixir</code> among its 65 supported languages. It cannot actually parse it without a proprietary extension. Running an Elixir rule against an Elixir source file produces this:</p>
+      <pre>$ semgrep scan --config rules/elixir.yaml elixir_sample.ex
+<span class="dim">exit</span> 0
+<span class="dim">results</span> []
+<span class="dim">notification</span> level=<span class="hl">"note"</span>  "Missing Semgrep extension needed for
+             parsing Elixir target. Try adding `--pro-languages`."
+<span class="dim">invocation</span> executionSuccessful=<span class="hl">true</span></pre>
+      <p>The repository already guards this class. <code>monitor/sarif-read.mjs</code> checks both channels precisely because <em>"executionSuccessful can be true while the notifications carry the fatal error"</em>. But its filter at line 46 admits only <code>error</code> and <code>fatal</code>. Semgrep emits this one at <code>note</code>.</p>
+      <p>Passing the artifact through the repository's own reader settles it:</p>
+      <pre>$ readSarif(out.sarif)
+state   : <span class="hl">ok</span>
+reason  : (none)
+results : 0
+norules : true</pre>
+      <p>Not <code>tool-failed</code>. Not <code>empty</code>. <strong>ok</strong> — a clean scan of a file that was never parsed. The only surviving signal is <code>norules</code>, which the module header explicitly describes as <em>"an advisory fact on 'ok', not a verdict"</em>. This is the same shape <code>monitor/codeql-coverage.mjs</code> was built to catch for CodeQL, arriving through a channel that module does not watch.</p>
+    </div>
+
+    <div class="prose">
+      <p>The narrow fix on our side is one line — admit <code>note</code>-level notifications whose descriptor id is <code>Missing plugin</code>. But the upstream behaviour is worse than the SARIF suggested, and worth reporting.</p>
+
+      <h3>The text output asserts a scan that did not happen</h3>
+      <p>Two runs of the same Semgrep build. The first genuinely analysed a Rust file; the second could not parse Elixir at all. Every line but the finding count is identical.</p>
+    </div>
+
+    <pre><span class="dim">── rust, 2 rules actually executed ──────────────</span>
+✅ Scan completed successfully.
+ • Findings: 2 (2 blocking)
+ • Rules run: 2
+ • Targets scanned: 1
+ • Parsed lines: ~100.0%
+
+<span class="dim">── elixir, 0 rules executed, 0 lines parsed ─────</span>
+Warning: 2 rule(s) were skipped because they require Pro
+✅ Scan completed successfully.
+ • Findings: 0 (0 blocking)
+ • Rules run: <span class="hl">2</span>
+ • Targets scanned: <span class="hl">1</span>
+ • Parsed lines: <span class="hl">~100.0%</span></pre>
+
+    <div class="prose">
+      <p>There is a warning line, but the summary block contradicts it on three counts and then affirms success. <code>--error</code> does not change the exit code. For contrast, a ruleset that 404s exits 7 and emits notifications at <code>level: error</code> — so Semgrep already grades one "the analysis did not happen" case correctly, and this one differently.</p>
+
+      <h4>Where it originates</h4>
+      <p>Missing-plugin errors are handled in a branch of <code>semgrep/output.py</code> that deliberately bypasses <code>_handle_semgrep_error</code>, carrying an unresolved maintainer note:</p>
+      <pre><span class="dim"># THINK: These perhaps should not be errors but reported as "skipped"</span></pre>
+      <p>The summary counters sit further down the same file and count rules and targets that were <em>selected</em>, not ones that were analysed — so rules skipped for a missing plugin still register under "Rules run".</p>
+
+      <h4>A hypothesis I tested and discarded</h4>
+      <p>The counter is derived as <code>executed_rule_count or len(filtered_rules)</code>, which in Python falls through on a zero count — an appealing one-line explanation. A mixed scan of one Python rule and two Elixir rules should then have reported "Rules run: 1". It reported 3. The fallback is not the mechanism, and the real cause is that the count never excludes skipped rules in the first place.</p>
+    </div>
+  </div>
+</section>
+
+<section id="extend">
+  <div class="wrap">
+    <div class="prose">
+      <h2>Extending Rust and Elixir ourselves</h2>
+      <p>Yes for Rust, and the precedent is already in the tree. <code>manifests/semgrep-taint/</code> is a locally authored rule pack wired into the <code>sast</code> check, written because the three registry packs produced byte-identical output with and without the Pro engine — the fleet was paying for a capability its own rule selection could not exercise.</p>
+    </div>
+
+    <div class="finding good">
+      <span class="tag">Rust · proven working</span>
+      <p>A taint rule tracking <code>std::env::var</code> to <code>std::process::Command::new</code> across a function boundary fires correctly on the OSS engine, with no account and no plugin. A second pattern rule for <code>unsafe</code> blocks also fires. Two rules, two findings, zero errors.</p>
+      <p>This matters because it closes a real hole rather than a nominal one: clippy is explicitly <em>not</em> a security scanner, so Rust source currently has no lane that traces a source to a sink. Authored rules would be the first.</p>
+    </div>
+
+    <div class="finding">
+      <span class="tag">Elixir · blocked upstream</span>
+      <p>Elixir parsing sits behind <code>--pro-languages</code>, which needs a Semgrep account and <code>semgrep install-semgrep-pro</code>. Authoring rules is possible; running them on the OSS engine is not. Until that is resolved, Sobelow — now installed and running at 0.15.0 — is the only real Elixir security lane, and the Semgrep row must read hollow rather than green.</p>
+    </div>
+
+    <div class="prose">
+      <h3 class="lv4">One constraint on where Rust rules go</h3>
+      <p>They cannot join <code>manifests/semgrep-taint/</code>. That pack's entry condition, enforced by <code>monitor/test/semgrep-taint.test.mjs</code>, is that <em>every rule must find something the OSS engine cannot</em> — the test exists so the Semgrep account dependency stays load-bearing rather than decorative. Rust rules that work fine on OSS would violate it. They need a sibling pack with its own stated entry condition.</p>
+    </div>
+  </div>
+</section>
+
+<section id="installed">
+  <div class="wrap">
+    <div class="prose">
+      <h2>Wired this session</h2>
+      <p>Both requested lanes were already written and already in the scheduled group. Neither needed a manifest edit — they were unwired only in the sense that the binary was absent.</p>
+    </div>
+
+    <div class="scroller">
+      <table class="data">
+        <thead>
+          <tr><th>Tool</th><th>Version</th><th>Unblocks</th><th>Route</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>shellcheck</strong></td><td class="num ver">0.11.0</td><td><code>shell-lint</code></td><td class="ver">brew</td></tr>
+          <tr><td><strong>actionlint</strong></td><td class="num ver">1.7.12</td><td><code>actions-actionlint</code></td><td class="ver">brew</td></tr>
+          <tr><td>zizmor</td><td class="num ver">1.29.0</td><td><code>actions-zizmor</code></td><td class="ver">brew</td></tr>
+          <tr><td>go</td><td class="num ver">1.27.0</td><td class="ver">toolchain for both Go lanes</td><td class="ver">brew</td></tr>
+          <tr><td>gosec</td><td class="num ver">2.28.0</td><td><code>sast-go-gosec</code></td><td class="ver">brew</td></tr>
+          <tr><td>govulncheck</td><td class="num ver">v1.7.0</td><td><code>deps-go-govulncheck</code></td><td class="ver">go install</td></tr>
+          <tr><td>elixir + erlang</td><td class="num ver">1.20.3 / 29.0.5</td><td class="ver">runtime for Sobelow</td><td class="ver">brew</td></tr>
+          <tr><td>sobelow</td><td class="num ver">0.15.0</td><td><code>sast-elixir-sobelow</code></td><td class="ver">mix archive</td></tr>
+          <tr><td>hlint</td><td class="num ver">3.10</td><td><code>lint-haskell-hlint</code></td><td class="ver">brew</td></tr>
+          <tr><td>prowler</td><td class="num ver">5.39.1</td><td><code>cspm-github</code></td><td class="ver">uv tool</td></tr>
+          <tr><td>scorecard</td><td class="num ver">5.5.0</td><td><code>posture-scorecard</code></td><td class="ver">brew</td></tr>
+          <tr><td>socket</td><td class="num ver">1.1.158</td><td><code>supply-chain-socket</code></td><td class="ver">npm -g</td></tr>
+          <tr><td>bearer</td><td class="num ver">2.1.1</td><td><code>sast-bearer</code></td><td class="ver">pinned release + sha256</td></tr>
+          <tr><td>grype</td><td class="num ver">0.117.0</td><td class="ver">preflight roster only — no lane</td><td class="ver">brew</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <h3 class="lv4">Verified by running, not by resolving</h3>
+      <p><code>shell-lint</code> returns 8 findings across 9 shell scripts — 1 warning, 6 info, 1 style, of which six are <code>SC2086</code>, the unquoted-expansion class the manifest names as the injection surface. Under the manifest's own severity policy that is 0 high and 1 medium. <code>actions-actionlint</code> returns <code>ran:true</code> with 0 findings, which is a clean result carrying its own witness rather than an empty file.</p>
+
+      <h3 class="lv4">Bearer needed a different route, not a fix</h3>
+      <p>The brew path fails: no bottle exists for macOS 27, and the source build is refused because Xcode 26.6 is too old. That reads like a dead dependency and is not one — the project is actively maintained, with v2.1.1 released on 24 August 2026 and a push the same day. Only the packaging was blocked.</p>
+      <p>It ships a <code>darwin_arm64</code> tarball with a <code>checksums.txt</code> alongside it, so the lane was unblocked by installing the pinned release and verifying its SHA-256 before extracting — not by piping an install script into a shell, which the repository's own unpinned-fetch gate would refuse.</p>
+
+      <h3 class="lv4">Still blocked</h3>
+      <p><strong>joern</strong> — and the earlier reading here, that it was never attempted and needs a JVM and Scala toolchain, is now superseded by measurement. Probed 2026-08-30: <code>joern-scan</code> 4.0.610 is installed via Homebrew, builds a CPG, runs <code>ScanPass</code> and exits 0. It also returns <strong>zero results</strong> on a file containing <code>strcpy(buf, argv[1])</code> and <code>system(sprintf(...))</code>, logging &ldquo;Attempting to determine flows from empty list of sources&rdquo; thirteen times. The full query bundle is present (<code>sql-injection</code>, <code>shell-exec</code>, <code>xss-servlet</code> and the rest) but resolves no sources or sinks for the input.</p><p>That is a worse state than unavailable, and the distinction matters here: a tool that cannot run reports <em>tool-unavailable</em> and the repository treats it as unscanned, whereas this one exits 0 with an empty result and would publish as a clean scan. The lane stays unwired deliberately until the query bundle can be shown to fire on a known-vulnerable input — an exit code is not a finding, and a green cell earned this way would be the exact defect this survey exists to expose.</p>
+      <p>One operational note worth acting on: <code>govulncheck</code> installed to <code>~/go/bin</code> and <code>bearer</code> to <code>~/.local/bin</code>, neither of which is on the default sweep path. Both resolve in an interactive shell and may not resolve under launchd.</p>
+    </div>
+  </div>
+</section>
+
+<section id="inventory">
+  <div class="wrap">
+    <div class="prose">
+      <h2>Full inventory</h2>
+      <p>Classification is the repository's own, read from <code>LANE_KINDS</code> in <code>monitor/extractors.mjs</code> rather than judged here. Of 43 published lanes, 38 can raise a security finding and 5 carry <code>why: 'not-a-vulnerability'</code> — they are executable scanners that will run, produce output, and never report a security issue, because that is not what they measure.</p>
+    </div>
+
+    <div class="legend">
+      <span><em class="can">italic</em> — can report a security issue in theory</span>
+      <span><b class="cannot">bold</b> — structurally cannot</span>
+      <span><span class="glyph on">●</span> running</span>
+      <span><span class="glyph off">○</span> unwired</span>
+    </div>
+
+    <div class="cats">
+
+      <div class="cat">
+        <h3 class="lv5">Secrets</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">TruffleHog</em><span class="langs">language-agnostic</span><span class="desc">Scans git history for verified credentials.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Gitleaks</em><span class="langs">language-agnostic</span><span class="desc">Scans working tree using repository rules.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">secrets-sweep.mjs</em><span class="langs">internal</span><span class="desc">Finds connection strings both scanners miss.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">secrets-canary.mjs</em><span class="langs">internal</span><span class="desc">Plants secrets and scores scanner recall.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Pattern static analysis</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Semgrep</em><span class="langs">most languages · thin on Rust, blocked on Elixir</span><span class="desc">Matches vulnerability patterns across many languages.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">gosec</em><span class="langs">Go</span><span class="desc">Adds Go taint rules Semgrep lacks.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Sobelow</em><span class="langs">Elixir, Phoenix</span><span class="desc">Finds Phoenix injection and misconfiguration.</span></span></li>
+          <li><span class="st off">○</span><span class="tool"><em class="can">Opengrep</em><span class="langs">most languages · outside the all group</span><span class="desc">Replaces Semgrep if licensing changes.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Deep dataflow</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">CodeQL</em><span class="langs">JS · TS · Java · Python · Ruby · C · C++ · C# · Swift</span><span class="desc">Traces tainted input to dangerous sinks.</span></span></li>
+          <li><span class="st off">○</span><span class="tool"><em class="can">Joern</em><span class="langs">C · C++ · Java · JS · TS · Python · Go · Kotlin · binaries</span><span class="desc">Builds code property graphs without compiling.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Bearer</em><span class="langs">JS · TS · Ruby · Java · PHP · Python · Go</span><span class="desc">Follows personal data through the code.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Correctness lint</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">ShellCheck</em><span class="langs">Shell · Bash</span><span class="desc">Flags quoting defects enabling shell injection.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">actionlint</em><span class="langs">GitHub Actions YAML</span><span class="desc">Checks workflow expressions and inline scripts.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><b class="cannot">Clippy</b><span class="langs">Rust</span><span class="desc">Reports Rust correctness and suspicious patterns.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><b class="cannot">HLint</b><span class="langs">Haskell</span><span class="desc">Suggests Haskell simplifications and likely mistakes.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><b class="cannot">deno lint</b><span class="langs">Deno TS · JS</span><span class="desc">Lints Deno sources for suspicious patterns.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><b class="cannot">deno check</b><span class="langs">Deno TS · JS</span><span class="desc">Type-checks a Deno project.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Dependency vulnerabilities</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">OSV-Scanner</em><span class="langs">16 lockfile ecosystems</span><span class="desc">Resolves lockfiles against the OSV database.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">OWASP dep-scan</em><span class="langs">same ecosystems</span><span class="desc">Adjudicates reachability outside the Go lane.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Trivy</em><span class="langs">Java · Kotlin · containers</span><span class="desc">Scans JVM manifests and fat jars.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">govulncheck</em><span class="langs">Go</span><span class="desc">Proves whether Go vulnerabilities are reachable.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Retire.js</em><span class="langs">JS · TS</span><span class="desc">Identifies vulnerable JavaScript by file content.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">npm audit / yarn audit</em><span class="langs">npm · Yarn</span><span class="desc">Queries npm advisories for locked dependencies.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">gradle-deps-scan.mjs</em><span class="langs">Gradle · internal</span><span class="desc">Resolves Gradle coordinates lacking a lockfile.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">vendor-scan.mjs</em><span class="langs">JS · internal</span><span class="desc">Identifies vendored bundles from version banners.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Supply chain &amp; provenance</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">GuardDog</em><span class="langs">npm</span><span class="desc">Scores package metadata for typosquats.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Socket</em><span class="langs">npm</span><span class="desc">Detects malicious packages during install.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">OpenSSF Scorecard</em><span class="langs">repository-level</span><span class="desc">Scores repository supply-chain posture externally.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Renovate</em><span class="langs">multi-ecosystem</span><span class="desc">Reports pending updates without opening pull requests.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">dep-provenance.mjs</em><span class="langs">npm · Yarn · internal</span><span class="desc">Records where each dependency resolved from.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">gradle-wrapper check</em><span class="langs">Gradle · internal</span><span class="desc">Verifies wrapper distribution URL and jar.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Bill of materials</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Syft</em><span class="langs">all ecosystems</span><span class="desc">Generates CycloneDX SBOMs across all ecosystems.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">CycloneDX npm</em><span class="langs">npm</span><span class="desc">Generates SBOMs for npm lockfile repositories.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">sbom-enrich.mjs</em><span class="langs">npm · internal</span><span class="desc">Restores provenance the CycloneDX writer dropped.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Infrastructure &amp; CI posture</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Trivy config</em><span class="langs">Terraform · HCL · Dockerfile · Kubernetes</span><span class="desc">Finds infrastructure and Dockerfile misconfiguration.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Hadolint</em><span class="langs">Dockerfile</span><span class="desc">Lints Dockerfiles for security best practice.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">zizmor</em><span class="langs">GitHub Actions YAML</span><span class="desc">Audits Actions permissions and template injection.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Prowler</em><span class="langs">GitHub provider · AWS</span><span class="desc">Checks organisation and repository security controls.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Runtime &amp; dynamic</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Nuclei</em><span class="langs">protocol-level</span><span class="desc">Probes live endpoints with exploit templates.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">testssl.sh</em><span class="langs">HTTPS endpoints</span><span class="desc">Grades TLS configuration and security headers.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">Schemathesis</em><span class="langs">OpenAPI</span><span class="desc">Fuzzes OpenAPI endpoints with generated cases.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">authz-bola.mjs</em><span class="langs">HTTP gateways · internal</span><span class="desc">Probes cross-tenant object access through gateways.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Hygiene &amp; integrity</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">minify-detect.mjs</em><span class="langs">JS · TS · HTML · internal</span><span class="desc">Treats unreadable code as its own signal.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">a11y-scan.mjs</em><span class="langs">HTML · internal</span><span class="desc">Audits served HTML against WCAG criteria.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><b class="cannot">stub-detect.mjs</b><span class="langs">all source · internal</span><span class="desc">Counts unfinished work markers across sources.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Intelligence feeds</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">OSV · GHSA · NVD · deps.dev</em><span class="langs">advisory sources</span><span class="desc">Supply advisory records to the scanners.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">EPSS (FIRST)</em><span class="langs">monitor/epss.mjs</span><span class="desc">Fetches exploit probability scores per CVE.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">CISA KEV</em><span class="langs">exploitation catalogue</span><span class="desc">Marks vulnerabilities with confirmed active exploitation.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">advisory-reach.mjs</em><span class="langs">internal</span><span class="desc">Demotes advisories that cannot reach code.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">cwe-graph · capec-graph</em><span class="langs">MITRE catalogues</span><span class="desc">Load MITRE catalogues as typed graphs.</span></span></li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3 class="lv5">Compliance evidence</h3>
+        <ul>
+          <li><span class="st on">●</span><span class="tool"><em class="can">CSAF 2.0 + OpenVEX</em><span class="langs">cra/vex-formats.mjs</span><span class="desc">Project exploitability statements into published formats.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">OSCAL</em><span class="langs">cra/oscal.mjs</span><span class="desc">Emits NIST SP 800-53 component definitions.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">SOC 2 Type II</em><span class="langs">cra/soc2.mjs</span><span class="desc">Assembles evidence keyed to Trust Services Criteria.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">EU CRA Article 14</em><span class="langs">cra/watch.mjs · cra/report.mjs</span><span class="desc">Runs statutory disclosure clocks and drafts.</span></span></li>
+          <li><span class="st on">●</span><span class="tool"><em class="can">ed25519 attestation</em><span class="langs">cra/attest.mjs</span><span class="desc">Signs the assembled evidence pack.</span></span></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="prose">
+      <h3 class="lv4">Registry entries with no execution path</h3>
+      <p><strong>Docker Bench</strong> and <strong>Falco</strong> are reachable only through <code>bin/audit.mjs</code>, gated on a Docker host and a production runtime. <strong>ScoutSuite</strong> is named only as an alternative inside Prowler's registry entry. <strong>Grype</strong> is version-tracked by the preflight and now installed, but drives no lane. <strong>Cosign</strong> is declared and never invoked — the actual signing in <code>cra/attest.mjs</code> uses Node's built-in ed25519, so any claim that this fleet signs with Sigstore is wrong today.</p>
+
+      <h3 class="lv4">One arguable classification</h3>
+      <p>The accessibility lane is marked as able to report, because the repository files it under <code>policy</code> with no <code>not-a-vulnerability</code> exemption and it reaches the severity sum. A WCAG failure is a conformance defect rather than a security issue, so this is the one row where the repository's own marker and the plain reading of "security issue" diverge.</p>
+    </div>
+  </div>
+</section>
+
+<section id="measure">
+  <div class="wrap">
+    <div class="prose">
+      <h2>On comparing languages</h2>
+      <p>The row order above carries a caveat that should travel with it. No public dataset measures lines of code authored on GitHub — GitHub computes per-repository Linguist byte counts but has never published them in aggregate.</p>
+      <p>Worse for the delta column: <strong>Octoverse changed its metric between editions.</strong> The 2024 report ranked by total activity across commits, issues, pull requests and reviews; the 2025 report ranked by distinct monthly contributors. Rank movement across that boundary compares two different measurements, so the arrows are directional and not evidence.</p>
+    </div>
+
+    <div class="scroller">
+      <table class="data">
+        <thead><tr><th>Measure</th><th>Counts</th><th>Cadence</th><th>Fitness here</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Software Heritage</strong></td><td>Archived source files, cross-forge, from 1967</td><td class="ver">research snapshots</td><td>Best proxy for code volume</td></tr>
+          <tr><td><strong>GH Archive</strong></td><td>Push and PR events per language</td><td class="ver">hourly, queryable</td><td>Best for current authoring activity</td></tr>
+          <tr><td>RedMonk</td><td>GitHub and Stack Overflow correlation</td><td class="ver">biannual</td><td>Traction, not volume</td></tr>
+          <tr><td>Octoverse</td><td>Distinct monthly contributors</td><td class="ver">annual</td><td>People-weighted, metric unstable</td></tr>
+          <tr><td>TIOBE · PYPL · IEEE</td><td>Search-engine and media mentions</td><td class="ver">monthly</td><td>Measures discourse, not code</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <h3 class="lv4">The better denominator is already in the tree</h3>
+      <p>Global popularity answers where the world's code is, not whether this fleet's coverage is adequate. An unscanned Elixir service you actually operate outranks PHP's global position every time.</p>
+      <p><code>monitor/codeql-coverage.mjs</code> already derives per-language file counts from stored SARIF, using each lane's <code>appliesIfSourceExt</code> as a language-aware denominator — built because a naive ratio reports every polyglot repository as degraded. Its recorded fleet measurement is a better language axis than anything public, and it says something this matrix cannot:</p>
+      <pre>python  200 runs   median 1.00   2 below 0.90
+ruby     44 runs   median 1.00   0 below 0.90
+csharp    3 runs   median 1.00   0 below 0.90
+cpp       6 runs                 <span class="hl">2 below 0.90 — worst 0.64</span>
+swift     2 runs                 <span class="hl">1 below 0.90 — 0.67</span></pre>
+      <p>The C++ and Swift lanes are wired, installed, and not reading the files they claim to cover. A support matrix can only show that a lane exists; this shows whether it looked.</p>
+    </div>
+  </div>
+</section>
+
+<section id="gap">
+  <div class="wrap">
+    <div class="prose">
+      <h2>Loose thread</h2>
+    </div>
+    <div class="finding note">
+      <span class="tag">Documentation · dangling reference</span>
+      <p><code>README.md</code> line 235 indexes <code>docs/TOP-100.md</code> — the document grading all 110 vulnerability classes, and the only place the fleet's coverage is stated as a whole. That file is in neither the working tree nor HEAD. An evaluation document from 24 August cites its line numbers as verified.</p>
+      <p>This is the failure mode the repository conventions name directly: a commit is closed over its own change set, and committed content here references something that was never committed. It is invisible to its author and broken for everyone else.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>All figures measured against branch <code>main</code> on 26 August 2026 by executing the checks, not by reading the manifest. Check membership resolved through <code>groupMembers()</code> in <code>bin/commitwork.mjs</code>, which unions the manifest group list with self-tagged checks — reading the list alone reports 21 phantom exclusions.</p>
+    <p>Language ranks: <a href="https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/">Octoverse 2025</a> · <a href="https://github.blog/news-insights/octoverse/octoverse-2024/">Octoverse 2024</a> · <a href="https://www.gharchive.org/">GH Archive</a> · <a href="https://www.dicosmo.org/Articles/2025-04-MSR-langevol.pdf">Software Heritage language evolution</a></p>
+  </div>
+</footer>
+</div></main>
+<footer class="site"><div class="wrap">commitwork docs · recovered page, kept as imported HTML · src cce771b27aef · <a href="/privacy/">Privacy</a> · <a href="/licensing/">Licensing and contact</a></div></footer>
+<!--/email_off-->
+</body>
+</html>

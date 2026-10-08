@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "commitwork WCAG attestation (the human half of the a11y audit)",
+  "description": "One person's manual verification of a WCAG success criterion bin/a11y-scan.mjs cannot decide statically, or the withdrawal of one. EVERYTHING VALIDATED HERE IS ATTACKER-INFLUENCED — it arrives over HTTP from the panel. Restricted to the keyword subset monitor/registry.mjs::checkNode implements (type/required/properties/additionalProperties/items/pattern/enum/minItems/minimum/maximum/exclusiveMinimum/oneOf); an unimplemented keyword is a validation failure, never a silent skip. There is no maxLength in that subset, so every length bound is expressed as an anchored, non-backtracking `pattern`. WHAT IS NOT HERE, DELIBERATELY: `who`, `at`, `whoKind` and `subjectDigest` are NOT caller-supplied. `who` comes from the session (monitor/attribution.mjs::sessionWho) and the digest comes from the scanner's own artifact — a caller that could name its own signature or its own subject could sign for someone else, or bind a ruling to content that never existed. Runtime consumer: monitor/a11y-attestations.mjs::recordAttestation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["criterion"],
+  "properties": {
+    "criterion": {
+      "description": "The WCAG success criterion number, e.g. '2.4.3'. A SHAPE bound only: the authority on which criteria may be attested is monitor/a11y-attestations.mjs::attestableCriteria(), derived at runtime from the `static:false` rows of bin/a11y-scan.mjs's CRITERIA. Duplicating that list into a static enum here is how the two drift and a criterion the scanner has learned to measure keeps accepting human overrides.",
+      "type": "string",
+      "pattern": "^[0-9]{1,2}[.][0-9]{1,2}[.][0-9]{1,2}$"
+    },
+    "action": {
+      "description": "attest = record a verification. withdraw = take back the standing one. A withdrawal is an APPEND, never a deletion: the store keeps who said it, when, about what, and who took it back. Absent means 'attest'.",
+      "enum": ["attest", "withdraw"]
+    },
+    "verdict": {
+      "description": "What the person concluded. meets = it conforms. fails = they checked and it is BROKEN (weighted exactly like a scanner failure — a checkbox that could only record good news would be worse than none). not-applicable = no applicable content on these pages. Required for `attest`; forbidden for `withdraw`.",
+      "enum": ["meets", "fails", "not-applicable"]
+    },
+    "note": {
+      "description": "What they did and what they saw, 0..2000 printable characters. Optional but strongly wanted: the criterion's own howToVerify says where to look, and this is the record of having looked. The control-character exclusion is the first half of 'attested text never reaches a shell, a RegExp or innerHTML'; escaping at the sink is the second half.",
+      "type": "string",
+      "pattern": "^[^\\u0000-\\u001f\\u007f]{0,2000}$"
+    },
+    "subjectDigest": {
+      "description": "Optional optimistic-concurrency pin: the content digest the person BELIEVES they verified, read back from the artifact's `subject.digest` (GET /api/a11y). If it does not match what the scanner currently reports, the attestation is REFUSED as stale rather than mis-attached — a verification of the previous build is not a verification of this one. Same shape of guarantee as an ETag.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "expires": {
+      "description": "When this verification stops standing, ISO-8601 UTC. Optional: an attestation with no explicit expiry is given the default TTL (CW_A11Y_ATTESTATION_TTL_DAYS, 180d). The content digest already invalidates on change, so this bounds the ageing of the CHECK itself. A past expiry, or one beyond CW_A11Y_ATTESTATION_MAX_TTL_DAYS, is refused.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]{3})?Z$"
+    }
+  },
+  "oneOf": [
+    {
+      "description": "An attestation: a verdict is mandatory. A record of 'I checked it' that does not say what was concluded is not a record of anything.",
+      "properties": { "action": { "enum": ["attest"] } },
+      "required": ["verdict"]
+    },
+    {
+      "description": "A withdrawal: names the action, carries no verdict. A withdrawal that also asserted a verdict would be two statements wearing one record.",
+      "properties": { "action": { "enum": ["withdraw"] }, "verdict": { "type": "null" } },
+      "required": ["action"]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/launchlist.schema.json",
+  "title": "launchlist checklist spec",
+  "type": "object",
+  "required": ["version", "severities", "owners", "sizes", "profiles", "sections", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": { "type": "string" },
+    "version": { "const": 1 },
+    "severities": { "type": "array", "items": { "enum": ["HARD", "SHOULD", "LATER"] }, "minItems": 1, "uniqueItems": true },
+    "owners": { "type": "array", "items": { "enum": ["operator-decision", "operator-action", "engineering"] }, "minItems": 1, "uniqueItems": true },
+    "sizes": { "type": "array", "items": { "enum": ["S", "M", "L"] }, "minItems": 1, "uniqueItems": true },
+    "profiles": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label", "sections"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "sections": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+        }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "profile", "section", "severity", "owner", "size", "title", "why", "how"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9-]+)+$" },
+          "profile": {
+            "oneOf": [
+              { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }, "minItems": 2, "uniqueItems": true }
+            ]
+          },
+          "section": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "severity": { "enum": ["HARD", "SHOULD", "LATER"] },
+          "owner": { "enum": ["operator-decision", "operator-action", "engineering"] },
+          "size": { "enum": ["S", "M", "L"] },
+          "check": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "why": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "how": { "type": "string", "minLength": 1, "maxLength": 240 }
+        }
+      }
+    }
+  }
+}

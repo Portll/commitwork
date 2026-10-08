@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Remediation posture",
+  "description": "The org's remediation posture as declared data: whether machines may author fixes, whether they may merge them, and how much compute that is allowed to cost. Applied by validatePolicy() in monitor/remediation-policy.mjs, which runs on BOTH ends — loadPolicy() reads the stored file through it, and POST /api/remediation-policy validates the submitted document through it before writing. This schema constrains SHAPE and TYPE only. The value enums (MODES, VERIFICATION, LEARNING, CADENCE) and the budget range stay in remediation-policy.mjs as exported constants other modules import; restating them here would be a second copy that cannot notice the first one moving.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "_comment": { "type": "string" },
+    "_authority": { "type": "string" },
+    "mode": {
+      "type": "string",
+      "description": "Value checked against MODES in remediation-policy.mjs. Declared here so additionalProperties:false does not refuse it, and so a non-string is refused by type rather than by enum-miss."
+    },
+    "verification": { "type": "string" },
+    "learning": { "type": "string" },
+    "cadence": { "type": "string" },
+    "remediationBudgetPctOfCompute": {
+      "type": "number",
+      "description": "Range [0,100] is enforced in remediation-policy.mjs, which owns it. Type only here."
+    },
+    "m3": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "autoMerge": {
+          "type": "boolean",
+          "description": "MUST be a boolean, and this is the whole reason the schema exists. admin/routes/remediation-policy.mjs refuses `autoMerge === true` over the API because authoring is not merging — a strict comparison, so any other truthy value (\"yes\", 1, \"false\") walks past the refusal, is written verbatim, and is then read as authorisation by anything testing it for truth. The route's guard and the store's shape have to agree, and only one of them was checked."
+        },
+        "owner": {
+          "type": ["string", "null"],
+          "description": "null is a real value: nobody has been named. Not required — absent and null are both 'no named owner', and the advisory in validatePolicy() is what speaks about that, not an error."
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minSeverity": {
+              "type": "string",
+              "description": "Type only, no enum, deliberately. Nothing in the remediation path reads this field today, and the repository holds two disagreeing severity vocabularies (crit|high|med|low in the fleet lanes, none|low|medium|high|critical in bin/reconcile-findings.mjs). An enum here would pick a winner by fiat and would refuse the value monitor/test/remediation-policy.test.mjs already stores. See evaluations/handoff-2026-08-26/08-schema-coverage.md."
+            },
+            "pathAllowlist": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "An allowlist that arrives as a bare string rather than an array widens scope silently: `\"src/\".includes(p)` and `[\"src/\"].includes(p)` are both legal JavaScript and mean different things."
+            },
+            "ruleAllowlist": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  }
+}

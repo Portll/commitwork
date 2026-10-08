@@ -1,0 +1,34 @@
+{
+  "_fixture": "SYNTHETIC. Reproduces the SHAPE of a shipped sauron rescore artifact: the same 18 dimensions as baseline.json, each an object rather than a bare number, in all three structural variants that ship — {before,after,evidence,residual,backlog}, the same without a backlog ref, and the nonActionable form. Scores and prose are invented; this is not a copy of any real evaluations/ artifact.",
+  "kind": "sauron-evaluation-rescore",
+  "supersedes": "baseline.json",
+  "target": "fixture/subject",
+  "generated": "2026-01-02T00:00:00.000Z",
+  "score": 8.2,
+  "dimensions": {
+    "writeIntegrity": { "before": 2.8, "after": 8.5, "evidence": "atomic writes under a single writer lock, with a conservation invariant asserted in tests", "residual": "fsync durability is out of the stated threat model", "backlog": "A" },
+    "boundaryConsistency": { "before": 3, "after": 8, "evidence": "every seam returns a pinned {rows, state} contract", "residual": "three same-named constants documented rather than renamed", "backlog": "B" },
+    "statusValidity": { "before": 5.8, "after": 8.5, "evidence": "unparseable / unreadable / unverified all landed as distinct states with tests", "residual": "two coexisting vocabularies for the same absence", "backlog": "C" },
+    "pathCompleteness": { "before": 2.9, "after": 8, "evidence": "every new write has a consuming reader", "residual": "the panel renders none of the new states — the human reader is missing", "backlog": "D" },
+    "crossInvocationSafety": { "before": 4.2, "after": 8.1, "evidence": "re-runs are idempotent under a pinned clock override", "residual": "concurrent invocation is serialised by lock, not proven safe", "backlog": "E" },
+    "errorResilience": { "before": 3.6, "after": 7.9, "evidence": "only ENOENT is treated as legitimate absence; every other errno refuses", "residual": "partial-read recovery is untested on a torn final line", "backlog": "F" },
+    "fractalConsistency": { "before": 5, "after": 8.4, "evidence": "the same refuse-don't-coerce rule holds at each nesting level", "residual": "—" },
+    "clusterTopology": { "before": 6.1, "after": 8.2, "evidence": "related checks were grouped behind one registry", "residual": "cluster boundaries follow the file layout rather than the data", "nonActionable": true },
+    "voidCoverage": { "before": 3.3, "after": 7.6, "evidence": "the absent-input case is now a named state in each lane", "residual": "no coverage of an input present but zero-length", "backlog": "G" },
+    "spectralCoherence": { "before": 4.7, "after": 8, "evidence": "one vocabulary for verdicts across all emitters", "residual": "report headings still carry the pre-unification wording", "backlog": "H" },
+    "branchCoverage": { "before": 5.5, "after": 8.3, "evidence": "each verdict arm is exercised by at least one assertion", "residual": "the unreachable defensive arms stay uncovered by design", "nonActionable": true },
+    "adversarialResistance": { "before": 6, "after": 8.6, "evidence": "hostile inputs are rejected before any path is joined", "residual": "signing of stored records is out of the threat model", "nonActionable": true },
+    "reversionSafety": { "before": 2.5, "after": 7.8, "evidence": "every write is tmp+rename, so a crash leaves the prior file intact", "residual": "—" },
+    "seamIntegrity": { "before": 3.9, "after": 8, "evidence": "the module boundary is asserted by a contract test, not by convention", "residual": "—" },
+    "idempotency": { "before": 4.4, "after": 8.1, "evidence": "byte-identical output for identical input under a pinned clock", "residual": "—" },
+    "temporalSafety": { "before": 3.1, "after": 7.7, "evidence": "the clock is read at call time and overridable", "residual": "timezone handling is unspecified for the render layer", "backlog": "J" },
+    "authPiiBoundary": { "before": 5.2, "after": 8.4, "evidence": "no credential or personal field crosses into a generated artifact", "residual": "redaction is allowlist-based, so a new field defaults to visible", "backlog": "K" },
+    "evidenceQuality": { "before": 3.7, "after": 3.7, "evidence": "citations carry file and rule, deliberately never a line number", "residual": "evidence is not itself re-verified at render time", "backlog": "L" }
+  },
+  "followOnBridge": [
+    { "rank": 1, "item": "render the new states in the panel", "estPoints": 3, "dims": ["pathCompleteness"], "note": "the human reader is the missing consumer", "backlog": "D" },
+    { "rank": 2, "item": "cover the zero-length-input case", "estPoints": 2, "dims": ["voidCoverage"], "note": "present-but-empty is distinct from absent", "backlog": "G" }
+  ],
+  "asymptote": "further gains need a second independent rater, not more assertions",
+  "appliedFunctions": ["edge_walk", "fractal_analysis"]
+}

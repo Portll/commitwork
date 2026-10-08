@@ -1,0 +1,11 @@
+{
+  "note": "Record-scoped redaction of third-party scanner names in narrative failure examples, applied where the private register becomes a public page. Distinct from monitor/publish-redactions.json, which replaces customer identifiers GLOBALLY across a rendered page. This one cannot be global: the same scanner names are the IDENTITY of records in monitor/approach-taxonomy.json (approaches[].name), where naming the tool is the point and redacting it would leave a catalogue of unnamed things. It is also not field-wide: govulncheck appears in four classes[].example, of which one describes the scanner's own behaviour and three describe defects in commitwork's own code with the scanner named only as the lane. Redacting those three would remove precision from records that criticise nobody but us. So each redaction names the exact class it applies to, and no other record is touched. A `from` that no longer matches its record is a hard error rather than a silent no-op, because a redaction that quietly stops applying is how a name reaches a public page unnoticed.",
+  "redactions": [
+    { "class": "C12", "field": "example", "from": "GuardDog published", "to": "A package-behaviour scanner published" },
+    { "class": "A11", "field": "example", "from": "GuardDog's zero-dependency husks", "to": "A package-behaviour scanner's zero-dependency husks" },
+    { "class": "E3", "field": "example", "from": "The GuardDog husks", "to": "The husks" },
+    { "class": "A16", "field": "example", "from": "Prowler asserted", "to": "A cloud-posture scanner asserted" },
+    { "class": "C21", "field": "example", "from": "govulncheck interleaves", "to": "A language-vulnerability scanner interleaves" },
+    { "class": "R8", "field": "example", "from": "semgrep --config auto", "to": "a pattern-SAST scanner's auto configuration" }
+  ]
+}

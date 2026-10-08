@@ -1,0 +1,58 @@
+<div class="row nav">
+<nav id="groups" aria-label="Finding categories"></nav>
+<label id="check-picker-row" hidden>View / check <select id="check-picker" aria-label="Choose a finding view or check"></select></label>
+<nav id="views" aria-label="Views">
+    <button type="button" data-v="fleet" class="vtab" title="Known vulnerabilities, including those being actively exploited, across every project, and when each was last checked.">All projects<span class="vn" id="vn-fleet"></span></button>
+    <button type="button" data-v="overview" class="vtab pri" title="live rollup for the selected project — KPIs, findings and CVEs">Project summary</button>
+    <button type="button" data-v="overwatch" class="vtab" title="The automated agent's plan, who is responsible for each task, and how to start or stop it.">Agent follow-ups<span class="vn" id="vn-overwatch"></span></button>
+    <button type="button" data-v="posture" class="vtab" title="Every security check, whether it ran recently, and what it found.">Security coverage<span class="vn" id="vn-posture"></span></button>
+    <button type="button" data-v="a11y" class="vtab" title="Barriers that may stop people using your site, checked against web accessibility standards; criteria not yet checked are listed too.">Accessibility<span class="vn" id="vn-a11y"></span></button>
+    <button type="button" data-v="delivery" class="vtab" title="Build health, release gates and dependency updates for this project.">Release readiness<span class="vn" id="vn-delivery"></span></button>
+    <button type="button" data-v="dashboard" class="vtab" title="The generated summary report for this project.">Dashboard report</button>
+    <button type="button" data-v="lanes" class="vtab" title="Every check, whether it runs for this project, and why.">Checks &amp; coverage<span class="vn" id="vn-lanes"></span></button>
+    <button type="button" data-v="sitemap" class="vtab" title="The site structure and the surface this project actually exposes, drawn as a 3-D map.">Site map</button>
+    <button type="button" data-v="exposure" class="vtab" title="Open connections reachable from outside, joined to what is unpatched.">Exposed services<span class="vn" id="vn-exposure"></span></button>
+    <button type="button" data-v="secrets" class="vtab" title="Credentials appearing in the current code, showing only the rule, file, line, and commit. Uses gitleaks.">Credentials in code<span class="vn" id="vn-secrets"></span></button>
+    <button type="button" data-v="held" class="vtab" title="Which credentials this machine holds, shown as present or absent only, and which checks cannot run without one.">Stored credentials<span class="vn" id="vn-held"></span></button>
+    <button type="button" data-v="codeql" class="vtab" title="Security issues found by tracing how data moves through Java code, across every project. Uses CodeQL.">Deep code analysis<span class="vn" id="vn-codeql"></span></button>
+    <button type="button" data-v="renovate" class="vtab" title="Automated dependency update requests and the dependency dashboard. Uses Renovate.">Dependency updates<span class="vn" id="vn-renovate"></span></button>
+    <button type="button" data-v="malware" class="vtab" title="Confirmed malicious packages identified by security advisories. Uses OpenSSF, osv.dev.">Malicious packages<span class="vn" id="vn-malware"></span></button>
+    <button type="button" data-v="socket" class="vtab" title="Supply-chain alerts for package behaviour, such as install scripts and network access, distinct from malicious verdicts. Uses Socket.">Package behaviour<span class="vn" id="vn-socket"></span></button>
+    <button type="button" data-v="stubs" class="vtab" title="TODO and FIXME markers, which are hygiene issues excluded from headline vulnerability totals.">Unfinished code<span class="vn" id="vn-stubs"></span></button>
+    <button type="button" data-v="comments" class="vtab" title="Shows long comment blocks and suggests shorter replacements for you to review and edit.">Comment quality<span class="vn" id="vn-comments"></span></button>
+    <button type="button" data-v="spinecomments" class="vtab" title="Shows long or grammatically incorrect comments in the main repository for review.">Internal comment quality<span class="vn" id="vn-spinecomments"></span></button>
+    <button type="button" data-v="denolint" class="vtab" title="Shows code style issues found by the Deno linter, kept separate from security scans. Uses Deno.">Code style<span class="vn" id="vn-denolint"></span></button>
+    <button type="button" data-v="denotypes" class="vtab" title="Shows type checking failures in Deno code, measuring the code itself rather than its imports. Uses Deno.">Type errors<span class="vn" id="vn-denotypes"></span></button>
+    <button type="button" data-v="secretshistory" class="vtab" title="Finds credentials that were committed in the past, even if deleted from current files. Uses TruffleHog.">Credentials in history<span class="vn" id="vn-secretshistory"></span></button>
+    <button type="button" data-v="cspm" class="vtab" title="Checks the security settings of your GitHub account; if its access token is missing, the page says so instead of showing a result.">Cloud settings<span class="vn" id="vn-cspm"></span></button>
+    <button type="button" data-v="depsjvm" class="vtab" title="Lists known security vulnerabilities in Java and Spring Boot dependencies. Uses Trivy.">Java vulnerabilities<span class="vn" id="vn-depsjvm"></span></button>
+    <button type="button" data-v="depsgo" class="vtab" title="Lists security vulnerabilities in Go modules that are actually used by your code. Uses govulncheck.">Go vulnerabilities<span class="vn" id="vn-depsgo"></span></button>
+    <button type="button" data-v="depsretire" class="vtab" title="Identifies known vulnerabilities in front-end JavaScript libraries not covered by other scanners. Uses Retire.js.">Web library risks<span class="vn" id="vn-depsretire"></span></button>
+    <button type="button" data-v="vendor" class="vtab" title="Shows third-party files added directly to your project, which lack version tracking.">Bundled files<span class="vn" id="vn-vendor"></span></button>
+    <button type="button" data-v="tls" class="vtab" title="Grades the security of your website's connection settings and headers against a live target.">Connection security<span class="vn" id="vn-tls"></span></button>
+    <button type="button" data-v="apifuzz" class="vtab" title="Tests the programming interface against its own specification to find unexpected behaviour or errors. Uses Schemathesis.">Interface checks<span class="vn" id="vn-apifuzz"></span></button>
+    <button type="button" data-v="supplychain" class="vtab" title="Checks package metadata for suspicious signals, providing a partial view of supply chain risks. Uses GuardDog.">Package risks<span class="vn" id="vn-supplychain"></span></button>
+    <button type="button" data-v="sast" class="vtab" title="Shows security issues found in your source code by static analysis tools. Uses Semgrep, CodeQL.">Code security<span class="vn" id="vn-sast"></span></button>
+    <button type="button" data-v="iac" class="vtab" title="Shows misconfigurations in your infrastructure-as-code files found by the latest scan. Uses Trivy.">Infrastructure settings<span class="vn" id="vn-iac"></span></button>
+    <button type="button" data-v="dast" class="vtab" title="Security issues found by scanning your live website. Uses nuclei.">Website security<span class="vn" id="vn-dast"></span></button>
+    <button type="button" data-v="actions" class="vtab" title="Are your automated build scripts safe from hijacking or excessive permissions? Uses zizmor.">Build automation<span class="vn" id="vn-actions"></span></button>
+    <button type="button" data-v="minify" class="vtab" title="Files too compressed or disguised to read, and code that decodes then runs hidden instructions.">Hard-to-read code<span class="vn" id="vn-minify"></span></button>
+    <button type="button" data-v="runtime" class="vtab" title="Findings from testing the running service, including whether users can reach data that is not theirs.">Running services<span class="vn" id="vn-runtime"></span></button>
+    <button type="button" data-v="bola" class="vtab" title="Can users access data or actions they should not be allowed to see?">Access control<span class="vn" id="vn-bola"></span></button>
+    <button type="button" data-v="stpa" class="vtab" title="A safety analysis of this panel's own fix-and-review process, redone from the current code on every run.">Process safety</button>
+    <button type="button" data-v="report" class="vtab" title="The evidence behind the latest check of this project: what was found, where, and by which check.">Evidence report<span class="vn" id="vn-report"></span></button>
+    <button type="button" data-v="remediation" class="vtab" title="Which problems should you fix first to reduce risk the fastest?">Prioritised fixes<span class="vn" id="vn-remediation"></span></button>
+    <button type="button" data-v="issues" class="vtab" title="What security tasks are currently open and waiting for attention?">Work items<span class="vn" id="vn-issues"></span></button>
+    <button type="button" data-v="daily" class="vtab" title="What does today's sweep suggest fixing first, and which veld todo holds each suggestion?">Daily suggestions<span class="vn" id="vn-daily"></span></button>
+    <button type="button" data-v="modmap" class="vtab" title="Which runtimes and language versions are out of date or near end of support, across every project.">Modernisation plan<span class="vn" id="vn-modmap"></span></button>
+    <button type="button" data-v="timeline" class="vtab" title="How have security findings for this project changed over time?">Timeline</button>
+    <button type="button" data-v="verdicts" class="vtab" title="The oversight system's recorded gate and sweep decisions, and whether its journal is healthy.">Decision history</button>
+    <button type="button" data-v="oversight" class="vtab" title="Did a person verify or dispute the automated security findings?">Human reviews</button>
+    <button type="button" data-v="correlations" class="vtab" title="Events from separate records that happened unusually close together, checks that disagreed, identical empty results across many repos, and how the unknown rate and gate floors have moved.">Correlations</button>
+    <button type="button" data-v="determinations" class="vtab" title="How certain are we about each finding, and what proof supports it?">Evidence &amp; confidence<span class="vn" id="vn-determinations"></span></button>
+    <button type="button" data-v="cra" class="vtab" title="When must you report security incidents to regulators or internal teams?">Reporting deadlines<span class="vn" id="vn-cra"></span></button>
+    <button type="button" data-v="perf" class="vtab" title="How long will security scans take with your chosen settings and hardware?">Scanner performance</button>
+    <button type="button" data-v="allfindings" class="vtab" title="Every open finding for this project, from every check, most severe first.">All findings</button>
+    <button type="button" data-v="feed" class="vtab" title="Findings grouped by place and joined to the work tracker; Focus hides nothing without saying how much.">Findings feed<span class="vn" id="vn-feed"></span></button>
+    </nav>
+</div>

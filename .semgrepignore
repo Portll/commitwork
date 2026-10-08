@@ -1,0 +1,34 @@
+# commitwork — semgrep path exclusions
+#
+# WHY THIS FILE EXISTS. fixtures/scan-canary/dirty/ plants a command injection and an eval() on
+# untrusted input so that the SAST lane can be shown to FIRE. Those are the whole point of the
+# fixture — and if they counted toward this repository's own posture, a tree built to produce
+# findings would be reported as this repository having them. Two of commitwork's published
+# criticals would be its own test data.
+#
+# THIS IS AN EXCLUSION, NOT A SUPPRESSION, and the difference is that the findings are still
+# asserted somewhere. bin/test/scan-canary.test.mjs requires each plant to be physically present
+# before any scanner result about it is believed, and the canary run points semgrep at this path
+# explicitly. A suppression makes a finding stop existing; this makes it stop being *this scan's*.
+#
+# fixtures/scan-canary/clean/ is deliberately NOT excluded. It is the negative control: semgrep
+# staying quiet about a real file is the only thing that distinguishes "nothing wrong" from
+# "nothing scanned", and hiding it would make its silence worthless.
+#
+# See fixtures/scan-canary/README.md and EXPECTED.json (selfScanExclusions).
+fixtures/scan-canary/dirty/
+
+# Two data files whose purpose is to CARRY detection-shaped strings. Neither is code and neither
+# ships a credential: labelled-findings.json is the labelled corpus the detection lanes are graded
+# against (every secret in it is fabricated, `provenance: synthetic`), and the scan-canary
+# EXPECTED.json spells the bidirectional-control payload it asserts the scanners find. JSON has no
+# comment syntax, so an inline nosemgrep is not possible; each file is named, not its directory.
+monitor/test/fixtures/detection-lanes/labelled-findings.json
+fixtures/scan-canary/EXPECTED.json
+
+# Not source this repository owns. semgrep already skips some of these by default; naming them
+# keeps the scanned population the same whether or not a default changes underneath us.
+reference/
+reports/
+node_modules/
+.claude/

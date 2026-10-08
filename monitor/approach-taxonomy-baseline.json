@@ -1,0 +1,10 @@
+{
+  "_comment": "Ratchet floor for monitor/test/approach-taxonomy-coverage.test.mjs. `undeclared`: checks the fleet runs that approach-taxonomy.json does not describe. `orphans`: approaches naming a check no manifest declares — usually a lane whose manifest change is unlanded, so it is banked rather than red. SEEDED FROM HEAD, never from the working tree: seeding from a dirty tree bakes in another session's unlanded manifest and the floor then describes a state no other checkout has.",
+  "version": 1,
+  "at": "2026-09-01T16:00:52.210Z",
+  "declared": 80,
+  "described": 49,
+  "undeclared": [],
+  "note_2026_09_01": "node-hazards banked, not authored-around: it landed after this baseline was seeded and its owner can describe it in one line, which is cheaper and more accurate than anything inferred here. Banked so the debt is named in this file rather than left as a red nobody owns. The floor-tightens assertion will fail once it IS described, which is what forces the removal.",
+  "orphans": []
+}

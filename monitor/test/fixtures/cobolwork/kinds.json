@@ -1,0 +1,1041 @@
+{
+ "tool": "cobolwork",
+ "schemaVersion": 3,
+ "summary": {
+  "findings": 47,
+  "byRule": {
+   "agent-directive-in-comment": 2,
+   "argv-or-env-to-os-command": 4,
+   "bidi-or-invisible-characters": 1,
+   "build-pins-vulnerable-compiler": 1,
+   "cics-commarea-length-exceeds-area": 1,
+   "cics-commarea-length-exceeds-callee": 1,
+   "cics-commarea-without-length-check": 2,
+   "cics-terminal-to-cics-dynamic-transfer": 1,
+   "cics-transfer-to-variable-program": 2,
+   "cics-web-to-dynamic-sql": 1,
+   "database-to-message-queue": 1,
+   "database-to-os-command": 1,
+   "database-to-outbound-http": 1,
+   "encoded-blob": 1,
+   "file-record-to-dynamic-file-path": 1,
+   "file-record-to-os-command": 2,
+   "file-record-to-socket-send": 1,
+   "hidden-payload-in-identification-area": 1,
+   "jcl-dlm-hides-instream": 1,
+   "jcl-exec-pgm-unresolved": 5,
+   "jcl-instream-credential": 3,
+   "jcl-instream-destructive": 1,
+   "jcl-instream-security-command": 5,
+   "jcl-instream-to-os-command": 1,
+   "jcl-parm-is-an-entry-point": 3,
+   "jcl-parm-to-os-command": 1,
+   "opaque-pointer-addressing": 1,
+   "recon-routable-address-committed": 1
+  },
+  "bySeverity": {
+   "high": 20,
+   "crit": 11,
+   "med": 5,
+   "low": 2,
+   "info": 9
+  },
+  "byEvidence": {
+   "tampering": 6,
+   "path": 15,
+   "advisory": 1,
+   "construct": 15,
+   "coverage": 6,
+   "context": 3,
+   "exposure": 1
+  },
+  "filesScanned": 57,
+  "bySet": {
+   "inventory": {
+    "filesScanned": 37,
+    "filesUnreadable": 0
+   },
+   "flow": {
+    "filesScanned": 37,
+    "filesUnreadable": 0
+   },
+   "cics": {
+    "filesScanned": 10,
+    "filesUnreadable": 0
+   },
+   "hidden": {
+    "filesScanned": 57,
+    "filesUnreadable": 0
+   },
+   "copybook": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "jcl": {
+    "filesScanned": 20,
+    "filesUnreadable": 0
+   },
+   "build": {
+    "filesScanned": 2,
+    "filesUnreadable": 0
+   },
+   "recon": {
+    "filesScanned": 57,
+    "filesUnreadable": 0
+   },
+   "vendor": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "opaque": {
+    "filesScanned": 37,
+    "filesUnreadable": 0
+   }
+  },
+  "programs": 37,
+  "programFiles": 37,
+  "copybookFiles": 0,
+  "jclFiles": 20,
+  "copiesMissing": 0,
+  "filesUnreadable": 0,
+  "cicsPrograms": 10,
+  "crossProgram": 2,
+  "ruleSets": [
+   "flow",
+   "cics",
+   "hidden",
+   "copybook",
+   "jcl",
+   "build",
+   "recon",
+   "vendor",
+   "opaque"
+  ],
+  "flowModel": "byte-range",
+  "toolVersion": "0.2.0",
+  "filesEbcdic": 0,
+  "nosrc": false,
+  "filesOverBudget": 0,
+  "coverageIncomplete": false,
+  "setsIncomplete": [
+   {
+    "set": "recon",
+    "kind": "configuration",
+    "why": "no cobolwork.site.json: the production-name rule did not run, because nothing declares what production means in this estate"
+   }
+  ]
+ },
+ "inventory": {
+  "formats": {
+   "fixed": 37
+  },
+  "missingCopybooks": {},
+  "unreadable": [],
+  "refusedCopies": [],
+  "ebcdic": [],
+  "symlinks": {
+   "followed": 0,
+   "outside": 0,
+   "broken": 0
+  },
+  "dirsUnreadable": 0
+ },
+ "findings": [
+  {
+   "rule": "agent-directive-in-comment",
+   "path": "011-comment-directs-its-reader/HCOMMENT.cbl",
+   "line": 3,
+   "detail": "a comment addresses its reader with an instruction about instructions",
+   "sev": "high",
+   "cwe": "CWE-1427",
+   "evidence": "tampering"
+  },
+  {
+   "rule": "agent-directive-in-comment",
+   "path": "011-comment-directs-its-reader/HCOMMENT.cbl",
+   "line": 4,
+   "detail": "a comment addresses its reader with an instruction about instructions",
+   "sev": "high",
+   "cwe": "CWE-1427",
+   "evidence": "tampering"
+  },
+  {
+   "rule": "argv-or-env-to-os-command",
+   "sev": "crit",
+   "cwe": "CWE-78",
+   "path": "001-argv-reaches-os-command/P2.cbl",
+   "line": 10,
+   "program": "P2",
+   "crossProgram": true,
+   "hops": 4,
+   "detail": "Command-line or environment input reaches an operating-system command routine: ACCEPT ... FROM COMMAND-LINE at 001-argv-reaches-os-command/P1.cbl:8 reaches CALL 'SYSTEM' USING WS-LOCAL",
+   "trace": [
+    {
+     "program": "P1",
+     "item": "WS-IN",
+     "file": "001-argv-reaches-os-command/P1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "P1",
+     "item": "WS-CMD",
+     "file": "001-argv-reaches-os-command/P1.cbl",
+     "via": "MOVE at 001-argv-reaches-os-command/P1.cbl:9"
+    },
+    {
+     "program": "P2",
+     "item": "LK-CMD",
+     "file": "001-argv-reaches-os-command/P2.cbl",
+     "via": "CALL 'P2' argument 1 at 001-argv-reaches-os-command/P1.cbl:10"
+    },
+    {
+     "program": "P2",
+     "item": "WS-LOCAL",
+     "file": "001-argv-reaches-os-command/P2.cbl",
+     "via": "MOVE at 001-argv-reaches-os-command/P2.cbl:9"
+    }
+   ],
+   "related": [
+    {
+     "path": "001-argv-reaches-os-command/P1.cbl",
+     "line": 8,
+     "detail": "ACCEPT ... FROM COMMAND-LINE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "argv-or-env-to-os-command",
+   "sev": "crit",
+   "cwe": "CWE-78",
+   "path": "018-group-carrying-tainted-field/G1.cbl",
+   "line": 12,
+   "program": "G1",
+   "crossProgram": false,
+   "hops": 3,
+   "detail": "Command-line or environment input reaches an operating-system command routine: ACCEPT ... FROM COMMAND-LINE at 018-group-carrying-tainted-field/G1.cbl:10 reaches CALL 'SYSTEM' USING WS-CMD",
+   "trace": [
+    {
+     "program": "G1",
+     "item": "WS-ARG",
+     "file": "018-group-carrying-tainted-field/G1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "G1",
+     "item": "WS-REQUEST",
+     "file": "018-group-carrying-tainted-field/G1.cbl",
+     "via": "group",
+     "dir": "up"
+    },
+    {
+     "program": "G1",
+     "item": "WS-CMD",
+     "file": "018-group-carrying-tainted-field/G1.cbl",
+     "via": "MOVE at 018-group-carrying-tainted-field/G1.cbl:11"
+    }
+   ],
+   "related": [
+    {
+     "path": "018-group-carrying-tainted-field/G1.cbl",
+     "line": 10,
+     "detail": "ACCEPT ... FROM COMMAND-LINE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "argv-or-env-to-os-command",
+   "sev": "crit",
+   "cwe": "CWE-78",
+   "path": "024-overlay-of-tainted-field/RDF.cbl",
+   "line": 12,
+   "program": "RDF",
+   "crossProgram": false,
+   "hops": 4,
+   "detail": "Command-line or environment input reaches an operating-system command routine: ACCEPT ... FROM COMMAND-LINE at 024-overlay-of-tainted-field/RDF.cbl:11 reaches CALL 'SYSTEM' USING WS-CMD",
+   "trace": [
+    {
+     "program": "RDF",
+     "item": "WS-A",
+     "file": "024-overlay-of-tainted-field/RDF.cbl",
+     "via": "source"
+    },
+    {
+     "program": "RDF",
+     "item": "WS-REC",
+     "file": "024-overlay-of-tainted-field/RDF.cbl",
+     "via": "group",
+     "dir": "up"
+    },
+    {
+     "program": "RDF",
+     "item": "WS-OVL",
+     "file": "024-overlay-of-tainted-field/RDF.cbl",
+     "via": "redefines"
+    },
+    {
+     "program": "RDF",
+     "item": "WS-CMD",
+     "file": "024-overlay-of-tainted-field/RDF.cbl",
+     "via": "group",
+     "dir": "down"
+    }
+   ],
+   "related": [
+    {
+     "path": "024-overlay-of-tainted-field/RDF.cbl",
+     "line": 11,
+     "detail": "ACCEPT ... FROM COMMAND-LINE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "argv-or-env-to-os-command",
+   "sev": "crit",
+   "cwe": "CWE-78",
+   "path": "025-group-moved-after-field-tainted/GMV.cbl",
+   "line": 14,
+   "program": "GMV",
+   "crossProgram": false,
+   "hops": 4,
+   "detail": "Command-line or environment input reaches an operating-system command routine: ACCEPT ... FROM COMMAND-LINE at 025-group-moved-after-field-tainted/GMV.cbl:12 reaches CALL 'SYSTEM' USING WS-OUT-A",
+   "trace": [
+    {
+     "program": "GMV",
+     "item": "WS-A",
+     "file": "025-group-moved-after-field-tainted/GMV.cbl",
+     "via": "source"
+    },
+    {
+     "program": "GMV",
+     "item": "WS-REC",
+     "file": "025-group-moved-after-field-tainted/GMV.cbl",
+     "via": "group",
+     "dir": "up"
+    },
+    {
+     "program": "GMV",
+     "item": "WS-OUT",
+     "file": "025-group-moved-after-field-tainted/GMV.cbl",
+     "via": "MOVE at 025-group-moved-after-field-tainted/GMV.cbl:13"
+    },
+    {
+     "program": "GMV",
+     "item": "WS-OUT-A",
+     "file": "025-group-moved-after-field-tainted/GMV.cbl",
+     "via": "group",
+     "dir": "down"
+    }
+   ],
+   "related": [
+    {
+     "path": "025-group-moved-after-field-tainted/GMV.cbl",
+     "line": 12,
+     "detail": "ACCEPT ... FROM COMMAND-LINE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "bidi-or-invisible-characters",
+   "path": "014-text-reordering-characters/HBIDI.cbl",
+   "line": 3,
+   "detail": "the source contains characters that reorder or hide text",
+   "sev": "high",
+   "cwe": "CWE-94",
+   "evidence": "tampering"
+  },
+  {
+   "rule": "build-pins-vulnerable-compiler",
+   "path": "035-the-build-pins-a-compiler-with-advisories/Dockerfile",
+   "line": 2,
+   "detail": "035-the-build-pins-a-compiler-with-advisories/Dockerfile pins gnucobol 2.2, which has 6 published advisories: CVE-2019-14468, CVE-2019-14486, CVE-2019-14528, CVE-2019-14541, CVE-2019-16395, CVE-2019-16396",
+   "related": [
+    {
+     "id": "CVE-2019-14468",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14468"
+    },
+    {
+     "id": "CVE-2019-14486",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14486"
+    },
+    {
+     "id": "CVE-2019-14528",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14528"
+    },
+    {
+     "id": "CVE-2019-14541",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14541"
+    },
+    {
+     "id": "CVE-2019-16395",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-16395"
+    },
+    {
+     "id": "CVE-2019-16396",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-16396"
+    }
+   ],
+   "sev": "high",
+   "cwe": "CWE-1395",
+   "evidence": "advisory"
+  },
+  {
+   "rule": "cics-commarea-length-exceeds-area",
+   "path": "008-commarea-length-exceeds-areas/CLEN.cbl",
+   "line": 8,
+   "program": "CLEN",
+   "detail": "CLEN passes LENGTH(200) with WS-AREA, which is 100 bytes",
+   "sev": "high",
+   "cwe": "CWE-805",
+   "evidence": "construct"
+  },
+  {
+   "rule": "cics-commarea-length-exceeds-callee",
+   "path": "008-commarea-length-exceeds-areas/CLEN.cbl",
+   "line": 8,
+   "program": "CLEN",
+   "detail": "CLEN passes LENGTH(200) to CCALLEE, whose DFHCOMMAREA is 50 bytes",
+   "sev": "high",
+   "cwe": "CWE-805",
+   "evidence": "construct"
+  },
+  {
+   "rule": "cics-commarea-without-length-check",
+   "path": "003-terminal-input-chooses-program/C2.cbl",
+   "line": 7,
+   "program": "C2",
+   "detail": "C2 reads DFHCOMMAREA (100 bytes declared) and never references EIBCALEN, so a shorter or absent communication area is read as if it were whole",
+   "sev": "high",
+   "cwe": "CWE-1284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "cics-commarea-without-length-check",
+   "path": "006-commarea-read-without-length-check/CNOEIB.cbl",
+   "line": 7,
+   "program": "CNOEIB",
+   "detail": "CNOEIB reads DFHCOMMAREA (100 bytes declared) and never references EIBCALEN, so a shorter or absent communication area is read as if it were whole",
+   "sev": "high",
+   "cwe": "CWE-1284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "cics-terminal-to-cics-dynamic-transfer",
+   "sev": "crit",
+   "cwe": "CWE-470",
+   "path": "003-terminal-input-chooses-program/C2.cbl",
+   "line": 10,
+   "program": "C2",
+   "crossProgram": true,
+   "hops": 3,
+   "detail": "Terminal input decides which program CICS transfers to: EXEC CICS RECEIVE at 003-terminal-input-chooses-program/C1.cbl:7 reaches EXEC CICS XCTL with a variable program name",
+   "trace": [
+    {
+     "program": "C1",
+     "item": "WS-BUF",
+     "file": "003-terminal-input-chooses-program/C1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "C2",
+     "item": "DFHCOMMAREA",
+     "file": "003-terminal-input-chooses-program/C2.cbl",
+     "via": "EXEC CICS LINK COMMAREA to C2"
+    },
+    {
+     "program": "C2",
+     "item": "WS-PGM",
+     "file": "003-terminal-input-chooses-program/C2.cbl",
+     "via": "MOVE at 003-terminal-input-chooses-program/C2.cbl:9"
+    }
+   ],
+   "related": [
+    {
+     "path": "003-terminal-input-chooses-program/C1.cbl",
+     "line": 7,
+     "detail": "EXEC CICS RECEIVE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "cics-transfer-to-variable-program",
+   "path": "003-terminal-input-chooses-program/C2.cbl",
+   "line": 10,
+   "program": "C2",
+   "detail": "C2 runs EXEC CICS XCTL with the program name taken from WS-PGM",
+   "sev": "med",
+   "cwe": "CWE-470",
+   "evidence": "construct"
+  },
+  {
+   "rule": "cics-transfer-to-variable-program",
+   "path": "008-commarea-length-exceeds-areas/CLEN.cbl",
+   "line": 10,
+   "program": "CLEN",
+   "detail": "CLEN runs EXEC CICS XCTL with the program name taken from WS-PGM",
+   "sev": "med",
+   "cwe": "CWE-470",
+   "evidence": "construct"
+  },
+  {
+   "rule": "cics-web-to-dynamic-sql",
+   "sev": "crit",
+   "cwe": "CWE-89",
+   "path": "004-web-input-built-into-sql/S1.cbl",
+   "line": 11,
+   "program": "S1",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "Web input reaches dynamic SQL: EXEC CICS WEB RECEIVE at 004-web-input-built-into-sql/S1.cbl:8 reaches EXEC SQL EXECUTE IMMEDIATE from a host variable",
+   "trace": [
+    {
+     "program": "S1",
+     "item": "WS-Q",
+     "file": "004-web-input-built-into-sql/S1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "S1",
+     "item": "WS-STMT",
+     "file": "004-web-input-built-into-sql/S1.cbl",
+     "via": "STRING at 004-web-input-built-into-sql/S1.cbl:9"
+    }
+   ],
+   "related": [
+    {
+     "path": "004-web-input-built-into-sql/S1.cbl",
+     "line": 8,
+     "detail": "EXEC CICS WEB RECEIVE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "database-to-message-queue",
+   "sev": "low",
+   "cwe": "CWE-201",
+   "path": "023-database-put-on-queue/X5.cbl",
+   "line": 18,
+   "program": "X5",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "A database value is put on a message queue: EXEC SQL SELECT INTO host variable at 023-database-put-on-queue/X5.cbl:15 reaches CALL 'MQPUT' with buffer WS-MSG",
+   "trace": [
+    {
+     "program": "X5",
+     "item": "WS-SSN",
+     "file": "023-database-put-on-queue/X5.cbl",
+     "via": "source"
+    },
+    {
+     "program": "X5",
+     "item": "WS-MSG",
+     "file": "023-database-put-on-queue/X5.cbl",
+     "via": "MOVE at 023-database-put-on-queue/X5.cbl:17"
+    }
+   ],
+   "related": [
+    {
+     "path": "023-database-put-on-queue/X5.cbl",
+     "line": 15,
+     "detail": "EXEC SQL SELECT INTO host variable"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "database-to-os-command",
+   "sev": "high",
+   "cwe": "CWE-78",
+   "path": "016-database-value-run-as-a-command/DBCMD.cbl",
+   "line": 11,
+   "program": "DBCMD",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "A database value reaches an operating-system command routine: EXEC SQL SELECT INTO host variable at 016-database-value-run-as-a-command/DBCMD.cbl:8 reaches CALL 'SYSTEM' USING WS-CMD",
+   "trace": [
+    {
+     "program": "DBCMD",
+     "item": "WS-SCRIPT",
+     "file": "016-database-value-run-as-a-command/DBCMD.cbl",
+     "via": "source"
+    },
+    {
+     "program": "DBCMD",
+     "item": "WS-CMD",
+     "file": "016-database-value-run-as-a-command/DBCMD.cbl",
+     "via": "STRING at 016-database-value-run-as-a-command/DBCMD.cbl:10"
+    }
+   ],
+   "related": [
+    {
+     "path": "016-database-value-run-as-a-command/DBCMD.cbl",
+     "line": 8,
+     "detail": "EXEC SQL SELECT INTO host variable"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "database-to-outbound-http",
+   "sev": "high",
+   "cwe": "CWE-201",
+   "path": "019-database-sent-to-remote-server/X1.cbl",
+   "line": 13,
+   "program": "X1",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "A database value is sent to a remote server over HTTP: EXEC SQL SELECT INTO host variable at 019-database-sent-to-remote-server/X1.cbl:10 reaches EXEC CICS WEB CONVERSE to a remote server",
+   "trace": [
+    {
+     "program": "X1",
+     "item": "WS-CARD",
+     "file": "019-database-sent-to-remote-server/X1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "X1",
+     "item": "WS-BUF",
+     "file": "019-database-sent-to-remote-server/X1.cbl",
+     "via": "MOVE at 019-database-sent-to-remote-server/X1.cbl:12"
+    }
+   ],
+   "related": [
+    {
+     "path": "019-database-sent-to-remote-server/X1.cbl",
+     "line": 10,
+     "detail": "EXEC SQL SELECT INTO host variable"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "encoded-blob",
+   "path": "013-encoded-run-in-a-comment/HBLOB.cbl",
+   "line": 3,
+   "detail": "a run of at least 200 encoded characters",
+   "sev": "med",
+   "cwe": "CWE-506",
+   "evidence": "tampering"
+  },
+  {
+   "rule": "file-record-to-dynamic-file-path",
+   "sev": "med",
+   "cwe": "CWE-73",
+   "path": "015-file-record-names-the-file-opened/FREAD.cbl",
+   "line": 8,
+   "program": "FREAD",
+   "crossProgram": false,
+   "hops": 1,
+   "detail": "A file record decides which file is opened: READ ... INTO at 015-file-record-names-the-file-opened/FREAD.cbl:20 reaches SELECT WORK-FILE ASSIGN TO WS-NAME",
+   "trace": [
+    {
+     "program": "FREAD",
+     "item": "WS-NAME",
+     "file": "015-file-record-names-the-file-opened/FREAD.cbl",
+     "via": "source"
+    }
+   ],
+   "related": [
+    {
+     "path": "015-file-record-names-the-file-opened/FREAD.cbl",
+     "line": 20,
+     "detail": "READ ... INTO"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "file-record-to-os-command",
+   "sev": "high",
+   "cwe": "CWE-78",
+   "path": "039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl",
+   "line": 16,
+   "program": "RDSYSIN",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "A file record reaches an operating-system command routine: record of file CTL-FILE at 039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl:9 reaches CALL 'SYSTEM' USING WS-CMD",
+   "trace": [
+    {
+     "program": "RDSYSIN",
+     "item": "CTL-REC",
+     "file": "039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl",
+     "via": "source"
+    },
+    {
+     "program": "RDSYSIN",
+     "item": "WS-CMD",
+     "file": "039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl",
+     "via": "MOVE at 039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl:15"
+    }
+   ],
+   "related": [
+    {
+     "path": "039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl",
+     "line": 9,
+     "detail": "record of file CTL-FILE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "file-record-to-os-command",
+   "sev": "high",
+   "cwe": "CWE-78",
+   "path": "040-the-dd-names-a-dataset-not-in-stream-data/RDSYSIN.cbl",
+   "line": 16,
+   "program": "RDSYSIN",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "A file record reaches an operating-system command routine: record of file CTL-FILE at 040-the-dd-names-a-dataset-not-in-stream-data/RDSYSIN.cbl:9 reaches CALL 'SYSTEM' USING WS-CMD",
+   "trace": [
+    {
+     "program": "RDSYSIN",
+     "item": "CTL-REC",
+     "file": "040-the-dd-names-a-dataset-not-in-stream-data/RDSYSIN.cbl",
+     "via": "source"
+    },
+    {
+     "program": "RDSYSIN",
+     "item": "WS-CMD",
+     "file": "040-the-dd-names-a-dataset-not-in-stream-data/RDSYSIN.cbl",
+     "via": "MOVE at 040-the-dd-names-a-dataset-not-in-stream-data/RDSYSIN.cbl:15"
+    }
+   ],
+   "related": [
+    {
+     "path": "040-the-dd-names-a-dataset-not-in-stream-data/RDSYSIN.cbl",
+     "line": 9,
+     "detail": "record of file CTL-FILE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "file-record-to-socket-send",
+   "sev": "high",
+   "cwe": "CWE-201",
+   "path": "021-file-record-written-to-socket/X3.cbl",
+   "line": 21,
+   "program": "X3",
+   "crossProgram": false,
+   "hops": 1,
+   "detail": "A file record is written to a network socket: READ ... INTO at 021-file-record-written-to-socket/X3.cbl:20 reaches CALL 'EZASOKET' SEND USING WS-LINE",
+   "trace": [
+    {
+     "program": "X3",
+     "item": "WS-LINE",
+     "file": "021-file-record-written-to-socket/X3.cbl",
+     "via": "source"
+    }
+   ],
+   "related": [
+    {
+     "path": "021-file-record-written-to-socket/X3.cbl",
+     "line": 20,
+     "detail": "READ ... INTO"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "hidden-payload-in-identification-area",
+   "path": "009-payload-in-ignored-columns/HIDENT.cbl",
+   "line": 3,
+   "detail": "6 consecutive lines carry varying data in columns 73 to 80, which the compiler ignores",
+   "sev": "high",
+   "cwe": "CWE-1427",
+   "evidence": "tampering"
+  },
+  {
+   "rule": "jcl-dlm-hides-instream",
+   "path": "031-a-delimiter-hides-the-rest-of-the-stream/HIDDEN.jcl",
+   "line": 4,
+   "step": "STEP010",
+   "detail": "SYSTSIN in step STEP010 uses DLM=##, so its 2 lines do not end at /*",
+   "sev": "med",
+   "cwe": "CWE-1427",
+   "evidence": "tampering"
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "033-a-step-runs-a-program-nothing-defines/RUN.jcl",
+   "line": 3,
+   "step": "STEP020",
+   "detail": "step STEP020 runs GHOSTPGM, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null,
+   "evidence": "coverage"
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "043-a-transfer-runs-a-program-on-the-partner-node/XFER.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 runs DMBATCH, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null,
+   "evidence": "coverage"
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "044-a-transfer-only-moves-a-dataset/XFER.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 runs DMBATCH, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null,
+   "evidence": "coverage"
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "045-a-job-forces-work-into-the-schedule/SCHED.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 runs CTMAPI, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null,
+   "evidence": "coverage"
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "046-a-job-only-reports-on-the-schedule/SCHED.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 runs CTMAPI, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null,
+   "evidence": "coverage"
+  },
+  {
+   "rule": "jcl-instream-credential",
+   "path": "027-instream-grants-authority-with-a-password/ADMIN.jcl",
+   "line": 5,
+   "step": "STEP010",
+   "detail": "in-stream data sets PASSWORD in SYSTSIN, in a file anyone who can read the repository can read",
+   "sev": "crit",
+   "cwe": "CWE-798",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-credential",
+   "path": "031-a-delimiter-hides-the-rest-of-the-stream/HIDDEN.jcl",
+   "line": 6,
+   "step": "STEP010",
+   "detail": "in-stream data sets PASSWORD in SYSTSIN, in a file anyone who can read the repository can read",
+   "sev": "crit",
+   "cwe": "CWE-798",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-credential",
+   "path": "tests/fixtures/credential/ADMIN.jcl",
+   "line": 5,
+   "step": "STEP010",
+   "detail": "in-stream data sets PASSWORD in SYSTSIN, in a file anyone who can read the repository can read",
+   "sev": "crit",
+   "cwe": "CWE-798",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-destructive",
+   "path": "029-instream-deletes-a-catalogued-dataset/CLEANUP.jcl",
+   "line": 5,
+   "step": "STEP010",
+   "detail": "in-stream data runs DELETE against a catalogued dataset in step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "027-instream-grants-authority-with-a-password/ADMIN.jcl",
+   "line": 6,
+   "step": "STEP010",
+   "detail": "in-stream data issues PERMIT, which grants or alters authority, from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "041-a-job-creates-a-logonid-with-a-vendor-command/SECADM.jcl",
+   "line": 4,
+   "step": "STEP010",
+   "detail": "in-stream data issues an ACF2 administration command from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "041-a-job-creates-a-logonid-with-a-vendor-command/SECADM.jcl",
+   "line": 5,
+   "step": "STEP010",
+   "detail": "in-stream data issues an ACF2 administration command from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "041-a-job-creates-a-logonid-with-a-vendor-command/SECADM.jcl",
+   "line": 6,
+   "step": "STEP010",
+   "detail": "in-stream data issues PERMIT, which grants or alters authority, from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "tests/fixtures/credential/ADMIN.jcl",
+   "line": 6,
+   "step": "STEP010",
+   "detail": "in-stream data issues PERMIT, which grants or alters authority, from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284",
+   "evidence": "construct"
+  },
+  {
+   "rule": "jcl-instream-to-os-command",
+   "sev": "crit",
+   "cwe": "CWE-78",
+   "path": "039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl",
+   "line": 16,
+   "program": "RDSYSIN",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "In-stream job data reaches an operating-system command routine: 1 lines of in-stream data on //SYSIN in step STEP010, read through SELECT CTL-FILE at 039-in-stream-job-data-reaches-an-os-command/RUN.jcl:3 reaches CALL 'SYSTEM' USING WS-CMD",
+   "trace": [
+    {
+     "program": "RDSYSIN",
+     "item": "CTL-REC",
+     "file": "039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl",
+     "via": "source"
+    },
+    {
+     "program": "RDSYSIN",
+     "item": "WS-CMD",
+     "file": "039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl",
+     "via": "MOVE at 039-in-stream-job-data-reaches-an-os-command/RDSYSIN.cbl:15"
+    }
+   ],
+   "related": [
+    {
+     "path": "039-in-stream-job-data-reaches-an-os-command/RUN.jcl",
+     "line": 3,
+     "detail": "1 lines of in-stream data on //SYSIN in step STEP010, read through SELECT CTL-FILE"
+    }
+   ],
+   "sources": 1,
+   "evidence": "path"
+  },
+  {
+   "rule": "jcl-parm-is-an-entry-point",
+   "path": "034-a-step-runs-a-program-the-tree-defines/RUN.jcl",
+   "line": 3,
+   "step": "STEP020",
+   "detail": "step STEP020 passes PARM= to PAYCALC, whose source is in this tree, so the flow rules treat that parameter as untrusted",
+   "sev": "info",
+   "cwe": "CWE-20",
+   "evidence": "context"
+  },
+  {
+   "rule": "jcl-parm-is-an-entry-point",
+   "path": "037-a-job-parameter-reaches-an-os-command/RUN.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 passes PARM= to RUNCMD, whose source is in this tree, so the flow rules treat that parameter as untrusted",
+   "sev": "info",
+   "cwe": "CWE-20",
+   "evidence": "context"
+  },
+  {
+   "rule": "jcl-parm-is-an-entry-point",
+   "path": "038-a-job-parameter-is-not-the-command-run/RUN.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 passes PARM= to RUNCMD, whose source is in this tree, so the flow rules treat that parameter as untrusted",
+   "sev": "info",
+   "cwe": "CWE-20",
+   "evidence": "context"
+  },
+  {
+   "rule": "jcl-parm-to-os-command",
+   "sev": "crit",
+   "cwe": "CWE-78",
+   "path": "037-a-job-parameter-reaches-an-os-command/RUNCMD.cbl",
+   "line": 12,
+   "program": "RUNCMD",
+   "crossProgram": false,
+   "hops": 3,
+   "detail": "A JCL PARM reaches an operating-system command routine: PARM= on step STEP010 of 037-a-job-parameter-reaches-an-os-command/RUN.jcl, which runs RUNCMD at 037-a-job-parameter-reaches-an-os-command/RUN.jcl:2 reaches CALL 'SYSTEM' USING WS-CMD",
+   "trace": [
+    {
+     "program": "RUNCMD",
+     "item": "LK-PARM",
+     "file": "037-a-job-parameter-reaches-an-os-command/RUNCMD.cbl",
+     "via": "source"
+    },
+    {
+     "program": "RUNCMD",
+     "item": "LK-TEXT",
+     "file": "037-a-job-parameter-reaches-an-os-command/RUNCMD.cbl",
+     "via": "group",
+     "dir": "down"
+    },
+    {
+     "program": "RUNCMD",
+     "item": "WS-CMD",
+     "file": "037-a-job-parameter-reaches-an-os-command/RUNCMD.cbl",
+     "via": "MOVE at 037-a-job-parameter-reaches-an-os-command/RUNCMD.cbl:11"
+    }
+   ],
+   "related": [
+    {
+     "path": "037-a-job-parameter-reaches-an-os-command/RUN.jcl",
+     "line": 2,
+     "detail": "PARM= on step STEP010 of 037-a-job-parameter-reaches-an-os-command/RUN.jcl, which runs RUNCMD"
+    }
+   ],
+   "sources": 2,
+   "evidence": "path"
+  },
+  {
+   "rule": "opaque-pointer-addressing",
+   "path": "047-a-program-repoints-storage-through-a-pointer/OPAQUE1.cbl",
+   "line": 9,
+   "detail": "SET ADDRESS OF LK-REC repoints storage, so what LK-REC holds afterwards did not arrive through any statement this engine reads",
+   "sev": "info",
+   "cwe": "CWE-119",
+   "evidence": "coverage"
+  },
+  {
+   "rule": "recon-routable-address-committed",
+   "path": "ops/FTPJOB.jcl",
+   "line": 4,
+   "detail": "52.94.236.248 is a routable address written into ops/FTPJOB.jcl; it is not a credential, and it is the first thing someone would want to know",
+   "sev": "low",
+   "cwe": "CWE-497",
+   "evidence": "exposure"
+  }
+ ]
+}

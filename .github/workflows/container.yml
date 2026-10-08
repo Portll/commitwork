@@ -1,0 +1,56 @@
+name: Container
+
+# Builds container/Dockerfile and runs container/smoke.sh against the image: doctor, then one scan of a
+# synthetic repository, red if any lane that ran was not confined. Only when something the image
+# installs or confines changes, because each build fetches the base image, the Debian packages and the
+# scanners. The image stays in this runner's Docker: nothing is pushed and no registry is logged in to.
+on:
+  pull_request:
+    paths:
+      - 'container/**'
+      - 'bin/lib/sandbox*.mjs'
+      - 'bin/setup.mjs'
+      - 'bin/install.sh'
+      - 'manifests/install-catalog.json'
+      - '.github/workflows/container.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'container/**'
+      - 'bin/lib/sandbox*.mjs'
+      - 'bin/setup.mjs'
+      - 'bin/install.sh'
+      - 'manifests/install-catalog.json'
+      - '.github/workflows/container.yml'
+
+concurrency:
+  group: container-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Container image builds and confines its lanes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # From git archive, as container/README.md builds it, so the context is tracked files only.
+      - name: Build the image (no push)
+        run: git archive --format=tar HEAD | docker buildx build --load -f container/Dockerfile -t commitwork:ci -
+      # Ubuntu 24.04 restricts unprivileged user namespaces through AppArmor, and that reaches bwrap
+      # inside the container too. This job measures the image, not the host policy, so it lifts the
+      # restriction and says so.
+      - name: Allow unprivileged user namespaces
+        run: |
+          if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null)" = "1" ]; then
+            echo "::notice::lifting kernel.apparmor_restrict_unprivileged_userns for this job"
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+      - name: doctor and a synthetic scan, with no lane run unconfined
+        run: sh container/smoke.sh commitwork:ci --min 10

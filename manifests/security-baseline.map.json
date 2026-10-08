@@ -1,0 +1,2789 @@
+{
+  "generatedBy": "bin/manifest-map.mjs",
+  "manifest": "security-baseline",
+  "manifestLines": 2798,
+  "checkCount": 82,
+  "byId": {
+    "a11y-wcag": {
+      "line": 1463,
+      "description": "WCAG 2.2 accessibility audit of the HTML this repo SERVES, by success criterion (bin/a11y-scan.mjs). Static and zero-dependency: no browser, no URL, so it runs on every repo. Reports each criterion as pass / fail / unchecked — an unchecked criterion is NOT a pass, and it blocks a conformance claim exactly as a failure does.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "a11y",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "actions-actionlint": {
+      "line": 903,
+      "description": "GitHub Actions workflow lint (actionlint). Complements actions-zizmor rather than duplicating it: zizmor audits workflow SECURITY posture (permissions, injection sinks, artifact handling), actionlint audits workflow CORRECTNESS — expression type errors, undefined contexts, invalid action refs — plus it runs shellcheck over every inline `run:` block, which nothing else in the fleet reaches. The high-severity class here is untrusted input interpolated into an inline script (`${{ github.event.*.title }}`), which on pull_request_target is a live RCE. actionlint emits NO severity field of its own; severity is derived in parseReport from the finding's own wording, and unknown finding kinds deliberately score med rather than clean.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "actionlint"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        ".github/workflows"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "actionlint",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "actions-gaps": {
+      "line": 2742,
+      "description": "GitHub Actions workflow gaps (bin/actions-gaps.mjs), zero dependencies, over .github/workflows/*.yml at the repository root — the only place GitHub reads workflows from. Three findings the zizmor lane does not surface at the persona the fleet runs: self-hosted-runner (high, CWE-1104/CWE-284) — runs-on names the self-hosted label as a scalar, in a label list, under labels: of a runner-group map, or through a strategy.matrix value, so a pull request that reaches the job runs on the organisation's own machine; workflow-run-trigger (high, CWE-829) — the workflow is triggered by workflow_run or pull_request_target AND a job checks out the triggering run's head (actions/checkout with ref or repository drawn from github.event.workflow_run.*, github.event.pull_request.head.*, github.head_ref or refs/pull/N/{head,merge}), downloads the triggering run's artifacts (a download-artifact action given a run id from github.event.workflow_run), or fetches the head in a run step — the privileged-trigger-plus-fork-content compound, which zizmor's dangerous-triggers reports on the trigger alone; permissions-absent (med, CWE-250) — a job with no permissions: block on itself or on the workflow, so GITHUB_TOKEN takes the repository default. Measured 2026-09-16 against zizmor 1.30.1 on a fixture carrying all three: excessive-permissions (absent block, per job and per workflow) and dangerous-triggers fire at the regular persona; self-hosted-runner fires only at --persona auditor, which also emits anonymous-definition and concurrency-limits on every job, so the fleet does not run it there. Reports rule ids, workflow paths, job and step names only — never a script body, an action reference or an expression. filesScanned===0 is a declared void (no .github/workflows, no yaml in it, or nothing readable); an unparseable or unreadable workflow is counted and named, never skipped.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        ".github/workflows"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "actions-health": {
+      "line": 2767,
+      "description": "GitHub Actions results you can believe, and what they cost (bin/actions-health.mjs), read through gh api from the repository origin: per workflow, the red streak on the default branch (ci-red-streak, med, at CW_ACTIONS_HEALTH_STREAK or more, default 3); across the newest runs, jobs that never got a runner (ci-never-started, high, when half or more), which is Actions refusing to start them for budget, billing or policy; and billed weighted minutes (each job rounded up to a minute, Linux 1x, Windows 2x, macOS 10x, public repositories free). Every one of these sat unread in the Actions API in September 2026: account-wide startup failures from 09-19 went unnoticed for five days, commitwork CI had been red since 08-11, and 47% of 5,388 billed weighted minutes in 30 days went on failed jobs. No github.com origin, no gh, or no access is a void row, never a clean one.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "gh",
+        "git",
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        ".github/workflows"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "actions-zizmor": {
+      "line": 1373,
+      "description": "GitHub Actions workflow security audit (zizmor) — excessive GITHUB_TOKEN permissions, unpinned actions, template injection via ${{ github.event.* }}, credential persistence, cache poisoning. Fully static and OFFLINE: no token, no network, no API.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "zizmor"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        ".github/workflows"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "agent-config": {
+      "line": 2656,
+      "description": "Agent configuration in the scanned tree (bin/agent-config.mjs): .mcp.json, .claude/settings.json, .claude/settings.local.json, .cursor/mcp.json, .vscode/mcp.json, .claude/hooks/** and .claude/commands/**. Rules: mcp-remote-server (a server url, or a URL passed as a command argument, resolving to a non-loopback host), mcp-command-shell (a server command of sh/bash/curl/wget, node -e, python -c, or npx with an unpinned package — @latest is a tag, not a pin), hook-shell-out (a hook command or hook script fetching from a non-loopback host, piping into a shell, or evaluating inline code), permissions-allow-broad (Bash(*), Bash(curl*), Write(/*), a bare tool name, or a whole-server mcp__ grant), env-secret-inline (an env value shaped like a credential — gitleaks' generic-api-key shape plus known prefixes; the KEY NAME is reported, never the value), mcp-host-from-env (med, CWE-829 — a server whose url host, command binary, npx package, URL-shaped argument host or host-ish env value is a ${VAR}/$VAR/%VAR% resolved at run time, so no host is visible to read; the detail names the variable; ${HOME}, ${CLAUDE_PROJECT_DIR}, ${workspaceFolder} and the like in a local path do not fire), hook-script-content (high, CWE-829 — for each hook in .claude/settings*.json whose command names a script, the script is READ from the target tree, bounded by CW_AGENT_CONFIG_MAX_BYTES, and judged for a network fetch, a pipe into a shell, inline evaluation or a credential-path read; the row sits on the settings file keyed by the hook event and names the script; a script under ~, outside the tree, missing, oversize or binary is counted in summary.unreadableHookScripts with its reason, never judged clean), command-file-shell (high, CWE-829 — a fenced bash/sh/zsh/shell block in .claude/commands/**/*.md that fetches from a non-loopback host, pipes into a shell or reads a credential path), permissions-deny-missing (low, CWE-250, informational — a settings file that grants any Bash(…) with no permissions.deny entry covering ~/.ssh, ~/.aws, ~/.netrc, ~/.npmrc, ~/.git-credentials, docker/kube config or ~/.gnupg). Emits rule ids, paths, hosts, package names, variable names and key names only. INCLUDES: a config file's `include` array is followed inside the target tree and each included file is judged by the same rules, its rows on its own path; an include that is absolute, home-relative, remote, built from a variable, resolves through a symlink out of the tree, is missing, unreadable, unparseable, cyclic, past the depth limit or past 256 included files is not followed and is listed, never treated as clean. Config and included JSON files are read under the CW_AGENT_CONFIG_MAX_BYTES cap; one over it is unreadable (oversize). The report's `effective` block gives each agent's (claude, cursor, vscode) source-attributed grants, denies, hooks and servers with JSON pointers into their files; grant and deny text is not carried there, only the tool name, and a name that is not plain or is secret-shaped reads [withheld]. Grants and denies are declarations; enforcement is unmeasured. JSONC (.vscode/mcp.json) parses; a file that still fails to parse is counted under summary.unparseable and named, never skipped silently. filesScanned===0 is a declared void: a target with no agent configuration is not a clean one. WHY IT EXISTS: docs/TOP-100.md rows 91 (excessive agency) and 92 (tool-call confused deputy) were Unobservable — nothing in the roster read a tool grant, an MCP server declaration or a hook, which is the surface the July 2026 Hugging Face intrusion moved through; and a hook's script, a prompt's fenced block and a host held in a variable were the parts a lexical read of the config file alone could not see.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "./.mcp.json",
+        ".claude/commands",
+        ".claude/hooks",
+        ".claude/settings.json",
+        ".claude/settings.local.json",
+        ".cursor/mcp.json",
+        ".vscode/mcp.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "agent-instructions": {
+      "line": 2611,
+      "description": "Agent-instruction file scan (bin/agent-instructions.mjs): the files an AI coding agent reads as instructions — AGENTS.md, CLAUDE.md, GEMINI.md, .cursorrules, .cursor/rules/**, .github/copilot-instructions.md, .windsurfrules, .aider*, README.md, docs/**/*.md and any *.md under .claude/.cursor/.github — read for content a human reviewer would not see or would not read as a directive. Rules: hidden-unicode (high, CWE-1427 — bidi controls U+202A–202E and U+2066–2069, zero-width space, tag characters U+E0000–E007F; the one definition shared with minify-detect's HIDDEN_TEXT, so ZWNJ, ZWJ and a leading BOM are legitimate prose), html-comment-directive (high, CWE-1427 — an HTML comment carrying an imperative to an agent, a shell verb or a URL; licence headers and TODOs without a verb to an agent do not fire), agent-directive-exec (high, CWE-1427 — visible text instructing a fetch-and-execute such as curl … | sh, outside a heading named Install/Setup; in README and docs it also needs an address cue such as 'assistant' or 'always run'), agent-directive-exfil (crit, CWE-1427 — a credential path or variable paired with a send sink on the same line; .env in a gitignore sentence and negated instructions do not fire), encoded-blob (med, CWE-506 — a base64 or hex run over 200 characters; data URIs in image tags do not fire), directive-split-across-files (high, CWE-1427 — a line telling the reader to follow/run/apply a markdown link, @path include or bare path.md that resolves to another instruction file in the tree, where THAT file carries a fetch-and-execute or credential-to-sink line; one hop, judged with no heading or cue exemption on the target, reported on the referring file naming the target — the imperative and its object sit in different files an agent reads together), directive-in-command-file (high, CWE-1427 — a fetch-and-execute or credential-to-sink line in .claude/commands/**/*.md or .cursor/rules/**, which are executed prompts, so no Install heading or address cue excuses it), guard-bypass-directive (crit, CWE-693 — an un-negated instruction in such a file to pass --no-verify, set HUSKY=0 or a CW_GUARD variable to off, move core.hooksPath, or skip/disable/bypass a hook, guard or pre-commit; 'never pass --no-verify' does not fire), instruction-env-indirection (med, CWE-829 — a directive whose target is an environment variable or a fetched substitution: eval/source/bash of $(curl …), source <(curl …), an instruction-named variable such as $INSTRUCTIONS_URL beside a run/fetch/follow verb, or curl $X_URL | sh; the detail names the variables and hosts, so the lexical rules' blind spot is stated rather than silent). WHY IT EXISTS: the July 2026 Hugging Face intrusion entered through a file a system read as configuration and obeyed; docs/TOP-100.md rows 88 and 89 (prompt injection) were Unobservable until this lane, and lexical until the cross-file, command-file and indirection rules. Details carry counts, code points, line numbers, paths, variable names and hosts only — never the text, because the file is addressed to the model that reads the report.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "api-fuzz": {
+      "line": 1323,
+      "description": "Property-based API contract fuzzing (Schemathesis 4.x) against a running app. Uses the live OpenAPI at $CW_TARGET_URL/v3/api-docs by default (override with an on-disk spec via CW_OPENAPI). Runtime scanner: needs a live URL; skips visibly without one.",
+      "groups": [
+        "all",
+        "runtime"
+      ],
+      "tools": [
+        "schemathesis"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": true,
+      "report": "schemathesis",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "authz-test": {
+      "line": 1014,
+      "description": "Authz / tenant-isolation policy tests (internal-b pattern). For clientA this targets the cross-tenant BOLA: proves a tenant cannot read another tenant's data via the gateway's trusted X-Tenant-Id. Runs the repo's isolation test if present, and only with --trust-repo-manifest: without it the lane is noscan, not run.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "bash"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "security/authz-isolation-test.sh"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "generic",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "cobol-inventory": {
+      "line": 2489,
+      "description": "What COBOL is here, and what could not be read (cobolwork inventory). The coverage half of sast-cobol-cobolwork, kept as its own lane because it answers the question a finding count cannot: a COBOL tree whose copybooks are missing has been read less thoroughly than it appears to have been, and every rule that needs a field's size is blind exactly there. Reports program and copybook counts, the source formats found (fixed, free, variable, terminal), COPY statements whose copybook is absent from the tree, and files that could not be read at all. A repository where this lane reports missing copybooks and sast-cobol-cobolwork reports zero findings has not been scanned clean; it has been scanned incompletely, and only this row says so.",
+      "groups": [
+        "all",
+        "cobol",
+        "langs"
+      ],
+      "tools": [
+        "cobolwork"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".cbl",
+        ".cntl",
+        ".cob",
+        ".cobol",
+        ".copy",
+        ".cpy",
+        ".inc",
+        ".jcl",
+        ".job",
+        ".pco",
+        ".prc",
+        ".proc",
+        ".sqb"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "cobol-inventory",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "commit-provenance": {
+      "line": 2633,
+      "description": "Commit provenance over the target's recent history (bin/commit-provenance.mjs): who authored and committed the last N commits (CW_PROVENANCE_DEPTH, default 200), whether merges were made by machines without a human's say-so, and whether commits on a branch the fleet expects signed carry a signature. Reads `git log` through spawnSync with -C, never a shell string, and classifies every author and committer with monitor/attribution.mjs classifyWho — the same human/machine judgement the panel applies to annotations. Rules: unsigned-on-protected-branch (med, CWE-347: %G? is N on a commit reachable from the branch manifests/branch-protection.json lists for this repo with requireSigned:true; a repo not in that manifest, or listed without the expectation, makes the rule not-applicable — counted in summary.notApplicable, never a finding), bot-authored-merge (med, CWE-345: a 2+ parent commit whose author classifies machine and whose message carries no `authorized by <human>` marker — the body is read for that marker only and never emitted), author-committer-mismatch (low, CWE-345: author and committer identities differ and neither classifies machine), machine-author-unregistered (high, CWE-345: a machine-classified author absent from the target's declared bot list — .commitwork-bots.json or commitwork.json bots[] in the target, plus CW_PROVENANCE_BOTS; no list means every machine author is unregistered, which is the honest default). The report carries sha, rule, severity, CWE and classification words only: no subjects, no bodies, no names, no emails. WHY IT EXISTS: docs/TOP-100.md row 94 (multi-agent trust exploitation) and row 74 (unsigned artefacts) were Unobservable — nothing in the roster read the object graph for WHO made a change, so an agent merging its own work, or a bot identity nobody declared, looked exactly like a maintainer.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "git",
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "commit-velocity": {
+      "line": 2718,
+      "description": "Machine-speed commit, CI-file and credential-file activity (bin/commit-velocity.mjs). The July 2026 OpenAI/Hugging Face intrusion ran ~17,600 attacker actions across 4.5 days — a rate no human sustains, which read as routine because nothing escalated severity on RATE rather than on a signature. This lane reads commit metadata (author, timestamp, changed-path classes; never file content) and raises a finding when an author's commits, .github/workflows edits, or credential/config-file touches cross a per-hour threshold in any rolling window. Rules: machine-speed-commits (HIGH), workflow-edit-burst (HIGH, the CI-compromise vector), sensitive-file-burst (MED). A legitimate fast committer (an agent fleet, a bulk import) trips it too — that is correct: the finding is 'this happened at machine speed', and a human confirms whether it was authorised. commitsScanned===0 is a void, not a clean tree.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "git",
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": true,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "cspm-github": {
+      "line": 1403,
+      "description": "CSPM without a cloud account — Prowler's GitHub provider on this checkout's origin (branch protection, org 2FA, secret scanning + push protection, Actions permissions, stale keys). Configuration posture, not code.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "prowler"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": true,
+      "requiresUrl": false,
+      "report": "cspm-github",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "dast-authz-bola": {
+      "line": 1271,
+      "description": "BOLA / IDOR / cross-tenant probe against a running gateway (bin/authz-bola.mjs; discovers endpoints from /v3/api-docs). Unauth exposure slice by default; set CW_BEARER_A/CW_BEARER_B (+ CW_TENANT_A/B) for the authenticated cross-tenant matrix. Runtime scanner: needs a live URL.",
+      "groups": [
+        "all",
+        "runtime"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": true,
+      "report": "authz-bola",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "dast-nuclei": {
+      "line": 1237,
+      "description": "Templated known-exploit DAST against a running app (Nuclei). Runtime scanner: needs a live base URL (CW_TARGET_URL via --url/--urls/commitwork.url); skips visibly as a coverage void when none is supplied. Restricted to template types whose SUBJECT IS THE URL. dns, tcp, javascript and whois templates take only the HOST from the target and use their own ports, so against http://localhost:8080 they enumerated the probe host instead: PostgreSQL on :5432, RabbitMQ on :5672, SNMPv3 on :161, mDNS/Zeroconf on :5353, and a CAA record for the name \"localhost\". Six of nineteen findings in one run described the machine running the scan rather than the application under test, published under a scope line that already read UNKNOWN SCOPE — so a reader could attribute the operator's local dev database to a scanned repository. Host posture is a real subject and deserves its own check with its own target; it is not a DAST result.",
+      "groups": [
+        "all",
+        "runtime"
+      ],
+      "tools": [
+        "nuclei"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": true,
+      "report": "nuclei",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "deno-check": {
+      "line": 1703,
+      "description": "Type-check a Deno project (deno check --all). NOT a vulnerability scan, and named so deliberately: no advisory database covers Deno's URL/JSR import graph the way OSV covers Cargo and npm, and osv-scanner rejects deno.lock outright (\"could not determine extractor suitable to this file\", measured 2026-08-03). A Deno repo therefore carries a REAL dependency-vulnerability void that no check here closes; this measures correctness instead, which is not the same thing and must not be read as if it were. It earns its place because the void is otherwise invisible: client-d serves three public brands, deploys without type-checking and runs its own suite with --no-check, so nothing reported its error count until an audit measured it by hand.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "deno"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "deno.json",
+        "deno.jsonc"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "text",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deno-lint": {
+      "line": 1672,
+      "description": "Static analysis for Deno sources (deno lint, JSON). A Deno repo has NO dependency-vulnerability lane anywhere in this roster — see deno-check — so this and deno-check are the only static signal it gets. Gated on deno.json/deno.jsonc, the only reliable marker: a Deno repo carries no package.json, so every npm-family check correctly skips it and the repo would otherwise be scored on the unconditional checks alone.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "deno"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "deno.json",
+        "deno.jsonc"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "dep-provenance": {
+      "line": 1577,
+      "description": "Records WHERE each dependency was resolved from — registry, git, local path or bare archive — by reading the `resolved` line in every yarn.lock and package-lock.json in the tree (bin/dep-provenance.mjs). This is the one fact no other artifact retains: syft's SBOM normalises a git resolution away (closure-net appears as pkg:npm/closure-net@0.0.0, the identical shape to any registry package), npm-audit reports a version with no resolution field, and no lockfile is kept. It exists because advisory-reach.mjs correctly demotes an advisory that cannot reach a git-pinned dependency, which makes moving a dependency off the registry a way to silence a critical. INVENTORY, NOT FINDINGS: a git dependency is an ordinary, common choice and reporting the state would bury the event in a population. The finding is the MIGRATION, which only a comparison between two slices can see (monitor/dep-provenance.mjs diffProvenance). Fails closed: no lockfile is ran:false with a reason rather than an empty inventory, an unreadable lockfile is named beside the readable ones, and an unrecognised resolution is `unknown` and never `registry`.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "deps-content": {
+      "line": 2585,
+      "description": "Dependency CONTENT checks the advisory lanes cannot make (bin/deps-content.mjs): the advisory lanes ask whether a locked version has a published CVE; this lane asks whether the locked tree is what it claims and what it does on install. Reads package-lock.json (v2/v3 `packages`) and, per locked package, the installed package.json at the lockfile's own key. Rules: dep-install-exec (high, CWE-829 — a preinstall/install/postinstall hook that fetches or executes: curl, wget, nc, base64, eval, `node -e`, `python -c`, `| sh`, /dev/tcp), dep-missing-integrity (med, CWE-494 — registry-resolved with no integrity hash), dep-weak-integrity (low, CWE-494 — sha1 rather than sha512), dep-version-drift (high, CWE-1357 — the installed version disagrees with the locked one). dep-install-script (low, CWE-829) lists benign hooks only under CW_DEPS_INSTALL_SCRIPTS=1, because 'this package has a hook' is true of every native module and would be the GuardDog capability-* shape. Never echoes a hook's command into the report — a hook body is attacker-authored text. An absent lockfile is a declared void (exit 0, filesScanned 0, noLockfile); an unparseable or v1 lockfile is a could-not-run (exit 2, couldNotRun stated) so the .exit sidecar records it rather than a clean zero over packages never examined.",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "./package-lock.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-go-govulncheck": {
+      "line": 437,
+      "description": "Go dependency + stdlib vulnerabilities with REACHABILITY (govulncheck). Unlike OSV/grype, which report any advisory touching the module graph, govulncheck returns a call stack when a vulnerable symbol is actually reachable — a module-level trace with no stack means present-but-unreached. Measured 2026-08-02 on hashicorp/terraform: OSV and grype each reported GO-2026-5932 11 times (once per nested go.mod); govulncheck returned it with no call stack and nothing in the tree imports the affected package. Same advisory, three tools, and only this one could say it was unreachable.",
+      "groups": [
+        "all",
+        "deep",
+        "supply-chain"
+      ],
+      "tools": [
+        "go",
+        "govulncheck"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "go.mod"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "generic",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-gradle-declared": {
+      "line": 635,
+      "description": "Dependency CVEs for Gradle projects with NO lockfile, via declared coordinates + deps.dev transitive closure + OSV. A FLOOR, not a ceiling — Gradle constraints/resolutionStrategy/BOMs/plugins can override a declared version invisibly.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "build.gradle",
+        "build.gradle.kts",
+        "gradle/libs.versions.toml",
+        "settings.gradle"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-jvm": {
+      "line": 598,
+      "description": "JVM dependency CVEs via Trivy `fs` — reads project manifests (pom.xml, gradle.lockfile) AND still recurses into a built Spring Boot fat jar's BOOT-INF/lib/*.jar. Was `rootfs` until 2026-08-21; see formatNotes for why that mattered.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "trivy"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "build.gradle",
+        "build.gradle.kts",
+        "pom.xml",
+        "settings.gradle"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "trivy",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-osv": {
+      "line": 474,
+      "description": "Dependency vulnerabilities via OSV-Scanner (Docker; auto-detects npm/maven/gradle/go/...)",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "docker"
+      ],
+      "docker": true,
+      "appliesIfExists": [
+        "Cargo.lock",
+        "Gemfile.lock",
+        "Package.resolved",
+        "Pipfile.lock",
+        "Podfile.lock",
+        "build.gradle",
+        "build.gradle.kts",
+        "bun.lockb",
+        "cabal.project.freeze",
+        "composer.lock",
+        "conan.lock",
+        "conanfile.txt",
+        "deno.lock",
+        "go.mod",
+        "go.sum",
+        "gradle/libs.versions.toml",
+        "mix.lock",
+        "package-lock.json",
+        "package.json",
+        "packages.config",
+        "packages.lock.json",
+        "paket.lock",
+        "pnpm-lock.yaml",
+        "poetry.lock",
+        "pom.xml",
+        "pubspec.lock",
+        "pubspec.yaml",
+        "renv.lock",
+        "requirements.txt",
+        "stack.yaml.lock",
+        "uv.lock",
+        "yarn.lock"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-reachability": {
+      "line": 550,
+      "description": "OWASP dep-scan over the dependency graph, in a container with the network severed. A SECOND OPINION on the CVE lane rather than an extension of it: same advisory data, independent engine, plus the only reachability ADJUDICATION available outside Go.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "docker"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Cargo.toml",
+        "Gemfile.lock",
+        "Package.resolved",
+        "Pipfile.lock",
+        "build.gradle",
+        "build.gradle.kts",
+        "composer.lock",
+        "conan.lock",
+        "go.mod",
+        "gradle/libs.versions.toml",
+        "mix.lock",
+        "package-lock.json",
+        "package.json",
+        "packages.lock.json",
+        "paket.lock",
+        "pnpm-lock.yaml",
+        "poetry.lock",
+        "pom.xml",
+        "pyproject.toml",
+        "requirements.txt",
+        "yarn.lock"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "depscan",
+      "timeoutSec": 3000,
+      "universal": false
+    },
+    "deps-renovate": {
+      "line": 1641,
+      "description": "Automated dependency-update wiring present + valid (Renovate). Config-only gate; the self-hosted runner bin/renovate-run.sh opens the actual PRs (local dry-run needs no token; pr mode needs RENOVATE_TOKEN).",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "npx"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        ".github/renovate.json",
+        ".renovaterc.json",
+        "renovate.json",
+        "renovate.json5"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "text",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-retire": {
+      "line": 696,
+      "description": "Known-vulnerable JS library detection (retire.js) by FILE CONTENT, not by manifest — the lane that sees a library the lockfile never declares (a bundled copy inside another package's dist, or a vendored asset with no package entry at all).",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "npx"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".cjs",
+        ".cts",
+        ".js",
+        ".jsx",
+        ".mjs",
+        ".mts",
+        ".ts",
+        ".tsx"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "retire",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-ruby-bundler-audit": {
+      "line": 2040,
+      "description": "Ruby gem advisories for the resolved Bundler graph (bundler-audit). THE SECOND OPINION, deliberately: deps-osv reads the same Gemfile.lock against OSV, which imports the Ruby advisory DB, so this lane shares the advisory universe by construction and is NON-ADDITIVE (LANE_KINDS 'duplicate') — its value is DISAGREEMENT, exactly like deps-rust-audit for cargo-audit.",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "bundle-audit"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Gemfile.lock"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-rust-audit": {
+      "line": 2272,
+      "description": "RustSec advisories for the resolved Cargo graph (cargo-audit). THE SECOND OPINION, deliberately: deps-osv reads the same Cargo.lock against OSV, which imports the RustSec database, so this lane shares the advisory universe by construction and is NON-ADDITIVE (LANE_KINDS 'duplicate') — its value is DISAGREEMENT. Measured at wiring (2026-08-28, memory-layer): cargo-audit reported 18 advisories over 719 resolved dependencies in 5.5s. It also reports the classes OSV translation drops: unmaintained, unsound and yanked crates arrive as warnings, not vulnerabilities.",
+      "groups": [
+        "all",
+        "rust",
+        "supply-chain"
+      ],
+      "tools": [
+        "cargo-audit"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Cargo.lock"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "deps-updates": {
+      "line": 1598,
+      "description": "Pending dependency updates — self-hosted Renovate local dry-run (--platform=local, no token, no PRs) via bin/renovate-run.sh, parsed to a compact summary. Reports what Renovate WOULD raise (major/minor/patch by dep). Runs with REQUIRE_CONFIG=optional (Renovate defaults — no renovate.json needed), gated on a package manifest existing so empty repos skip. Heavy (Docker + full resolve, ~30s+/repo). Lock-file-maintenance branches excluded from the count.",
+      "groups": [
+        "all",
+        "deep",
+        "supply-chain"
+      ],
+      "tools": [
+        "docker"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        ".github/workflows",
+        "Cargo.toml",
+        "Gemfile",
+        "Package.resolved",
+        "build.gradle",
+        "build.gradle.kts",
+        "deno.lock",
+        "go.mod",
+        "mix.lock",
+        "package.json",
+        "packages.lock.json",
+        "pom.xml",
+        "pubspec.yaml",
+        "renovate.json",
+        "requirements.txt"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "dockerfile-lint": {
+      "line": 878,
+      "description": "Dockerfile best-practice / security lint (Hadolint). The glob matches BOTH `Dockerfile*` and `*.Dockerfile`: measured 2026-08-02 against hashicorp/terraform, the prefix-only glob linted the dev-convenience `Dockerfile` and silently skipped `build.Dockerfile` — the image that is actually published — while still reporting a clean run with a finding count.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "hadolint"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Dockerfile"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "hadolint",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "format-rust-rustfmt": {
+      "line": 1782,
+      "description": "Rust formatting conformance (cargo fmt --check, rustfmt) — NOT a security scan, filed beside lint-rust-clippy under the same rule that a formatter or linter can never earn a green SAST row. Its value is predicting a red CI: a repo that gates on `cargo fmt --all -- --check` fails every push while a single file deviates, and until this lane the scanner read no formatting at all — rustfmt ran only in build-health's declared `format` check, outside the sweep. Measured 2026-09-18 on veld at 90eaf22: the repo's own Format Check job failed on every main push from 2026-09-13, while sweeps of the same repo carried no formatting artifact; this lane reads 227 files / 1,599 hunks on that commit. Severity is the repo's declaration, never a default: `med` where a rustfmt.toml or a CI/Makefile/justfile/pre-commit step runs cargo fmt or rustfmt, `low` where the repo never adopted it. One row per FILE, keyed rule+file — `line` is the first hunk and is payload only, because reformatting moves every hunk.",
+      "groups": [
+        "all",
+        "fast",
+        "langs",
+        "rust"
+      ],
+      "tools": [
+        "cargo",
+        "rustfmt"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Cargo.toml"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "gradle-wrapper": {
+      "line": 665,
+      "description": "Gradle wrapper integrity — where ./gradlew fetches its Gradle distribution from, and what the committed gradle-wrapper.jar and gradlew script are. Static: runs no Gradle, needs no container.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "build.gradle",
+        "build.gradle.kts",
+        "gradle/wrapper/gradle-wrapper.properties",
+        "gradlew",
+        "settings.gradle",
+        "settings.gradle.kts"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "gradle-wrapper",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "iac-config": {
+      "line": 851,
+      "description": "IaC + Dockerfile misconfiguration (Trivy config)",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "trivy"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "jackson-caseinsensitive-guard": {
+      "line": 1351,
+      "description": "Fails if jackson MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES is enabled in Java or Spring config — the toggle CVE-2026-54515 needs. Keeps the accepted jackson medium reachable-risk-nil while the 2.22.1 bump is gated. Each enabling line is a med finding.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "jackson-guard",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "lint-go-golangci": {
+      "line": 401,
+      "description": "Go correctness and hygiene lint (golangci-lint 2.13.2) — NOT a security scan, and kept out of the SAST category deliberately so a linter can never earn a green SAST row, the same rule deno-lint and actions-actionlint are held to. gosec already owns Go security; this covers what gosec has no rules for: unchecked errors (errcheck), ineffectual assignments, and the staticcheck SA* classes where real bugs hide. Runs through bin/go-lane-scan.mjs so it walks to every go.mod rather than only the repo root — 13 of 29 Go repos in the 100randomrepos corpus carry their module one or more levels down.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "golangci-lint"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "go.mod"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "lint-haskell-hlint": {
+      "line": 1848,
+      "description": "Style and correctness lint for Haskell sources (HLint). NOT a security scanner and NOT a vulnerability scan, named `lint-` rather than `sast-` for deno-check's reason: HLint has no security rule pack, no taint analysis and no advisory database, and it does not attempt to answer whether the code is safe. It suggests simplifications and flags likely mistakes — redundant brackets and $, `concatMap` for `concat . map`, `mapM_` for `mapM`, a use of `head`/`fromJust` where a total function exists — and about half of what it reports is taste. It earns a place because a Haskell repository is currently read by NOTHING: no CodeQL pack, no osv-scanner extractor for .cabal or stack.yaml, no semgrep Haskell rules, so a Cabal or Stack project carries zero findings because zero lanes looked. This measures a different thing than safety and must not be read as if it were the same, exactly as deno-check must not. A Haskell repository's DEPENDENCY-VULNERABILITY void is real and this closes none of it.",
+      "groups": [
+        "all",
+        "haskell",
+        "langs"
+      ],
+      "tools": [
+        "hlint"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "cabal.project",
+        "package.yaml",
+        "stack.yaml"
+      ],
+      "appliesIfSourceExt": [
+        ".hs",
+        ".lhs"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "lint-java-pmd": {
+      "line": 2136,
+      "description": "Java correctness and hygiene lint (PMD 7.27.0) — NOT a security scan, kept out of the SAST category deliberately so a linter can never earn a green SAST row, the same rule lint-go-golangci and lint-rust-clippy are held to. Scoped to four rule categories only (errorprone, bestpractices, multithreading, performance) — codestyle, documentation and design are excluded as pure style/complexity-metric noise, and PMD's own category/java/security.xml (2 rules: HardCodedCryptoKey, InsecureCryptoIv) is excluded because that axis belongs to sast-codeql-java, not a linter. PMD ships all four rulesets bundled — no external ruleset dependency, unlike phpcs-security-audit.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "pmd"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "build.gradle",
+        "build.gradle.kts",
+        "pom.xml"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "lint-python-ruff": {
+      "line": 367,
+      "description": "Python correctness and hygiene lint (ruff 0.16.5) — NOT a security scan, kept out of the SAST category deliberately so a linter can never earn a green SAST row, the same rule lint-go-golangci and lint-rust-clippy are held to. Restricted to --select E,F,W,C90 --ignore S: pyflakes-class errors (F, undefined names/unused imports), pycodestyle (E/W), mccabe complexity (C90). Explicitly EXCLUDES ruff's S-prefixed rules (flake8-bandit-equivalent) — those are security-shaped and belong to sast-python-bandit, not here; turning them on here would be the exact naming defect lint-rust-clippy's own notes warn against, in the opposite direction (a lint lane quietly reaching into the security axis). Verified: ruff --output-format sarif is real (ruff check --help, 0.16.5) and is reused as-is.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "ruff"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Pipfile",
+        "pyproject.toml",
+        "requirements.txt",
+        "setup.py"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "lint-rust-clippy": {
+      "line": 1734,
+      "description": "Correctness and suspicious-pattern lint for Rust, NOT a security scanner: clippy ships no security rule pack and no taint analysis. Named lint- rather than sast- for the same reason deno-lint is. Rust correctness and suspicious-pattern lint (cargo clippy). NOT a vulnerability scan and NOT the Rust equivalent of sast-go-gosec — named here as requested, but see notes: clippy carries no taint analysis, no CVE database and no security rule pack, so a green row here says the compiler's own lints found nothing, never that the crate is safe. The Rust dependency lanes (deps-osv over Cargo.lock, deps-reachability) are the only advisory coverage a Cargo repo gets and this does not extend them. What it does add is the ONLY static reading of Rust SOURCE in the roster: the CodeQL lanes are javascript-typescript/java/python/ruby/cpp/swift/csharp (still no Rust pack as of 2026-08-26), gosec is Go, and semgrep's Rust registry coverage is thin, so a Cargo repo's .rs files were read by nothing else. Restricted to two lint groups on purpose — `correctness` (deny-by-default in clippy itself: code that is outright wrong) and `suspicious` (warn-by-default: very likely wrong). `style`, `complexity`, `perf`, `pedantic` and `nursery` are suppressed, because a taste lint the repo never adopted firing across every file is the false-FINDING signature (GuardDog capability-* at 602/675 rows), not a codebase in trouble. Both retained groups are already on in a default clippy run, so this applies no foreign default — it subtracts.",
+      "groups": [
+        "deep",
+        "langs",
+        "rust"
+      ],
+      "tools": [
+        "cargo",
+        "cargo-clippy"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Cargo.toml"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "minify-detect": {
+      "line": 1531,
+      "description": "Minified / obfuscated-code scan (bin/minify-detect.mjs). Inverts the fleet's posture toward unreadable code: every other lane EXCLUDES the least-readable files (CodeQL drops *.min.js at the extractor baseline; semgrep silently skips >1MB; gitleaks allowlists vendor/dist/build), so this lane makes readability itself the signal. Rules: minified-source, minified-oversize (over semgrep's byte ceiling — provably unscanned by the only lane that reads minified bodies), unscannable-void, exec-redirection, dynamic-exec-nonliteral (the distributed assembler's irreducible final-stage sink, readability-independent), exec-decode-pair, computed-dangerous-member, bidi-homoglyph (Trojan Source / mixed-script homoglyph identifiers, orthogonal to entropy), low-alphabet (JSFuck the entropy metric is blind to), entropy-blob (default-off), packer-signature, distributed-assembler (default-off, CW_MINIFY_XFILE: a repo-level finding when a dynamic-exec sink IMPORTS an encoded-array builder in another file — the distributed pathway split across files). Also analyses inline <script> bodies in HTML. Scans dist/build/vendor that sibling lanes skip. Emits metrics and construct COUNTS only, never source excerpts (secrets in an obfuscated blob would leak into the report). filesScanned===0 is a declared void, not a clean zero. Suppression is in-scanner via monitor/minify-allowlist.json (strict repo+rule+file + mandatory expires).",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "minify",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "mobile-manifest": {
+      "line": 2166,
+      "description": "Mobile manifest scan (bin/mobile-manifest.mjs) — AndroidManifest.xml and Info.plist. Closes Top 100 entry 109 (exported components, deep links, unprotected IPC), which nothing else in the fleet reaches: CodeQL sees Android and iOS SOURCE, and no lane has ever parsed the manifest that decides what is exported, what is backed up, and whether cleartext is permitted. Also carries part of 108 (transport trust) and 107 (local storage), plus android:debuggable. Zero dependencies, no network, no build, no container; a tolerant tag scan, not an XML parser, so a malformed manifest degrades rather than throwing.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "AndroidManifest.xml",
+        "Info.plist"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "model-artefacts": {
+      "line": 2687,
+      "description": "Model artefact and dataset-config scan (bin/model-artefacts.mjs), zero dependencies. The July 2026 Hugging Face intrusion entered through a dataset config that read arbitrary files and a Jinja2 template in an fsspec offset field; nothing in the roster read a model file or a loader config. Rules: pickle-dangerous-global (crit, CWE-502) — an opcode walk over .pkl .pickle .pt .pth .bin .ckpt .joblib that recognises GLOBAL, STACK_GLOBAL, INST, OBJ, NEWOBJ, REDUCE and the framed protocol-4+ layout, flags module names os, subprocess, builtins, importlib, socket, runpy, sys, shutil, posix, nt, pty, commands, __builtin__, and opens zip-wrapped torch checkpoints (STORED and DEFLATE members) to walk every .pkl inside — the artefact is never unpickled; safetensors-header-invalid (med, CWE-502) — the 8-byte LE header length exceeds the file, or the header is not a JSON object; dataset-config-template (crit, CWE-94: the loader renders the template and executes what it yields) — `{{`, `{%` or `${` in a loader field of dataset_infos.json, a yaml carrying data_files/configs or an fsspec reference spec, or a README front matter; dataset-config-remote-scheme (high, CWE-829) — reference://, s3://, gs://, http(s):// or file:// in a data path field of the same files; hf-trust-remote-code (high, CWE-829) — trust_remote_code=True in python; hf-unpinned-revision (med, CWE-1357) — from_pretrained / hf_hub_download / load_dataset / snapshot_download without a revision= that is a 40-hex commit sha (a branch name is still unpinned; a non-literal revision is counted, not published). keras-lambda-layer (high, CWE-502) — a Lambda layer by class_name in a .keras archive's config.json, a SavedModel's keras_metadata.pb or a Keras-2 .h5 model_config attribute (config blobs located by their own opening anywhere in the file, because h5py stores the attribute as a heap-referenced vlen string; not an HDF5 reader — the attribute name only witnesses that a config was declared; declared-but-unlocated or unparseable is unreadable and a weights-only file is counted as kerasWithoutConfig); tf-graph-file-op (high, CWE-73) and tf-graph-python-op (crit, CWE-94) — ReadFile/WriteFile and PyFunc/PyFuncStateless/EagerPyFunc NodeDefs in saved_model.pb, *.pb or *.pbtxt, matched by protobuf signature (tag 0x12, one-byte length, exact op name), with a graph that shows no op-shaped string counted as tfGraphsWithoutNodes. Whole-file reads are capped by CW_MODEL_MAX_BYTES (256 MiB) and over-cap files are declared skippedOversize; a file whose magic the walker cannot read is a declared unreadable count — neither is a clean skip. modelscan is an OPTIONAL second witness (manifests/install-catalog.json, CW_MODELSCAN=off to disable) recorded beside the lane's own result, never the only one. filesScanned===0 is a declared void: the tree has no model, dataset or hub-loading surface.",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "rule-counts",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "node-hazards": {
+      "line": 2194,
+      "description": "Node/JS constructs that are defects BY PRESENCE rather than by reachability (bin/node-hazards.mjs). Semgrep's taint engine answers whether untrusted input REACHES a sink; a whole class of Node defect needs no dataflow at all, because the construct itself is the decision — NODE_TLS_REJECT_UNAUTHORIZED='0' disables certificate verification process-wide whatever the input, crypto.createCipher derives key and IV from a password with no salt, and {{{ x }}} bypasses the auto-escaping that was the defence. For those a taint engine is the wrong instrument: it finds no path, reports nothing, and the defect sits there. Covers TLS/crypto configuration, unsafe deserialization schemas, explicit cookie and CORS downgrades, and per-engine template escaping bypasses (EJS, ECT, Handlebars/Mustache, Pug, Dust) plus the framework sinks (React dangerouslySetInnerHTML, Vue v-html, Angular bypassSecurityTrust*). Zero dependencies, no network, no build, no container.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "package.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "npm-audit": {
+      "line": 800,
+      "description": "npm advisory audit (package-lock.json repos only)",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "npm"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "./package-lock.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "npm-audit",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "posture-scorecard": {
+      "line": 1434,
+      "description": "OpenSSF Scorecard on this checkout's github origin — supply-chain posture scored from the OUTSIDE: branch protection, pinned dependencies, token permissions, dangerous workflows, signed releases, fuzzing, SAST, maintenance. Complements cspm-github rather than replacing it.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "scorecard"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": true,
+      "requiresUrl": false,
+      "report": "scorecard",
+      "timeoutSec": 2100,
+      "universal": true
+    },
+    "sast": {
+      "line": 192,
+      "description": "Static analysis with Semgrep auto rules (SARIF)",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "semgrep"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "sast-auto": {
+      "line": 2396,
+      "description": "Semgrep with the same three rule packs as the `sast` lane and WITHOUT --pro-intrafile, so the OSS engine is the only variable. Exists to MEASURE what the Pro engine buys: --pro-intrafile is interprocedural taint within a file and requires a Semgrep login; this lane requires no account.",
+      "groups": [
+        "compare"
+      ],
+      "tools": [
+        "semgrep"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "sast-bearer": {
+      "line": 1198,
+      "description": "Sensitive-data-flow SAST (Bearer) — it asks a question no other lane in this fleet asks. Semgrep, CodeQL, gosec and Joern all trace EXPLOIT paths: can an attacker reach a dangerous sink. Bearer traces SENSITIVE DATA: it classifies PII/PHI/credentials in the code and follows where that data goes — into a log, into a third-party API call, into an unencrypted store, across a border. A repository can be entirely free of injection findings and still be leaking health identifiers into a logger, and nothing else here would say so. Covers JS/TS, Ruby, Java, PHP, Python and Go. This is the lane that evidences the 'data security' claim and produces GDPR/CRA material — a data-flow inventory mapped to rule categories — that no other scanner in the fleet can generate. NOT INSTALLED ON THIS MACHINE — verified 2026-08-23, `which bearer` returned not-found, so this lane reports tool-unavailable until the binary is installed. That is its correct state: a lane whose tool is absent is UNAVAILABLE, never clean.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "bearer"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Gemfile",
+        "build.gradle",
+        "build.gradle.kts",
+        "composer.json",
+        "go.mod",
+        "package.json",
+        "pom.xml",
+        "pyproject.toml",
+        "requirements.txt"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "bearer",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-c-cppcheck": {
+      "line": 2423,
+      "description": "C/C++ static analysis (cppcheck). Complements sast-codeql-cpp rather than duplicating it: measured 2026-09-01 on a four-defect fixture, cppcheck found arrayIndexOutOfBounds and doubleFree while flawfinder found the strcpy overflow and the format string, and NEITHER found the other's. No compilation database and no build required, so it needs none of the untrusted-build machinery.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "cppcheck"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cxx",
+        ".h",
+        ".hpp",
+        ".hxx"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-c-flawfinder": {
+      "line": 2456,
+      "description": "C/C++ lexical security scan (flawfinder), CWE-tagged. Its speciality is the format-string class (CWE-134) and unbounded copies (CWE-120), which cppcheck did not report on the same fixture. Lexical rather than semantic, so it complements both cppcheck and sast-codeql-cpp.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "flawfinder"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cxx",
+        ".h",
+        ".hpp",
+        ".hxx"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-cobol-cobolwork": {
+      "line": 2221,
+      "description": "COBOL, JCL and CICS security analysis (cobolwork) - the only lane on the roster that reports code findings in any of it; cobol-inventory and secrets-cobol-jcl read the same trees for coverage and for credentials. Semgrep, CodeQL, SonarQube Community and PMD ship no COBOL rules, and gitleaks and TruffleHog have none for a RACF password or a JCL PASSWORD=, so a Semgrep run over a COBOL-only repository loads its rules, reads none of the COBOL and exits clean. cobolwork reads the source the way a compiler does (reference format, COPY resolution, REDEFINES), follows untrusted data across programs and in from the JCL step (PARM=, in-stream data) to OS commands, dynamic SQL, dynamic CALL/LINK/XCTL, variable file assignments and outbound channels, and reports credentials and authority grants in job data, payloads in the columns the compiler ignores, copybook shadowing, pinned compilers with published advisories, and production names and routable addresses written into source. Every finding says what kind of claim it makes (`evidence`), and the lane keeps the kinds that are not defects out of its counts. Zero dependencies, no network, no build.",
+      "groups": [
+        "all",
+        "cobol",
+        "langs"
+      ],
+      "tools": [
+        "cobolwork"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".CBL",
+        ".CNTL",
+        ".COB",
+        ".COBOL",
+        ".CPY",
+        ".JCL",
+        ".PCO",
+        ".SQB",
+        ".cbl",
+        ".cntl",
+        ".cob",
+        ".cobol",
+        ".cpy",
+        ".jcl",
+        ".pco",
+        ".sqb"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": 2700,
+      "universal": false
+    },
+    "sast-codeql": {
+      "line": 262,
+      "description": "Deep taint / data-flow SAST (CodeQL). Heavy: builds a database, so it lives in the 'deep' group only.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "codeql"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".cjs",
+        ".cts",
+        ".js",
+        ".jsx",
+        ".mjs",
+        ".mts",
+        ".ts",
+        ".tsx"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-codeql-cpp": {
+      "line": 1883,
+      "description": "CodeQL data-flow and taint analysis for C and C++. Closes the largest language hole in the fleet: before this lane, C and C++ had no deep static analysis at all and only Semgrep pattern matching.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "codeql"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cxx",
+        ".h",
+        ".hpp",
+        ".hxx"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-codeql-csharp": {
+      "line": 1976,
+      "description": "CodeQL data-flow and taint analysis for C#. Closes the last major language hole in the fleet: before this lane, C# and .NET were covered only by osv-scanner reading packages.lock.json / packages.config / paket.lock — a dependency-manifest lane that never reads a line of C# — plus Semgrep's generic pattern rules. No lane traced a source to a sink, so a .NET web application carried zero taint findings for the reason that zero lanes looked.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "codeql"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".cs",
+        ".csx"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-codeql-go": {
+      "line": 2345,
+      "description": "CodeQL data-flow and taint analysis for Go. Go was the fleet's only major language with no deep taint lane: gosec and golangci are pattern and lint tools, semgrep's Go rules are generic, and the Joern bundle carries no Go query at all — what it used to report on Go repos was C queries matching Go method names. This lane closes that with queries written for the language.",
+      "groups": [
+        "deep"
+      ],
+      "tools": [
+        "codeql",
+        "go"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".go"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": 5400,
+      "universal": false
+    },
+    "sast-codeql-java": {
+      "line": 1039,
+      "description": "Deep taint / data-flow SAST for JVM code (CodeQL, --build-mode=none). The 'sast-codeql' check is --language=javascript-typescript and does NOT cover Java; this closes the Java-fleet taint gap so a sweep actually analyses Spring/Java source. Heavy (builds a DB). appliesIfExists is resolved recursively, so monorepo service modules below root are covered.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "codeql",
+        "java"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "build.gradle",
+        "build.gradle.kts",
+        "pom.xml"
+      ],
+      "appliesIfSourceExt": [
+        ".java",
+        ".kt",
+        ".kts"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-codeql-python": {
+      "line": 1119,
+      "description": "CodeQL python analysis. Runs under build-mode NONE — CodeQL extracts python without building the source root, so this lane executes no code from the scanned repository and needs no sandbox.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "codeql"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".py",
+        ".pyi"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-codeql-ruby": {
+      "line": 1082,
+      "description": "CodeQL ruby analysis. Runs under build-mode NONE — CodeQL extracts ruby without building the source root, so this lane executes no code from the scanned repository and needs no sandbox.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "codeql"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".gemspec",
+        ".rake",
+        ".rb"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-codeql-rust": {
+      "line": 2305,
+      "description": "CodeQL data-flow and taint analysis for Rust. Before this lane, Rust — the fleet's #2 language by file count — had ZERO security reading of source: clippy is a hygiene lint (deny-by-design from the SAST family), semgrep's Rust registry is thin generic patterns, joern's declared extension list omits .rs, and bearer's gate omits Cargo.toml. Gated on .rs sources like its C/C++ sibling (appliesIfSourceExt, not a Cargo.toml proxy — vendored or scriptic Rust counts too). Extraction is buildless: probed 2026-08-26 on a scratch crate and on memory-layer (1,104 of 1,119 files extracted without error, proc_macro_server: None — no build.rs or proc-macro execution, unlike clippy which compiles the scanned repo). Heavy: measured 5m46s database + 24m24s analyze on memory-layer's 1,091 .rs files, hence the explicit timeoutSec.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "codeql"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".rs"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": 5400,
+      "universal": false
+    },
+    "sast-codeql-swift": {
+      "line": 1924,
+      "description": "CodeQL data-flow and taint analysis for Swift. Swift had no coverage of any kind before this lane.",
+      "groups": [
+        "deep"
+      ],
+      "tools": [
+        "codeql",
+        "xcodebuild"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".swift"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": 900,
+      "universal": false
+    },
+    "sast-elixir-sobelow": {
+      "line": 1818,
+      "description": "Security-focused static analysis for Elixir and Phoenix (Sobelow). Closes a total void: when this lane landed, an Elixir repository was read by NOTHING in this roster. The dependency axis has since been wired — deps-osv gates on mix.lock and osv-scanner extracts it (measured 2026-08-26 on 2.5.1: 1 package, advisories matched) — but this remains the only SOURCE reading: CodeQL has no Elixir pack, semgrep's Elixir coverage is a handful of community rules, and gosec/clippy/hlint are other languages — so a Phoenix application carried zero findings for the reason that zero lanes looked, which is the unsupported pass shape the reporting checks must prevent. Unlike the other two lanes added beside it this one IS a security scanner and its finding classes are the Phoenix breach surface: XSS through raw/1 and unescaped templates, SQL injection through Ecto fragments and raw queries, CSRF and missing pipeline plugs, directory traversal in send_file/static routes, RCE through Code.eval and unsafe :erlang.binary_to_term deserialization, hardcoded secrets in config, and Config.CSWH (a websocket origin check accepting anything). Every finding carries a CONFIDENCE (high/medium/low) rather than a severity — see formatNotes, because confidence is not severity and publishing it as one would mint verdicts the tool did not make.",
+      "groups": [
+        "all",
+        "elixir",
+        "langs"
+      ],
+      "tools": [
+        "sobelow"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "mix.exs",
+        "mix.lock"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-go-gosec": {
+      "line": 302,
+      "description": "Go-specific SAST (gosec) — the Go equivalent of the CodeQL lanes, which are javascript-typescript and java only. Semgrep's Go coverage is generic pattern rules; gosec adds taint analysis Semgrep does not carry (G703 path traversal, G705 XSS, G706 log injection) plus Go-idiomatic rules (G115 integer overflow, G301/G302/G306 file modes, G404 weak PRNG). Measured 2026-08-02 on hashicorp/terraform: semgrep 114 findings, gosec 756, and gosec was the only lane to report the TLS, Slowloris and hardcoded-credential classes.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "gosec"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "go.mod"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-joern": {
+      "line": 1155,
+      "description": "Code-property-graph analysis (Joern) — the only lane in the fleet that asks 'what does this code do at the machine level, without building it'. Joern constructs a joint AST/CFG/PDG from SOURCE WITH NO BUILD. It runs here for the languages its query bundle actually targets: C/C++ (27 queries), Android (10), PHP (9), Java (7) and Kotlin (3). Joern can also lift machine code into the same CPG (ghidra2cpg/jimple2cpg), which no other lane in this fleet does at any level, and which this lane does not yet pass a binary to — the bundle's 2 ghidra queries are reported as unmapped rather than silently counted as coverage. Licence: Apache 2.0, OSI open source, no redistribution or hosting restriction. Installed 2026-08-27 (joern 4.0.610, Homebrew) and probed the same day against scratch C sources; before that — NOT INSTALLED, verified 2026-08-23 — the lane correctly reported tool-unavailable, never clean.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "joern-scan"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cxx",
+        ".h",
+        ".hh",
+        ".hpp",
+        ".hxx",
+        ".java",
+        ".kt",
+        ".kts",
+        ".php"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "generic",
+      "timeoutSec": 3600,
+      "universal": false
+    },
+    "sast-opengrep": {
+      "line": 227,
+      "description": "SAST via Opengrep — the OSS fork of Semgrep, AT MEASURED PARITY WITH IT AND 4.6x FASTER. Not a standby; the word was wrong and is retired here. Measured 2026-08-11 against opengrep 1.26.0: it consumes the same rule YAML, resolves the same `p/` registry packs, emits the same SARIF including invocations[], and fails closed on a 404'd ruleset exactly as Semgrep does — so parseReport's tool-failure guard already covers it with no new format. MEASURED AGAIN 2026-08-26, 5 repos of the 100RandomRepos corpus (cheerio, undici, reflex, revive, grpc-java), identical packs, semgrep 1.172.0 without --pro-intrafile so the engine is the only variable: RESTRICTED TO THE RULES BOTH ENGINES LOADED, semgrep 346 findings and opengrep 347 — exact parity plus one, opengrep finding a reflex row semgrep missed. Wall clock 806s vs 176s, and 125s vs 16s on undici. The raw totals (394 vs 347) differ by ONE RULE, java.lang.security.audit.active-debug-code-printstacktrace at 48 hits, which is not in opengrep's loaded set at all: from the same `p/` names semgrep resolved 3033 rules and opengrep 1157. THAT IS REGISTRY RULE RESOLUTION, NOT ENGINE CAPABILITY, and pinning both engines to a vendored rule set closes it. DO NOT PASS `--pro`: measured 2026-08-26, it prints a full scan banner, exits 0, and writes a SARIF with 0 results and 0 rules where the same command without it yields 175 — a silent clean, the exact class the reporting checks must detect. `--dataflow-traces` runs but emits no codeFlows, and there is no working interfile mode behind the inherited Pro flags. NOT IN THE `all` GROUP because it runs the same rules over the same tree as `sast`, so scheduling both would report every finding twice — that is an argument for choosing ONE engine, never a reason to ship one that runs nowhere. It sits in `compare` beside sast-auto so a named group reaches it; swapping it into `all` in place of `sast` is an operator re-basis, not a side effect. [RESTORED 2026-09-02 by session 4e7722b2 from a transcription in evaluations/RECOVERY-opengrep-manifest-2026-09-01.md, after this field was lost from the working tree. Transcribed from a diff, not from the original file — re-derive from your own scrollback if you have it.]",
+      "groups": [
+        "compare"
+      ],
+      "tools": [
+        "opengrep"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "sast-php-phpcs": {
+      "line": 2071,
+      "description": "PHP security static analysis (PHP_CodeSniffer 4.0.4 + pheromone/phpcs-security-audit, Apache-2.0). Pure lexer/tokenizer pass over PHP source, verified against a real install: no autoload, no execution of the scanned code. Covers the mysqli/PDO string-concatenation, eval/exec/system, unsanitised superglobal-to-output (XSS) and unserialize classes generic rulesets often miss because they need PHP-specific sink knowledge (mysqli_query, $_GET/$_POST/$_REQUEST, extract()).",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "phpcs"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "composer.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-php-psalm": {
+      "line": 2103,
+      "description": "PHP taint analysis (Psalm 6.16.1, --taint-analysis). Structurally NOT a duplicate of sast-php-phpcs: that lane is a pure lexer/tokenizer pass with no autoload and no dataflow, so it cannot tell a sanitised sink from an unsanitised one. Psalm builds a type-inferred interprocedural taint graph. Verified 2026-09-02 on a two-sink fixture: it reports TaintedShell and TaintedHtml ACROSS a function boundary that phpcs sees as two unrelated tokens.\n\nTWO MODES, and the report must never conflate them. FULL mode runs when the repo already has vendor/autoload.php, so third-party symbols resolve and taint can be traced through dependencies. DEGRADED mode is the common case: psalm refuses to start without SOME composer autoloader (measured — no config, correct --root, and a minimal config declaring none all exit 1 with 'Could not find any composer autoloaders', including on phpmyadmin which ships its own psalm.xml), so a STUB autoloader is hosted in CW_REPORT_DIR/.psalm-host, OUTSIDE the scanned tree, and psalm is pointed at the repo's source directories by absolute path. The scanned repo is never written to and composer install is never run — that would fetch from the network and execute the SCANNED repo's own scripts and plugins, the containment class that put sast-codeql-swift's build tooling on 100RandomRepos. In degraded mode taint entering or leaving a dependency is INVISIBLE, so a zero means no first-party taint path was found, not that the repo is clean; psalm.log states the mode on every run.\n\nUPSTREAM STABILITY IS THE REAL CEILING, not the autoloader. Measured across 10 real PHP repositories: 4 fail on psalm's own defects — Amp\\\\Parallel worker crashes, 'unexpected NAN value was coerced to string', and on brew's phar build a PsalmPhar\\\\Composer\\\\InstalledVersions redeclare on any repo referencing Composer\\\\InstalledVersions (laravel, symfony, doctrine). Installing psalm via composer instead of the phar fixes the redeclare class; --threads=1 does NOT fix the NAN. The lane prefers the composer-installed binary for that reason and reports a non-0/2 exit as tool failure, never as a clean scan.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "psalm"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "composer.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": 2700,
+      "universal": false
+    },
+    "sast-python-bandit": {
+      "line": 336,
+      "description": "Python-specific security static analysis (Bandit 1.8.6) — closes a real void: before this lane, Python's only source-level security coverage was CodeQL (plus whatever fraction of Semgrep's generic rules apply, which cwe-map.json already grades ruleset-dependent). Bandit finds Python-shaped vulnerability classes CodeQL's generic ruleset can miss: subprocess/os.system with shell=True, eval/exec on untrusted input, weak hashes (MD5/SHA1), insecure deserialization (pickle.loads, unsafe yaml.load), hardcoded bind-all interfaces, SQL string concatenation. Pure AST parsing, verified against a real install: no compilation, no build step, no execution of the scanned repo's code — clears the untrusted-execution objection standing against lint-rust-clippy (which type-checks and therefore runs build.rs/proc-macros; Bandit does neither). `sev` is derived from Bandit's own issue_severity field ALONE, never issue_confidence — the two are independent axes in Bandit's output, and folding confidence into severity is the GuardDog capability-* defect (a likelihood-of-true-positive signal dressed as impact) recurring in a new tool. Bandit has NO SARIF output format (verified against `bandit --help`, 1.8.6: -f {csv,custom,html,json,screen,txt,xml,yaml}) — this reads its native -f json shape.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "bandit"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "Pipfile",
+        "pyproject.toml",
+        "requirements.txt",
+        "setup.py"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sast-ruby-brakeman": {
+      "line": 2012,
+      "description": "Rails-specific security static analysis (Brakeman 5.4.1) — SQL injection, dangerous eval, XSS, CSRF, mass assignment and EOL-dependency classes idiomatic to Rails controllers/models/views that a generic ruleset misses. Pure AST/source analysis, verified against a real install: no compilation, no execution of the scanned app's code — same untrusted-execution posture as sast-python-bandit. Gated on config/routes.rb rather than Gemfile alone: Brakeman refuses a non-Rails Ruby tree by default (measured — exit 4, 'Please supply the path to a Rails application', no report written) and a bare Gemfile does not distinguish a Rails app from a plain gem.",
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "tools": [
+        "brakeman"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "config/routes.rb"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "json",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sbom": {
+      "line": 954,
+      "description": "CycloneDX SBOM (npm repos with a lockfile)",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "npm",
+        "npx"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "./package-lock.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sbom",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "sbom-syft": {
+      "line": 982,
+      "description": "All-ecosystem SBOM (Syft, CycloneDX) — covers JVM/Go/etc. the npm-only SBOM misses; feeds Cosign attestation Emits syft's NATIVE json alongside the CycloneDX from ONE scan, then runs bin/sbom-enrich.mjs over the pair. Measured 2026-08-26 with syft 1.51.0: the native document carries metadata.resolved for every artifact (2,297 of 2,297 on firebase) while the CycloneDX writer discards it, so a git-pinned dependency published as pkg:npm/closure-net@0.0.0 — an identity npm has never served. The enricher puts back what the conversion dropped: a vcs_url/download_url purl qualifier and an externalReferences entry. It never drops a component.",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "syft"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sbom",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "secrets": {
+      "line": 122,
+      "description": "Verified/unknown secrets across git history (TruffleHog)",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "trufflehog"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": true,
+      "requiresUrl": false,
+      "report": "trufflehog",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "secrets-betterleaks": {
+      "line": 170,
+      "description": "Filesystem secret scan with Betterleaks, the gitleaks successor, as a second engine over the same scope file (manifests/gitleaks.toml). It adds rules gitleaks lacks (generic-password, generic-credential-uri, azure-storage-account-key), a per-finding confidence, and inline validation against the issuing services. Overlaps secrets-gitleaks by design, so its counts stay out of the headline total.",
+      "groups": [
+        "compare"
+      ],
+      "tools": [
+        "betterleaks"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "betterleaks",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "secrets-cobol-jcl": {
+      "line": 2536,
+      "description": "Mainframe credentials in COBOL and JCL (gitleaks with cobolwork's rule pack). Closes a measured void confirmed against positive controls on 2026-09-16: gitleaks and TruffleHog ship NO rule for a RACF password, a JCL `PASSWORD=` or a TSO logon, so a job card carrying a production credential in plain text scans clean by both. The pack adds the shapes the mainframe actually uses: PASSWORD= on a JCL JOB statement, a TSO LOGON password, ADDUSER/ALTUSER PASSWORD( on a RACF command, a credential in a COBOL VALUE clause, EXEC SQL CONNECT ... USING, and EXEC CICS SIGNON PASSWORD. Rules are gitleaks TOML, written for Go's RE2 — no lookahead, because the engine has none and a rule that compiles nowhere detects nothing.",
+      "groups": [
+        "all",
+        "cobol",
+        "langs"
+      ],
+      "tools": [
+        "cobolwork",
+        "gitleaks"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".asm",
+        ".bms",
+        ".cbl",
+        ".clist",
+        ".cntl",
+        ".cob",
+        ".cobol",
+        ".copy",
+        ".cpy",
+        ".inc",
+        ".jcl",
+        ".job",
+        ".pco",
+        ".pl1",
+        ".pli",
+        ".prc",
+        ".proc",
+        ".rex",
+        ".rexx",
+        ".sqb"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "gitleaks",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "secrets-gitleaks": {
+      "line": 146,
+      "description": "Fast filesystem secret scan (Gitleaks) — complements the TruffleHog git-history pass and gives a pre-commit hook. SCOPE IS BOUNDED by manifests/gitleaks.toml: dependency trees, build output and runtime data are skipped, so a scan that reports clean has not looked everywhere. The bound is not a silent cap — the scope file states every exclusion and why.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "gitleaks"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "gitleaks",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "shell-lint": {
+      "line": 928,
+      "description": "Shell script correctness and injection lint (shellcheck). The fleet runs shell in CI steps, install scripts and hooks, and nothing was reading it: unquoted expansions (SC2086) are the word-splitting/glob-injection class, and `cd` without `|| exit` (SC2164) turns a failed directory change into destructive work in the wrong directory. Errors gate high, warnings med; info/style are counted and named in the summary but deliberately do NOT lift severity, because SC2086 alone would leave every shell script in the fleet permanently amber and an alarm nobody reads is the same as no alarm.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "shellcheck"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [
+        ".bash",
+        ".sh"
+      ],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "shellcheck",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "stub-detect": {
+      "line": 1487,
+      "description": "Stub / unfinished-work hygiene scan (bin/stub-detect.mjs): case-insensitive TODO/FIXME/XXX/HACK/WIP/stub/placeholder/not-implemented/coming-soon markers across source-ish files (skips node_modules/.git/dist/reports/reference/vendor/build/target/.gradle and .claude/worktrees; skips .json data / generated .html). Findings are 'low' (hygiene, not vulns). Intentional stubs are suppressed IN-scanner via the private stub allowlist, monitor/private/stub-allowlist.json or CW_STUB_ALLOWLIST (the count-lane has no annotation filter).",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "generic",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "supply-chain-guarddog": {
+      "line": 768,
+      "description": "Package-metadata heuristics across the resolved npm tree (GuardDog, Apache-2.0) — typosquats, deceptive authors, compromised/unclaimed maintainer email domains, risky-new/direct-URL deps, bundled binaries",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "docker"
+      ],
+      "docker": true,
+      "appliesIfExists": [
+        "./package.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "sarif",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "supply-chain-socket": {
+      "line": 731,
+      "description": "Supply-chain / malicious-package detection (Socket) — typosquats, install-script malware, obfuscation that CVE scanners cannot see",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "socket"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "package.json"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "socket",
+      "timeoutSec": null,
+      "universal": false
+    },
+    "tls-headers": {
+      "line": 1298,
+      "description": "Security-header grade on the live app (HSTS/CSP/X-Frame/X-Content-Type/Referrer/Permissions) plus a certificate/TLS grade when an https listener is reachable. Runtime scanner: needs a live URL.",
+      "groups": [
+        "all",
+        "runtime"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": true,
+      "report": "tls-headers",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "vendor-scan": {
+      "line": 1554,
+      "description": "Vendored-asset advisory scan (bin/vendor-scan.mjs). Every OTHER dependency lane is manifest-gated — deps-osv wants a lockfile, deps-retire/npm-audit want a package.json, guarddog wants a package-lock.json — and a vendored file has no manifest entry by definition, so all four skip it. Identifies vendored bundles from their version banner (three.js rNNN maps to npm 0.NNN.0; a deep search is used where minifiers hoist the version out of the header) and queries OSV. A file it cannot identify is reported in unidentified[], never as clean: no package name means no lookup means no findings, which must not read as no problem. An unreachable OSV is ran:false with a reason, never an empty findings array.",
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "generic",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "weak-random": {
+      "line": 1509,
+      "description": "Insufficient randomness in security-sensitive values (bin/weak-random-detect.mjs), across JS/TS, Python, Rust, Go, Java/Kotlin/Scala, C#, PHP and C/C++. Detects a non-cryptographic RNG or a clock reading becoming a key, token, secret, nonce, salt, password, session id, IV or seed. WHY IT EXISTS: on 2026-08-28 shodh-memory's `shodh init` was found deriving the API key that authenticates every endpoint from the nanosecond clock — `format!(\"sk-shodh-{:x}\", SystemTime::now()...as_nanos())`. It was found by DIFFING the repository against its memory-layer twin, which had always used uuid v4. Nothing in the roster reports it: CodeQL ships no Rust insufficient-randomness query, clippy carries no such lint, semgrep's Rust registry coverage is thin, and bearer's javascript_lang_insufficiently_random_values covers one language. A defect only a human diff can find is a coverage hole with a name. PRECISION: a finding needs BOTH a weak source AND evidence that the value becomes a credential — judged from the ASSIGNMENT TARGET, or from the enclosing function's name where a clock is assigned to an honestly-named `timestamp` inside `generate_api_key`. Measured across nine repositories: 3 findings, all three defensible, six repositories clean.",
+      "groups": [
+        "all"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "weak-random",
+      "timeoutSec": null,
+      "universal": true
+    },
+    "yarn-audit": {
+      "line": 827,
+      "description": "npm advisory audit for yarn.lock repos (exact pinned versions, npm-audit v2 shape)",
+      "groups": [
+        "all",
+        "supply-chain"
+      ],
+      "tools": [
+        "node"
+      ],
+      "docker": false,
+      "appliesIfExists": [
+        "./yarn.lock"
+      ],
+      "appliesIfSourceExt": [],
+      "appliesIfGit": false,
+      "requiresUrl": false,
+      "report": "npm-audit",
+      "timeoutSec": null,
+      "universal": false
+    }
+  },
+  "byGroup": {
+    "all": [
+      "a11y-wcag",
+      "actions-actionlint",
+      "actions-gaps",
+      "actions-health",
+      "actions-zizmor",
+      "agent-config",
+      "agent-instructions",
+      "api-fuzz",
+      "authz-test",
+      "cobol-inventory",
+      "commit-provenance",
+      "commit-velocity",
+      "cspm-github",
+      "dast-authz-bola",
+      "dast-nuclei",
+      "deno-check",
+      "deno-lint",
+      "dep-provenance",
+      "deps-content",
+      "deps-go-govulncheck",
+      "deps-gradle-declared",
+      "deps-jvm",
+      "deps-osv",
+      "deps-reachability",
+      "deps-renovate",
+      "deps-retire",
+      "deps-ruby-bundler-audit",
+      "deps-rust-audit",
+      "deps-updates",
+      "dockerfile-lint",
+      "format-rust-rustfmt",
+      "gradle-wrapper",
+      "iac-config",
+      "jackson-caseinsensitive-guard",
+      "lint-go-golangci",
+      "lint-haskell-hlint",
+      "lint-java-pmd",
+      "lint-python-ruff",
+      "minify-detect",
+      "mobile-manifest",
+      "model-artefacts",
+      "node-hazards",
+      "npm-audit",
+      "posture-scorecard",
+      "sast",
+      "sast-bearer",
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-cobol-cobolwork",
+      "sast-codeql",
+      "sast-codeql-cpp",
+      "sast-codeql-csharp",
+      "sast-codeql-java",
+      "sast-codeql-python",
+      "sast-codeql-ruby",
+      "sast-codeql-rust",
+      "sast-elixir-sobelow",
+      "sast-go-gosec",
+      "sast-joern",
+      "sast-php-phpcs",
+      "sast-php-psalm",
+      "sast-python-bandit",
+      "sast-ruby-brakeman",
+      "sbom",
+      "sbom-syft",
+      "secrets",
+      "secrets-cobol-jcl",
+      "secrets-gitleaks",
+      "shell-lint",
+      "stub-detect",
+      "supply-chain-guarddog",
+      "supply-chain-socket",
+      "tls-headers",
+      "vendor-scan",
+      "weak-random",
+      "yarn-audit"
+    ],
+    "cobol": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    "compare": [
+      "sast-auto",
+      "sast-opengrep",
+      "secrets-betterleaks"
+    ],
+    "deep": [
+      "deps-go-govulncheck",
+      "deps-gradle-declared",
+      "deps-jvm",
+      "deps-updates",
+      "lint-go-golangci",
+      "lint-java-pmd",
+      "lint-python-ruff",
+      "lint-rust-clippy",
+      "minify-detect",
+      "sast-bearer",
+      "sast-codeql",
+      "sast-codeql-cpp",
+      "sast-codeql-csharp",
+      "sast-codeql-go",
+      "sast-codeql-java",
+      "sast-codeql-python",
+      "sast-codeql-ruby",
+      "sast-codeql-rust",
+      "sast-codeql-swift",
+      "sast-go-gosec",
+      "sast-joern",
+      "sast-php-phpcs",
+      "sast-php-psalm",
+      "sast-python-bandit",
+      "sast-ruby-brakeman"
+    ],
+    "elixir": [
+      "sast-elixir-sobelow"
+    ],
+    "fast": [
+      "a11y-wcag",
+      "actions-zizmor",
+      "deno-check",
+      "deno-lint",
+      "dep-provenance",
+      "format-rust-rustfmt",
+      "jackson-caseinsensitive-guard",
+      "mobile-manifest",
+      "node-hazards",
+      "sast",
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "secrets",
+      "secrets-gitleaks",
+      "vendor-scan"
+    ],
+    "haskell": [
+      "lint-haskell-hlint"
+    ],
+    "langs": [
+      "cobol-inventory",
+      "format-rust-rustfmt",
+      "lint-haskell-hlint",
+      "lint-rust-clippy",
+      "sast-cobol-cobolwork",
+      "sast-elixir-sobelow",
+      "secrets-cobol-jcl"
+    ],
+    "runtime": [
+      "api-fuzz",
+      "dast-authz-bola",
+      "dast-nuclei",
+      "tls-headers"
+    ],
+    "rust": [
+      "deps-rust-audit",
+      "format-rust-rustfmt",
+      "lint-rust-clippy"
+    ],
+    "supply-chain": [
+      "deps-content",
+      "deps-go-govulncheck",
+      "deps-osv",
+      "deps-renovate",
+      "deps-retire",
+      "deps-ruby-bundler-audit",
+      "deps-rust-audit",
+      "deps-updates",
+      "model-artefacts",
+      "npm-audit",
+      "sbom",
+      "sbom-syft",
+      "supply-chain-guarddog",
+      "supply-chain-socket",
+      "yarn-audit"
+    ]
+  },
+  "byTool": {
+    "actionlint": [
+      "actions-actionlint"
+    ],
+    "bandit": [
+      "sast-python-bandit"
+    ],
+    "bash": [
+      "authz-test"
+    ],
+    "bearer": [
+      "sast-bearer"
+    ],
+    "betterleaks": [
+      "secrets-betterleaks"
+    ],
+    "brakeman": [
+      "sast-ruby-brakeman"
+    ],
+    "bundle-audit": [
+      "deps-ruby-bundler-audit"
+    ],
+    "cargo": [
+      "format-rust-rustfmt",
+      "lint-rust-clippy"
+    ],
+    "cargo-audit": [
+      "deps-rust-audit"
+    ],
+    "cargo-clippy": [
+      "lint-rust-clippy"
+    ],
+    "cobolwork": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    "codeql": [
+      "sast-codeql",
+      "sast-codeql-cpp",
+      "sast-codeql-csharp",
+      "sast-codeql-go",
+      "sast-codeql-java",
+      "sast-codeql-python",
+      "sast-codeql-ruby",
+      "sast-codeql-rust",
+      "sast-codeql-swift"
+    ],
+    "cppcheck": [
+      "sast-c-cppcheck"
+    ],
+    "deno": [
+      "deno-check",
+      "deno-lint"
+    ],
+    "docker": [
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "supply-chain-guarddog"
+    ],
+    "flawfinder": [
+      "sast-c-flawfinder"
+    ],
+    "gh": [
+      "actions-health"
+    ],
+    "git": [
+      "actions-health",
+      "commit-provenance",
+      "commit-velocity"
+    ],
+    "gitleaks": [
+      "secrets-cobol-jcl",
+      "secrets-gitleaks"
+    ],
+    "go": [
+      "deps-go-govulncheck",
+      "sast-codeql-go"
+    ],
+    "golangci-lint": [
+      "lint-go-golangci"
+    ],
+    "gosec": [
+      "sast-go-gosec"
+    ],
+    "govulncheck": [
+      "deps-go-govulncheck"
+    ],
+    "hadolint": [
+      "dockerfile-lint"
+    ],
+    "hlint": [
+      "lint-haskell-hlint"
+    ],
+    "java": [
+      "sast-codeql-java"
+    ],
+    "joern-scan": [
+      "sast-joern"
+    ],
+    "node": [
+      "a11y-wcag",
+      "actions-gaps",
+      "actions-health",
+      "agent-config",
+      "agent-instructions",
+      "commit-provenance",
+      "commit-velocity",
+      "dast-authz-bola",
+      "dep-provenance",
+      "deps-content",
+      "deps-gradle-declared",
+      "gradle-wrapper",
+      "jackson-caseinsensitive-guard",
+      "minify-detect",
+      "mobile-manifest",
+      "model-artefacts",
+      "node-hazards",
+      "stub-detect",
+      "tls-headers",
+      "vendor-scan",
+      "weak-random",
+      "yarn-audit"
+    ],
+    "npm": [
+      "npm-audit",
+      "sbom"
+    ],
+    "npx": [
+      "deps-renovate",
+      "deps-retire",
+      "sbom"
+    ],
+    "nuclei": [
+      "dast-nuclei"
+    ],
+    "opengrep": [
+      "sast-opengrep"
+    ],
+    "phpcs": [
+      "sast-php-phpcs"
+    ],
+    "pmd": [
+      "lint-java-pmd"
+    ],
+    "prowler": [
+      "cspm-github"
+    ],
+    "psalm": [
+      "sast-php-psalm"
+    ],
+    "ruff": [
+      "lint-python-ruff"
+    ],
+    "rustfmt": [
+      "format-rust-rustfmt"
+    ],
+    "schemathesis": [
+      "api-fuzz"
+    ],
+    "scorecard": [
+      "posture-scorecard"
+    ],
+    "semgrep": [
+      "sast",
+      "sast-auto"
+    ],
+    "shellcheck": [
+      "shell-lint"
+    ],
+    "sobelow": [
+      "sast-elixir-sobelow"
+    ],
+    "socket": [
+      "supply-chain-socket"
+    ],
+    "syft": [
+      "sbom-syft"
+    ],
+    "trivy": [
+      "deps-jvm",
+      "iac-config"
+    ],
+    "trufflehog": [
+      "secrets"
+    ],
+    "xcodebuild": [
+      "sast-codeql-swift"
+    ],
+    "zizmor": [
+      "actions-zizmor"
+    ]
+  },
+  "byTrigger": {
+    "./.mcp.json": [
+      "agent-config"
+    ],
+    "./package-lock.json": [
+      "deps-content",
+      "npm-audit",
+      "sbom"
+    ],
+    "./package.json": [
+      "supply-chain-guarddog"
+    ],
+    "./yarn.lock": [
+      "yarn-audit"
+    ],
+    ".CBL": [
+      "sast-cobol-cobolwork"
+    ],
+    ".CNTL": [
+      "sast-cobol-cobolwork"
+    ],
+    ".COB": [
+      "sast-cobol-cobolwork"
+    ],
+    ".COBOL": [
+      "sast-cobol-cobolwork"
+    ],
+    ".CPY": [
+      "sast-cobol-cobolwork"
+    ],
+    ".JCL": [
+      "sast-cobol-cobolwork"
+    ],
+    ".PCO": [
+      "sast-cobol-cobolwork"
+    ],
+    ".SQB": [
+      "sast-cobol-cobolwork"
+    ],
+    ".asm": [
+      "secrets-cobol-jcl"
+    ],
+    ".bash": [
+      "shell-lint"
+    ],
+    ".bms": [
+      "secrets-cobol-jcl"
+    ],
+    ".c": [
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-codeql-cpp",
+      "sast-joern"
+    ],
+    ".cbl": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".cc": [
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-codeql-cpp",
+      "sast-joern"
+    ],
+    ".cjs": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".claude/commands": [
+      "agent-config"
+    ],
+    ".claude/hooks": [
+      "agent-config"
+    ],
+    ".claude/settings.json": [
+      "agent-config"
+    ],
+    ".claude/settings.local.json": [
+      "agent-config"
+    ],
+    ".clist": [
+      "secrets-cobol-jcl"
+    ],
+    ".cntl": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".cob": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".cobol": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".copy": [
+      "cobol-inventory",
+      "secrets-cobol-jcl"
+    ],
+    ".cpp": [
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-codeql-cpp",
+      "sast-joern"
+    ],
+    ".cpy": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".cs": [
+      "sast-codeql-csharp"
+    ],
+    ".csx": [
+      "sast-codeql-csharp"
+    ],
+    ".cts": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".cursor/mcp.json": [
+      "agent-config"
+    ],
+    ".cxx": [
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-codeql-cpp",
+      "sast-joern"
+    ],
+    ".gemspec": [
+      "sast-codeql-ruby"
+    ],
+    ".github/renovate.json": [
+      "deps-renovate"
+    ],
+    ".github/workflows": [
+      "actions-actionlint",
+      "actions-gaps",
+      "actions-health",
+      "actions-zizmor",
+      "deps-updates"
+    ],
+    ".go": [
+      "sast-codeql-go"
+    ],
+    ".h": [
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-codeql-cpp",
+      "sast-joern"
+    ],
+    ".hh": [
+      "sast-joern"
+    ],
+    ".hpp": [
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-codeql-cpp",
+      "sast-joern"
+    ],
+    ".hs": [
+      "lint-haskell-hlint"
+    ],
+    ".hxx": [
+      "sast-c-cppcheck",
+      "sast-c-flawfinder",
+      "sast-codeql-cpp",
+      "sast-joern"
+    ],
+    ".inc": [
+      "cobol-inventory",
+      "secrets-cobol-jcl"
+    ],
+    ".java": [
+      "sast-codeql-java",
+      "sast-joern"
+    ],
+    ".jcl": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".job": [
+      "cobol-inventory",
+      "secrets-cobol-jcl"
+    ],
+    ".js": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".jsx": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".kt": [
+      "sast-codeql-java",
+      "sast-joern"
+    ],
+    ".kts": [
+      "sast-codeql-java",
+      "sast-joern"
+    ],
+    ".lhs": [
+      "lint-haskell-hlint"
+    ],
+    ".mjs": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".mts": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".pco": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".php": [
+      "sast-joern"
+    ],
+    ".pl1": [
+      "secrets-cobol-jcl"
+    ],
+    ".pli": [
+      "secrets-cobol-jcl"
+    ],
+    ".prc": [
+      "cobol-inventory",
+      "secrets-cobol-jcl"
+    ],
+    ".proc": [
+      "cobol-inventory",
+      "secrets-cobol-jcl"
+    ],
+    ".py": [
+      "sast-codeql-python"
+    ],
+    ".pyi": [
+      "sast-codeql-python"
+    ],
+    ".rake": [
+      "sast-codeql-ruby"
+    ],
+    ".rb": [
+      "sast-codeql-ruby"
+    ],
+    ".renovaterc.json": [
+      "deps-renovate"
+    ],
+    ".rex": [
+      "secrets-cobol-jcl"
+    ],
+    ".rexx": [
+      "secrets-cobol-jcl"
+    ],
+    ".rs": [
+      "sast-codeql-rust"
+    ],
+    ".sh": [
+      "shell-lint"
+    ],
+    ".sqb": [
+      "cobol-inventory",
+      "sast-cobol-cobolwork",
+      "secrets-cobol-jcl"
+    ],
+    ".swift": [
+      "sast-codeql-swift"
+    ],
+    ".ts": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".tsx": [
+      "deps-retire",
+      "sast-codeql"
+    ],
+    ".vscode/mcp.json": [
+      "agent-config"
+    ],
+    "AndroidManifest.xml": [
+      "mobile-manifest"
+    ],
+    "Cargo.lock": [
+      "deps-osv",
+      "deps-rust-audit"
+    ],
+    "Cargo.toml": [
+      "deps-reachability",
+      "deps-updates",
+      "format-rust-rustfmt",
+      "lint-rust-clippy"
+    ],
+    "Dockerfile": [
+      "dockerfile-lint"
+    ],
+    "Gemfile": [
+      "deps-updates",
+      "sast-bearer"
+    ],
+    "Gemfile.lock": [
+      "deps-osv",
+      "deps-reachability",
+      "deps-ruby-bundler-audit"
+    ],
+    "Info.plist": [
+      "mobile-manifest"
+    ],
+    "Package.resolved": [
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates"
+    ],
+    "Pipfile": [
+      "lint-python-ruff",
+      "sast-python-bandit"
+    ],
+    "Pipfile.lock": [
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "Podfile.lock": [
+      "deps-osv"
+    ],
+    "build.gradle": [
+      "deps-gradle-declared",
+      "deps-jvm",
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "gradle-wrapper",
+      "lint-java-pmd",
+      "sast-bearer",
+      "sast-codeql-java"
+    ],
+    "build.gradle.kts": [
+      "deps-gradle-declared",
+      "deps-jvm",
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "gradle-wrapper",
+      "lint-java-pmd",
+      "sast-bearer",
+      "sast-codeql-java"
+    ],
+    "bun.lockb": [
+      "deps-osv"
+    ],
+    "cabal.project": [
+      "lint-haskell-hlint"
+    ],
+    "cabal.project.freeze": [
+      "deps-osv"
+    ],
+    "composer.json": [
+      "sast-bearer",
+      "sast-php-phpcs",
+      "sast-php-psalm"
+    ],
+    "composer.lock": [
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "conan.lock": [
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "conanfile.txt": [
+      "deps-osv"
+    ],
+    "config/routes.rb": [
+      "sast-ruby-brakeman"
+    ],
+    "deno.json": [
+      "deno-check",
+      "deno-lint"
+    ],
+    "deno.jsonc": [
+      "deno-check",
+      "deno-lint"
+    ],
+    "deno.lock": [
+      "deps-osv",
+      "deps-updates"
+    ],
+    "go.mod": [
+      "deps-go-govulncheck",
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "lint-go-golangci",
+      "sast-bearer",
+      "sast-go-gosec"
+    ],
+    "go.sum": [
+      "deps-osv"
+    ],
+    "gradle/libs.versions.toml": [
+      "deps-gradle-declared",
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "gradle/wrapper/gradle-wrapper.properties": [
+      "gradle-wrapper"
+    ],
+    "gradlew": [
+      "gradle-wrapper"
+    ],
+    "mix.exs": [
+      "sast-elixir-sobelow"
+    ],
+    "mix.lock": [
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "sast-elixir-sobelow"
+    ],
+    "package-lock.json": [
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "package.json": [
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "node-hazards",
+      "sast-bearer",
+      "supply-chain-socket"
+    ],
+    "package.yaml": [
+      "lint-haskell-hlint"
+    ],
+    "packages.config": [
+      "deps-osv"
+    ],
+    "packages.lock.json": [
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates"
+    ],
+    "paket.lock": [
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "pnpm-lock.yaml": [
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "poetry.lock": [
+      "deps-osv",
+      "deps-reachability"
+    ],
+    "pom.xml": [
+      "deps-jvm",
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "lint-java-pmd",
+      "sast-bearer",
+      "sast-codeql-java"
+    ],
+    "pubspec.lock": [
+      "deps-osv"
+    ],
+    "pubspec.yaml": [
+      "deps-osv",
+      "deps-updates"
+    ],
+    "pyproject.toml": [
+      "deps-reachability",
+      "lint-python-ruff",
+      "sast-bearer",
+      "sast-python-bandit"
+    ],
+    "renovate.json": [
+      "deps-renovate",
+      "deps-updates"
+    ],
+    "renovate.json5": [
+      "deps-renovate"
+    ],
+    "renv.lock": [
+      "deps-osv"
+    ],
+    "requirements.txt": [
+      "deps-osv",
+      "deps-reachability",
+      "deps-updates",
+      "lint-python-ruff",
+      "sast-bearer",
+      "sast-python-bandit"
+    ],
+    "security/authz-isolation-test.sh": [
+      "authz-test"
+    ],
+    "settings.gradle": [
+      "deps-gradle-declared",
+      "deps-jvm",
+      "gradle-wrapper"
+    ],
+    "settings.gradle.kts": [
+      "gradle-wrapper"
+    ],
+    "setup.py": [
+      "lint-python-ruff",
+      "sast-python-bandit"
+    ],
+    "stack.yaml": [
+      "lint-haskell-hlint"
+    ],
+    "stack.yaml.lock": [
+      "deps-osv"
+    ],
+    "uv.lock": [
+      "deps-osv"
+    ],
+    "yarn.lock": [
+      "deps-osv",
+      "deps-reachability"
+    ]
+  }
+}

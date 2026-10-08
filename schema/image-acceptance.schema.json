@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/image-acceptance.schema.json",
+  "title": "Container image acceptance ledger",
+  "type": "object",
+  "required": ["_comment", "controls", "images", "accepted", "fixableViaRebuild", "fixed"],
+  "additionalProperties": false,
+  "properties": {
+    "_comment": { "type": "string", "minLength": 1 },
+    "controls": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } },
+    "images": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["runningTag", "targetTag", "disposition", "targetScan", "pin", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "runningTag": { "type": "string", "minLength": 1 },
+          "targetTag": { "type": "string", "minLength": 1 },
+          "disposition": { "type": "string", "minLength": 1 },
+          "targetScan": { "type": ["string", "null"] },
+          "pin": { "type": "string", "minLength": 1 },
+          "note": { "type": "string", "minLength": 1 },
+          "expectedResidual": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "accepted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["image", "cve", "package", "severity", "fixStatus", "reachability", "containment", "recheckTrigger", "who", "at", "expires"],
+        "additionalProperties": false,
+        "properties": {
+          "image": { "type": "string", "minLength": 1 },
+          "project": { "type": "string", "minLength": 1, "description": "Area slug or label whose timeline shows this acceptance. Absent: the primary area only (monitor/timeline-scope.mjs)." },
+          "cve": { "type": "string", "minLength": 1 },
+          "package": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "minLength": 1 },
+          "fixStatus": { "type": "string", "minLength": 1 },
+          "fixEvidence": { "type": "string", "minLength": 1 },
+          "reachability": { "type": "string", "minLength": 1 },
+          "containment": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "recheckTrigger": { "type": "string", "minLength": 1 },
+          "who": { "type": "string", "minLength": 1 },
+          "at": { "type": "string", "minLength": 1 },
+          "expires": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "fixableViaRebuild": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["image", "cve", "package", "severity", "fix", "track"],
+        "additionalProperties": false,
+        "properties": {
+          "image": { "type": "string", "minLength": 1 },
+          "cve": { "type": "string", "minLength": 1 },
+          "package": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "minLength": 1 },
+          "fix": { "type": "string", "minLength": 1 },
+          "track": { "type": "string", "minLength": 1 },
+          "discovered": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "fixed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["image", "cve", "fix", "wasAccepted"],
+        "additionalProperties": false,
+        "properties": {
+          "image": { "type": "string", "minLength": 1 },
+          "cve": { "type": "string", "minLength": 1 },
+          "fix": { "type": "string", "minLength": 1 },
+          "wasAccepted": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

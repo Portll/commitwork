@@ -1,0 +1,13 @@
+COMMAND                      PID   USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node                        1001 portll   20u  IPv4 0x0000000000000001      0t0  TCP 0.0.0.0:3000 (LISTEN)
+node                        1002 portll   21u  IPv6 0xd000000000000002      0t0  TCP [::]:3001 (LISTEN)
+node                        1003 portll   22u  IPv6 0x0000000000000003      0t0  TCP [::1]:3002 (LISTEN)
+node                        1004 portll   23u  IPv4 0x0000000000000004      0t0  TCP 192.168.1.121:3003 (LISTEN)
+node                        1005 portll   24u  IPv4 0x0000000000000005      0t0  TCP 100.64.0.7:3004 (LISTEN)
+node                        1006 portll   25u  IPv4 0x0000000000000006      0t0  TCP 127.0.0.53:3005 (LISTEN)
+My\x20App\x20(Helper)       1007 portll   26u  IPv4 0x0000000000000007      0t0  TCP *:3006 (LISTEN)
+sshd                        1008   root    3u  IPv6 0x0000000000000008      0t0  TCP *:22 (LISTEN)
+weird                       1009 portll   27u  IPv4 0x0000000000000009      0t0  TCP 127.0.0.1:http (LISTEN)
+established                 1010 portll   28u  IPv4 0x000000000000000a      0t0  TCP 127.0.0.1:5000->127.0.0.1:6000 (ESTABLISHED)
+lsof: WARNING: can't stat() nfs file system /System/Volumes/Data/mnt
+      Output information may be incomplete.

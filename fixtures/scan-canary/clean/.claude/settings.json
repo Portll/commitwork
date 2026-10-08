@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": ["Bash(npm test:*)", "Bash(git status:*)", "Read", "mcp__local-docs__search"],
+    "deny": ["Read(~/.ssh/**)", "Read(~/.aws/**)", "Bash(cat ~/.ssh/*)"]
+  },
+  "env": {
+    "LOG_LEVEL": "debug"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": ".claude/hooks/pre.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          { "type": "command", "command": "node .claude/hooks/lint-touched.mjs" }
+        ]
+      }
+    ]
+  }
+}

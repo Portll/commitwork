@@ -1,0 +1,203 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schema/feature-charter.schema.json",
+  "title": "feature-charter",
+  "description": "manifests/feature-charter.json — the declared judgement bin/feature-census.mjs applies: the charter sentences, the membership test for each class, and the groups that put each (surface, key) entry point in exactly one class.",
+  "type": "object",
+  "required": [
+    "schema",
+    "charterVersion",
+    "charter",
+    "membershipTests",
+    "classPriority",
+    "censusPopulation",
+    "groups"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "commitwork.feature-charter/1"
+    },
+    "note": {
+      "type": "string"
+    },
+    "experimentalNote": {
+      "type": "string"
+    },
+    "charterVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "charter": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "membershipTests": {
+      "type": "object",
+      "required": [
+        "core",
+        "extension",
+        "ring-outward",
+        "fragment",
+        "orphan"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "core": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extension": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ring-outward": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fragment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "orphan": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "classPriority": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "orphan",
+          "fragment",
+          "declared"
+        ]
+      }
+    },
+    "priorityNote": {
+      "type": "string"
+    },
+    "censusPopulation": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "cli-command",
+          "cli-script",
+          "http-route",
+          "ui-view",
+          "mcp-tool",
+          "job",
+          "package-api",
+          "config-flag"
+        ]
+      }
+    },
+    "populationNote": {
+      "type": "string"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "surface",
+          "keys",
+          "class",
+          "why"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "surface": {
+            "enum": [
+              "cli-command",
+              "cli-script",
+              "http-route",
+              "ui-view",
+              "mcp-tool",
+              "job",
+              "package-api",
+              "config-flag"
+            ]
+          },
+          "keys": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "class": {
+            "enum": [
+              "core",
+              "extension",
+              "ring-outward",
+              "fragment"
+            ]
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1
+          },
+          "experimental": {
+            "type": "boolean"
+          },
+          "flag": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "views": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "experimentalFlags": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "label",
+          "why"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1
+          },
+          "views": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

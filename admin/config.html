@@ -1,0 +1,1082 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>commitwork · config</title>
+<script>
+/* Responsive root font — same rule as admin/index.html, see the long note there. Bounded by the
+   WINDOW as well as the physical display (min of the two ratios) and capped at 24px, because
+   keying purely off screen.height*dpr gave a narrow window on a 4K panel 200% text and every
+   rem-sized child then overflowed the column. The CSS clamp below is the no-JS fallback. */
+(function(){function px(){var w=window.innerWidth||1600;var dpr=window.devicePixelRatio||1;var h=(window.screen&&screen.height?screen.height:1080)*dpr;var s=w<900?16:Math.max(16,Math.min(24,16*Math.min(h/1080,w/1600)));document.documentElement.style.fontSize=s+'px';}px();addEventListener('resize',px);})();
+</script>
+<link rel="icon" type="image/svg+xml" href="/cw-favicon.svg">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/cw-favicon-32.png">
+<link rel="stylesheet" href="/static/panel.css">
+<link id="theme-light" rel="stylesheet" href="/static/panel-light.css" media="(prefers-color-scheme: light)">
+<link rel="stylesheet" href="/static/panel-cvd.css">
+<link id="cvd-light" rel="stylesheet" href="/static/panel-cvd-light.css" media="(prefers-color-scheme: light)">
+<link rel="stylesheet" href="/static/config.css">
+<link rel="stylesheet" href="/static/theme.css">
+<script src="/static/theme-switch.js"></script></head>
+<body>
+<!-- Skip link — first focusable element, so a keyboard user reaches the content without walking the
+     nav on every load. Revealed on :focus by .skip-link in panel.css (shared with index.html). -->
+<a class="skip-link" href="#config-main">Skip to main content</a>
+<div class="bar"><div class="row">
+  <!-- wordmark (550 cut, white ink): contains the CW mark, so no separate monogram beside it -->
+  <span class="mark"><span class="seal"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="16" fill="#14161A"/><circle cx="16" cy="16" r="14.5" fill="none" stroke="#C9A227" stroke-width="1"/><circle cx="12" cy="20" r="2.4" fill="#C9A227"/><circle cx="21" cy="11" r="2.4" fill="none" stroke="#C9A227" stroke-width="1.3"/><path d="M13.7 18.3 L19.3 12.7" stroke="#C9A227" stroke-width="1.3" fill="none"/></svg></span><span class="wordmark">commitwork</span></span><span class="eb">config</span>
+  <nav class="cfg-nav">
+    <a href="/" class="vtab">← Admin</a>
+    <span class="vtab pri" aria-current="page">Config</span>
+  </nav>
+  <span class="ro" id="ro-badge" title="four declared config files are editable here; everything else on this page is read from disk and not written">editable</span>
+  <span class="gen" id="gen"></span>
+  <button type="button" class="refresh" id="refresh">↻ refresh</button>
+  <div data-theme-switch></div>
+</div></div>
+<main class="wrap" id="config-main" tabindex="-1">
+  <h1>Configuration</h1>
+  <p class="lede">Every setting commitwork actually reads, assembled server-side from the same files the sweep and rollup read — per repo, then globally. <b class="mut">Display-first &amp; read-only</b>: each surface is edited in its file with provenance (who / when / why), never through this page, and each section states where to make the change.</p>
+  <section id="err" style="display:none"><div class="pk-err" role="alert"><span><b>config API offline</b> — <span id="errmsg"></span></span></div></section>
+
+  <!-- summary KPIs -->
+  <!-- CONFIG EDITOR. This page wrote nothing anywhere, and its apply controls were absent on the
+       published port on the reasoning at the Packages section below: a control reachable through
+       the tunnel is reachable from the internet. That boundary was raised explicitly and the
+       operator chose to cross it, so editing is session-gated and available on both ports, and the
+       guards moved into admin/routes/config-edit.mjs where the tests can hold them.
+
+       ONLY FOUR FILES, and they are named here rather than discovered: each one can make the fleet
+       look cleaner than it is — projects.json decides what is scanned at all, gate-exemptions and
+       annotations decide what is suppressed or re-graded, stub-allowlist decides which stubs pass.
+       The editor says so on screen rather than presenting them as ordinary settings. -->
+  <section>
+    <div class="hd"><h2>Edit configuration</h2><span class="n">four declared files &middot; written atomically, validated before write</span></div>
+    <div class="card">
+      <div class="edit" style="margin-bottom:0.75rem">Each of these decides what the fleet reports. <b>projects</b> decides what is scanned;
+        <b>gate exemptions</b> and <b>annotations</b> decide what is suppressed or re-graded; <b>stub allowlist</b> decides which stubs pass.
+        A save is refused if the text is not valid JSON, and refused again if the file changed since it was opened &mdash; nothing is
+        overwritten on a conflict.</div>
+      <div class="cfg-edit-bar">
+        <label>file
+          <select id="ce-file">
+            <option value="projects">monitor/projects.json &mdash; projects registry</option>
+            <option value="annotations">monitor/private/annotations.json &mdash; scanner annotations</option>
+            <option value="gateExemptions">monitor/private/gate-exemptions.json &mdash; gate exemptions</option>
+            <option value="stubAllowlist">monitor/private/stub-allowlist.json &mdash; stub allowlist</option>
+          </select>
+        </label>
+        <button type="button" id="ce-reload">reload</button>
+        <button type="button" id="ce-save" class="pri" disabled>save</button>
+        <span class="mut" id="ce-state">loading&hellip;</span>
+      </div>
+      <textarea id="ce-text" spellcheck="false" aria-label="config file contents"></textarea>
+      <div class="msg" id="ce-msg" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section><div class="kpis" id="kpis"></div></section>
+
+  <!-- 1 · PER-REPO — what applies to ONE repo (resolveRepos + areaOf/areaOut, server-side) -->
+  <section>
+    <div class="hd"><h2>Per-repo configuration</h2><span class="n" id="repo-n">resolved by monitor/discover.mjs + monitor/registry.mjs</span></div>
+    <div class="fx">
+      <input id="repo-q" type="search" aria-label="Filter repos — by name, path, area, manifest, url, or owner" placeholder="filter — repo name, path, area, manifest, url, owner…" autocomplete="off" spellcheck="false">
+      <span id="repo-chips" style="display:flex;gap:0.3125rem;flex-wrap:wrap"></span>
+    </div>
+    <div class="mut" id="repo-count" style="font-size:0.6875rem;margin-bottom:0.5rem"></div>
+    <div class="probar" id="pro-bar">
+      <span class="pro-lab">Semgrep&nbsp;Pro</span>
+      <span id="pro-count" class="tnum"></span>
+      <span id="pro-msg" class="sm"></span>
+      <span class="pro-act"><button type="button" id="pro-reset" class="sm">revert</button><button type="button" id="pro-save" class="pri" disabled>save allocation</button></span>
+    </div>
+    <div id="repo-list"></div>
+    <div class="edit">Resolved live: explicit <code>projects[]</code> entries (an <code>expand: children</code> entry contributes its children, not itself) plus every git repo found under <code>roots[]</code>, with <code>exclude[]</code> and <code>lifecycle{}</code> applied — the identical <code>resolveRepos()</code> call <code class="path">monitor/sweep.mjs</code> makes, so this cannot drift from what is actually scanned. Area ownership is <b>declared, never inferred</b>: an entry's <code>area</code>, else <code>areas[].members</code>, else <code>areas[].prefixes</code>, else the repo's own name. Report output is <code>areas[].out</code> (falling back to the slug). Change any of it in <code class="path">monitor/projects.json</code>.
+      <p><b>Semgrep Pro</b> is licensed for a bounded number of repositories, so the engine is allocated per repo rather than fixed in the manifest. Tick the repositories that should get it; the box is offered only on rows that are their own scan unit, because a seat granted to a group entry, a superseded name or an excluded one is a seat spent on nothing. Repositories outside the allocation run the <b>OSS engine and publish real findings</b> &mdash; the narrower engine is recorded as a coverage bound (<code>engine-per-repo</code>), never as a reason to discount a number. Which engine actually ran is not taken from this page: each repo&rsquo;s <code>semgrep.sarif</code> records it at <code>runs[].tool.driver.name</code>. A save above the cap is <b>refused by the registry</b>, not merely disabled here, so no allocation can outlive the licence that permits it.</p></div>
+  </section>
+
+  <!-- 2 · RETENTION (compact-reports.mjs 'retention' key of projects.json) -->
+  <section>
+    <div class="hd"><h2>Retention</h2><span class="n">reports pruning · read by <code class="path">monitor/compact-reports.mjs</code></span></div>
+    <div class="grid2">
+      <div class="card"><h3>Settings</h3><div id="ret-kv"></div>
+        <div class="edit">Edit the <code>retention</code> key in <code class="path">monitor/projects.json</code>. Floor lever: <code>node monitor/compact-reports.mjs --keep 2 --apply</code>. Runs at the end of every sweep.</div>
+      </div>
+      <div class="card"><h3>Protected paths</h3><div id="ret-protect" class="mut"></div>
+        <div class="note" id="ret-note"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · SCANNER ROSTER (manifests/*.json check ids + group map) -->
+  <section>
+    <div class="hd"><h2>Scanner roster</h2><span class="n" id="man-n">manifests/*.json · check ids + group map</span></div>
+    <div class="tw" style="margin-bottom:0.875rem"><table><thead><tr><th>Manifest</th><th>Checks</th><th>Groups</th><th>Prompts</th></tr></thead><tbody id="man-tab"></tbody></table></div>
+    <div id="manifests"></div>
+    <div class="edit">Each manifest is <code class="path">manifests/&lt;name&gt;.json</code> — <code>checks[]</code> (id / description / groups / requires / optional <code>remediationPrompt</code>) and a top-level <code>groups</code> map (group name → member check ids). A project selects manifests via its <code>manifest</code> field in <code class="path">monitor/projects.json</code>; auto-discovered repos take <code>roots[].manifest</code> or <code>defaultManifest</code>.</div>
+  </section>
+
+  <!-- 3b · SCANNING — which lanes this box runs, and which binaries it may execute.
+       The only WRITE surface on this page besides the file editor. Consent is recorded per BINARY,
+       not per lane: 76 lanes draw on 46 tools, and asking per lane would put the same question
+       about semgrep in front of the operator eleven times. -->
+  <!-- The decision controls and selection grid of admin/static/theme.css (docs/THEME.md §8), whose
+       tokens follow the panel's, so the section is drawn in the reader's theme. -->
+  <section>
+    <div class="hd"><h2>Scanning</h2><span class="n" id="sc-n">lanes and binary approvals · written to <code class="path">.claude/store/scan-config.json</code>, journalled</span></div>
+    <div class="card">
+      <div id="sc-summary" class="cw-facts"></div>
+      <div class="actrow sc-acts">
+        <button type="button" id="sc-approve-present" class="cw-btn cw-btn--fill cw-btn--caution">Approve every installed binary</button>
+        <button type="button" id="sc-approve-all" class="cw-btn cw-btn--fill cw-btn--stop">Approve all 46</button>
+        <button type="button" id="sc-revoke" class="cw-btn">Withdraw every approval</button>
+        <span class="mut" id="sc-msg" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+    <div id="sc-tools" class="cw-grid sc-grid"></div>
+    <div id="sc-lanes" class="cw-grid sc-grid"></div>
+    <div class="cw-grid sc-grid">
+      <div class="cw-row cw-row--group"><span class="cw-row__name">history</span><span class="cw-row__needs" id="sc-hist-n"></span></div>
+      <div id="sc-hist"></div>
+    </div>
+    <div class="edit">A lane can be enabled and still held because its binary is unapproved — the two are shown separately because only one of them is something you turn on here. A held lane is reported by the runner as a <code>noscan</code> void with coverage <code>unknown</code>, never omitted: a sweep that dropped it would render "refused" and "clean" identically. The gate stays off entirely until this store exists.</div>
+  </section>
+
+  <!-- The approval dialog (docs/THEME.md §8): facts as chips, the decision pair centred with
+       decline on the left. The scrim and dialog take their colour and stacking from theme.css. -->
+  <div id="sc-modal" hidden>
+    <div class="cw-scrim" id="sc-scrim"></div>
+    <div class="cw-dialog" role="dialog" aria-modal="true" aria-labelledby="sc-mt">
+      <h3 class="cw-dialog__title" id="sc-mt"></h3>
+      <p class="cw-dialog__body" id="sc-mb"></p>
+      <div class="cw-facts" id="sc-mm"></div>
+      <div class="cw-actions">
+        <button type="button" class="cw-btn" id="sc-mno">No thanks, I'll reconsider</button>
+        <button type="button" class="cw-btn cw-btn--fill cw-btn--neutral" id="sc-myes">Yes, I understand</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 · REGISTRY (areas + projects.json entries + exclude + lifecycle) -->
+  <section>
+    <div class="hd"><h2>Registry</h2><span class="n" id="proj-n">monitor/projects.json · scan scope</span></div>
+    <div class="card" style="margin-bottom:0.75rem"><h3>Areas <span class="mut" style="font-weight:400;font-size:0.6875rem">(declared unit of report output, retention, freshness, picker identity)</span></h3><div id="areas"></div></div>
+    <div class="card" style="margin-bottom:0.75rem"><h3>Entries &amp; roots <span class="mut" style="font-weight:400;font-size:0.6875rem">(what declares the scan scope)</span></h3><div id="proj-rows"></div></div>
+    <div class="grid2">
+      <div class="card"><h3>Excluded <span class="mut" style="font-weight:400;font-size:0.6875rem">(retired · never redeployed)</span></h3><div id="excl"></div><div class="note" id="excl-note"></div></div>
+      <div class="card"><h3>Lifecycle <span class="mut" style="font-weight:400;font-size:0.6875rem">(superseded · rollback standby)</span></h3><div id="life-n" class="mut" style="font-size:0.6875rem;margin-bottom:0.5rem"></div><div id="life"></div></div>
+    </div>
+    <div class="edit"><code>projects[]</code> = active scan scope · <code>exclude[]</code> = retired (removed from scope entirely) · <code>lifecycle{}</code> = superseded services kept as rollback standby, gated by a 14-digit <code>effectiveFrom</code> stamp. A rollback sets <code>effectiveTo</code> — never remove an entry. See the <code>lifecycleNote</code> in the file.</div>
+  </section>
+
+  <!-- 4b · HOST — what this BOX listens on. Deliberately the section AFTER Registry: that one
+       declares the scan scope, this one observes what the machine actually runs, and the whole
+       value is in being able to see the two disagree. It is an OBSERVATION, not configuration,
+       which is why it has its own endpoint (/api/host) rather than riding on /api/config. -->
+  <section>
+    <div class="hd"><h2>Host</h2><span class="n" id="host-n">what this box listens on · observed via <code class="path">monitor/host-inventory.mjs</code> <span class="ro">read-only</span></span></div>
+    <div class="card" style="margin-bottom:0.75rem"><div id="host-summary" class="mut">loading…</div></div>
+    <div id="host-attributed"></div>
+    <div id="host-external"></div>
+    <div class="card"><h3>Bound ports</h3><div id="host-ports"></div></div>
+    <div class="edit">Ownership is joined from docker's published <b>port mappings</b> (never container names, which anyone starting a container chooses) and the registry's declared targets. A port nothing appears to hold is reported as <b>not seen</b>, never as <b>not bound</b>: this observation is unprivileged, so root-owned sockets are invisible to it and no finding may be dismissed on that basis.</div>
+  </section>
+
+  <!-- 4c · PACKAGES — what is INSTALLED on this box and what is behind. Sits after Host for the
+       same reason Host sits after Registry: each one steps further from what is declared toward
+       what is actually true of the machine. Also an OBSERVATION, with its own endpoint.
+
+       APPLYING IS OPERATOR-PORT ONLY. This panel is published through a tunnel, so an upgrade
+       button reachable from it would be arbitrary code execution on this laptop from the internet.
+       On the published port the controls are ABSENT rather than disabled — a greyed-out button
+       still tells a reader the capability is there and invites them to look for a way. -->
+  <section>
+    <div class="hd"><h2>Packages</h2><span class="n" id="pkg-n">what is installed on this box · observed via <code class="path">monitor/package-inventory.mjs</code> <span class="ro">read-only</span></span></div>
+    <div class="card" style="margin-bottom:0.75rem"><div id="pkg-summary" class="mut">loading&hellip;</div></div>
+    <div id="pkg-managers"></div>
+    <div id="pkg-jobs"></div>
+    <div class="edit">Each manager reports <b>outdated</b> against the catalogue it last fetched, not against the internet &mdash; so the catalogue's own age travels with the answer. A manager that could not be asked reads <b>UNKNOWN</b>, never <i>up to date</i>: on this surface &ldquo;nothing is out of date&rdquo; is the sentence most worth being sure about. Pinned packages are held back on purpose and are named rather than counted as debt. <b>macOS updates are observation-only</b> &mdash; they can force a reboot, so applying one is a human act taken at the machine.</div>
+  </section>
+
+  <!-- 4d · UPDATES — the question that follows the one above. Packages says what is BEHIND; this
+       says what applying it would FIX, measured as the set difference between the same matcher run
+       against the installed identity and against the target identity.
+
+       NO APPLY PATH IS ADDED HERE. Applying stays in the Packages section, behind the gate that
+       already exists; the only button on this section starts a READ-ONLY scan, and only on the
+       operator port because the scan runs syft and grype over this machine. -->
+  <section>
+    <div class="hd"><h2>Updates</h2><span class="n" id="upd-n">what each applicable update fixes &middot; produced by <code class="path">monitor/update-vulns.mjs</code> <span class="ro">read-only</span></span></div>
+    <div class="card" style="margin-bottom:0.75rem"><div id="upd-summary" class="mut">loading&hellip;</div><div id="upd-actions" style="margin-top:0.5rem"></div></div>
+    <div id="upd-os"></div>
+    <div id="upd-managers"></div>
+    <div id="upd-jobs"></div>
+    <div class="edit"><b>Fixed</b> is a measurement, not a changelog: the same matcher runs twice, once against what is installed and once against what the update would install, and the difference is what the update closes. What could not be measured says so &mdash; an embedded dependency inside a keg has no observable post-upgrade version, so it is reported as <b>vulnerable now, effect UNKNOWN</b> and never as <i>fixes nothing</i>. macOS rows are matched by <b>CPE against NVD's vendor-declared ranges</b>, which is inference tier: the fixed and remaining sets are reported, no severity is published, and each row keeps the claim it was made under. Rows with <b>no fix recorded anywhere</b> are counted separately &mdash; no update can close them.</div>
+  </section>
+
+  <!-- 5 · ANNOTATIONS (HUMAN LOG) — annotations / gate-exemptions / stub-allowlist, display-only -->
+  <section>
+    <div class="hd"><h2>Annotations (Human Log)</h2><span class="n">append-only · edited in-file with provenance <span class="ro">display-only</span></span></div>
+    <div class="grid2">
+      <div class="card"><h3>Annotations <code class="path" style="font-weight:400">monitor/private/annotations.json</code></h3><div id="anno"></div></div>
+      <div class="card"><h3>Gate exemptions <code class="path" style="font-weight:400">monitor/private/gate-exemptions.json</code></h3><div id="gate"></div></div>
+    </div>
+    <div class="card" style="margin-top:0.75rem"><h3>Stub allowlist <code class="path" style="font-weight:400">monitor/private/stub-allowlist.json</code></h3><div id="stub"></div></div>
+    <div class="edit">These are <b>append-only judgment logs</b> applied as-of rollup time (each carries <code>who</code> / <code>at</code> / <code>reason</code>, and an optional <code>expires</code>). Never delete an entry — set <code>expires</code> to retire one. Deliberately <b>not editable from this page</b>: a suppression must be a cited decision in the file, not a web click. Signatures marked <span class="who-machine">⚙ olive</span> were written by an agent, not signed by a person — an agent citing a human ("authorized by …") is still the agent's own claim, so read those as machine-attributed.</div>
+  </section>
+
+  <div class="foot">Assembled live by <code>configState()</code> in <code class="path">admin/serve.mjs</code> from <code>monitor/projects.json</code>, <code>manifests/*.json</code>, and the <code>monitor/</code> judgment ledgers. Localhost only.</div>
+</main>
+<script>
+const $=(id)=>document.getElementById(id);
+// same escaping helper the panel uses for untrusted values (index.html) — every rendered config
+// string (paths, notes, ids from disk) goes through it.
+const esc=(x)=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// raw (unescaped) per-scanner remediation prompts, indexed by the data-i handle on their buttons.
+// Kept out of the DOM markup so the untrusted text is never interpolated into an attribute/handler;
+// the copy button reads PROMPTS[i] and writes it verbatim to the clipboard.
+const PROMPTS=[];
+const pill=(s,txt)=>`<span class="pill ${s}">${esc(txt||s)}</span>`;
+const kv=(k,v)=>`<div class="kv"><span class="mut">${esc(k)}</span><span>${v}</span></div>`; // v pre-escaped by caller
+// A ledger signature, coloured by who actually stood behind the entry. `whoKind` is decided
+// server-side (monitor/attribution.mjs) — this only styles it. Colour is NOT the only channel:
+// machine entries get a "⚙" glyph and every state gets a title, so the distinction survives
+// greyscale, colour-blindness and a screen reader (WCAG 1.4.1).
+const WHO_TITLE={machine:'written by an agent or automation — not a human signature',human:'signed by a person',unknown:'unsigned — no attribution recorded'};
+const who=(e)=>{const k=e.whoKind||'unknown';
+  const txt=k==='unknown'?'unattributed':esc(e.who||'');
+  return `<span class="who-${k}" title="${esc(WHO_TITLE[k]||'')}">${k==='machine'?'⚙ ':''}${txt}</span>`;};
+const tags=(a)=>(a||[]).map(x=>`<span class="gtag">${esc(x)}</span>`).join('')||'<span class="mut">—</span>';
+const fmtDate=(iso)=>iso?new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'—';
+// definition-list row; `v` is pre-escaped by the caller. Skipped entirely when empty, so a repo
+// only shows the keys that actually apply to it.
+const dt=(k,v)=>v?`<dt>${esc(k)}</dt><dd>${v}</dd>`:'';
+
+// ── per-repo view state ────────────────────────────────────────────────────────────────────────
+// Filters live here rather than in the DOM so a re-render (refresh, filter change) can rebuild the
+// list without losing which rows the operator had expanded.
+let REPOS={list:[],counts:{},areas:[],roots:[],notes:[],error:null};
+let RQ='',RAREA='',RSTATE='';
+const OPEN=new Set();
+
+// ── Semgrep Pro allocation ─────────────────────────────────────────────────────────────────────
+// PRO is the operator's PROPOSED set; PRO0 is what the registry currently holds. Keeping both is
+// what lets `revert` exist and what makes "dirty" a fact rather than a guess — and it survives a
+// re-render, which a checked attribute in the DOM would not: filtering the list rebuilds every row.
+let PRO=new Set(), PRO0=new Set(), PROMAX=10, PROBUSY=false;
+const proSame=()=>PRO.size===PRO0.size&&[...PRO].every(n=>PRO0.has(n));
+const proSorted=()=>[...PRO].sort();
+
+function repoRow(r){
+  const st=r.status==='superseded'?['part','superseded']:r.status==='excluded'?['plan','excluded']:r.kind==='group'?['plan','expands']:['live','active'];
+  // The box is offered ONLY where a seat can take effect. At the cap, unticked boxes are disabled —
+  // convenience, not the guarantee: the registry refuses an over-cap write regardless of what this
+  // page allows, which is why the title says what the cap is rather than just greying out.
+  const atCap=PRO.size>=PROMAX, on=PRO.has(r.name);
+  const box=r.proEligible
+    ?`<label class="probox${on?' on':''}" title="${on?'Semgrep Pro is allocated to this repository':atCap?`the licence allows ${PROMAX} repositories and ${PRO.size} are selected — deselect one first`:'run Semgrep Pro on this repository'}"><input type="checkbox" data-pro="${esc(r.name)}"${on?' checked':''}${(!on&&atCap)?' disabled':''}><span>pro</span></label>`
+    :'';
+  const head=`<summary>
+    ${box}<span class="nm">${esc(r.name)}</span>
+    ${r.area?`<span class="gtag acc" title="area">${esc(r.area)}</span>`:''}
+    ${r.pathExists===false&&r.kind!=='excluded'?`<span class="warnv" style="font-size:0.65625rem" title="the configured path does not exist on this machine">path missing</span>`:''}
+    <span class="rt"><span class="sm">${(r.manifests||[]).length?esc((r.manifests||[]).join(' · ')):'—'}</span>${pill(st[0],st[1])}</span></summary>`;
+  const areaV=r.area?`<b>${esc(r.areaLabel||r.area)}</b> <code class="mut">${esc(r.area)}</code>`
+      +(r.areaPrimary?' <span class="gtag">primary</span>':'')
+      +(r.areaDeclared===false?' <span class="gtag">no areas[] block</span>':'')
+      +`<div class="sm">via ${esc(r.areaVia||'—')}</div>`:'<span class="mut">unresolved</span>';
+  const repV=r.reportDir?`<code class="path">${esc(r.reportDir)}/</code>`
+      +(r.swept?' <span class="gtag">rollup present</span>':r.reportDirExists?' <span class="gtag">dir exists · no rollup</span>':' <span class="mut">never written</span>'):'';
+  const pathV=r.path?`<code>${esc(r.path)}</code>`+(r.pathExists?'':' <span class="warnv">— missing on this machine</span>'):'';
+  const lifeV=r.status==='superseded'
+    ?`${pill('part','superseded')} ${r.supersededBy?`→ <code>${esc(r.supersededBy)}</code>`:''} <span class="sm">from ${esc(r.effectiveFrom||'—')}${r.effectiveTo?' to '+esc(r.effectiveTo):''}</span>`
+    :r.status==='excluded'?`${pill('plan','excluded')} <span class="sm">out of scan scope — no reports, no findings</span>`:'';
+  const body=`<div class="rbody"><dl class="dl">
+    ${dt('Area',areaV)}
+    ${dt('Report dir',repV)}
+    ${dt('Manifests',(r.manifests||[]).length?tags(r.manifests):'')}
+    ${dt('Path',pathV)}
+    ${dt(r.kind==='group'?'Child URLs':'Declared URL',(r.urls||[]).length?(r.urls||[]).map(u=>`<div><code>${esc(u)}</code></div>`).join(''):'')}
+    ${dt('Owner',r.owner?`<span class="sm">${esc(r.ownerKind||'')}</span> <code>${esc(r.owner)}</code>`:'')}
+    ${dt('Registry key',r.registryKey&&r.registryKey!==r.name?`<code>${esc(r.registryKey)}</code>`:'')}
+    ${dt('Children',(r.children||[]).length?`<span class="sm">${(r.children||[]).length} expanded</span> ${tags(r.children)}`:'')}
+    ${dt('Deploy hosts',(r.deployHosts||[]).length?tags(r.deployHosts):'')}
+    ${dt('Lifecycle',lifeV)}
+  </dl>${r.note?`<div class="note">${esc(r.note)}</div>`:''}</div>`;
+  return `<details class="repo" data-n="${esc(r.name)}"${OPEN.has(r.name)?' open':''}>${head}${body}</details>`;
+}
+
+function renderRepos(){
+  const q=RQ.trim().toLowerCase();
+  // one haystack per row so a single box searches name, path, area, manifest, url, owner and the
+  // expanded children — searching 'clientA' must find its children, whose own names never say it.
+  const hay=(r)=>[r.name,r.path,r.area,r.areaLabel,r.reportDir,r.owner,r.registryKey,r.status,
+    (r.manifests||[]).join(' '),(r.urls||[]).join(' '),(r.children||[]).join(' '),(r.deployHosts||[]).join(' ')]
+    .filter(Boolean).join(' ').toLowerCase();
+  const rows=(REPOS.list||[]).filter(r=>(!RAREA||r.area===RAREA)&&(!RSTATE||r.status===RSTATE)&&(!q||hay(r).includes(q)));
+  // a narrow result is the operator having found what they wanted — open it rather than make them click
+  if(rows.length&&rows.length<=3)for(const r of rows)OPEN.add(r.name);
+  $('repo-list').innerHTML=rows.map(repoRow).join('')||'<div class="card mut">no repo matches that filter</div>';
+  const c=REPOS.counts||{};
+  $('repo-count').innerHTML=`showing <b class="tnum">${rows.length}</b> of ${c.total||0} · `
+    +`${c.active||0} active repos · ${c.groups||0} expanding entr${(c.groups===1)?'y':'ies'} · ${c.superseded||0} superseded · ${c.excluded||0} excluded`
+    +(REPOS.error?` · <span class="warnv">resolver failed: ${esc(REPOS.error)}</span>`:'')
+    +((REPOS.notes||[]).length?` · <span class="warnv">${(REPOS.notes||[]).map(esc).join(' · ')}</span>`:'');
+}
+// The bar states the count AND the bound together: "3 selected" is not a state until the reader
+// knows the ceiling. At the cap it says so plainly rather than leaving the operator to discover it
+// by finding the boxes greyed out.
+function renderPro(){
+  const el=$('pro-count'), msg=$('pro-msg'), save=$('pro-save'), reset=$('pro-reset');
+  if(!el) return;
+  const n=PRO.size, dirty=!proSame();
+  el.innerHTML=`<b>${n}</b> of ${PROMAX} <span class="u">repositories</span>`;
+  $('pro-bar').dataset.state = n>=PROMAX?'full':n?'some':'none';
+  if(!msg.dataset.sticky){
+    msg.className='sm';
+    msg.textContent = dirty
+      ? `unsaved — ${n} selected, ${PRO0.size} on record`
+      : n===0 ? 'no repository is allocated the Pro engine; every repo runs OSS, and those findings are real'
+      : n>=PROMAX ? 'every seat the licence permits is allocated' : `${PROMAX-n} seat(s) unallocated`;
+  }
+  save.disabled = PROBUSY || !dirty;
+  reset.style.display = dirty?'':'none';
+}
+function proMsg(t,cls){ const m=$('pro-msg'); m.dataset.sticky=t?'1':''; m.className='sm'+(cls?' '+cls:''); m.textContent=t; }
+
+async function proSave(){
+  if(PROBUSY) return;
+  PROBUSY=true; renderPro(); proMsg('saving…','');
+  let r;
+  try{
+    // serve.mjs gates EVERY state-changing request on x-cw-csrf before any route sees it, so a
+    // save without this header is a 403 the operator would read as "the server refused my
+    // allocation" — the wrong refusal, attributed to the wrong thing.
+    r=await (await fetch('/api/projects/semgrep-pro',{method:'POST',
+      headers:{'content-type':'application/json','x-cw-csrf':await pkgCsrfToken()},
+      body:JSON.stringify({repos:proSorted()})})).json();
+  }catch(e){
+    // A failed request is NOT a refusal and must not read as one: the operator's selection stands
+    // and the registry's state is unknown from here.
+    PROBUSY=false; proMsg('the save could not be sent ('+e.message+') — the allocation on record is unchanged as far as this page can tell','warnv'); renderPro(); return;
+  }
+  PROBUSY=false;
+  if(r&&r.ok){
+    PRO0=new Set(r.repos||[]); PRO=new Set(r.repos||[]);
+    proMsg(`saved — ${r.count} of ${PROMAX} allocated. The next sweep reads this.`,'okv');
+    renderRepos(); renderPro(); return;
+  }
+  // The registry's own words, not a paraphrase: it names the count and what to do about it.
+  const detail=(r&&Array.isArray(r.errors)&&r.errors.length)?r.errors.join(' · '):(r&&r.error)||'the save was refused';
+  proMsg(detail,'warnv'); renderPro();
+}
+
+// The box lives inside <summary>, whose default action on click is to toggle the <details>. So the
+// toggle is owned here outright rather than left to the browser: preventDefault stops the row
+// expanding, and PRO is updated from our own state rather than from the checkbox's, which a
+// re-render is about to replace anyway. Handling `click` rather than `change` also keeps the
+// keyboard path working — space on a focused checkbox dispatches a click.
+$('repo-list').addEventListener('click',(ev)=>{
+  const box=ev.target.closest('.probox'); if(!box) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const cb=box.querySelector('input[data-pro]'); if(!cb||cb.disabled) return;
+  const n=cb.getAttribute('data-pro');
+  if(PRO.has(n)) PRO.delete(n); else PRO.add(n);
+  proMsg('',''); renderRepos(); renderPro();
+});
+$('pro-save').onclick=proSave;
+$('pro-reset').onclick=()=>{ PRO=new Set(PRO0); proMsg('',''); renderRepos(); renderPro(); };
+
+function renderChips(){
+  const areas=[...new Set((REPOS.list||[]).map(r=>r.area).filter(Boolean))].sort();
+  const st=[['','all'],['active','active'],['superseded','superseded'],['excluded','excluded']];
+  $('repo-chips').innerHTML=
+    st.map(([v,l])=>`<button type="button" class="chip${RSTATE===v?' on':''}" data-k="state" data-v="${esc(v)}">${esc(l)}</button>`).join('')
+    +'<span class="sm" style="align-self:center;margin:0 0.125rem">area</span>'
+    +`<button type="button" class="chip${RAREA===''?' on':''}" data-k="area" data-v="">any</button>`
+    +areas.map(a=>`<button type="button" class="chip${RAREA===a?' on':''}" data-k="area" data-v="${esc(a)}">${esc(a)}</button>`).join('');
+}
+$('repo-chips').addEventListener('click',(ev)=>{
+  const b=ev.target.closest('.chip'); if(!b)return;
+  if(b.dataset.k==='area')RAREA=b.dataset.v; else RSTATE=b.dataset.v;
+  renderChips(); renderRepos();
+});
+$('repo-q').addEventListener('input',(ev)=>{ RQ=ev.target.value; renderRepos(); });
+// remember expanded rows across re-renders (filter keystrokes rebuild the list)
+$('repo-list').addEventListener('toggle',(ev)=>{
+  const d=ev.target.closest('details.repo'); if(!d)return;
+  if(d.open)OPEN.add(d.dataset.n); else OPEN.delete(d.dataset.n);
+},true);
+
+async function load(){
+  let d;
+  try{ d=await (await fetch('/api/config')).json(); }
+  catch(e){ $('err').style.display='';$('errmsg').textContent=e.message; return; }
+  $('err').style.display='none';
+  $('gen').textContent=d.generated?'read '+new Date(d.generated).toLocaleTimeString():'';
+
+  // ── summary KPIs ─────────────────────────────────────────────────────────────────────────
+  const ret=d.retention||{}, man=d.manifests||[], proj=d.projects||{}, led=d.ledgers||{};
+  const checkTotal=man.reduce((a,m)=>a+(m.checkCount||0),0);
+  const anno=led.annotations, gate=led.gateExemptions, stub=led.stubAllowlist;
+  REPOS=d.repos||{list:[],counts:{},areas:[],roots:[],notes:[],error:'server returned no repos block'};
+  const rc=REPOS.counts||{};
+  // Seed from the registry, not from the DOM. If the server sends no block, the cap is NOT assumed
+  // — an unknown allocation must not render as an empty one, which would invite the operator to
+  // "add" seats to a set they cannot see.
+  const sp=REPOS.semgrepPro;
+  if(sp&&Array.isArray(sp.repos)){ PRO0=new Set(sp.repos); PRO=new Set(sp.repos); PROMAX=sp.max??PROMAX; $('pro-bar').style.display=''; }
+  else { $('pro-bar').style.display='none'; }
+  $('kpis').innerHTML=[
+    ['','Repos resolved',`${rc.active??0}<span class="u"> active</span>`,`${(REPOS.areas||[]).length} declared area(s) · ${rc.excluded||0} excluded · ${rc.superseded||0} superseded`],
+    ['','Retention keeps',`${ret.keepFullSweeps??'—'}<span class="u"> sweeps</span>`,`${(ret.protect||[]).length} protected path(s)`],
+    ['','Scanner manifests',`${man.length}<span class="u"> files</span>`,`${checkTotal} checks total`],
+    ['','Registry entries',`${(proj.list||[]).length}<span class="u"> declared</span>`,`${(REPOS.roots||[]).length} discovery root(s) · ${(proj.lifecycle||[]).length} superseded`],
+    [(anno&&anno.active)?'warn':'good','Annotations',`${anno?anno.active:0}<span class="u">/${anno?anno.total:0}</span>`,'active / total (accept/note/…)'],
+    [(gate&&gate.active)?'warn':'good','Gate exemptions',`${gate?gate.active:0}<span class="u">/${gate?gate.total:0}</span>`,'active / total'],
+    ['','Stub allowlist',`${stub?stub.total:0}<span class="u"> entries</span>`,(stub&&stub.absent)?'file absent (0 suppressed)':'intentional stubs suppressed'],
+  ].map(([cl,k,v,s])=>`<div class="kpi ${cl}"><div class="k">${esc(k)}</div><div class="v tnum">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
+
+  // ── 1 · per-repo ─────────────────────────────────────────────────────────────────────────
+  $('repo-n').textContent=`${rc.total||0} entries · resolveRepos() + areaOf/areaOut, same resolvers as the sweep`;
+  renderChips(); renderRepos(); renderPro();
+
+  // ── 2 · retention ────────────────────────────────────────────────────────────────────────
+  if(ret&&(ret.keepFullSweeps!=null||ret.dropDirPattern!=null||ret.chainMaxBytes!=null)){
+    $('ret-kv').innerHTML=[
+      kv('keepFullSweeps',`<b class="tnum">${esc(ret.keepFullSweeps??'—')}</b> <span class="mut">newest batches byte-complete</span>`),
+      kv('dropDirPattern',ret.dropDirPattern?`<code>${esc(ret.dropDirPattern)}</code>`:'<span class="mut">—</span>'),
+      kv('chainMaxBytes',ret.chainMaxBytes!=null
+        ?`<b class="tnum">${esc(ret.chainMaxBytes)}</b> <span class="mut">chain.jsonl over this is checkpoint-rotated (archived whole, never truncated) — monitor/chain-compact.mjs --apply</span>`
+        :'<span class="mut">unset — the chain sweeper sweeps nothing until the operator sets a maximum</span>'),
+    ].join('');
+    $('ret-protect').innerHTML=(ret.protect||[]).length?(ret.protect||[]).map(p=>`<span class="gtag">${esc(p)}</span>`).join(''):'<span class="mut">none</span>';
+    $('ret-note').textContent=ret.note||'no note';
+  }else{
+    $('ret-kv').innerHTML='<div class="mut">no retention key in projects.json</div>';
+    $('ret-protect').innerHTML='';$('ret-note').textContent='';
+  }
+
+  // ── 3 · scanner roster ───────────────────────────────────────────────────────────────────
+  // Each check may carry a per-scanner remediationPrompt (from manifests/<name>.json, threaded
+  // through configState()→manifestSummary() in serve.mjs). We surface it as a copy-into-an-LLM
+  // block with a copy-to-clipboard button. The prompt is untrusted disk content: it is escaped for
+  // display, and copied from a stashed raw string keyed by index (never interpolated into markup),
+  // so nothing in it can break out of the handler or the DOM.
+  PROMPTS.length=0;
+  let promptTotal=0;
+  $('manifests').innerHTML=man.map(m=>{
+    if(!m.ok)return `<div class="card" style="margin-bottom:0.75rem"><h3>${esc(m.name)}</h3><div class="mut">unreadable</div></div>`;
+    const groups=(m.groups||[]).map(g=>`<span class="gtag" title="${esc((m.groupMembers[g]||[]).join(', '))}">${esc(g)} · ${(m.groupMembers[g]||[]).length}</span>`).join('');
+    // one stacked block per check instead of a five-column table: the description is the widest
+    // field by far and a column forced it into a 21rem sliver behind a horizontal scrollbar.
+    const rows=(m.checks||[]).map(c=>{
+      const req=c.requires?(Array.isArray(c.requires)?c.requires.join(', '):(typeof c.requires==='object'?Object.values(c.requires).flat().join(', '):String(c.requires))):'';
+      const gs=(c.groups||[]).map(g=>`<span class="gtag">${esc(g)}</span>`).join('');
+      let rem='',pi=-1;
+      if(c.remediationPrompt){
+        const i=pi=PROMPTS.push(c.remediationPrompt)-1; promptTotal++;   // stash raw text; index is the handle
+        rem=`<button type="button" class="rembtn" data-i="${i}" data-act="copy" title="Copy the remediation prompt for '${esc(c.id)}' — paste into an AI coding assistant to drive a fix of this scanner's findings">⧉ copy prompt</button>`
+          +`<button type="button" class="rembtn" data-i="${i}" data-act="toggle" title="Show/hide the prompt text">show</button>`;
+      }
+      const meta=[req?`requires ${esc(req)}`:'',c.report?`report ${esc(c.report)}`:''].filter(Boolean).join(' · ');
+      return `<div class="chk">
+        <div class="chkh"><code>${esc(c.id)}</code>${gs}${rem?`<span class="rt">${rem}</span>`:''}</div>
+        ${c.description?`<div class="chkd">${esc(c.description)}</div>`:''}
+        ${meta?`<div class="chkm">${meta}</div>`:''}
+        ${pi>=0?`<div class="rembox" id="rembox-${pi}">${esc(c.remediationPrompt)}</div>`:''}</div>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:0.75rem;padding:0.875rem 1rem">
+      <div style="display:flex;align-items:baseline;gap:0.625rem;flex-wrap:wrap;margin-bottom:0.5rem">
+        <h3 style="margin:0">${esc(m.name)}</h3>
+        <span class="mut" style="font-size:0.6875rem">${esc(m.repo||'')}</span>
+        <span class="mut" style="font-size:0.6875rem;margin-left:auto">${m.checkCount} checks</span></div>
+      <div style="margin-bottom:0.5625rem">${groups||'<span class="mut">no groups</span>'}</div>
+      ${rows||'<div class="mut">no checks</div>'}
+      ${m.note?`<div class="note">${esc(m.note)}</div>`:''}</div>`;
+  }).join('')||'<div class="mut">no manifests found</div>';
+  // the one surviving table — a short, genuinely enumerable grid (one row per manifest file)
+  $('man-tab').innerHTML=man.map(m=>{
+    const np=(m.checks||[]).filter(c=>c.remediationPrompt).length;
+    return `<tr><td><code>${esc(m.name)}</code>${m.repo?`<br><span class="mut" style="font-size:0.65625rem">${esc(m.repo)}</span>`:''}</td>`
+      +`<td class="tnum">${m.ok?m.checkCount:'—'}</td><td class="tnum">${m.ok?(m.groups||[]).length:'—'}</td>`
+      +`<td class="tnum">${m.ok?np:'—'}</td></tr>`;
+  }).join('')||'<tr><td colspan="4" class="mut">no manifests found</td></tr>';
+  $('man-n').textContent=`${man.length} manifests · ${checkTotal} checks · ${promptTotal} remediation prompts`;
+
+  // ── 4 · registry ─────────────────────────────────────────────────────────────────────────
+  $('proj-n').textContent=`monitor/projects.json · reports → ${proj.reportsRoot||'?'}/${proj.monitorOutput||'?'}`;
+  $('areas').innerHTML=(REPOS.areas||[]).length?(REPOS.areas||[]).map(a=>{
+    const n=(REPOS.list||[]).filter(r=>r.area===a.slug&&r.kind==='repo').length;
+    return `<div class="chk"><div class="chkh"><b style="font-family:var(--sans)">${esc(a.label||a.slug)}</b><code class="mut">${esc(a.slug)}</code>${a.primary?'<span class="gtag">primary</span>':''}<span class="rt sm">${n} repo(s) → <code class="path">${esc(proj.reportsRoot||'reports')}/${esc(a.out||a.slug)}/</code></span></div>${a.note?`<div class="chkm">${esc(a.note)}</div>`:''}</div>`;
+  }).join(''):'<div class="mut">no areas[] declared</div>';
+  // stacked definition lists, not a table: `path` and `note` are long free text and a Path column
+  // is exactly what pushed this section past the viewport.
+  $('proj-rows').innerHTML=((proj.list||[]).map(p=>`<div class="chk">
+      <div class="chkh"><b style="font-family:var(--sans)">${esc(p.name)}</b>${p.area?`<span class="gtag acc">${esc(p.area)}</span>`:''}${p.expand?`<span class="gtag">expand: ${esc(p.expand)}</span>`:''}<span class="rt sm">${tags(p.manifest)}</span></div>
+      <div class="chkm"><code>${esc(p.path||'—')}</code>${p.urlCount?` · ${p.urlCount} declared url(s)`:''}</div>
+      ${p.note?`<div class="chkm">${esc(p.note)}</div>`:''}</div>`).join(''))
+    +((REPOS.roots||[]).map(r=>`<div class="chk">
+      <div class="chkh"><b style="font-family:var(--sans)">${esc(r.path)}</b><span class="gtag">discovery root</span><span class="rt sm">${tags(r.manifest?[r.manifest]:[])}</span></div>
+      <div class="chkm">every git repo at depth ≤ ${esc(r.maxDepth)}, minus explicit entries, exclude[] and commitwork itself</div></div>`).join(''))
+    ||'<div class="mut">no entries</div>';
+  $('excl').innerHTML=(proj.exclude||[]).length?(proj.exclude||[]).map(x=>`<div class="find">${pill('plan','retired')}<code>${esc(x)}</code></div>`).join(''):'<div class="mut">none excluded</div>';
+  $('excl-note').textContent=proj.excludeNote||'';
+  $('life-n').textContent=`${(proj.lifecycle||[]).length} superseded · rollback standby, out of active scan scope`;
+  $('life').innerHTML=(proj.lifecycle||[]).length?(proj.lifecycle||[]).map(l=>`<div class="find">${pill('part',l.state||'superseded')}<code>${esc(l.name)}</code>${l.supersededBy?`<span class="mut">→ ${esc(l.supersededBy)}</span>`:''}<span class="at" title="effectiveFrom">${esc(l.effectiveFrom||'')}${l.effectiveTo?' → '+esc(l.effectiveTo):''}</span></div>`).join(''):'<div class="mut">none superseded</div>';
+
+  // ── 5 · annotations (human log) — display-only ───────────────────────────────────────────
+  if(anno){
+    const acts=Object.entries(anno.byAction||{}).map(([k,v])=>`<span class="gtag">${esc(k)} · ${v}</span>`).join('');
+    $('anno').innerHTML=
+      kv('total / active',`<b class="tnum">${anno.total}</b> <span class="mut">/ ${anno.active} active</span>`)
+      +`<div class="anno-acts">${acts||'<span class="mut">—</span>'}</div>`
+      +(anno.recent||[]).map(e=>`<div class="find">${pill(e.action==='accept'?'part':e.action==='resolved'?'live':'plan',e.action)}<code>${esc(e.id)}</code>${e.package?`<span class="mut anno-pkg">${esc(e.package)}</span>`:''}<span class="at">${who(e)} · ${fmtDate(e.at)}${e.expires?' · exp '+fmtDate(e.expires):''}</span></div>`).join('');
+  }else $('anno').innerHTML='<div class="mut">file absent</div>';
+  if(gate){
+    $('gate').innerHTML=
+      kv('total / active',`<b class="tnum">${gate.total}</b> <span class="mut">/ ${gate.active} active</span>`)
+      +(gate.entries||[]).map(e=>`<div class="find">${pill('part',e.action||'exempt')}<code>${esc(e.gate)}</code><span class="mut">${esc(e.service)}</span><span class="at">${who(e)} · ${fmtDate(e.at)}${e.expires?' · exp '+fmtDate(e.expires):''}</span></div>`).join('');
+  }else $('gate').innerHTML='<div class="mut">file absent</div>';
+  if(stub&&!stub.absent&&stub.total){
+    $('stub').innerHTML=kv('entries',`<b class="tnum">${stub.total}</b>`)
+      +(stub.entries||[]).map(e=>`<div class="find">${pill('plan','stub')}<code>${esc(e.pathGlob)}</code>${e.marker?`<span class="mut">${esc(e.marker)}</span>`:''}<span class="at">${esc((e.reason||'').slice(0,80))}</span></div>`).join('');
+  }else $('stub').innerHTML=`<div class="mut">${(stub&&stub.absent)?'file absent — 0 stubs suppressed (bin/stub-detect.mjs reads it if present; shape {allow:[{pathGlob, marker?, reason}]})':'no entries'}</div>`;
+}
+// remediation-prompt buttons (copy / show-hide), delegated on the scanner-roster container so it
+// survives every re-render. Copy uses the async clipboard API with a legacy textarea fallback for
+// non-secure / older contexts; the raw text comes from PROMPTS[i], never from the DOM.
+async function copyText(t){
+  try{ if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(t); return true; } }catch(e){}
+  try{ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(e){ return false; }
+}
+$('manifests').addEventListener('click',async(ev)=>{
+  const b=ev.target.closest('.rembtn'); if(!b)return;
+  const i=+b.dataset.i, act=b.dataset.act, txt=PROMPTS[i];
+  if(txt==null)return;
+  if(act==='toggle'){
+    const box=$('rembox-'+i); if(!box)return;
+    const open=box.classList.toggle('open'); b.textContent=open?'hide':'show'; return;
+  }
+  const ok=await copyText(txt);
+  const orig='⧉ copy prompt';
+  b.textContent=ok?'✓ copied':'copy failed'; b.classList.toggle('ok',ok);
+  setTimeout(()=>{ b.textContent=orig; b.classList.remove('ok'); },1600);
+});
+// ── Host — the observation half of this page ─────────────────────────────────────────────────
+// Its own fetch, because it is its own kind of statement: /api/config reports what the fleet
+// DECLARES, this reports what the machine is DOING. A failure here renders as UNKNOWN with the
+// reason, never as an empty table — on this surface "nothing is listening" is the single most
+// dangerous sentence the panel could print by accident.
+const OWNL={project:'project',host:'host',"unbound-unverifiable":'not seen',unknown:'unknown'};
+async function loadHost(){
+  let h;
+  try{ h=await (await fetch('/api/host')).json(); }
+  catch(e){ h={ok:false,reason:'the panel could not reach /api/host ('+e.message+') — listener state is UNKNOWN, not empty'}; }
+  const sum=$('host-summary'), ports=$('host-ports'), ext=$('host-external');
+  if(!h||h.ok!==true){
+    sum.innerHTML='<b class="warnv">UNKNOWN</b> — '+esc(h&&h.reason||'no result')+
+      '<div class="mut" style="margin-top:.375rem">This is not "the box owns nothing". Nothing was observed, so nothing is claimed.</div>';
+    ports.innerHTML=''; ext.innerHTML=''; $('host-n').textContent='observation unavailable';
+    return;
+  }
+  const c=h.counts||{};
+  sum.innerHTML='<b>'+(c.total||0)+'</b> bound port(s) — <b>'+(c.project||0)+'</b> project · <b>'+(c.host||0)+'</b> host'+
+    (c.unstable?' · <b class="warnv">'+c.unstable+'</b> changed hands mid-observation':'')+
+    '<div class="mut" style="margin-top:.375rem">'+
+      (h.privileged?'privileged observation':'<b class="warnv">unprivileged observation</b> — root-owned sockets are invisible here, so an absent port means <i>not seen</i>, never <i>not bound</i>')+
+      (h.docker&&h.docker.ok===false?' · docker: '+esc(h.docker.reason):'')+
+      (h.registry&&h.registry.ok===false?' · registry: '+esc(h.registry.reason):'')+
+      (h.detail==='redacted'?' · process detail is withheld on this port (open the operator port to see it)':'')+
+    '</div>';
+  $('host-n').textContent='observed '+Math.round((h.observedAgeMs||0)/1000)+'s ago · '+(h.detail==='full'?'full detail':'redacted');
+  // Findings that belong to the BOX. They are TRUE detections on ports this machine owns and no
+  // container publishes — not false positives, and never suppressed. They appear here because a
+  // repo-shaped ledger has nowhere to put a finding that is not about a repo, and the project view
+  // keeps a count so nothing silently disappears from where it was originally filed.
+  const A=h.attributed||{ok:false,reason:'not reported'};
+  $('host-attributed').innerHTML = A.ok
+    ? (A.findings.length
+      ? '<div class="card" style="margin-bottom:.75rem"><h3>Findings attributed to this host <span class="mut" style="font-weight:400;font-size:.6875rem">('+A.findings.length+')</span></h3>'+
+        '<div class="mut" style="font-size:.6875rem;margin-bottom:.5rem">True detections on ports this box owns and no container publishes. They are <b>not</b> false positives and are <b>not</b> suppressed &mdash; they are the machine’s own posture. Each still shows the project it was originally filed under, and that project keeps the count.</div>'+
+        '<table><thead><tr><th>Template</th><th>Port</th><th>Severity</th><th>Originally filed under</th><th>Batches</th></tr></thead><tbody>'+
+        A.findings.map(f=>'<tr><td class="mono">'+esc(f.templateId)+'</td><td class="mono">'+esc(f.port)+'/'+esc(f.proto)+'</td><td>'+esc(f.severity||'—')+'</td><td class="mono">'+esc(f.filedUnder.join(' '))+'</td><td>'+f.batches+'</td></tr>').join('')+
+        '</tbody></table></div>'
+      : '<div class="card" style="margin-bottom:.75rem"><h3>Findings attributed to this host</h3><div class="mut" style="font-size:.6875rem">None across '+A.sidecars+' adjudicated report(s). Every DAST finding resolved to a project port or was refuted on its own evidence.</div></div>')
+    : '<div class="card" style="margin-bottom:.75rem;border-color:var(--part)"><h3>Findings attributed to this host</h3><div class="mut" style="font-size:.6875rem"><b class="warnv">NOT ADJUDICATED</b> — '+esc(A.reason)+'. That is not the same as none.</div></div>';
+  // The reason monitor/listeners.mjs was written: bound off-box and named by no ingress declaration.
+  const und=(h.entries||[]).filter(e=>e.external&&!e.declaredFor.length&&!e.containers.length);
+  ext.innerHTML=und.length
+    ? '<div class="card" style="margin-bottom:.75rem;border-color:var(--crit)"><h3>Externally bound, declared nowhere <span class="mut" style="font-weight:400;font-size:.6875rem">('+und.length+')</span></h3>'+
+      '<div class="mut" style="font-size:.6875rem;margin-bottom:.5rem">Reachable from off-box and covered by no tunnel or ingress declaration, so nothing the deployment model promises about TLS or auth applies to them.</div>'+
+      '<table><thead><tr><th>Port</th><th>Proto</th><th>Binding</th></tr></thead><tbody>'+
+      und.map(e=>'<tr><td class="mono">'+e.port+'</td><td>'+esc(e.proto)+'</td><td>'+esc(e.binding||'—')+'</td></tr>').join('')+'</tbody></table></div>'
+    : '';
+  ports.innerHTML='<div class="tw"><table><thead><tr><th>Port</th><th>Proto</th><th>Owner</th><th>Binding</th><th>Container / declared</th></tr></thead><tbody>'+
+    (h.entries||[]).map(e=>'<tr><td class="mono">'+e.port+'</td><td>'+esc(e.proto)+'</td>'+
+      '<td>'+esc(OWNL[e.owner]||e.owner)+(e.stable===false?' <span class="mut">(changed mid-observation)</span>':'')+'</td>'+
+      '<td>'+esc(e.binding||'—')+'</td>'+
+      '<td class="mono">'+(esc([...(e.containers||[]),...(e.declaredFor||[]).map(d=>'declared:'+d)].join(' '))||(e.ephemeralOnly?'<span class="mut">ephemeral only</span>':'—'))+'</td></tr>').join('')+
+    '</tbody></table></div>';
+}
+
+// The CSRF token is per-process, so a panel restart rotates it: fetch once, and on a 403 refresh
+// and retry exactly once. Mirrors cwPost() in index.html rather than inventing a second idiom —
+// the first cut of this sent `window.CSRF`, which is defined nowhere on this page, so every apply
+// would have been rejected with an empty token.
+let pkgCsrf=null;
+// ── CONFIG EDITOR ────────────────────────────────────────────────────────────────────────────
+// baseHash is the version the textarea was filled from, and it is the only thing standing between
+// two sessions editing the same file. It is deliberately NOT re-read at save time: re-reading would
+// make every save succeed and quietly discard whichever change landed first, which is the exact
+// outcome the header on this section promises does not happen.
+let ceHash=null, ceLoaded='';
+const ceEl=(i)=>document.getElementById(i);
+function ceMsg(t,cls){ const m=ceEl('ce-msg'); if(!m)return; m.className='msg'+(cls?' '+cls:''); m.textContent=t; }
+function ceDirty(){
+  const t=ceEl('ce-text'), b=ceEl('ce-save');
+  if(!t||!b)return;
+  // A save is offered only when there is something to save AND a version to save against. Without
+  // the hash the server refuses anyway; disabling here says so before the round trip.
+  b.disabled = (ceHash===null) || (t.value===ceLoaded);
+}
+async function ceLoad(){
+  const name=ceEl('ce-file').value;
+  ceEl('ce-state').textContent='loading…'; ceMsg(''); ceHash=null; ceDirty();
+  let r;
+  try{ r=await (await fetch('/api/config/file?name='+encodeURIComponent(name))).json(); }
+  catch(e){ ceEl('ce-state').textContent='unreadable'; return ceMsg('could not reach the config API ('+e.message+') — this is not an empty file, it is an unread one','err'); }
+  if(!r.ok){ ceEl('ce-state').textContent='unreadable'; return ceMsg(r.error||'could not read that file','err'); }
+  if(r.missing){
+    // Absent is its own state and must not present as an empty file the operator can "save".
+    ceEl('ce-text').value=''; ceEl('ce-text').disabled=true; ceHash=null;
+    ceEl('ce-state').textContent='not present';
+    ceMsg(r.file+' does not exist on disk. Creating it from here is not offered — an editor that invents a config file is how one gets an empty registry nobody meant to write.','err');
+  }else{
+    ceEl('ce-text').disabled=false;
+    ceEl('ce-text').value=r.text; ceLoaded=r.text; ceHash=r.hash;
+    ceEl('ce-state').textContent=r.file+' · '+r.text.length+' bytes · version '+r.hash;
+  }
+  ceDirty();
+}
+async function ceSave(){
+  const name=ceEl('ce-file').value, text=ceEl('ce-text').value, b=ceEl('ce-save');
+  // Parse client-side FIRST, so the common mistake is caught with its position before a request is
+  // made. The server parses again and is the one that decides — this is a courtesy, not the gate.
+  try{ JSON.parse(text); }catch(e){ return ceMsg('not valid JSON, nothing was sent: '+e.message,'err'); }
+  b.disabled=true; ceMsg('saving…');
+  let r;
+  try{
+    r=await (await fetch('/api/config/file',{method:'POST',
+      headers:{'content-type':'application/json','x-cw-csrf':await pkgCsrfToken()},
+      body:JSON.stringify({name,text,baseHash:ceHash})})).json();
+  }catch(e){ ceDirty(); return ceMsg('could not reach the config API ('+e.message+') — whether it wrote is UNKNOWN, reload before editing again','err'); }
+  if(r&&r.ok){
+    ceLoaded=text; ceHash=r.hash;
+    ceEl('ce-state').textContent=r.file+' · '+r.bytes+' bytes · version '+r.hash;
+    ceDirty(); return ceMsg('saved. The sweep and the rollup read this file on their next run.','ok');
+  }
+  if(r&&typeof r.currentText==='string'){
+    // A conflict hands back what is actually on disk. Do NOT overwrite the textarea: the operator's
+    // work is the one copy that exists nowhere else.
+    ceDirty();
+    return ceMsg((r.error||'conflict')+' — the version on disk is now '+(r.currentHash||'unknown')
+      +'. Your text has been left alone; copy it somewhere, reload, and re-apply it.','err');
+  }
+  ceDirty();
+  return ceMsg((r&&r.error)||'the save was refused','err');
+}
+if(document.getElementById('ce-file')){
+  ceEl('ce-file').onchange=ceLoad;
+  ceEl('ce-reload').onclick=ceLoad;
+  ceEl('ce-save').onclick=ceSave;
+  ceEl('ce-text').addEventListener('input',ceDirty);
+  ceLoad();
+}
+async function pkgCsrfToken(){ if(pkgCsrf)return pkgCsrf; try{ pkgCsrf=(await (await fetch('/api/csrf')).json()).token; }catch(_){ pkgCsrf=null; } return pkgCsrf; }
+async function pkgPost(url,body){
+  const go=async()=>fetch(url,{method:'POST',headers:{'content-type':'application/json','x-cw-csrf':await pkgCsrfToken()},body:JSON.stringify(body)});
+  let r=await go();
+  if(r.status===403){ pkgCsrf=null; r=await go(); }
+  return r;
+}
+// ── PACKAGES ────────────────────────────────────────────────────────────────────────────────────
+// The whole risk on this surface is drawing a manager that could not be ASKED the same way as one
+// that had NOTHING TO SAY. `unavailable`, `failed`, `not-asked` and `partial` are UNKNOWN and are
+// rendered as loudly as an outdated count; only a manager that actually parsed a result may read
+// current. The apply controls are ABSENT on the published port rather than disabled.
+const PKG_UNKNOWN={unavailable:1,failed:1,'not-asked':1,partial:1};
+async function loadPackages(){
+  let p;
+  try{ p=await (await fetch('/api/packages')).json(); }
+  catch(e){ p={managers:[],ok:false,reason:'the panel could not reach /api/packages ('+e.message+') — what is installed is UNKNOWN, not clean'}; }
+  const sum=$('pkg-summary'), body=$('pkg-managers'), jobsEl=$('pkg-jobs');
+  if(!p||!Array.isArray(p.managers)||p.ok===false){
+    sum.innerHTML='<b class="warnv">UNKNOWN</b> — '+esc(p&&p.reason||'no result')+
+      '<div class="mut" style="margin-top:.375rem">This is not &ldquo;everything is up to date&rdquo;. Nothing was observed, so nothing is claimed.</div>';
+    body.innerHTML=''; jobsEl.innerHTML=''; $('pkg-n').textContent='observation unavailable';
+    return;
+  }
+  const local=p.published!==true;
+  const unknown=p.managers.filter(m=>PKG_UNKNOWN[m.state]);
+  const behind=p.managers.filter(m=>m.state==='outdated'||m.state==='end-of-life');
+  const totalOut=p.managers.reduce((n,m)=>n+((m.counts&&m.counts.outdated)||0),0);
+  sum.innerHTML='<b>'+totalOut+'</b> package(s) behind across <b>'+behind.length+'</b> manager(s)'+
+    (unknown.length?' · <b class="warnv">'+unknown.length+' manager(s) UNKNOWN</b> — not asked or not answerable, which is not the same as clean':' · every manager answered')+
+    '<div class="mut" style="margin-top:.375rem">'+
+      (local?'operator port — package names and versions shown; upgrades may be applied here'
+            :'<b class="warnv">published port</b> — package names, versions and paths are withheld (they are a machine fingerprint) and upgrades cannot be applied from here')+
+    '</div>';
+  $('pkg-n').textContent='observed '+Math.round((p.observedAgeMs||0)/1000)+'s ago · '+(local?'full detail':'redacted');
+
+  body.innerHTML=p.managers.map(m=>{
+    const unk=!!PKG_UNKNOWN[m.state];
+    const c=m.counts||{};
+    const head='<h3>'+esc(m.manager)+' <span class="mut" style="font-weight:400;font-size:.6875rem">'+
+      (unk?'<b class="warnv">'+esc(String(m.state).toUpperCase())+'</b>':esc(String(m.state)))+'</span></h3>';
+    if(unk) return '<div class="card">'+head+'<div class="mut">'+esc(m.reason||'no reason recorded')+
+      '<br><b>This is not &ldquo;up to date&rdquo;.</b> The manager could not be asked, so nothing is claimed about it.</div></div>';
+    const rows=(m.outdated||[]).map(x=>'<tr><td class="mono">'+esc(x.name)+'</td><td class="mono">'+esc(x.installed||'')+'</td><td class="mono">'+esc(x.latest||'')+'</td><td>'+(x.pinned?'<b>pinned</b> — held back on purpose':'')+'</td></tr>').join('');
+    const tools=(m.tools||[]).map(t=>'<tr><td class="mono">'+esc(t.name)+'</td><td class="mono">'+esc(t.version||'?')+'</td><td>'+
+      (t.eol==='end-of-life'?'<b class="warnv">END-OF-LIFE</b> — '+esc(t.eolNote||''):esc(t.eol||'unknown'))+'</td><td></td></tr>').join('');
+    const table=(rows||tools)?'<table><thead><tr><th>Name</th><th>Installed</th><th>'+(tools?'Support':'Latest')+'</th><th></th></tr></thead><tbody>'+(rows||tools)+'</tbody></table>':'';
+    const counts=Object.entries(c).map(([k,v])=>esc(k)+'='+v).join(' · ');
+    const withheld=m.withheld?'<div class="mut">'+esc(m.withheld)+'</div>':'';
+    const note=m.note?'<div class="mut">'+esc(m.note)+'</div>':'';
+    // The command is rendered ALWAYS, so the page is useful even where it has no authority.
+    const cmd=m.command?'<div class="mut" style="margin-top:.375rem">run: <code class="path">'+esc(m.command)+'</code></div>':'';
+    const why=m.applyable===false&&m.applyableReason?'<div class="mut">'+esc(m.applyableReason)+'</div>':'';
+    const canApply=local&&(p.applyable||[]).indexOf(m.manager)>=0;
+    const btn=canApply?'<button data-apply="'+esc(m.manager)+'">Apply '+esc(m.command||'update')+'</button>':'';
+    return '<div class="card">'+head+'<div class="mut">'+counts+'</div>'+note+withheld+table+cmd+why+btn+'</div>';
+  }).join('');
+
+  body.querySelectorAll('button[data-apply]').forEach(b=>{ b.onclick=async()=>{
+    b.disabled=true; b.textContent='starting…';
+    try{
+      const r=await pkgPost('/api/packages/apply',{manager:b.dataset.apply});
+      const j=await r.json();
+      b.textContent=j.ok?'started — see Jobs below':'refused: '+(j.error||r.status);
+    }catch(e){ b.textContent='could not start: '+e.message; }
+    loadPackages();
+  }; });
+
+  const jobs=p.jobs||[];
+  jobsEl.innerHTML=jobs.length?'<div class="card"><h3>Jobs</h3>'+jobs.map(j=>
+    '<div style="margin-bottom:.5rem"><b class="mono">'+esc(j.label||j.manager)+'</b> — '+esc(j.state)+
+    (j.exit!==null&&j.exit!==undefined?' (exit '+esc(String(j.exit))+')':'')+
+    '<div class="mut">started '+esc(j.startedAt||'?')+'</div>'+
+    (j.tail?'<pre style="max-height:12rem;overflow:auto">'+esc(j.tail)+'</pre>':'')+'</div>').join('')+'</div>':'';
+}
+
+// ── UPDATES ─────────────────────────────────────────────────────────────────────────────────────
+// The one thing this section must never do is draw an update nobody could evaluate the same way as
+// one that fixes nothing. Every side of every row carries a state: `measured` renders as counts,
+// anything else renders as UNKNOWN with its reason, as loudly as a finding. The button here starts
+// a READ-ONLY scan and exists only on the operator port — applying stays in Packages.
+const updSev=(p)=>Object.entries(p||{}).sort().map(([k,v])=>esc(k)+' '+v).join(' · ');
+// A macOS row carries 400+ ids; the page shows the first CAP and SAYS how many it is not showing,
+// with where the rest are. A silent truncation on this surface would be the same defect as a silent
+// unknown — the reader cannot tell a short list from a complete one.
+const UPD_CAP=60;
+const updIds=(rows)=>{
+  const shown=(rows||[]).slice(0,UPD_CAP).map(r=>{
+    const claim=r.publish==='severity'?r.severity:'undetermined'+((r.originalClaim&&r.originalClaim.severity)?' (claimed '+r.originalClaim.severity+')':'');
+    const t=claim+' · '+(r.component||'?')+'@'+(r.componentVersion||'?')+' · fix '+(r.fix||'NONE recorded')+(r.epss!=null?' · epss '+r.epss:'');
+    return '<span class="gtag" title="'+esc(t)+'">'+esc(r.id)+(r.kev===true?' ⚑KEV':'')+'</span>';
+  }).join('');
+  const more=(rows||[]).length-UPD_CAP;
+  return shown+(more>0?'<span class="mut"> … '+more+' more, not dropped — every one is in <code class="path">reports/updates.json</code></span>':'');
+};
+function updSide(s,label){
+  if(!s) return '';
+  if(s.state!=='measured')
+    return '<div class="chkm"><b class="warnv">'+esc(label)+': UNKNOWN</b> ('+esc(s.unknownReason||'no reason recorded')+') — '+esc(s.unknownDetail||'')+
+      (s.count?' · '+s.count+' row(s) matched today':'')+(s.rows&&s.rows.length?'<div>'+updIds(s.rows)+'</div>':'')+'</div>';
+  if(!s.count) return '<div class="chkm">'+esc(label)+': none</div>';
+  return '<div class="chkm">'+esc(label)+': <b>'+s.count+'</b> — '+(updSev(s.published)||'')+
+    (s.undetermined?(s.published&&Object.keys(s.published).length?' · ':'')+s.undetermined+' undetermined':'')+
+    (s.noFixRecorded?' · <b class="warnv">'+s.noFixRecorded+' with no fix recorded anywhere</b>':'')+
+    (s.kev&&s.kev.length?' · <b class="warnv">KEV '+esc(s.kev.join(' '))+'</b>':'')+
+    '<div>'+updIds(s.rows)+'</div></div>';
+}
+function updRow(r){
+  const f=r.fixedByUpdate||{}, rem=r.remainingAfter||{}, now=r.vulnerableNow||{}, intro=r.introducedByUpdate||{};
+  const head=f.state==='measured'
+    ? '<b>'+f.count+'</b> fixed'+(f.kev&&f.kev.length?' <span class="warnv">⚑ KEV</span>':'')
+    : '<b class="warnv">fixes UNKNOWN</b>';
+  return '<details class="repo"><summary>'+
+    '<span class="nm">'+esc(r.name)+'</span>'+
+    '<span class="sm">'+esc(r.installed||'?')+' → '+esc(r.latest||'?')+'</span>'+
+    (r.pinned?'<span class="gtag">pinned</span>':'')+
+    '<span class="rt"><span class="sm">'+head+'</span>'+
+      '<span class="sm">'+(rem.state==='measured'?rem.count+' remain':'remain unknown')+'</span></span></summary>'+
+    '<div class="rbody">'+
+      (r.identity&&r.identity.note?'<div class="chkm">'+esc(r.identity.note)+'</div>':'')+
+      updSide(now,'vulnerable now')+updSide(f,'fixed by this update')+updSide(rem,'still vulnerable after it')+
+      (intro&&intro.count?updSide(intro,'INTRODUCED by this update'):'')+
+      (r.embedded?updSide(r.embedded,'embedded components'):'')+
+    '</div></details>';
+}
+function updOs(m){
+  if(!m) return '';
+  if(m.state==='unknown'&&!(m.rows||[]).length)
+    return '<div class="card" style="margin-bottom:.75rem;border-color:var(--crit)"><h3>macOS</h3><div class="mut"><b class="warnv">UNKNOWN</b> — '+
+      esc((m.sources&&m.sources.list&&m.sources.list.reason)||m.unknownDetail||m.reason||'softwareupdate could not be read')+
+      '<br>This is not &ldquo;the OS is current&rdquo;. Nothing was observed, so nothing is claimed.</div></div>';
+  const inst=m.installed||{}, seed=m.seed||{};
+  const seedBox=seed.state==='beta-seed'
+    ? '<div class="note" style="border-color:var(--crit)"><b class="warnv">Enrolled in a beta seed catalogue.</b> While this enrolment stands, Software Update offers the seed build and stops offering the minor security updates of the current major — so a short update list here is not evidence that none exist.<br><code>'+esc(seed.url||'')+'</code></div>'
+    : seed.state==='unknown'
+    ? '<div class="note"><b class="warnv">seed enrolment UNKNOWN</b> — '+esc(seed.reason||'')+'</div>'
+    : '<div class="chkm">catalogue: Apple default</div>';
+  const missed=m.offeredNotInstalled||[];
+  const gone=missed.filter(o=>!(o.stillOffered&&o.stillOffered.updateList)).length;
+  const missedBox=missed.length
+    ? '<div class="note"'+(gone?' style="border-color:var(--crit)"':'')+'><b'+(gone?' class="warnv"':'')+'>Offered and not installed ('+missed.length+(gone?', '+gone+' no longer offered as an update':'')+')</b>'+
+      missed.map(o=>{const s=o.stillOffered||{};
+        return '<div class="chkm"><code>'+esc(o.version||'?')+'</code> ('+esc(o.build||'?')+') first offered '+esc(o.at||'?')+' — '+
+          (s.updateList?'still in <code>softwareupdate --list</code>':'<b class="warnv">no longer in <code>softwareupdate --list</code></b>')+
+          (s.fullInstaller?' · a full installer for '+esc(o.version||'?')+' is still available':'')+
+          (s.sameBuild?'':' · that exact build is gone')+'</div>';
+      }).join('')+'</div>'
+    : '';
+  const src=m.sources||{};
+  const srcLine=['list','fullInstallers'].map(k=>{
+    const s=src[k]||{};
+    return esc(k)+': '+(s.state==='read'?s.rows+' row(s)':'<b class="warnv">UNKNOWN</b> — '+esc(s.reason||''));
+  }).join(' · ');
+  return '<div class="card" style="margin-bottom:.75rem"><h3>macOS <span class="mut" style="font-weight:400;font-size:.6875rem">'+esc(m.basis||'')+'</span></h3>'+
+    '<div class="chkm">installed <b>'+esc(inst.version||'?')+'</b>'+(inst.build?' ('+esc(inst.build)+')':'')+' · '+
+      (m.counts?m.counts.updates+' applicable target(s), '+m.counts.superseded+' older offer(s) not evaluated':'')+'</div>'+
+    '<div class="chkm">'+srcLine+'</div>'+seedBox+missedBox+
+    ((m.rows||[]).map(updRow).join('')||'<div class="mut">no target newer than what is installed</div>')+
+    (m.applyable===false&&m.applyableReason?'<div class="chkm">'+esc(m.applyableReason)+'</div>':'')+
+    (m.command?'<div class="chkm">run: <code class="path">'+esc(m.command)+'</code></div>':'')+
+    '</div>';
+}
+async function loadUpdates(){
+  let u;
+  try{ u=await (await fetch('/api/updates')).json(); }
+  catch(e){ u={ok:false,state:'unknown',reason:'the panel could not reach /api/updates ('+e.message+') — what this box can update is UNKNOWN, not nothing'}; }
+  const sum=$('upd-summary'), os=$('upd-os'), body=$('upd-managers'), acts=$('upd-actions'), jobsEl=$('upd-jobs');
+  const local=u&&u.published!==true;
+  acts.innerHTML=local?'<button type="button" id="upd-refresh">Re-scan updates</button> <span class="sm" id="upd-msg">read-only: this runs syft and grype, and installs nothing</span>':'';
+  if(local){ $('upd-refresh').onclick=async()=>{
+    const b=$('upd-refresh'); b.disabled=true; b.textContent='starting…';
+    try{ const r=await pkgPost('/api/updates/refresh',{}); const j=await r.json();
+      $('upd-msg').textContent=j.ok?'scan started — it takes a few minutes; re-open this page for the result':'refused: '+(j.error||r.status);
+    }catch(e){ $('upd-msg').textContent='could not start: '+e.message; }
+    b.textContent='Re-scan updates';
+  }; }
+  if(!u||u.ok!==true){
+    const why=u&&u.state==='not-run'
+      ? esc(u.reason||'no scan yet')
+      : '<b class="warnv">UNKNOWN</b> — '+esc((u&&(u.unknownDetail||u.reason))||'no result')+
+        '<div class="mut" style="margin-top:.375rem">This is not &ldquo;there is nothing to update&rdquo;. Nothing was read, so nothing is claimed.</div>';
+    sum.innerHTML=why; os.innerHTML=''; body.innerHTML=''; jobsEl.innerHTML='';
+    $('upd-n').textContent=u&&u.state==='not-run'?'never scanned':'scan unreadable';
+    return;
+  }
+  const c=u.counts||{}, db=u.grypeDb||{};
+  sum.innerHTML='<b>'+(c.updates||0)+'</b> applicable update(s) · <b>'+(c.fixing||0)+'</b> fix something measurable ('+(c.fixedTotal||0)+' row(s) closed) · '+
+    (c.unknown?'<b class="warnv">'+c.unknown+' could not be evaluated</b>':'every update evaluated')+
+    (c.kev?' · <b class="warnv">'+c.kev+' KEV id(s) in play</b>':'')+
+    '<div class="mut" style="margin-top:.375rem">'+
+      (db.state==='valid'?'matched against the grype DB built '+esc(db.built||'?')+(u.kevChecked?'':' · <b class="warnv">KEV list UNCHECKED</b>')
+                         :'<b class="warnv">no usable vulnerability database</b> — '+esc(db.unknownDetail||'')+'; the update LIST below is still real, the fixed counts are not available')+
+      '<br>'+(local?'operator port — package names, versions and CVE ids shown'
+                   :'<b class="warnv">published port</b> — '+esc(u.withheld||'detail withheld'))+
+    '</div>';
+  $('upd-n').textContent='scanned '+esc(u.at||'?')+' · '+(local?'full detail':'counts only');
+  os.innerHTML=local?updOs((u.managers||[]).find(m=>m.manager==='macos')):'';
+  body.innerHTML=(u.managers||[]).filter(m=>m.manager!=='macos').map(m=>{
+    const head='<h3>'+esc(m.manager)+' <span class="mut" style="font-weight:400;font-size:.6875rem">'+esc(String(m.state))+' · '+esc(m.basis||'')+'</span></h3>';
+    if(!local) return '<div class="card">'+head+'<div class="mut">'+(m.counts?esc(Object.entries(m.counts).map(([k,v])=>k+'='+v).join(' · ')):'')+'</div></div>';
+    if(!m.rows||!m.rows.length) return '<div class="card">'+head+'<div class="mut">'+esc(m.reason||'no update pending')+'</div></div>';
+    return '<div class="card">'+head+
+      '<div class="chkm">'+esc(Object.entries(m.counts||{}).map(([k,v])=>k+'='+v).join(' · '))+(m.note?' · '+esc(m.note):'')+'</div>'+
+      m.rows.map(updRow).join('')+
+      (m.command?'<div class="chkm">run: <code class="path">'+esc(m.command)+'</code> <span class="mut">(from the Packages section above, or a terminal)</span></div>':'')+
+      '</div>';
+  }).join('');
+  const jobs=u.jobs||[];
+  jobsEl.innerHTML=jobs.length?'<div class="card"><h3>Scans</h3>'+jobs.map(j=>
+    '<div style="margin-bottom:.5rem"><b class="mono">'+esc(j.id)+'</b> — '+esc(j.state)+
+    (j.exit!==null&&j.exit!==undefined?' (exit '+esc(String(j.exit))+')':'')+
+    '<div class="mut">started '+esc(j.startedAt||'?')+'</div>'+
+    (j.tail?'<pre style="max-height:12rem;overflow:auto">'+esc(j.tail)+'</pre>':'')+'</div>').join('')+'</div>':'';
+}
+
+/* ── SCANNING ──────────────────────────────────────────────────────────────────
+   Consent, not configuration-with-extra-steps. Two rules the rendering keeps:
+   a tool that is approved but NOT installed is shown as both, because merging them would tell an
+   operator they had refused something they had merely not installed; and every write is sent with
+   the hash the page was shown, so a second panel cannot silently clobber the first. */
+let scState=null;
+function scMsg(t,cls){ const m=$('sc-msg'); if(!m)return; m.className='mut'+(cls?' '+cls:''); m.textContent=t||''; }
+
+function scRenderSummary(s){
+  const c=s.counts;
+  $('sc-summary').innerHTML=[
+    (s.gated?'gate ON':'gate OFF — nothing is held')+'',
+    c.runnable+' of '+c.lanes+' lanes runnable',
+    c.held?c.held+' held':'none held',
+    c.approved+' of '+c.tools+' binaries approved',
+    c.absentTools?c.absentTools+' not installed':'all installed',
+  ].map(t=>'<span>'+esc(t)+'</span>').join('');
+  $('sc-approve-all').textContent='Approve all '+c.tools;
+  $('sc-n').innerHTML=s.configured
+    ? 'written '+esc(s.at||'?')+' · <code class="path">'+esc(s.path)+'</code>'
+    : 'not configured on this box — the gate is off and every lane runs, as before';
+}
+
+function scRenderTools(s){
+  const rows=s.tools.slice().sort((a,b)=>a.tool<b.tool?-1:1).map(t=>{
+    const cls='cw-row cw-row--lane'+(t.approved?'':' cw-row--off');
+    const state=t.approved?(t.present?'approved':'approved · NOT INSTALLED'):(t.present?'not approved':'not approved · not installed');
+    return '<label class="'+cls+'"><input type="checkbox" class="cw-tick" data-tool="'+esc(t.tool)+'"'+(t.approved?' checked':'')+'>'+
+      '<span class="cw-row__name">'+esc(t.tool)+'</span>'+
+      '<span class="cw-row__needs">'+esc(state)+(t.why?' — '+esc(t.why):'')+
+      ' · '+esc(String(t.lanes.length))+' lane'+(t.lanes.length===1?'':'s')+'</span></label>';
+  }).join('');
+  $('sc-tools').innerHTML='<div class="cw-row cw-row--group"><span class="cw-row__name">binaries</span>'+
+    '<span class="cw-row__needs">approval is per binary — one answer releases every lane that needs it</span></div>'+rows;
+  $('sc-tools').querySelectorAll('input[data-tool]').forEach(cb=>{
+    cb.onchange=()=>{ const tool=cb.dataset.tool; const on=cb.checked; cb.checked=!on;
+      if(!on) return scApply({tools:{[tool]:false}},'withdrew '+tool);
+      scAsk(tool); };
+  });
+}
+
+function scRenderLanes(s){
+  const byGroup=new Map();
+  for(const l of s.lanes){ const g=(l.groups&&l.groups[0])||'ungrouped';
+    if(!byGroup.has(g)) byGroup.set(g,[]); byGroup.get(g).push(l); }
+  let html='';
+  // A header row's tick drives its group (THEME §8): ticked when every lane is on, mixed when some
+  // are, and a click on anything short of all enables the whole group.
+  for(const [g,lanes] of byGroup){
+    const on=lanes.filter(l=>l.enabled).length;
+    html+='<label class="cw-row cw-row--group"><input type="checkbox" class="cw-tick" data-group="'+esc(g)+'" data-on="'+(on<lanes.length?'1':'0')+'"'+
+      (on===lanes.length?' checked':'')+(on>0&&on<lanes.length?' data-mixed="1"':'')+
+      ' aria-label="'+(on<lanes.length?'enable':'disable')+' every lane in '+esc(g)+'">'+
+      '<span class="cw-row__name">'+esc(g)+'</span>'+
+      '<span class="cw-row__needs">'+on+' of '+lanes.length+' enabled</span></label>';
+    html+=lanes.map(l=>{
+      const held=l.held==='unapproved-tool';
+      const cls='cw-row cw-row--lane'+(l.enabled?'':' cw-row--off');
+      const note=held?'held — awaiting '+l.heldTools.join(', '):(l.description||'');
+      return '<label class="'+cls+'"><input type="checkbox" class="cw-tick" data-lane="'+esc(l.id)+'"'+(l.enabled?' checked':'')+'>'+
+        '<span class="cw-row__name">'+esc(l.id)+'</span>'+
+        '<span class="cw-row__needs">'+esc(note)+' · '+esc(l.tools.join(' '))+
+        (held?'<span class="cw-badge cw-badge--binary">held</span>':'')+'</span></label>';
+    }).join('');
+  }
+  $('sc-lanes').innerHTML=html;
+  $('sc-lanes').querySelectorAll('input[data-lane]').forEach(cb=>{
+    cb.onchange=()=>scApply({checks:{[cb.dataset.lane]:cb.checked}},(cb.checked?'enabled ':'disabled ')+cb.dataset.lane);
+  });
+  $('sc-lanes').querySelectorAll('input[data-group]').forEach(b=>{
+    if(b.dataset.mixed) b.indeterminate=true;
+    // Redrawn from state before the write, so a refused write leaves the tick where it was.
+    b.onchange=()=>{ const on=b.dataset.on==='1'; const checks={};
+      for(const l of s.lanes) if((l.groups||[]).includes(b.dataset.group)) checks[l.id]=on;
+      scRenderLanes(s);
+      scApply({checks},(on?'enabled ':'disabled ')+'group '+b.dataset.group); };
+  });
+}
+
+function scRenderHistory(h){
+  const n=$('sc-hist-n');
+  if(h.absent){ n.textContent='nothing has been written yet'; $('sc-hist').innerHTML=''; return; }
+  const ch=h.chain||{};
+  n.textContent=(h.records.length)+' change(s) · chain '+(ch.verified||0)+' verified'+(ch.broken?', '+ch.broken+' BROKEN':'');
+  $('sc-hist').innerHTML=h.records.map(r=>{
+    const bits=[].concat((r.checksChanged||[]).map(c=>c.id+' '+(c.to?'on':'off')),
+                         (r.toolsChanged||[]).map(t=>t.tool+' '+(t.to?'approved':'withdrawn')));
+    return '<div class="cw-row"><span class="cw-row__name">'+esc(r.at||'?')+'</span>'+
+      '<span class="cw-row__needs"><b>'+esc(r.actor||'unattributed')+'</b> · '+esc(bits.join(', ')||'no change')+'</span></div>';
+  }).join('');
+}
+
+/* The dialog states what will be executed, from where, and how much it releases — before the
+   click, because approving one binary and approving all 46 are one click apart. */
+function scAsk(tool){
+  const t=scState.tools.find(x=>x.tool===tool); if(!t) return;
+  $('sc-mt').textContent='This lane runs a binary on your machine';
+  $('sc-mb').innerHTML='<code>'+esc(t.lanes[0]||'')+'</code> needs an executable commitwork does not ship. '+
+    'Approving it lets every lane that declares it run it here, until you withdraw that.'+
+    (t.present?'':' <b>It is not installed</b> — approving it now is consent for when it is.');
+  $('sc-mm').innerHTML=[t.tool,t.path||'not on PATH',t.lanes.length+' lane'+(t.lanes.length===1?'':'s'),t.why||'no catalogue entry']
+    .map(x=>'<span>'+esc(x)+'</span>').join('');
+  const yes=$('sc-myes'); yes.textContent='Yes, I understand';
+  yes.className='cw-btn cw-btn--fill cw-btn--neutral';   // one binary, reversible (THEME §8)
+  yes.onclick=()=>{ scClose(); scApply({tools:{[tool]:true}},'approved '+tool); };
+  scOpen();
+}
+function scOpen(){ $('sc-modal').hidden=false; $('sc-mno').focus(); }
+function scClose(){ $('sc-modal').hidden=true; }
+
+function scBulk(which){
+  const tools={};
+  for(const t of scState.tools){
+    if(which==='revoke') tools[t.tool]=false;
+    else if(which==='present'){ if(t.present) tools[t.tool]=true; }
+    else tools[t.tool]=true;
+  }
+  const n=Object.keys(tools).length;
+  if(which==='revoke') return scApply({tools},'withdrew '+n+' approval(s)');
+  $('sc-mt').textContent='Approve '+n+' binaries at once';
+  $('sc-mb').textContent=which==='present'
+    ? 'Every one of these is already installed on this box. Approving them lets commitwork execute all of them, in every lane that declares them.'
+    : 'This includes binaries that are NOT installed. Approving them is consent for whenever they appear on PATH.';
+  $('sc-mm').innerHTML=['+'+n+' binaries',scState.counts.lanes+' lanes','execute · read']
+    .map(x=>'<span>'+esc(x)+'</span>').join('');
+  const yes=$('sc-myes');
+  yes.textContent='Grant all '+n;
+  // The halo grows with what the grant reaches: every installed binary, or everything (THEME §8).
+  yes.className='cw-btn cw-btn--fill '+(which==='present'?'cw-btn--caution':'cw-btn--stop');
+  yes.onclick=()=>{ scClose(); scApply({tools},'approved '+n+' binaries'); };
+  scOpen();
+}
+
+async function scApply(patch,what){
+  if(!scState) return;
+  scMsg('saving…');
+  let r;
+  try{
+    r=await (await fetch('/api/scan-config',{method:'POST',
+      headers:{'content-type':'application/json','x-cw-csrf':await pkgCsrfToken()},
+      body:JSON.stringify(Object.assign({baseHash:scState.hash,reason:what},patch))})).json();
+  }catch(e){ return scMsg('the panel could not reach the API — nothing was written','bad'); }
+  if(!r.ok) return scMsg(r.error||'refused — nothing was written','bad');
+  scPaint(r);
+  scMsg(what);
+  loadScanHistory();
+}
+
+async function loadScanConfig(){
+  let s;
+  try{ s=await (await fetch('/api/scan-config')).json(); }
+  catch(e){ return scMsg('scan configuration is UNKNOWN — the API did not answer','bad'); }
+  if(!s.ok) return scMsg(s.error||'scan configuration could not be read','bad');
+  scPaint(s);
+  if(s.history) scRenderHistory(s.history);
+}
+async function loadScanHistory(){
+  try{ const s=await (await fetch('/api/scan-config')).json(); if(s.ok&&s.history) scRenderHistory(s.history); }catch(e){}
+}
+function scPaint(s){ scState=s; scRenderSummary(s); scRenderTools(s); scRenderLanes(s); }
+
+$('sc-mno').onclick=scClose;
+$('sc-scrim').onclick=scClose;
+addEventListener('keydown',(e)=>{ if(e.key==='Escape') scClose(); });
+$('sc-approve-present').onclick=()=>scBulk('present');
+$('sc-approve-all').onclick=()=>scBulk('all');
+$('sc-revoke').onclick=()=>scBulk('revoke');
+
+$('refresh').onclick=()=>{load();loadHost();loadPackages();loadUpdates();loadScanConfig();};
+load();loadHost();loadPackages();loadUpdates();loadScanConfig();
+</script>
+</body></html>

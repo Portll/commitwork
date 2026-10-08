@@ -1,0 +1,18 @@
+{
+  "_comment": "The org's remediation posture, DECLARED. Until 2026-08-12 this file did not exist, so monitor/remediation-policy.mjs resolved to DEFAULT_POLICY — which is behaviourally identical to what is written here and indistinguishable from nobody having decided. These values change nothing; they state the posture so it can be argued with. Schema, enums and validation live in monitor/remediation-policy.mjs; the panel reads and writes this file via GET/POST /api/remediation-policy (session-gated, baseHash-guarded). A corrupt or invalid file THROWS rather than degrading to defaults — deleting the file is the rollback, editing it badly is not.",
+  "_authority": "mode is the switch that decides whether agents may fix and merge code. Anything above hitl-item is an operator decision, not a panel toggle — see evaluations/DECISIONS.md.",
+  "mode": "report",
+  "verification": "single",
+  "learning": "off",
+  "cadence": "quarterly",
+  "remediationBudgetPctOfCompute": 0,
+  "m3": {
+    "autoMerge": false,
+    "owner": null,
+    "scope": {
+      "minSeverity": "high",
+      "pathAllowlist": [],
+      "ruleAllowlist": []
+    }
+  }
+}

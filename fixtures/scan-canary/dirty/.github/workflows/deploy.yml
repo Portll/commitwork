@@ -1,0 +1,16 @@
+name: deploy
+# PLANTED — actions-gaps lane. A self-hosted runner, a workflow_run trigger whose job checks out
+# the triggering run's head, and no permissions: block anywhere. Listed in ../../../EXPECTED.json.
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+jobs:
+  publish:
+    runs-on: self-hosted
+    steps:
+      - name: Check out the triggering head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - run: ./deploy.sh

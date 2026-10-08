@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork/monitor/schema/repo-meta.schema.json",
+  "title": "Repo/service metadata (C07 + headline-technology) — DESCRIBES owner-map.json",
+  "description": "Per-repo ownership and display metadata. CONSUMED by monitor/lifecycle.mjs: `team` -> record.bugBelongsTo, `technology` -> record.repoTechnology (else humanize(repo)), `visibleTo` else $defaults.visibleTo -> record.bugVisibleTo. Note the verb in the title: this schema DESCRIBES the file, it does not validate it — no code loads this document, and the only references to its path are its own $id and owner-map.json's former claim to be validated by it. owner-map.json's $notConsumed block records that alongside the other capabilities this pair advertised and did not have.",
+  "type": "object",
+  "properties": {
+    "$scope": {
+      "type": "object",
+      "description": "Which area this map applies to. lifecycle.mjs joins on the BARE repo directory name, so an unscoped map attributes a team and a technology headline to any like-named repo in ANY registered area (docs, web, api-gateway). rollup.mjs passes the area being rolled up; on a mismatch the map is not applied at all, because a null bugBelongsTo is a state the contract already allows and a wrong one is not.",
+      "properties": {
+        "area": { "type": "string", "description": "registry area slug these repos belong to" },
+        "why": { "type": "string" }
+      },
+      "required": ["area"]
+    },
+    "$defaults": {
+      "type": "object",
+      "description": "Applied when an entry omits the field. Genuinely read by lifecycle.mjs — changing a value here changes behaviour.",
+      "properties": {
+        "visibleTo": { "type": "string", "enum": ["public", "internal", "embargoed"] }
+      },
+      "additionalProperties": false
+    },
+    "$notConsumed": {
+      "type": "object",
+      "description": "Standing record of fields and capabilities this file once documented and did not have. Kept in the artifact rather than only in a commit message, because the claims were read as true for over a month."
+    },
+    "repos": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "technology": { "type": "string", "description": "Headline name/technology (e.g. 'Keycloak 26.7 (Quarkus)'). Written to record.repoTechnology; falls back to humanize(repo) if absent. NOTE: nothing renders repoTechnology today — see $notConsumed.rendering." },
+          "team": { "type": "string", "description": "owning team -> bugBelongsTo default" },
+          "role": { "type": "string", "description": "optional architectural role (edge/infra/...). Stored, read by no consumer — see $notConsumed.role." },
+          "visibleTo": { "type": "string", "enum": ["public", "internal", "embargoed"], "description": "default bugVisibleTo for findings in this repo" }
+        },
+        "required": ["technology"]
+      }
+    },
+    "infra": {
+      "type": "object",
+      "description": "Infrastructure components, deliberately OUTSIDE repos{}. The consumer looks up by scanned repo directory name and no scan produces `_infra_postgres`, so holding these in repos{} made structurally unreachable rows look like live mappings. No reader yet; a real join key (image name, against image-acceptance.json images{}) is what would give them one.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "technology": { "type": "string" },
+          "team": { "type": "string" }
+        },
+        "required": ["technology"]
+      }
+    }
+  },
+  "x-consumers": "monitor/lifecycle.mjs assembleLifecycle() is the ONLY reader, via ctx.ownerMap from monitor/rollup.mjs; its output lands in lifecycle.json. Measured 2026-08-03: no renderer reads repoTechnology, bugBelongsTo or bugVisibleTo out of that artifact — admin/index.html reads lifecycle.json for SLA breaches and lifecycle state only. This key replaces an x-front-end-wiring note that described a C11 'lifecycle-tab.mjs' (no such file exists) plus C14 md / C31 pdf renderers that emit none of these fields."
+}

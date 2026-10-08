@@ -1,0 +1,29 @@
+<aside id="workspace-rail" aria-label="Workspace navigation">
+<div class="rail-label rail-scope" data-scope-head="fleet">All projects</div>
+<nav aria-label="All projects">
+<button type="button" class="rail-link" data-route="fleet">Overview</button>
+<button type="button" class="rail-link" data-route="rollups">Rollups</button>
+<button type="button" class="rail-link" data-route="remfleet">Remediation</button>
+<button type="button" class="rail-link" data-route="projects">Project list</button>
+<button type="button" class="rail-link" data-route="overwatch">Agent follow-ups</button>
+<button type="button" class="rail-link" data-route="verdicts">Decisions &amp; reviews</button>
+<button type="button" class="rail-link" data-route="cra">Reporting deadlines</button>
+</nav>
+<div class="rail-label rail-scope rail-project" data-scope-head="project">Project</div>
+<nav id="workspace-nav" aria-label="Project navigation"></nav>
+<div class="rail-label rail-manage">Manage</div>
+<nav aria-label="Administration">
+<button type="button" class="rail-link" data-route="settings">Check schedules</button>
+<button type="button" class="rail-link" data-route="perf">Check configuration</button>
+<button type="button" class="rail-link" data-route="held">Credentials &amp; connections</button>
+<button type="button" class="rail-link" data-route="journey" id="rail-journey" title="The guided setup: nine steps, each read from its own record; hidden once complete or dismissed.">Get set up</button>
+<a class="rail-link" href="/config">Configuration</a>
+<details class="rail-operations"><summary>Service operations</summary>
+<div class="pop-h" role="presentation">Panel</div>
+      <div id="panel-health" class="sect">
+        <span id="ph-line" class="mut">process health…</span>
+      </div>
+      <button type="button" id="ph-restart" title="restart the panel process — closes the listeners, spawns a successor from the code on disk with the same environment, and reloads this page when it answers">⟳ restart panel</button>
+      <button type="button" id="health" class="sect" title="build-health refresh for the selected project (unused code, toolchain, result origin, release checks) into its latest results — does not start a new scan">run healthcheck</button>
+    <a class="rail-link" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">Hosting dashboard ↗</a>
+</details></nav></aside>

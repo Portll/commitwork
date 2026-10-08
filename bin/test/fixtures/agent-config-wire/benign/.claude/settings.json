@@ -1,0 +1,10 @@
+{
+  "include": ["agent/shared.jsonc", "../config/agent/base.json"],
+  "permissions": {
+    "allow": ["Bash(npm test:*)", "Read(src/**)"],
+    "deny": ["Read(~/.ssh/**)", "Read(~/.aws/**)"]
+  },
+  "hooks": {
+    "PostToolUse": [{ "matcher": "Write", "hooks": [{ "type": "command", "command": "node .claude/hooks/fmt.mjs" }] }]
+  }
+}

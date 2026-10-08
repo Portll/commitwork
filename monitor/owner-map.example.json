@@ -1,0 +1,19 @@
+{
+  "$comment": "SYNTHETIC EXAMPLE of the owner map. The operator's map is a private record at monitor/private/owner-map.json (CW_OWNER_MAP overrides; absent means no owner overlay, so every record gets bugBelongsTo null). Per-repo ownership and display metadata, consumed by monitor/lifecycle.mjs when it assembles lifecycle.json: `team` -> record.bugBelongsTo; `technology` -> record.repoTechnology (falling back to a humanized repo name); `visibleTo`, else $defaults.visibleTo -> record.bugVisibleTo. That is the whole list; $notConsumed records what is not read.",
+  "$scope": {
+    "area": "example-area",
+    "why": "lifecycle.mjs joins on the BARE repo directory name, so the map declares the one area it covers. rollup.mjs passes the area it is rolling up; a mismatch means the map is not applied, rather than applied to the wrong project."
+  },
+  "$defaults": {
+    "visibleTo": "internal"
+  },
+  "$notConsumed": {
+    "bugReportedTo": "NOT IMPLEMENTED. There is no escalation-recipient field and no code sets bugReportedTo; do not document it as supplied.",
+    "role": "Declared and stored, read by nothing. Kept as a fact about the repo."
+  },
+  "repos": {
+    "example-gateway": { "team": "platform", "technology": "Example Gateway (Node)", "role": "edge" },
+    "example-service": { "team": "payments", "technology": "Example Service (Java)" }
+  },
+  "infra": null
+}

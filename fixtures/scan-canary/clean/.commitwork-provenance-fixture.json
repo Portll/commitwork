@@ -1,0 +1,44 @@
+{
+  "$comment": [
+    "The clean counterpart of dirty/.commitwork-provenance-fixture.json: the SAME surface (several",
+    "commits, a branch, a --no-ff merge) with nothing to find. One human author who is also the",
+    "committer on every commit, a human-authored merge (the benign look-alike of bot-authored-merge),",
+    "a second human whose name carries a bot-shaped substring (Botsford) but classifies human, and",
+    "no branch-protection entry, so unsigned-on-protected-branch is not-applicable rather than clean.",
+    "Materialised by bin/lib/provenance-fixture.mjs; every identity is synthetic (example.test)."
+  ],
+  "repo": "example/canary-clean",
+  "defaultBranch": "main",
+  "steps": [
+    {
+      "op": "commit",
+      "id": "init",
+      "author": { "name": "Ada Example", "email": "ada@example.test" },
+      "message": "initial import"
+    },
+    {
+      "op": "commit",
+      "id": "second",
+      "author": { "name": "Robin Botsford", "email": "robin@example.test" },
+      "message": "a second change"
+    },
+    { "op": "branch", "name": "feature", "from": "main" },
+    {
+      "op": "commit",
+      "id": "feature",
+      "branch": "feature",
+      "author": { "name": "Ada Example", "email": "ada@example.test" },
+      "message": "feature work"
+    },
+    {
+      "op": "merge",
+      "id": "merge",
+      "into": "main",
+      "from": "feature",
+      "author": { "name": "Ada Example", "email": "ada@example.test" },
+      "message": "merge feature into main"
+    }
+  ],
+  "branchProtection": null,
+  "expect": { "commits": 4, "findings": 0, "notApplicable": 1 }
+}

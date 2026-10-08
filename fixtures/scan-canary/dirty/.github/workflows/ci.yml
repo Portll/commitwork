@@ -1,0 +1,11 @@
+name: ci
+# PLANTED — CI lane. Unpinned action refs (mutable tags), write-all permissions, and a workflow
+# trigger that runs untrusted code from forks with secrets in scope.
+on: [pull_request_target]
+permissions: write-all
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "${{ github.event.pull_request.title }}"

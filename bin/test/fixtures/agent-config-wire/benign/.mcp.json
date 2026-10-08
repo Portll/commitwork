@@ -1,0 +1,4 @@
+{
+  "include": ["config/agent/servers.json"],
+  "mcpServers": { "docs": { "command": "node", "args": ["tools/docs-mcp.mjs"] } }
+}

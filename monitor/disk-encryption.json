@@ -1,0 +1,22 @@
+{
+  "comment": "The full-disk-encryption baseline this fleet requires, and WHY each volume is on the list. monitor/disk-encryption.mjs joins this against a read-only per-OS status probe (fdesetup / lsblk / manage-bde). DECLARATION ONLY — neither this file nor the lens ever enables encryption; applying stays a human act, exactly as bin/deploy.mjs generates ingress and refuses to write where cloudflared reads. A volume the probe sees that no row here claims renders `undeclared` (grey), never a pass: an unlisted volume is not a compliant one, it is an unconsidered one.",
+  "rationale": "commitwork writes scanner artifacts, sweep logs, rollups, the remediation ledger and a credential REF table to local disk, and several modules reason about whether a value is safe at rest. That reasoning has no floor unless the volume underneath is encrypted. FDE is the cheapest place to put the floor: one key-management story for every artifact, versus per-log application encryption which multiplies key handling across every writer. It does NOT protect a running box — a live process with the volume mounted reads everything — so this is a theft/disposal control, not a runtime one, and nothing here should be read as mitigating a compromised process.",
+  "appliesTo": "the box a lens run observes. Fleet-wide posture is the union of per-box runs, not an assertion made here — this file cannot see another machine and does not pretend to.",
+  "required": [
+    {
+      "volume": "root",
+      "why": "carries ~/.commitwork (the credential ref table and the operator/user store), the reports tree (every finding, including secret-scan rows and their file/line places), monitor/data caches, and the git checkouts commitwork scans — several of which are third-party client code.",
+      "platforms": {
+        "darwin": "FileVault — `fdesetup status` must read `FileVault is On.`; a conversion in progress is NOT yet protection and the lens reports it unprotected",
+        "linux": "LUKS/dm-crypt — a `crypt`-type device-mapper node must back the volume",
+        "win32": "BitLocker — `manage-bde -status` must read 100% encrypted"
+      },
+      "recoveryNote": "The recovery key is the operator's to hold and is deliberately NOT referenced here, in the ref table, or anywhere commitwork can read. A tool that can enumerate the credential store must not also be able to name the key that protects the store's own disk."
+    }
+  ],
+  "outOfScope": [
+    "External and removable volumes — declare them per box if they carry artifacts; the lens will render an unlisted one as `undeclared` rather than silently passing it.",
+    "Backup destinations (Time Machine, restic, cloud sync). These are a separate confidentiality surface with their own key management and are not covered by an FDE row.",
+    "Swap/hibernation. On macOS FileVault covers it; on Linux an unencrypted swap partition defeats the baseline for anything paged out and should be declared separately once the Linux fleet exists."
+  ]
+}

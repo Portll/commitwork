@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Intentional-stub allowlist",
+  "description": "Suppressions for the stub/TODO/placeholder count lane (bin/stub-detect.mjs). Applied by loadAllowlist() there; a document that fails this schema takes the same path a corrupt one already takes — allowlistUnreadable, nothing suppressed, and the reason printed. The shape is the one this file's own _comment declares: {pathGlob, marker?, repo?, reason}. Top-level keys other than `allow` must be underscore-prefixed STRINGS, which is what makes a mistyped `allowe: [...]` a refusal rather than a silently empty allowlist beside a note nobody reads.",
+  "type": "object",
+  "required": ["allow"],
+  "propertyNames": { "pattern": "^(allow|_[A-Za-z0-9_]+)$" },
+  "additionalProperties": { "type": "string" },
+  "properties": {
+    "allow": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pathGlob", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "pathGlob": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Matched against the repo-relative forward-slashed path; * is a non-slash run, ** is any run."
+          },
+          "marker": {
+            "type": "string",
+            "minLength": 1,
+            "description": "OPTIONAL, and its absence is a real and much broader meaning: every marker on the matched path is suppressed, which the file's own _comment says is almost never what an entry intends. Absence is therefore not a missing value and is not required. Type only, no enum: the marker names live in MARKERS in bin/stub-detect.mjs and a copy here could not notice that list moving. A marker that is not in MARKERS still suppresses nothing, silently — remaining debt, and the fix belongs in stub-detect.mjs where the list is."
+          },
+          "repo": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$",
+            "description": "Scopes the entry to one scanned tree. ABSENT means commitwork's own tree only — a real scope, so not required."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20,
+            "description": "Required, and non-trivial. Same floor bin/test/schema-required.test.mjs applies to an inventory row's reason: a suppression with no stated ground is an omission wearing the shape of a decision. The 37 entries in the live file run 129-425 characters, so this refuses nothing that exists."
+          }
+        }
+      }
+    }
+  }
+}

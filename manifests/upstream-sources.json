@@ -1,0 +1,128 @@
+{
+  "$schema": "../schema/upstream-sources.schema.json",
+  "note": "THE ALLOWLIST. bin/upstream-fetch.mjs will fetch a binary ONLY if it is declared here, and only from the declared repo/tag/asset. Anything else is refused — adding a source is a human act (an edit to this file, reviewed as a commit), which is the only place a human enters the loop. Every fetch appends a hash-chained record to provenance/upstream-sources.chain.jsonl.",
+  "supersededSources": {
+    "note": "Recorded so nobody re-adopts them. All are joernio-owned but ARCHIVED, superseded by astgen-monorepo; joernio/goastgen is additionally a FORK. An archived repo can still serve release assets, so \"it downloaded fine\" is not evidence that a source is current.",
+    "repos": [
+      "joernio/DotNetAstGen",
+      "joernio/goastgen",
+      "joernio/astgen",
+      "joernio/SwiftAstGen",
+      "joernio/ruby_ast_gen",
+      "joernio/rust_ast_gen"
+    ]
+  },
+  "sources": [
+    {
+      "id": "astgen-javascript",
+      "purpose": "joern jssrc2cpg AST generator (macOS arm64)",
+      "origin": "github-release",
+      "repo": "joernio/astgen-monorepo",
+      "tag": "javascript-astgen/v3.47.0",
+      "asset": "astgen-macos-arm",
+      "sha256": "dc47e619b3c4bea1f98de7b89a59a6351b83c75777f143055d1a6c38fe3bec5d",
+      "publisherChecksums": true,
+      "firstParty": {
+        "org": "joernio",
+        "sameOrgAsTool": "joernio/joern",
+        "fork": false,
+        "archived": false,
+        "verifiedAt": "2026-09-01"
+      },
+      "frontend": "jssrc2cpg",
+      "note": "Homebrew formula astgen 3.47.0 builds from this exact tag with a pinned checksum, an independent corroboration of the source."
+    },
+    {
+      "id": "astgen-dotnet",
+      "purpose": "joern csharpsrc2cpg AST generator (macOS arm64)",
+      "origin": "github-release",
+      "repo": "joernio/astgen-monorepo",
+      "tag": "dotnet-astgen/v0.43.0",
+      "asset": "dotnetastgen-macos",
+      "sha256": "1e7c14c427146f109fbda4398fd661cfcf196e9082776f53f340d13840b5049d",
+      "publisherChecksums": false,
+      "firstParty": {
+        "org": "joernio",
+        "sameOrgAsTool": "joernio/joern",
+        "fork": false,
+        "archived": false,
+        "verifiedAt": "2026-09-01"
+      },
+      "frontend": "csharpsrc2cpg",
+      "note": "The distribution ships an EMPTY csharpsrc2cpg/bin/astgen; without this binary C# cannot be parsed at all."
+    },
+    {
+      "id": "astgen-go",
+      "purpose": "joern gosrc2cpg AST generator (macOS arm64)",
+      "origin": "github-release",
+      "repo": "joernio/astgen-monorepo",
+      "tag": "go-astgen/v0.1.1",
+      "asset": "goastgen-macos-arm64",
+      "sha256": "7f193c4b89c6e59c1d9ef6503796ac27a77828e2420b3ebf09bd21b94100d082",
+      "publisherChecksums": false,
+      "firstParty": {
+        "org": "joernio",
+        "sameOrgAsTool": "joernio/joern",
+        "fork": false,
+        "archived": false,
+        "verifiedAt": "2026-09-01"
+      },
+      "frontend": "gosrc2cpg",
+      "note": "Newer than the v0.1.0 bundled in the joern distribution."
+    },
+    {
+      "id": "astgen-rust",
+      "purpose": "joern rust2cpg AST generator (macOS arm64)",
+      "origin": "github-release",
+      "repo": "joernio/astgen-monorepo",
+      "tag": "rust-astgen/v0.20.0",
+      "asset": "rust_ast_gen-macos-arm",
+      "sha256": "a3b775be7574d5a9d1aaf595d075a62101fb9a9ce398b111d62a3bf3ae230e62",
+      "publisherChecksums": true,
+      "firstParty": {
+        "org": "joernio",
+        "sameOrgAsTool": "joernio/joern",
+        "fork": false,
+        "archived": false,
+        "verifiedAt": "2026-09-01"
+      },
+      "frontend": "rust2cpg"
+    },
+    {
+      "id": "astgen-swift",
+      "purpose": "joern swiftsrc2cpg AST generator (macOS arm64)",
+      "origin": "github-release",
+      "repo": "joernio/astgen-monorepo",
+      "tag": "swift-astgen/v0.4.2",
+      "asset": "SwiftAstGen-mac",
+      "sha256": "2ea737b2fb7e3e87a6e930753bb69601fc37bcb7ed36ac39cfdd29560d5810c3",
+      "publisherChecksums": false,
+      "firstParty": {
+        "org": "joernio",
+        "sameOrgAsTool": "joernio/joern",
+        "fork": false,
+        "archived": false,
+        "verifiedAt": "2026-09-01"
+      },
+      "frontend": "swiftsrc2cpg"
+    },
+    {
+      "id": "astgen-abap",
+      "purpose": "joern abap2cpg AST generator (macOS arm64)",
+      "origin": "github-release",
+      "repo": "joernio/astgen-monorepo",
+      "tag": "abap-astgen/v0.3.0",
+      "asset": "abapgen-macos-arm",
+      "sha256": "42e17231558517a5761ee219fddda02eabf179f3044cd7ad10b60f2cce2d5c5f",
+      "publisherChecksums": false,
+      "firstParty": {
+        "org": "joernio",
+        "sameOrgAsTool": "joernio/joern",
+        "fork": false,
+        "archived": false,
+        "verifiedAt": "2026-09-01"
+      },
+      "frontend": "abap2cpg"
+    }
+  ]
+}

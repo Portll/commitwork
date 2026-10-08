@@ -1,0 +1,14 @@
+{
+  "_comment": "SYNTHETIC EXAMPLE of the disregarded-warning register. The live register is a private record at monitor/private/disregarded-warnings.json (CW_DISREGARDED_WARNINGS overrides; absent means nothing has been set aside). Append-only: never delete a record. Identity is {source, code, subject}: source = the tool that warned, code = the kind of warning, subject = the place (repo, area, file or check), never a line number. A later warning with the same identity is reported as RETURNED, with the latest set-aside beside it. Write through bin/disregard.mjs.",
+  "disregarded": [
+    {
+      "source": "docs-doctor",
+      "code": "orange",
+      "subject": "example/README.md",
+      "why": "Synthetic example: the module is being rewritten this cycle and the doc is re-verified when it lands.",
+      "who": "operator (example)",
+      "at": "2026-01-15T00:00:00.000Z",
+      "message": "verified-against 2025-12-01 is older than 30 days"
+    }
+  ]
+}

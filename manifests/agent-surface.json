@@ -1,0 +1,47 @@
+{
+  "$comment": "The operator-local agent surface commitwork installs and toggles: PreToolUse/Stop hooks, MCP servers and launch programs. This is a DECLARATION; bin/agent-surface.mjs is the only writer and applying stays a human act. Never fleet or deployment surfaces.",
+  "hooks": {
+    "guard-destructive": {
+      "kind": "hook",
+      "event": "PreToolUse",
+      "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
+      "command": "node $CW_ROOT/bin/hooks/guard-destructive.mjs",
+      "selftest": ["node", "$CW_ROOT/bin/hooks/guard-destructive.mjs", "--selftest"],
+      "selftestExpect": "live",
+      "why": "the only pre-action gate on force-push, ledger truncation, credential reads and outbound POST"
+    }
+  },
+  "mcp": {
+    "commitwork": {
+      "kind": "mcp",
+      "command": "node",
+      "args": ["$CW_ROOT/mcp/server.mjs"],
+      "why": "commitwork's own MCP server: bundled manifests only, credential-stripped scanner env"
+    },
+    "spine": {
+      "kind": "mcp",
+      "command": "$NODE",
+      "args": ["$HOME/Repositories/Portll/spine/mcp.mjs"],
+      "why": "the task spine every session opens against"
+    },
+    "style": {
+      "kind": "mcp",
+      "command": "$NODE",
+      "args": ["$HOME/Repositories/Portll/substrate/style/mcp.mjs"],
+      "why": "the held style corpus /review and /write resolve against"
+    }
+  },
+  "launch": {
+    "veld": {
+      "kind": "launch",
+      "plist": "net.portll.veld-desktop",
+      "probe": "http://127.0.0.1:3030/health",
+      "why": "the memory backend; disable is registration-only, stop is a separate verb"
+    },
+    "substrate": {
+      "kind": "launch",
+      "plist": "net.portll.substrate",
+      "why": "the substrate host"
+    }
+  }
+}

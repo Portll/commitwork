@@ -1,0 +1,664 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Failure taxonomy registry",
+  "description": "The classification of every failure mode this project's development has produced. APPLIED: bin/taxonomy-render.mjs validate() runs this schema on every render and every --check, so it gates rather than describes. Shape only, and additive — validate() holds the cross-field truths a JSON Schema cannot express (id/prefix agreement, machine-name uniqueness, numbering gaps, stpa vocabulary closure) and owns the closure/gain range, which is read from the registry's own scaleBounds and is NOT restated here.",
+  "type": "object",
+  "required": [
+    "version",
+    "families",
+    "classes",
+    "scales",
+    "scaleBounds"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generatedFrom": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "verifiedAgainst": {
+      "type": "string",
+      "minLength": 1
+    },
+    "note": {
+      "type": "string"
+    },
+    "intro": {
+      "type": "object",
+      "required": ["public", "academic"],
+      "additionalProperties": false,
+      "$comment": "The two one-sentence introductions the class reference leads with: one for a general reader, one for a postdoctoral ML reader. Data rather than renderer text, so every consumer of the registry says the same thing about it.",
+      "properties": {
+        "public": { "type": "string", "minLength": 40 },
+        "academic": { "type": "string", "minLength": 40 }
+      }
+    },
+    "mitigationVocabulary": {
+      "type": "object",
+      "required": ["products", "statuses"],
+      "additionalProperties": false,
+      "$comment": "Read by validate() and the renderer, never restated. Each product carries the layer the page groups it under (remediation | help) and a test sentence; each status carries a test sentence. validate() closes both sets and refuses an entry outside them.",
+      "properties": {
+        "products": { "type": "object" },
+        "statuses": { "type": "object" }
+      }
+    },
+    "mitigationProvenance": {
+      "type": "object",
+      "required": ["rater", "date", "method", "caveat"],
+      "additionalProperties": false,
+      "properties": {
+        "rater": { "type": "string", "minLength": 1 },
+        "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "method": { "type": "string", "minLength": 1 },
+        "caveat": { "type": "string", "minLength": 1 }
+      }
+    },
+    "analogyStyle": {
+      "type": "string"
+    },
+    "scoreProvenance": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceProvenance": {
+      "type": "string",
+      "minLength": 1
+    },
+    "remediationRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "roman",
+          "key",
+          "prefix",
+          "name",
+          "proposition",
+          "test"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "roman": {
+            "type": "string",
+            "pattern": "^[IVX]+$"
+          },
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z_]+$"
+          },
+          "prefix": {
+            "type": "string",
+            "pattern": "^[CARPMGDWKEL]$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "proposition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "test": {
+            "type": "string",
+            "minLength": 60,
+            "description": "The sentence a SECOND RATER applies to decide whether a class belongs to this family, in the same form the stpa, rca and mitigation vocabularies already require of every value they carry. Added 2026-09-07 after family VI was measured: 19 of its 25 classes were lexically closer to another family than to their own, and it held 1 causal edge where comparable families held 13, 10, 7 and 11. The cause was that families declared a `proposition` and no test, so no family could REFUSE a member, and a family named for an origin rather than for a false belief admitted almost every row. A proposition states what is falsely believed; a test decides membership, and they are not the same sentence. NOT enforced against existing membership — moving a class would renumber it and break every citation — so this field makes the drift visible and reviewable rather than silently repairing it."
+          }
+        }
+      }
+    },
+    "classes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "machine",
+          "layer",
+          "description",
+          "predicate",
+          "example",
+          "closure",
+          "gain"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[CARPMGDWKEL][0-9]{1,2}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "machine": {
+            "type": "string",
+            "pattern": "^[a-z_]+\\.[a-z_]+$"
+          },
+          "layer": {
+            "enum": [
+              "IMPL",
+              "CTRL",
+              "BOTH"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "predicate": {
+            "type": "string",
+            "minLength": 40,
+            "$comment": "The executable question that decides membership: true for an instance, false otherwise. Required so NOT-COVERED-BY can be a CHECK rather than an assertion — four duplicates survived a mandatory prose field during the 2026-08-26 expansion call, including a pair filed an hour apart by two sessions. minLength is a floor against a one-word placeholder, not a quality bar."
+          },
+          "example": {
+            "type": "string",
+            "minLength": 1
+          },
+          "analogy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "closure": {
+            "type": "integer",
+            "$comment": "RANGE DELIBERATELY UNCONSTRAINED HERE. The bound lives in the registry's own scaleBounds and bin/taxonomy-render.mjs validate() reads it from there. A minimum/maximum here would be a second copy that cannot notice the bound moving — the defect this registry's history records four times."
+          },
+          "gain": {
+            "type": "integer",
+            "$comment": "Range enforced by validate() from scaleBounds; see closure."
+          },
+          "scoreBasis": {
+            "type": "string"
+          },
+          "stpa": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "loop",
+                "uca",
+                "cause"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "loop": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uca": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cause": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "rca": {
+            "type": "array",
+            "minItems": 1,
+            "$comment": "Absence is refused, exactly as it is for stpa. A class nobody has judged carries [{\"relation\":\"unassessed\"}] — an explicit not-yet-looked, NOT a claim of causal independence. validate() holds what this cannot: vocabulary closure, that a target is a real class id, symmetric closure of same-defect-as, that mechanism-of crosses families, and that unassessed stands alone.",
+            "items": {
+              "type": "object",
+              "required": [
+                "relation"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "relation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to": {
+                  "type": "string",
+                  "pattern": "^[CARPMGDWKEL][0-9]{1,2}$"
+                },
+                "basis": {
+                  "type": "object",
+                  "required": [
+                    "doc",
+                    "quote"
+                  ],
+                  "additionalProperties": false,
+                  "$comment": "A VERBATIM QUOTE, never a line number. The first cut cited line ranges and two of four had rotted within hours when a peer edited five lines above them — the repo's own banned identity form, committed by the axis whose subject is causation. bin/test/taxonomy-rca.test.mjs resolves every quote against the tree; validate() checks shape only, so the pure-function boundary holds and the two witnesses cannot share a failure mode.",
+                  "properties": {
+                    "doc": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "quote": {
+                      "type": "string",
+                      "minLength": 12
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "mitigations": {
+            "type": "array",
+            "$comment": "What each product does against the class — one entry per product and state, read against mitigationVocabulary (validate() closes product and status; the schema cannot read a sibling). Absent or empty means NO RECORD, which the reference page draws grey: never blank, never closed. Every entry names its evidence, because a record with none is the unverified claim this axis exists to replace.",
+            "items": {
+              "type": "object",
+              "required": ["product", "status", "what", "evidence", "date"],
+              "additionalProperties": false,
+              "properties": {
+                "product": { "type": "string", "minLength": 1 },
+                "status": { "type": "string", "minLength": 1 },
+                "what": { "type": "string", "minLength": 1 },
+                "evidence": { "type": "string", "minLength": 1 },
+                "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+              }
+            }
+          },
+          "proposals": {
+            "type": "array",
+            "$comment": "What we propose adding to mitigate the class. Legal only where closure is below fullyClosed and gain is above gainMin; validate() enforces that against scaleBounds, which this schema deliberately does not restate.",
+            "items": {
+              "type": "object",
+              "required": ["what", "effort", "date", "by"],
+              "additionalProperties": false,
+              "properties": {
+                "what": { "type": "string", "minLength": 1 },
+                "effort": { "enum": ["Low", "Med", "High"] },
+                "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+                "by": { "type": "string", "minLength": 1 },
+                "closesTo": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scales": {
+      "type": "object",
+      "required": [
+        "closure",
+        "gain"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "closure": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gain": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "scaleBounds": {
+      "type": "object",
+      "required": [
+        "closureMin",
+        "closureMax",
+        "gainMin",
+        "gainMax",
+        "fullyClosed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "closureMin": {
+          "type": "integer"
+        },
+        "closureMax": {
+          "type": "integer"
+        },
+        "gainMin": {
+          "type": "integer"
+        },
+        "gainMax": {
+          "type": "integer"
+        },
+        "fullyClosed": {
+          "type": "integer"
+        }
+      }
+    },
+    "remediations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rank",
+          "title",
+          "closes",
+          "action",
+          "effort",
+          "gain",
+          "layer"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "closes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[CARPMGDWKEL][0-9]{1,2}$"
+            }
+          },
+          "raises": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[CARPMGDWKEL][0-9]{1,2}$"
+            }
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effort": {
+            "enum": [
+              "Low",
+              "Med",
+              "High"
+            ]
+          },
+          "gain": {
+            "type": "integer",
+            "$comment": "Range enforced by validate() from scaleBounds; see classes[].closure."
+          },
+          "layer": {
+            "enum": [
+              "IMPL",
+              "CTRL",
+              "BOTH"
+            ]
+          },
+          "note": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "evidenceFrom": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "attributionPlan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "area",
+          "defect",
+          "mechanism",
+          "change",
+          "closes",
+          "effort"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "type": "string",
+            "minLength": 1
+          },
+          "defect": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mechanism": {
+            "type": "string",
+            "minLength": 1
+          },
+          "change": {
+            "type": "string",
+            "minLength": 1
+          },
+          "closes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[CARPMGDWKEL][0-9]{1,2}$"
+            }
+          },
+          "effort": {
+            "enum": [
+              "Low",
+              "Med",
+              "High"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "cycleLog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "cycle"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "cycle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "found": {
+            "type": [
+              "integer",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "applied": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blockers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "closed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "open": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scored": {
+            "type": "object"
+          },
+          "artifact": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "stpaVocabulary": {
+      "type": "object",
+      "required": [
+        "loops",
+        "uca",
+        "cause"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "loops": {
+          "type": "object"
+        },
+        "uca": {
+          "type": "object"
+        },
+        "cause": {
+          "type": "object"
+        }
+      }
+    },
+    "stpaProvenance": {
+      "type": "object",
+      "required": [
+        "rater",
+        "date",
+        "method",
+        "caveat"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rater": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "caveat": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "rcaVocabulary": {
+      "type": "object",
+      "required": [
+        "symmetries",
+        "relations"
+      ],
+      "additionalProperties": false,
+      "$comment": "The closed relation set, read by bin/taxonomy-render.mjs validateRca() and never restated. TWO witnesses, and neither is a SQLite CHECK: validateRca() is pure and judges shape plus the relations' algebra, while bin/test/taxonomy-rca.test.mjs does the I/O half — it resolves every basis quote against the tree and PINS these declarations, so the vocabulary cannot switch off the rules that read it. There is deliberately no taxonomy_rca projection: the store's measured readership is two prose sentences, so a table there would add a witness nobody queries rather than a reader. Each relation carries a test that discriminates it from its neighbours — masks from enables, mechanism-of from same-defect-as — because a relation without a discriminating test is a label two raters will apply differently.",
+      "properties": {
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symmetries": {
+          "type": "object",
+          "$comment": "Non-emptiness is enforced by validateRca(), not here — registry.mjs implements no minProperties and fails closed on it rather than ignoring it."
+        },
+        "relations": {
+          "type": "object"
+        }
+      }
+    },
+    "rcaProvenance": {
+      "type": "object",
+      "required": [
+        "rater",
+        "date",
+        "method",
+        "caveat"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rater": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "basis": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "caveat": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidencePredicate": {
+      "type": "object",
+      "description": "The rule by which a class counts as EVIDENCED, published with the count it produces. Four sessions ran four unstated detectors over `example` on 2026-09-02 and reported 88, 92, 139 and 142 unevidenced of 188; none could be reconciled with any other. A count whose predicate is not stated is not a measurement.",
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "matchers",
+        "caveat",
+        "measuredAt",
+        "count",
+        "of"
+      ],
+      "properties": {
+        "rule": {
+          "type": "string",
+          "minLength": 40
+        },
+        "matchers": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Executable regular expressions applied to each class example. A class is evidenced when any matcher fires; count records the complement. Stored with the claim so a consumer can re-derive it without translating prose into a second detector.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "caveat": {
+          "type": "string",
+          "minLength": 40,
+          "description": "How the predicate is wrong in BOTH directions. A stated rule with no stated failure modes invites the same false confidence as an unstated one."
+        },
+        "measuredAt": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "of": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

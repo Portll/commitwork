@@ -1,0 +1,94 @@
+{
+ "errors": [],
+ "generated_at": "2026-09-01T11:15:44Z",
+ "metrics": {
+  "/tmp/bandit-sample/vuln.py": {
+   "CONFIDENCE.HIGH": 3,
+   "CONFIDENCE.LOW": 0,
+   "CONFIDENCE.MEDIUM": 0,
+   "CONFIDENCE.UNDEFINED": 0,
+   "SEVERITY.HIGH": 2,
+   "SEVERITY.LOW": 1,
+   "SEVERITY.MEDIUM": 0,
+   "SEVERITY.UNDEFINED": 0,
+   "loc": 6,
+   "nosec": 0,
+   "skipped_tests": 0
+  },
+  "_totals": {
+   "CONFIDENCE.HIGH": 3,
+   "CONFIDENCE.LOW": 0,
+   "CONFIDENCE.MEDIUM": 0,
+   "CONFIDENCE.UNDEFINED": 0,
+   "SEVERITY.HIGH": 2,
+   "SEVERITY.LOW": 1,
+   "SEVERITY.MEDIUM": 0,
+   "SEVERITY.UNDEFINED": 0,
+   "loc": 6,
+   "nosec": 0,
+   "skipped_tests": 0
+  }
+ },
+ "results": [
+  {
+   "code": "1 import subprocess\n2 import hashlib\n3 \n",
+   "col_offset": 0,
+   "end_col_offset": 17,
+   "filename": "/tmp/bandit-sample/vuln.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 78,
+    "link": "https://cwe.mitre.org/data/definitions/78.html"
+   },
+   "issue_severity": "LOW",
+   "issue_text": "Consider possible security implications associated with the subprocess module.",
+   "line_number": 1,
+   "line_range": [
+    1
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
+   "test_id": "B404",
+   "test_name": "blacklist"
+  },
+  {
+   "code": "4 def run_cmd(user_input):\n5     subprocess.call(user_input, shell=True)\n6 \n",
+   "col_offset": 4,
+   "end_col_offset": 43,
+   "filename": "/tmp/bandit-sample/vuln.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 78,
+    "link": "https://cwe.mitre.org/data/definitions/78.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "subprocess call with shell=True identified, security issue.",
+   "line_number": 5,
+   "line_range": [
+    5
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+   "test_id": "B602",
+   "test_name": "subprocess_popen_with_shell_equals_true"
+  },
+  {
+   "code": "7 def weak_hash(data):\n8     return hashlib.md5(data).hexdigest()\n",
+   "col_offset": 11,
+   "end_col_offset": 28,
+   "filename": "/tmp/bandit-sample/vuln.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 8,
+   "line_range": [
+    8
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  }
+ ]
+}

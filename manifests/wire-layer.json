@@ -1,0 +1,14 @@
+{
+  "note": "The wire layer: files licensed Apache-2.0 while the rest of the repository is AGPL-3.0-or-later. Operator ruling 2026-09-09 (D19 item 6): schemas, MCP tool descriptors and any client SDK, and nothing else. bin/test/wire-layer-licence.test.mjs asserts every entry exists and is marked; a file not listed here is AGPL. Excluded paths keep their own authors' licences.",
+  "license": "Apache-2.0",
+  "licenseText": "LICENSE-APACHE-2.0",
+  "entries": [
+    { "path": "schema/", "kind": "directory", "marker": "schema/LICENSE", "excludes": ["schema/upstream/"], "what": "every JSON schema commitwork validates against" },
+    { "path": "mcp/tools.mjs", "kind": "file", "marker": "spdx-header", "what": "the MCP tool descriptors: names, descriptions, input schemas" },
+    { "path": "lib/memory-layer-client.mjs", "kind": "file", "marker": "spdx-header", "what": "the memory-layer HTTP write client" },
+    { "path": "lib/memory-layer-contract.json", "kind": "file", "marker": "manifest-only", "what": "the memory-layer write contract both client implementations are tested against" }
+  ],
+  "excluded": [
+    { "path": "schema/upstream/", "why": "third-party schemas vendored for validation; their authors' licences apply" }
+  ]
+}

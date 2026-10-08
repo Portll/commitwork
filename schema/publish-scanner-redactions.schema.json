@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "publish-scanner-redactions",
+  "description": "Record-scoped redactions applied to the failure taxonomy at the publish boundary.",
+  "type": "object",
+  "required": ["note", "redactions"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string", "minLength": 1 },
+    "redactions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["class", "field", "from", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "class": { "type": "string", "minLength": 1, "pattern": "^[A-Z]+[0-9]+$" },
+          "field": { "type": "string", "minLength": 1, "enum": ["example", "scoreBasis"] },
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

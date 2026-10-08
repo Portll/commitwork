@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Empty MCP server map for confined claude spawns",
+  "description": "lib/claude-spawn.mjs passes this file to claude --mcp-config with --strict-mcp-config, so a spawned run loads no MCP server. It must stay empty.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mcpServers"],
+  "properties": {
+    "mcpServers": { "type": "object", "maxProperties": 0 }
+  }
+}

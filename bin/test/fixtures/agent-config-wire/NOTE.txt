@@ -1,0 +1,10 @@
+Synthetic agent-configuration trees for bin/test/security-agent-config-wire.test.mjs.
+Every host is under .invalid. Nothing here is executed: the test copies a tree to a temp
+directory, scans it with bin/agent-config.mjs and checks that no hook ran.
+benign/  multi-file includes (a diamond, JSONC, a server name shared by two agents); expects
+         zero findings and a complete effective configuration.
+hostile/ includes that escape the tree, name an unset variable, a missing and an unparseable
+         file, a cycle, a malformed block, a server declared twice, a planted hook script and
+         prompt text addressed to an agent; expects findings on the included files and every
+         unresolved include stated.
+Secret-shaped values and symlinks are added by the test at run time, never committed.

@@ -1,0 +1,1936 @@
+<!-- Generated compatibility entry. Edit panel.html and menus/*; run node bin/build-admin-panel.mjs. -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>commitwork · admin</title>
+<script>
+/* The light stylesheet's media attribute is the switch: the OS query = auto, 'all' = light,
+   'not all' = dark. Applied in the <script> after the <link>, before first paint. */
+var CW_THEME_MEDIA={auto:'(prefers-color-scheme: light)',light:'all',dark:'not all'};
+</script>
+<script>
+/* Responsive root font. 1080p-class = 16px, scaling up on genuinely large displays; the CSS clamp
+   below is the no-JS fallback and this overrides it. Re-runs on resize.
+
+   IT IS GATED ON THE WINDOW, NOT JUST THE SCREEN. Keying purely off screen.height*dpr meant a
+   BROWSER WINDOW on a 4K panel got 200% text no matter how narrow the window was: every size here
+   is rem, so at a 32px root the tab strip and `table{min-width:40rem}` (=1280px) both demanded far
+   more width than the window had, and the strip clipped its last tabs while tables cut off their
+   right-hand columns. A big monitor is not the same as a big window. Taking the MIN of the height
+   ratio and the width ratio means text only grows when there is actually width to spend on it.
+
+   The ceiling is 24px (150%), not 32px (200%). Doubling was more than large-display legibility
+   needs and it was the dominant term in every overflow above. */
+(function(){function px(){
+  var w=window.innerWidth||1600, dpr=window.devicePixelRatio||1;
+  var h=(window.screen&&screen.height?screen.height:1080)*dpr;
+  var s=w<900?16:Math.max(16,Math.min(24,16*Math.min(h/1080,w/1600)));
+  document.documentElement.style.fontSize=s+'px';
+}px();addEventListener('resize',px);})();
+</script>
+<link rel="icon" type="image/svg+xml" href="/cw-favicon.svg">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/cw-favicon-32.png">
+<link rel="stylesheet" href="/static/panel.css">
+<link id="theme-light" rel="stylesheet" href="/static/panel-light.css" media="(prefers-color-scheme: light)">
+<!-- Colour-vision-deficiency palettes. Keyed on :root[data-cvd]; "Normal" is the ABSENCE of the
+     attribute, so with no selection these two files contribute nothing and the default palette
+     above stands unchanged. The light one is media-switched in lockstep with theme-light, so it
+     follows a MANUAL theme choice and not merely prefers-color-scheme — and it must load after
+     panel-cvd.css, because the two carry equal specificity and order is what separates them. -->
+<link rel="stylesheet" href="/static/panel-cvd.css">
+<link id="cvd-light" rel="stylesheet" href="/static/panel-cvd-light.css" media="(prefers-color-scheme: light)">
+<script>(function(){try{
+  /* Vision mode is applied BEFORE first paint, same as the theme: applying it later would repaint
+     every severity pill in front of the reader. An unreadable or absent value reads as normal. */
+  var v=localStorage.getItem('cw-cvd');
+  if(v==='protanopia'||v==='deuteranopia'||v==='tritanopia'||v==='achromatopsia')
+    document.documentElement.setAttribute('data-cvd',v);
+  var t=localStorage.getItem('cw-theme');
+  if(t!=='light'&&t!=='dark')return;
+  var l=document.getElementById('theme-light');
+  if(l)l.media=CW_THEME_MEDIA[t];
+  var c=document.getElementById('cvd-light');   /* must track theme-light or a manual LIGHT
+                                                   choice would keep the DARK cvd palette */
+  if(c)c.media=CW_THEME_MEDIA[t];
+}catch(e){}})();</script><style id="workspace-styles">
+/* Task-based workspace shell: shared login palette and button geometry. */
+.workspace-shell{--rail-width:13rem}
+.workspace-shell .bar{margin-bottom:0;background:var(--bg);z-index:20}
+.workspace-shell .bar>.row{max-width:none;min-height:4.75rem;padding:.85rem 1.5rem;gap:1rem}
+.scope-chip{display:inline-flex;align-items:center;min-height:2rem;padding:.3rem .75rem;border:1px solid var(--line2);border-left:3px solid var(--mut);font:600 .75rem var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);white-space:nowrap;max-width:24rem;overflow:hidden;text-overflow:ellipsis}
+.scope-chip[data-scope="project"]{border-left-color:var(--acc);background:var(--wash)}
+#sweep[hidden]{display:none}
+.bar-picker{display:inline-flex;align-items:center}
+.ru-top{display:flex;gap:1.5rem;flex-wrap:wrap;margin:.75rem 0 1rem}
+.ru-fig{margin:0;flex:1 1 18rem;max-width:32rem}.ru-fig figcaption{font-size:.75rem;color:var(--mut);margin-bottom:.35rem}
+.ru-chart .bar{fill:var(--acc)}.ru-chart .axis{stroke:var(--line2)}.ru-chart .lbl,.ru-clock .lbl{fill:var(--mut);font-size:6px;font-family:var(--mono)}
+.ru-clock{max-width:15rem}.ru-clock .hub{fill:var(--panel)}.ru-clock .lbl.big{fill:var(--ink);font-size:8.5px;font-weight:600}
+.ru-clock .seg.good,.ru-d.good,.ru-k.good{fill:var(--live);background:var(--live)}
+.ru-clock .seg.warn,.ru-d.warn,.ru-k.warn{fill:var(--part);background:var(--part)}
+.ru-clock .seg.broken,.ru-d.broken,.ru-k.broken{fill:var(--crit);background:var(--crit)}
+.ru-clock .seg.none,.ru-d.none,.ru-k.none{fill:var(--plan);background:var(--plan)}
+.ru-clock .seg.empty,.ru-d.empty,.ru-k.empty{fill:var(--line2);background:var(--line2)}
+.ru-clock .seg.na{fill:transparent;stroke:var(--line);stroke-width:.4}
+.ru-k{color:var(--bg);padding:0 .3rem;border-radius:2px;font-weight:600}
+.ru-strip{display:inline-flex;gap:2px;vertical-align:middle}
+.ru-d{display:inline-block;width:.55rem;height:.9rem;border-radius:1px}
+.ru-d.na{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.ru-cad{width:2.3rem;height:.9rem;vertical-align:middle}.ru-cad .frame{fill:none;stroke:var(--mut);stroke-width:.8}.ru-cad rect:not(.frame){fill:var(--line2)}.ru-cad rect.on{fill:var(--acc)}
+.ru-name.w-kev{color:var(--sev)}.ru-name.w-crit{color:var(--crit)}.ru-name.w-high{color:var(--high)}.ru-name.w-med{color:var(--med)}.ru-name.w-low{color:var(--low)}.ru-name.w-none{color:var(--live)}.ru-name.w-unknown{color:var(--mut)}
+.ru-next{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.ru-open{background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.workspace-shell .bar #proj{min-width:11rem;max-width:18rem;font-size:.875rem;border-radius:3px;min-height:2.5rem}
+.workspace-shell .bar .gen{font-variant-numeric:tabular-nums;white-space:nowrap}
+.rail-scope.active{color:var(--ink)}
+.rail-project{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--line)}
+#workspace-rail .workspace-link:disabled{opacity:.45;cursor:not-allowed;background:transparent}
+.workspace-shell .bar .gen{font-size:.75rem}
+.workspace-shell .bar .ctl-wrap{margin-left:auto}
+.workspace-shell .bar button{min-height:2.5rem;font-size:.875rem;border-radius:3px;padding:.5rem .85rem}
+/* Running, the same control stops the sweep: the rule at its foot turns from go to stop. */
+.workspace-shell #sweep.running{border-bottom-color:var(--crit)}
+.workspace-shell #menubtn{background:transparent;border-color:var(--line);color:var(--ink)}
+#nav-toggle{display:none}
+#workspace-rail{position:fixed;left:0;top:var(--barh,5rem);bottom:0;width:var(--rail-width);padding:1.5rem .875rem;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;z-index:15}
+.rail-label{padding:0 .75rem;margin-bottom:.75rem;font:600 .625rem var(--sans);text-transform:uppercase;letter-spacing:.14em;color:var(--mut)}
+.rail-manage{margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--line)}
+#workspace-rail nav{display:flex;flex-direction:column;gap:.25rem}
+#workspace-rail .workspace-link,#workspace-rail .rail-link{display:block;text-align:left;text-decoration:none;width:100%;padding:.7rem .75rem;font:400 .875rem var(--sans);line-height:1.4;border:1px solid transparent;border-radius:3px;background:transparent;color:var(--mut);min-height:2.75rem;white-space:normal}
+#workspace-rail .active{color:var(--ink);border-left:2px solid var(--acc);border-radius:0;background:var(--wash)}
+#workspace-rail button:hover,#workspace-rail a:hover{color:var(--ink);background:var(--panel2)}
+.rail-operations{margin-top:.5rem;border-top:1px solid var(--line);padding:.75rem .5rem}
+.rail-operations summary{font-size:.8125rem;cursor:pointer;color:var(--mut)}
+.rail-operations button{font-size:.75rem;white-space:normal;margin-top:.5rem;min-height:2.5rem}
+.rail-operations .mut{font-size:.75rem;overflow-wrap:anywhere}
+.rail-operations .pop-h{font-size:.625rem}
+#workspace-content{margin-left:var(--rail-width);min-width:0;padding-bottom:2rem;outline:none}
+.workspace-context{padding:1.35rem 1.5rem .25rem;max-width:var(--colw);margin:auto}
+.workspace-location{font:.75rem var(--sans);color:var(--mut);overflow-wrap:anywhere;line-height:1.5}
+#workspace-help{font:.875rem/1.55 var(--sans);color:var(--mut);margin:.5rem 0}
+#workspace-content>.row.nav{display:flex;flex-direction:column;align-items:stretch;gap:.75rem;padding:.65rem 1.5rem 1rem;max-width:var(--colw);margin:0 auto 1.25rem;border-bottom:1px solid var(--line)}
+.workspace-shell #groups{flex:initial;gap:1rem;margin:0}
+.workspace-shell #groups .gtab{background:transparent;border:0;border-radius:0;font-size:.875rem;padding:.65rem .1rem;color:var(--mut);box-shadow:none}
+.workspace-shell #groups .gtab.pri{color:var(--ink);box-shadow:inset 0 -2px var(--acc)}
+#check-picker-row{display:flex;align-items:center;gap:.75rem;font:.8125rem var(--sans);color:var(--mut)}
+#check-picker{color:var(--ink);background:var(--panel);border:1px solid var(--line2);font-family:var(--sans);font-size:.875rem;min-height:2.5rem;max-width:100%;width:min(28rem,100%);border-radius:0}
+.workspace-shell #views{gap:.4rem;flex-wrap:wrap}
+.workspace-shell #views .vtab{font:400 .875rem var(--sans);padding:.5rem .65rem;min-height:2.5rem;max-width:none;border-radius:3px}
+.workspace-shell #views:has(>.vtab):not(:has(>.vtab:not(.ghide))){display:none}
+.workspace-shell [hidden]{display:none!important}
+.workspace-shell .pop{width:min(23rem,calc(100vw - 2rem));max-height:calc(100dvh - var(--barh,5rem) - 1rem);overflow-y:auto;padding:.75rem;background:var(--panel);border-radius:10px}
+.workspace-shell .pop button,.workspace-shell .pop a,.workspace-shell .pop select,.workspace-shell .pop .pop-lbl,.workspace-shell .pop .menu-view{font-size:.875rem}
+.workspace-shell .pop .mut,.workspace-shell .pop-acct .mut{font-size:.75rem;line-height:1.5}
+.workspace-shell .pop-acct b{font-size:.9375rem}
+.workspace-shell .pop-h{font-size:.625rem;margin-top:.75rem;padding:.5rem}
+.workspace-shell .pop-fld{padding:.4rem .5rem;flex-wrap:wrap}
+.workspace-shell .pop-fld .mut{font-size:.75rem}
+.workspace-shell .pop .theme-opt{padding:.5rem .4rem;min-height:2.5rem;font-size:.75rem}
+.workspace-shell .pop .theme-opt[aria-checked="true"]{color:var(--ink);background:var(--wash);box-shadow:inset 0 -2px var(--acc)}
+.workspace-shell .pop .row-actions button{min-height:2.5rem}
+.workspace-shell .pop-acct .avatar{width:2rem;height:2rem;font-size:.875rem}
+.account-security-controls{font-size:.875rem}
+.account-security-controls .sect{padding:1rem 0;border-top:1px solid var(--line);margin-top:1rem}
+.account-security-controls .pop-h{font:600 1rem var(--sans);color:var(--ink);padding:0;margin:0 0 .75rem;text-transform:none;letter-spacing:0}
+.account-security-controls .pk-fld{font-size:.875rem;max-width:30rem}
+.account-security-controls input{font-size:.875rem;border-radius:0;min-height:2.5rem}
+.account-security-controls button{font-size:.875rem;min-height:2.5rem;border-radius:3px}
+.account-security-controls .pk-fp{display:inline-flex;align-items:center;gap:.75rem;background:linear-gradient(180deg,var(--panel2),var(--panel));color:var(--head);border:1px solid var(--line2);border-bottom:2px solid var(--acc);padding:.75rem}
+.account-security-controls .pk-fp .pk-fp-ico{width:2rem;height:2rem}
+.account-security-controls .pf-once{overflow-wrap:anywhere}
+.workspace-shell #workspace-content section{border-radius:10px}
+.workspace-shell #workspace-content button{border-radius:3px}
+.workspace-link .vn,#groups .gtab .vn{display:inline-block;margin-left:.5rem;font:.75rem var(--mono);padding:0 .4rem;border:1px solid var(--line2);border-radius:999px;color:var(--mut)}
+.workspace-link .vn.warn,#groups .gtab .vn.warn{color:var(--ink);border-color:var(--acc)}
+.workspace-link .vn.crit,#groups .gtab .vn.crit{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.workspace-link .vn:empty,#groups .gtab .vn:empty{display:none}
+.workspace-shell :is(button,a,select,summary):focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+@media(max-width:1100px){
+  .workspace-shell .bar .gen{display:none}
+  .workspace-shell .bar>.row{gap:.65rem;padding:.75rem 1rem}
+  .workspace-shell .bar select{max-width:13rem}
+}
+@media(max-width:800px){
+  #nav-toggle{display:inline-flex;align-items:center}
+  #workspace-rail{display:none;width:min(19rem,calc(100vw - 2rem));box-shadow:12px 0 35px rgba(0,0,0,.25)}
+  .rail-open #workspace-rail{display:block}
+  body.rail-open::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:14}
+  #workspace-content{margin-left:0}
+  .workspace-shell .bar>.row{flex-wrap:wrap}
+  .workspace-shell .bar .mark{margin-right:auto}
+  .scope-chip{order:3;max-width:none;flex:1 1 auto}
+  .workspace-shell .bar .ctl-wrap{order:4;margin-left:0;flex:1 1 100%;align-items:stretch;min-width:0}
+  .workspace-shell .bar .ctl{gap:.4rem;flex-wrap:wrap}
+  /* the run control names its project, so its label grows past the viewport on a phone */
+  .workspace-shell .bar #sweep{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:left}
+  .workspace-shell .bar button{font-size:.8125rem;padding:.45rem .55rem}
+  .workspace-shell .bar select{max-width:12rem}
+  .workspace-shell .bar .acct-name{max-width:6rem;overflow:hidden;text-overflow:ellipsis}
+  .workspace-shell .bar .ctl-note{white-space:normal;max-width:18rem}
+  .workspace-context{padding:1rem 1rem .25rem}
+  #workspace-content>.row.nav{padding:.5rem 1rem 1rem}
+  .workspace-shell #groups{gap:.85rem;flex-wrap:wrap}
+  #check-picker-row{align-items:flex-start;flex-direction:column;gap:.4rem}
+}
+@media(prefers-reduced-motion:reduce){.workspace-shell button{transition:none}}
+/* Findings feed (panel-feed.js). Tokens only; rows sit on the 4px grid at 2.25rem. */
+#view-feed table.feed{width:100%;border-collapse:collapse}
+#view-feed table.feed th,#view-feed table.feed td{padding:.375rem .5rem;border-bottom:1px solid var(--line);vertical-align:baseline;text-align:left}
+#view-feed tr.feed-row{min-height:2.25rem}
+#view-feed tr.feed-row.active td{background:var(--wash)}
+#view-feed tr.feed-row.selected td:first-child{box-shadow:inset .1875rem 0 0 var(--acc)}
+#view-feed .feed-open{background:none;border:0;padding:0;color:var(--head);font:inherit;cursor:pointer;text-align:left}
+#view-feed .feed-open:hover{text-decoration:underline}
+#view-feed tr.feed-members>td{background:var(--panel2)}
+#view-feed table.feed-sub{width:100%;border-collapse:collapse;font-size:.75rem}
+#view-feed table.feed-sub td{border-bottom:1px solid var(--line2);padding:.25rem .5rem}
+#view-feed .cw-feed-modes button[aria-pressed="true"]{border-color:var(--acc)}
+#view-feed .cw-feed-bulk{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+#view-feed .cw-feed-bulk input{flex:1 1 16rem;min-width:10rem}
+#view-feed tr.feed-skeleton td{color:var(--dim)}
+#view-feed .feed-sel{margin:0;vertical-align:middle}
+/* Command palette (panel-palette.js). The dialog is built at first open; these are its rules. */
+#cw-palette{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;background:color-mix(in srgb,var(--bg) 65%,transparent)}
+#cw-palette[hidden]{display:none}
+#cw-palette .cw-palette-box{width:min(40rem,92vw);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:.5rem;font-family:var(--sans)}
+#cw-palette-input{width:100%;box-sizing:border-box;padding:.75rem 1rem;font:inherit;font-size:.9375rem;color:var(--head);background:transparent;border:0;border-bottom:1px solid var(--line);outline:none}
+#cw-palette-list{list-style:none;margin:0;padding:.25rem 0;max-height:50vh;overflow:auto}
+#cw-palette-list li{display:flex;gap:.75rem;align-items:baseline;padding:.375rem 1rem;min-height:2rem;cursor:pointer}
+#cw-palette-list li[aria-selected="true"]{background:var(--wash)}
+#cw-palette-list li.cw-disabled,#cw-palette-list li.cw-empty{color:var(--dim);cursor:default}
+#cw-palette-list .cw-kind{font-family:var(--mono);font-size:.6875rem;color:var(--mut);min-width:4.5rem;text-transform:uppercase}
+#cw-palette-list .cw-label{color:var(--head)}
+#cw-palette-list .cw-hint{margin-left:auto;color:var(--mut);font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50%}
+#cw-palette-hint{padding:.375rem 1rem .625rem;color:var(--mut);font-size:.75rem;border-top:1px solid var(--line)}
+#cw-palette kbd{font-family:var(--mono);font-size:.6875rem;border:1px solid var(--line);border-radius:.25rem;padding:0 .3rem;color:var(--mut)}
+/* Guided setup (panel-journey.js). One list, one step per item, controls on the head line. */
+#view-journey ol.journey{list-style:none;margin:0;padding:0}
+#view-journey .journey-step{border-top:1px solid var(--line);padding:.75rem 0}
+#view-journey .journey-step.state-done .journey-body,#view-journey .journey-step.state-skipped .journey-body{color:var(--mut)}
+#view-journey .journey-head{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline}
+#view-journey .journey-controls{margin-left:auto;display:flex;gap:.5rem}
+#view-journey .journey-body{margin:.375rem 0 0 1.75rem}
+#view-journey .journey-body p{margin:.375rem 0}
+#view-journey ul.journey-tools{margin:.25rem 0 .5rem;padding-left:1.25rem}
+#view-journey pre.journey-cli{margin:.375rem 0 0;padding:.5rem .75rem;background:var(--panel2);border:1px solid var(--line2);border-radius:.25rem;font-size:.75rem;overflow:auto}
+#view-journey .journey-go{background:none;border:0;padding:0;color:var(--acc);font:inherit;cursor:pointer;text-decoration:underline}
+#view-journey .journey-ack,#view-journey .journey-unack{font-size:.75rem}
+#view-journey kbd{font-family:var(--mono);font-size:.6875rem;border:1px solid var(--line);border-radius:.25rem;padding:0 .3rem;color:var(--mut)}
+
+</style>
+
+</head>
+<body class="workspace-shell">
+<!-- Skip link — first focusable thing in the document. #views below holds 23 nav tabs, so without
+     this a keyboard user tabs the full strip before ever reaching content. Off-screen until
+     focused; see .skip-link in panel.css for the reveal. -->
+<a class="skip-link" href="#workspace-content">Skip to main content</a>
+<!-- Page title for the accessibility tree. The wordmark below already carries "commitwork"
+     visually (see the no-eyebrow note there) and a second visible title would duplicate it, so
+     this stays screen-reader-only — headings are the outline assistive tech navigates by, and the
+     page had none above h2 without it. -->
+<h1 class="sr-only">commitwork admin</h1>
+<header class="bar"><div class="row">
+<button type="button" id="nav-toggle" aria-controls="workspace-rail" aria-expanded="false">☰ Navigate</button>
+<div class="mark"><span class="seal"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="16" fill="#14161A"/><circle cx="16" cy="16" r="14.5" fill="none" stroke="#C9A227" stroke-width="1"/><circle cx="12" cy="20" r="2.4" fill="#C9A227"/><circle cx="21" cy="11" r="2.4" fill="none" stroke="#C9A227" stroke-width="1.3"/><path d="M13.7 18.3 L19.3 12.7" stroke="#C9A227" stroke-width="1.3" fill="none"/></svg></span><span class="wordmark">commitwork</span></div>
+<span id="scope-chip" class="scope-chip" data-scope="fleet">All projects</span>
+<span class="gen" id="gen"></span>
+<label class="bar-picker"><span class="sr-only">Project</span><select id="proj" title="Select project"><option value="">loading…</option></select></label>
+<div class="ctl-wrap"><div class="ctl-note" id="ph-stale" hidden></div><div class="ctl">
+<button id="sweep" class="pri" hidden>▶ Run checks</button>
+<button id="refresh">↻ Refresh</button>
+</div></div>
+<div class="menu">
+    <button type="button" id="menubtn" class="vtab" aria-expanded="false" aria-controls="menupop" title="reading the session…">
+      <span class="avatar unk" id="acct-av" aria-hidden="true">?</span>
+      <span class="acct-name" id="acct-name">session…</span>
+    </button>
+    <div id="menupop" class="pop" hidden>
+      <div class="pop-acct" id="acct-head" role="presentation">
+        <span class="avatar unk" id="acct-av2" aria-hidden="true">?</span>
+        <span class="acct-lines"><b id="acct-who">session unknown</b><span class="mut" id="acct-sub">the panel has not read /auth/session yet</span></span>
+      </div>
+      <div class="pop-h" role="presentation">Preferences</div>
+      <div class="pop-fld" role="presentation">
+        <span class="pop-lbl">Appearance</span>
+        <div class="theme-row" role="radiogroup" aria-label="Appearance">
+          <button type="button" class="theme-opt" data-theme-set="auto" role="radio" aria-checked="true" title="follow this machine's light/dark setting, and keep following it when it changes">AUTO</button>
+          <button type="button" class="theme-opt" data-theme-set="light" role="radio" aria-checked="false" title="always light, regardless of this machine's setting">LIGHT</button>
+          <button type="button" class="theme-opt" data-theme-set="dark" role="radio" aria-checked="false" title="always dark, regardless of this machine's setting">DARK</button>
+        </div>
+      </div>
+      <label class="pop-fld" id="cvd-row" title="Re-grade the severity, status and attribution colours for a colour-vision deficiency. Each palette is searched against that condition's own simulation, so the distinctions survive it rather than merely looking different.">
+        <span class="pop-lbl">Vision</span>
+        <select id="cvd-sel" aria-label="colour vision palette">
+          <option value="normal">Normal</option>
+          <option value="protanopia">Protanopia (red-blind)</option>
+          <option value="deuteranopia">Deuteranopia (green-blind)</option>
+          <option value="tritanopia">Tritanopia (blue-blind)</option>
+          <option value="achromatopsia">Achromatopsia (no colour)</option>
+        </select>
+        <span class="mut" id="cvd-note"></span>
+      </label>
+      <label class="pop-fld chk" id="learn-row" title="Contextual information for people who aren't software engineers. Short plain-English notes appear beside the terms this panel uses without defining them. Dismiss each one on its own; it stays dismissed.">
+        <input type="checkbox" id="learn-on"> <span class="pop-lbl">Learning mode</span>
+        <span class="mut" id="learn-note"></span>
+      </label>
+      <button type="button" class="menu-view" data-v="profile">Account &amp; security</button>
+<div class="pop-h" role="presentation">Session</div>
+      <div id="oauth" class="sect row-actions">
+        <button type="button" id="login-google" data-p="google" title="Sign in with Google" class="jshide">Google</button>
+        <button type="button" id="login-github" data-p="github" title="Sign in with GitHub" class="jshide">GitHub</button>
+        <button type="button" id="logout" title="log out">Log out</button>
+      </div>
+      <span id="oauth-who" class="mut jshide"></span>
+      </div>
+  </div>
+
+</div></header>
+
+<aside id="workspace-rail" aria-label="Workspace navigation">
+<div class="rail-label rail-scope" data-scope-head="fleet">All projects</div>
+<nav aria-label="All projects">
+<button type="button" class="rail-link" data-route="fleet">Overview</button>
+<button type="button" class="rail-link" data-route="rollups">Rollups</button>
+<button type="button" class="rail-link" data-route="remfleet">Remediation</button>
+<button type="button" class="rail-link" data-route="projects">Project list</button>
+<button type="button" class="rail-link" data-route="overwatch">Agent follow-ups</button>
+<button type="button" class="rail-link" data-route="verdicts">Decisions &amp; reviews</button>
+<button type="button" class="rail-link" data-route="cra">Reporting deadlines</button>
+</nav>
+<div class="rail-label rail-scope rail-project" data-scope-head="project">Project</div>
+<nav id="workspace-nav" aria-label="Project navigation"></nav>
+<div class="rail-label rail-manage">Manage</div>
+<nav aria-label="Administration">
+<button type="button" class="rail-link" data-route="settings">Check schedules</button>
+<button type="button" class="rail-link" data-route="perf">Check configuration</button>
+<button type="button" class="rail-link" data-route="held">Credentials &amp; connections</button>
+<button type="button" class="rail-link" data-route="journey" id="rail-journey" title="The guided setup: nine steps, each read from its own record; hidden once complete or dismissed.">Get set up</button>
+<a class="rail-link" href="/config">Configuration</a>
+<details class="rail-operations"><summary>Service operations</summary>
+<div class="pop-h" role="presentation">Panel</div>
+      <div id="panel-health" class="sect">
+        <span id="ph-line" class="mut">process health…</span>
+      </div>
+      <button type="button" id="ph-restart" title="restart the panel process — closes the listeners, spawns a successor from the code on disk with the same environment, and reloads this page when it answers">⟳ restart panel</button>
+      <button type="button" id="health" class="sect" title="build-health refresh for the selected project (unused code, toolchain, result origin, release checks) into its latest results — does not start a new scan">run healthcheck</button>
+    <a class="rail-link" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">Hosting dashboard ↗</a>
+</details></nav></aside>
+
+<div id="workspace-content" tabindex="-1">
+<div class="workspace-context"><div id="workspace-location" class="workspace-location"></div><p id="workspace-help"></p></div>
+<div class="row nav">
+<nav id="groups" aria-label="Finding categories"></nav>
+<label id="check-picker-row" hidden>View / check <select id="check-picker" aria-label="Choose a finding view or check"></select></label>
+<nav id="views" aria-label="Views">
+    <button type="button" data-v="fleet" class="vtab" title="Known vulnerabilities, including those being actively exploited, across every project, and when each was last checked.">All projects<span class="vn" id="vn-fleet"></span></button>
+    <button type="button" data-v="overview" class="vtab pri" title="live rollup for the selected project — KPIs, findings and CVEs">Project summary</button>
+    <button type="button" data-v="overwatch" class="vtab" title="The automated agent's plan, who is responsible for each task, and how to start or stop it.">Agent follow-ups<span class="vn" id="vn-overwatch"></span></button>
+    <button type="button" data-v="posture" class="vtab" title="Every security check, whether it ran recently, and what it found.">Security coverage<span class="vn" id="vn-posture"></span></button>
+    <button type="button" data-v="a11y" class="vtab" title="Barriers that may stop people using your site, checked against web accessibility standards; criteria not yet checked are listed too.">Accessibility<span class="vn" id="vn-a11y"></span></button>
+    <button type="button" data-v="delivery" class="vtab" title="Build health, release gates and dependency updates for this project.">Release readiness<span class="vn" id="vn-delivery"></span></button>
+    <button type="button" data-v="dashboard" class="vtab" title="The generated summary report for this project.">Dashboard report</button>
+    <button type="button" data-v="lanes" class="vtab" title="Every check, whether it runs for this project, and why.">Checks &amp; coverage<span class="vn" id="vn-lanes"></span></button>
+    <button type="button" data-v="sitemap" class="vtab" title="The site structure and the surface this project actually exposes, drawn as a 3-D map.">Site map</button>
+    <button type="button" data-v="exposure" class="vtab" title="Open connections reachable from outside, joined to what is unpatched.">Exposed services<span class="vn" id="vn-exposure"></span></button>
+    <button type="button" data-v="secrets" class="vtab" title="Credentials appearing in the current code, showing only the rule, file, line, and commit. Uses gitleaks.">Credentials in code<span class="vn" id="vn-secrets"></span></button>
+    <button type="button" data-v="held" class="vtab" title="Which credentials this machine holds, shown as present or absent only, and which checks cannot run without one.">Stored credentials<span class="vn" id="vn-held"></span></button>
+    <button type="button" data-v="codeql" class="vtab" title="Security issues found by tracing how data moves through Java code, across every project. Uses CodeQL.">Deep code analysis<span class="vn" id="vn-codeql"></span></button>
+    <button type="button" data-v="renovate" class="vtab" title="Automated dependency update requests and the dependency dashboard. Uses Renovate.">Dependency updates<span class="vn" id="vn-renovate"></span></button>
+    <button type="button" data-v="malware" class="vtab" title="Confirmed malicious packages identified by security advisories. Uses OpenSSF, osv.dev.">Malicious packages<span class="vn" id="vn-malware"></span></button>
+    <button type="button" data-v="socket" class="vtab" title="Supply-chain alerts for package behaviour, such as install scripts and network access, distinct from malicious verdicts. Uses Socket.">Package behaviour<span class="vn" id="vn-socket"></span></button>
+    <button type="button" data-v="stubs" class="vtab" title="TODO and FIXME markers, which are hygiene issues excluded from headline vulnerability totals.">Unfinished code<span class="vn" id="vn-stubs"></span></button>
+    <button type="button" data-v="comments" class="vtab" title="Shows long comment blocks and suggests shorter replacements for you to review and edit.">Comment quality<span class="vn" id="vn-comments"></span></button>
+    <button type="button" data-v="spinecomments" class="vtab" title="Shows long or grammatically incorrect comments in the main repository for review.">Internal comment quality<span class="vn" id="vn-spinecomments"></span></button>
+    <button type="button" data-v="denolint" class="vtab" title="Shows code style issues found by the Deno linter, kept separate from security scans. Uses Deno.">Code style<span class="vn" id="vn-denolint"></span></button>
+    <button type="button" data-v="denotypes" class="vtab" title="Shows type checking failures in Deno code, measuring the code itself rather than its imports. Uses Deno.">Type errors<span class="vn" id="vn-denotypes"></span></button>
+    <button type="button" data-v="secretshistory" class="vtab" title="Finds credentials that were committed in the past, even if deleted from current files. Uses TruffleHog.">Credentials in history<span class="vn" id="vn-secretshistory"></span></button>
+    <button type="button" data-v="cspm" class="vtab" title="Checks the security settings of your GitHub account; if its access token is missing, the page says so instead of showing a result.">Cloud settings<span class="vn" id="vn-cspm"></span></button>
+    <button type="button" data-v="depsjvm" class="vtab" title="Lists known security vulnerabilities in Java and Spring Boot dependencies. Uses Trivy.">Java vulnerabilities<span class="vn" id="vn-depsjvm"></span></button>
+    <button type="button" data-v="depsgo" class="vtab" title="Lists security vulnerabilities in Go modules that are actually used by your code. Uses govulncheck.">Go vulnerabilities<span class="vn" id="vn-depsgo"></span></button>
+    <button type="button" data-v="depsretire" class="vtab" title="Identifies known vulnerabilities in front-end JavaScript libraries not covered by other scanners. Uses Retire.js.">Web library risks<span class="vn" id="vn-depsretire"></span></button>
+    <button type="button" data-v="vendor" class="vtab" title="Shows third-party files added directly to your project, which lack version tracking.">Bundled files<span class="vn" id="vn-vendor"></span></button>
+    <button type="button" data-v="tls" class="vtab" title="Grades the security of your website's connection settings and headers against a live target.">Connection security<span class="vn" id="vn-tls"></span></button>
+    <button type="button" data-v="apifuzz" class="vtab" title="Tests the programming interface against its own specification to find unexpected behaviour or errors. Uses Schemathesis.">Interface checks<span class="vn" id="vn-apifuzz"></span></button>
+    <button type="button" data-v="supplychain" class="vtab" title="Checks package metadata for suspicious signals, providing a partial view of supply chain risks. Uses GuardDog.">Package risks<span class="vn" id="vn-supplychain"></span></button>
+    <button type="button" data-v="sast" class="vtab" title="Shows security issues found in your source code by static analysis tools. Uses Semgrep, CodeQL.">Code security<span class="vn" id="vn-sast"></span></button>
+    <button type="button" data-v="iac" class="vtab" title="Shows misconfigurations in your infrastructure-as-code files found by the latest scan. Uses Trivy.">Infrastructure settings<span class="vn" id="vn-iac"></span></button>
+    <button type="button" data-v="dast" class="vtab" title="Security issues found by scanning your live website. Uses nuclei.">Website security<span class="vn" id="vn-dast"></span></button>
+    <button type="button" data-v="actions" class="vtab" title="Are your automated build scripts safe from hijacking or excessive permissions? Uses zizmor.">Build automation<span class="vn" id="vn-actions"></span></button>
+    <button type="button" data-v="minify" class="vtab" title="Files too compressed or disguised to read, and code that decodes then runs hidden instructions.">Hard-to-read code<span class="vn" id="vn-minify"></span></button>
+    <button type="button" data-v="runtime" class="vtab" title="Findings from testing the running service, including whether users can reach data that is not theirs.">Running services<span class="vn" id="vn-runtime"></span></button>
+    <button type="button" data-v="bola" class="vtab" title="Can users access data or actions they should not be allowed to see?">Access control<span class="vn" id="vn-bola"></span></button>
+    <button type="button" data-v="stpa" class="vtab" title="A safety analysis of this panel's own fix-and-review process, redone from the current code on every run.">Process safety</button>
+    <button type="button" data-v="report" class="vtab" title="The evidence behind the latest check of this project: what was found, where, and by which check.">Evidence report<span class="vn" id="vn-report"></span></button>
+    <button type="button" data-v="remediation" class="vtab" title="Which problems should you fix first to reduce risk the fastest?">Prioritised fixes<span class="vn" id="vn-remediation"></span></button>
+    <button type="button" data-v="issues" class="vtab" title="What security tasks are currently open and waiting for attention?">Work items<span class="vn" id="vn-issues"></span></button>
+    <button type="button" data-v="daily" class="vtab" title="What does today's sweep suggest fixing first, and which veld todo holds each suggestion?">Daily suggestions<span class="vn" id="vn-daily"></span></button>
+    <button type="button" data-v="modmap" class="vtab" title="Which runtimes and language versions are out of date or near end of support, across every project.">Modernisation plan<span class="vn" id="vn-modmap"></span></button>
+    <button type="button" data-v="timeline" class="vtab" title="How have security findings for this project changed over time?">Timeline</button>
+    <button type="button" data-v="verdicts" class="vtab" title="The oversight system's recorded gate and sweep decisions, and whether its journal is healthy.">Decision history</button>
+    <button type="button" data-v="oversight" class="vtab" title="Did a person verify or dispute the automated security findings?">Human reviews</button>
+    <button type="button" data-v="correlations" class="vtab" title="Events from separate records that happened unusually close together, checks that disagreed, identical empty results across many repos, and how the unknown rate and gate floors have moved.">Correlations</button>
+    <button type="button" data-v="determinations" class="vtab" title="How certain are we about each finding, and what proof supports it?">Evidence &amp; confidence<span class="vn" id="vn-determinations"></span></button>
+    <button type="button" data-v="cra" class="vtab" title="When must you report security incidents to regulators or internal teams?">Reporting deadlines<span class="vn" id="vn-cra"></span></button>
+    <button type="button" data-v="perf" class="vtab" title="How long will security scans take with your chosen settings and hardware?">Scanner performance</button>
+    <button type="button" data-v="allfindings" class="vtab" title="Every open finding for this project, from every check, most severe first.">All findings</button>
+    <button type="button" data-v="feed" class="vtab" title="Findings grouped by place and joined to the work tracker; Focus hides nothing without saying how much.">Findings feed<span class="vn" id="vn-feed"></span></button>
+    </nav>
+</div>
+
+
+<script>
+/* The view iframe subtracts the REAL header height: the bar is two rows now (and wraps on narrow
+   screens), so the old hardcoded 56px under-measured it and the iframe scrolled off-canvas. */
+(function(){function bh(){var b=document.querySelector('.bar');if(b)document.documentElement.style.setProperty('--barh',b.offsetHeight+'px');}bh();addEventListener('resize',bh);if(typeof ResizeObserver!=='undefined'){var b=document.querySelector('.bar');if(b)new ResizeObserver(bh).observe(b);}})();
+</script>
+<!-- live sweep console — appears while a sweep runs (or just finished); tails the job's output,
+     shows phase/progress, and the panel auto-refreshes its numbers the instant the sweep ends.
+     Sits outside #overview so it stays visible even on the iframe tabs. -->
+<div id="sweepbar" class="jshide">
+  <div class="card card-tight">
+    <div class="con-head">
+      <span id="sw-ico" class="spin"></span>
+      <b id="sw-title" class="con-title">sweep running…</b>
+      <span id="sw-sub" class="mut tnum t-body"></span>
+      <span id="sw-elapsed" class="gen tnum push-right"></span>
+      <!-- the transport lives here too: the console is where an operator watching a long run
+           actually is, and making them scroll back to the header strip to stop it is the kind of
+           gap that gets a runaway sweep left running. Hidden while nothing is running. -->
+      <button type="button" id="sw-stop" class="vtab vtab-sm jshide" title="stop the running sweep — completed areas keep their results; the area in flight publishes nothing">■ stop</button>
+      <button type="button" id="sw-hide" class="vtab vtab-sm">hide</button>
+    </div>
+    <div class="prog">
+      <div id="sw-prog"></div>
+    </div>
+    <pre id="sw-log" class="con-log"></pre>
+  </div>
+</div>
+<!-- run-health panel — the display "▶ run health" never had. The trigger sits in the header strip
+     beside "▶ run sweep"; until this panel existed the ONLY trace of a run was the button's own
+     label, which reverts the instant the run ends. A trigger whose result has nowhere to land is
+     the exit-code-with-no-subscriber shape this repo indicts by name.
+
+     It renders whenever the overview does, including when there is nothing to report, because
+     "no run" is one of the states it exists to tell apart from the others — a panel that appears
+     only on success cannot say that nothing has happened. -->
+<div id="healthbar" class="jshide">
+  <div class="card card-tight">
+    <div class="con-head">
+      <span id="hb-ico"></span>
+      <b id="hb-title" class="con-title">health</b>
+      <span id="hb-sub" class="mut tnum t-body"></span>
+      <span id="hb-age" class="gen tnum push-right"></span>
+      <!-- The trigger belongs HERE for the same reason ■ stop lives in the sweep console's head:
+           this box is where an operator finds out there is no record, or that the record is nine
+           days old, and sending them back to the ≡ menu to act on it is the gap that leaves the
+           reading unacted on. It is present in every state, not only "no record" — a stale verdict
+           is the other state whose answer is "run one". Same handler as the menu item, never a
+           second copy of the start logic. -->
+      <button type="button" id="hb-run" class="vtab vtab-sm" title="build-health refresh for the selected project (unused code, toolchain, result origin, release checks) into its latest results — does not start a new scan">▶ run healthcheck</button>
+    </div>
+    <div class="prog">
+      <div id="hb-prog"></div>
+    </div>
+    <pre id="hb-log" class="con-log jshide"></pre>
+  </div>
+</div>
+<!-- live remediation console — the dual-agent CodeQL pipeline's counterpart to the sweep console
+     above: appears when an analysis is dispatched (or via the CodeQL tab's console button),
+     streams each job's stage verdicts as STRUCTURED rows the moment they land, tails the job's
+     own event narration, and stays up — dismissable — after the last job lodges. Outside the
+     views for the same reason the sweep console is: a long pipeline should stay visible while
+     the operator looks at other tabs. -->
+<div id="cq-console" class="jshide">
+  <div class="card card-tight">
+    <div class="con-head">
+      <span id="cqc-ico" class="spin"></span>
+      <b id="cqc-title" class="con-title">remediation</b>
+      <span id="cqc-sub" class="mut tnum t-body push-right"></span>
+      <button type="button" id="cqc-hide" class="vtab vtab-sm">hide</button>
+    </div>
+    <div id="cqc-body"></div>
+  </div>
+</div>
+<!-- embedded rich views (dashboard/timeline/runtime), served from this same port -->
+<iframe id="viewframe" title="commitwork view" class="jshide"></iframe>
+<!-- tabindex=-1: not in tab order, but makes this a valid target for the skip link's focus move
+     (an anchor jump alone scrolls a <main> into view without focusing it) -->
+<main class="wrap" id="overview" tabindex="-1">
+  <!-- 1 · DASHBOARD -->
+  <section>
+    <!-- Global sweep posture. Renders BEFORE the KPI tiles because it qualifies them: a tile
+         showing 0 findings means one thing under a fresh sweep and something else entirely
+         under "never run", and the reader needs that qualifier first, not after. -->
+    <div class="posture" id="posture" aria-label="Sweep posture"></div>
+    <div class="kpis" id="kpis"></div>
+  </section>
+  <section>
+    <div class="hd" data-explain="scan-coverage"><h2>Repositories</h2><span class="n" id="fleetn">build health · merged / retired scan records</span><span class="mut hd-note">advisory = no bytecode to verify · skipped = no engines declared · partial = present but not wired · hover any status for detail</span></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Slice</th><th>Worst CVE</th><th>Deadcode</th><th>Toolchain</th><th>Provenance</th><th>Boot test</th><th>Contracts</th><th>OpenAPI</th><th>CI</th><th title="re-run every scanner for just this repo">Run</th></tr></thead><tbody id="repos"></tbody></table></div>
+  </section>
+  <!-- 1b · SCANNER COVERAGE — "grey is not green", applied to scanner CATEGORIES. checks-status.json
+       is honest per repo (pass | skip | noscan with a reason); the fleet aggregate used to destroy
+       that honesty: a category with ZERO successful runs summed to total:0, byte-identical to "ran
+       everywhere, found nothing". A category whose `ran` is 0 renders as a VOID — no findings
+       number at all, because no findings figure exists. -->
+  <section>
+    <div class="hd" data-explain="lane"><h2>Check coverage</h2><span class="n" id="scann"></span><span class="mut hd-note">ran / skipped / noscan are repo counts from checks-status.json · a 0-findings figure only means something where ran &gt; 0 · noscan = the check ran and produced no trustworthy output</span></div>
+    <div class="tw"><table><thead><tr><th>Category</th><th>Findings</th><th>Ran</th><th>Skipped</th><th>Noscan</th><th>State</th><th title="re-run just this scanner for the selected project">Run</th></tr></thead><tbody id="scanners"></tbody></table></div>
+  </section>
+  <!-- 1c · REPORT INTEGRITY (R1) — states that were computed and stored but invisible: the
+       conservation invariant (published + truncated must reconstruct each declared total), the
+       byte-identical husk detector, and the slice history's sliceSha256 verify. House rules bind
+       every cell: grey ≠ green (never-checked / never-measured / no-history are their own states,
+       never clean), violet ≠ grey (an uncorroborated zero is not unknown), and over-reporting is
+       as wrong as under (unverified-legacy is drawn, never alarmed). .pill.unrf lives in
+       static/panel.css — the CSP forbids an inline style block, and the invariant test proves it. -->
+  <section>
+    <div class="hd"><h2>Report integrity</h2><span class="n" id="intg-n">—</span>
+      <span class="mut hd-note">conservation = the rows shown plus the rows cut off add up to the declared total · husk = one identical empty result file repeated across many repos repos · verify = slice bytes against the hash its index recorded</span></div>
+    <div class="grid2">
+      <div class="card"><h3>Conservation</h3><div id="intg-cons" class="mut">—</div></div>
+      <div class="card"><h3>Scan history check</h3><div id="intg-tl" class="mut">—</div></div>
+    </div>
+    <div class="tw"><table><thead><tr><th>Category</th><th>Hash</th><th>Repos</th><th>Bytes</th><th>Where</th></tr></thead><tbody id="intg-anom"></tbody></table></div>
+  </section>
+  <!-- 2 · RUNTIME DAST / BOLA -->
+  <section><div class="grid2">
+    <div class="card"><h3>Running services — live website test and access control</h3><div id="runtime"></div></div>
+    <div class="card"><h3>CodeQL — fleet (Java)</h3><div id="codeql"></div></div>
+  </div></section>
+  <!-- 3 · CVEs -->
+  <section>
+    <div class="hd" data-explain="cve"><h2>CVEs</h2><span class="n" id="cven"></span></div>
+    <div class="tw"><table><thead><tr><th>Package</th><th>Sev</th><th>Services</th><th>Status</th><th>Detail</th></tr></thead><tbody id="cves"></tbody></table></div>
+  </section>
+  <!-- 4 · REMEDIATION (CVE + runtime/BOLA) -->
+  <section>
+    <div class="hd"><h2>Remediation</h2><span class="n" id="remn">Known vulnerabilities · live website · access control · connections · cloud settings</span></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Source</th><th>Sev</th><th>Item</th><th>Action</th><th>Status</th></tr></thead><tbody id="remed"></tbody></table></div>
+  </section>
+  <!-- 4b · PROGRAM worklist (modernization / launch) -->
+  <section>
+    <div class="hd"><h2>Program worklist</h2><span class="n" id="progn"></span></div>
+    <div id="waves" class="chiprow"></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Item</th><th>Status</th><th>pw</th></tr></thead><tbody id="worklist"></tbody></table></div>
+  </section>
+  <!-- secondary -->
+  <section>
+    <div class="hd"><h2>Services</h2><span class="n">bridged on this port · tab between them</span></div>
+    <div id="svctabs" class="chiprow"></div>
+    <iframe id="svcframe" title="bridged service"></iframe>
+  </section>
+  <section>
+    <div class="hd"><h2>Capability matrix</h2><span class="n" id="dimn"></span></div>
+    <div class="tw"><table><thead><tr><th>Dimension</th><th>Tooling</th><th>Gate</th><th>State</th></tr></thead><tbody id="dims"></tbody></table></div>
+  </section>
+  <div class="foot" id="foot">Localhost only.</div>
+</main>
+<!-- FLEET — the whole box in one page, and the panel's no-project-selected dashboard.
+     Every other tab answers a question about ONE project, and reportsFor() goes to some length to
+     make sure it cannot answer with another's numbers. Nothing answered the fleet-wide question at
+     all: with no project chosen the page showed a prompt and four empty tiles, so "how many KEVs do
+     we carry" and "is anything still being swept" were questions the instrument could not be asked.
+     A FLEET TOTAL IS STILL NOT A PROJECT'S POSTURE. The Overview tab's refusal to fill its
+     project-labelled KPI row with a fleet sum stands untouched — what changed is that the fleet has
+     a page of its own, headed as the fleet, with the contributing areas listed under every
+     aggregate. The label always names the population the number came from.
+     EVERY TOTAL SHOWS ITS DENOMINATOR, because 39 area directories do not all contribute to every
+     sum: some have never been swept, some predate a field, and some never consulted the KEV
+     catalogue. `n areas` beside a figure is not decoration — it is what makes the figure sayable. -->
+<main class="wrap vhide" id="view-fleet">
+  <section>
+    <div class="hd"><h2>Fleet</h2><span class="n" id="fl-n">—</span>
+      <span class="mut hd-note">every area on this box, not a project · each total names how many areas it was summed over</span></div>
+    <div id="fl-banner"></div>
+    <div class="kpis" id="fl-kpis"></div>
+  </section>
+  <section>
+    <div class="hd"><h2>Fleet health</h2><span class="n" id="fl-hn">—</span>
+      <span class="mut hd-note">the same verdict the hourly missed-scan alarm publishes (<code>monitor/liveness.mjs</code>) — this page and the alarm cannot disagree</span></div>
+    <div id="fl-health"><span class="mut">loading…</span></div>
+  </section>
+  <section>
+    <div class="hd"><h2>Areas</h2><span class="n" id="fl-an">—</span>
+      <span class="mut hd-note">last scanned is when the scan ran, never when its results were last re-stamped · click an area to open its Overview</span></div>
+    <div class="tw"><table><thead><tr><th>Area</th><th>Health</th><th>Last scanned</th><th>Repos</th><th>CVEs</th><th>KEV</th><th>All lanes</th></tr></thead><tbody id="fl-rows"></tbody></table></div>
+    <div class="foot" id="fl-foot">Two populations, never added together. <b>CVEs</b> is the dependency-advisory feed alone (osv + npm), which is what "CVE" names; <b>all lanes</b> is every check minus the categories left out of the headline figure. <b>KEV</b> is tri-state: a count is shown only where the area recorded that it consulted the catalogue, because a 0 from a fleet with no exploited CVEs and a 0 from a catalogue that never loaded are the same digit and opposite facts. <b>never swept</b> means no result, not a clean area, and an <b>unreadable</b> results file contributes to no total — only a missing file means legitimately absent.</div>
+  </section>
+</main>
+<!-- CodeQL · fleet — native tab (not an iframe view): per-service CodeQL findings from the
+     newest sweep batch, snapshotted to /reports/codeql-fleet.json by monitor/codeql-fleet-data.mjs.
+     Static file served from disk per request → refreshing the JSON refreshes this tab, no restart. -->
+<main class="wrap vhide" id="view-codeql">
+  <section>
+    <div class="hd"><h2>CodeQL — fleet</h2><span class="n" id="cq-n"></span></div>
+    <div class="kpis gap-strip" id="cq-summary"></div>
+    <div id="cq-remed-top"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Message</th><th>Location</th><th>Remediation</th></tr></thead><tbody id="cq-rows"></tbody></table></div>
+    <div id="cq-remed-bottom"></div>
+    <div class="foot">Batch <code id="cq-batch">—</code> · severity as reported by the scanner <code>security-severity</code>/level, bucketed identically to <code>monitor/rollup.mjs</code> (sastCodeqlJava) · regenerate: <code>node monitor/codeql-fleet-data.mjs</code> · fix suggestions: two agents (local Qwen 3.8 + Opus via <code>claude -p</code>), cross-reviewed, lodged under <code>reports/&lt;area&gt;/codeql-remediation/</code></div>
+  </section>
+</main>
+<!-- Secrets / Supply chain / Malware — the drill-down behind three scanner categories that until now
+     appeared only as a count in the coverage table. All three render from `scannerFindings` on the
+     /api/state payload the panel already polls: no second fetch, no separate producer to forget to
+     run, and no way for these tables to disagree with the coverage row above them. Each carries a
+     coverage banner BEFORE its rows, because "no rows" and "nothing scanned" must never look alike.
+     Deliberately NOT modelled on the CodeQL tab — see REMEDIATION-scanner-tabs-2026-08-01. -->
+<!-- Posture — the board that answers "what security approaches do we run, and which of them are
+     actually running". Every other tab reports findings; this one reports COVERAGE, which is the
+     thing that fails silently. Grey is a first-class state here and is never sorted or coloured
+     like a pass: an approach that did not run has no result to be clean. -->
+<!-- Delivery — the non-security half of the same board. Split out because these 14 approaches read
+     their verdicts from repos[].buildHealth / qualityGates / depsUpdates rather than from
+     `scanners`, so while they shared the security page they were permanently grey: rows that could
+     never go green, on the one page whose entire point is that grey means something. -->
+<!-- Accessibility — WCAG 2.2 by success criterion. The three-state model is the point: this
+     scanner is static, so a large share of AA is simply not decidable from markup, and reporting
+     those as passes would manufacture a conformance claim nobody made. -->
+<main class="wrap vhide" id="view-a11y">
+  <section>
+    <div class="hd"><h2>Accessibility — WCAG 2.2</h2><span class="n" id="a11y-n">—</span></div>
+    <div id="a11y-conf"></div>
+    <div class="tw"><table><thead><tr><th>State</th><th>Criterion</th><th>Level</th><th>Name</th><th>Detail</th><th>Verified by hand</th></tr></thead><tbody id="a11y-rows"></tbody></table></div>
+    <div class="foot">Each row is one WCAG success criterion. <b>fail</b> — checked statically, violations listed · <b>pass</b> — checked statically, none found · <b>unchecked</b> — NOT decidable from static markup: it needs a browser (rendered size, focus obstruction) or human judgement (is this alt text accurate? is the focus order meaningful?). Unchecked is not a pass and it blocks a conformance claim exactly as a failure does — which is why the headline reads <i>unverified</i> rather than <i>conformant</i> while any remain. Level A before AA: an A failure excludes people outright. <b>signed pass</b> — a named person opened the page and verified it by hand; it is <i>not</i> a scanner pass and is counted separately everywhere, it is bound to the exact page content that was checked, and it lapses the moment that content changes. A signed statement by an agent rather than a person is recorded, shown olive, and clears nothing.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-delivery">
+  <section>
+    <div class="hd"><h2>Delivery health</h2><span class="n" id="dl-n">—</span></div>
+    <div id="dl-cards"><span class="mut">loading…</span></div>
+    <div class="foot">Build health, release checks, inventory files and housekeeping, summarised per repo from this area's own results. These blocks carry <b>no record of which repos were checked</b> — only a recorded value per repo — so a light here says what the repos reported, never that a check "provably ran". <b>n/a</b> is its own state on purpose: a release check that was evaluated and found not to apply is a decision, and filing it next to "never evaluated" is how a settled question starts looking like an open one.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-posture">
+  <section>
+    <div class="hd"><h2>Security coverage</h2><span class="n" id="po-n">—</span></div>
+    <div id="po-window"></div>
+    <div id="po-classvoids"></div>
+    <div id="po-cards"><span class="mut">loading…</span></div>
+    <div class="foot">Each row is one integrated approach, worst first. The light is a 7-day judgement over this area's own results: <b>green</b> ran in the window and found nothing · <b>amber</b> found something below crit/high, or ran on only part of the fleet, or its last run predates the window · <b>red</b> crit/high findings · <b>grey</b> did not run, or nothing has ever spoken for it. Grey is absence of evidence, never a clean result.</div>
+  </section>
+  <section>
+    <div class="hd"><h2>Toolchain</h2><span class="n" id="po-tn">—</span></div>
+    <div class="tw"><table><thead><tr><th>Tool</th><th>Kind</th><th>Present</th><th>Version</th><th>Used by</th></tr></thead><tbody id="po-tools"></tbody></table></div>
+    <div class="foot" id="po-tfoot">Everything the configuration actually RUNS — scanner programs and pinned container images — as opposed to the catalogue files that only describe them. A missing tool produces skips, and many skips can look like coverage.</div>
+  </section>
+  <section>
+    <div class="hd" data-explain="severity"><h2>Escalation artefacts</h2><span class="n" id="po-en">—</span></div>
+    <div class="tw"><table><thead><tr><th>Finding</th><th>Service</th><th>Sev</th><th>Exposed</th><th>SLA</th><th>Overdue</th><th>Residual</th></tr></thead><tbody id="po-esc"></tbody></table></div>
+    <div class="foot" id="po-efoot">Findings past their SLA tier (crit 7d · high 30d · med 90d · low 180d), from this area's <code>lifecycle.json</code>. A breach is the artefact of a decision not made — fix it or record the acceptance.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-held">
+  <section>
+    <div class="hd"><h2>Platform secrets</h2><span class="n" id="cred-n">—</span></div>
+    <div id="cred-counts" class="cred-counts"></div>
+    <div id="cred-blocked"></div>
+    <div class="tw"><table><thead><tr><th>Name</th><th>Where it lives</th><th>State</th><th>Blocks</th></tr></thead><tbody id="cred-rows"></tbody></table></div>
+    <div class="foot">Presence only — <b>no credential value is read, returned or rendered</b>. <code>lib/secrets.mjs</code> has no getter by design: a value printed to a page is a value in a screenshot. The store is a REF TABLE (<code>~/.commitwork/secrets.json</code>) mapping an env var name to a <code>keychain:service/account</code> pointer; the care lives in the Keychain. Three absences are kept apart because they need different fixes — <b>undeclared</b> (nobody has said where it lives) · <b>unresolvable</b> (a ref exists and the lookup FAILED) · <b>overridden</b> (an env var is shadowing the ref). Store one with <code>node bin/secrets.mjs set NAME</code>, which prompts so the value is typed, never passed as an argument.</div>
+  </section>
+</main>
+
+<main class="wrap vhide" id="view-secrets">
+  <section>
+    <div class="hd" data-explain="false-positive"><h2>Secrets</h2><span class="n" id="sec-n">—</span></div>
+    <div id="sec-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>File</th><th>Line</th><th>Sev</th><th>Commit</th><th>Verified</th><th>Entropy</th><th>Test path</th><th>Context</th><th>Public by design</th><th>Triage</th></tr></thead><tbody id="sec-rows"></tbody></table></div>
+    <div class="foot" id="sec-foot">Gitleaks, from each repo's <code>gitleaks.json</code> in the latest results. Reports are written with <code>--redact</code>, and the results keep only these fields (rule / file / line / commit / entropy) — no secret value or matched line ever reaches this page. <b>Gitleaks performs no verification</b>, so a row is only graded when a verifier answered: <b>Verified</b> yes is critical, an issuing service refusing it is low, and <b>—</b> means nobody could be asked, which is counted as undetermined rather than as a finding and is NOT the same as safe. <b>Test path</b> marks a test file or test data, where a credential is usually deliberate — across a 100-repo sample that was 87% of all rows. <b>Triage</b> records an attributed judgment (who/why, in <code>monitor/annotations.json</code>): the row stays, struck through, and leaves the counts when results are next collected — suppressed is never deleted. CLI equivalent: <code>node bin/annotate.mjs</code>.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-lanes">
+  <section>
+    <div class="hd"><h2>Lanes</h2><span class="n" id="ln-n">—</span>
+      <span class="mut" id="ln-msg"></span>
+      <span class="mut hd-note">a checked box is an override on this project · grey is inherited from the fleet derivation · dashed cannot run here, whatever the box says</span></div>
+    <div class="tw"><table><thead><tr><th>Lane</th><th>Check</th><th>Cost</th><th title="on for this project?">Runs</th><th>Inherited</th><th>Why</th></tr></thead><tbody id="ln-rows"></tbody></table></div>
+    <div class="foot" id="ln-foot">Every scanner category the fleet declares, derived from the tuning model rather than a hand-kept list — a lane added to the roster appears here without anyone remembering to add it. The box shows THIS project's state: checked or unchecked is an explicit override, grey is inherited. A dashed box is a lane that cannot run here (no tool, no target, nothing for it to read) and forcing it on does not make it runnable — that is reported as blocked, never as running.</div>
+  </section>
+</main>
+
+<main class="wrap vhide" id="view-overwatch">
+  <section>
+    <!-- SOURCE STATES FIRST, and they are never folded into the tables below. Three independent
+         sources answer this tab; one being unreachable must not blank the others, and must never
+         render as that source having nothing to say. -->
+    <div class="hd"><h2>Overwatch</h2><span class="n" id="sb-n">—</span>
+      <span class="mut hd-note">the overwatch layer's plans and tasks, who is holding them, and starting one</span></div>
+    <div id="sb-sources" class="chiprow" aria-live="polite"></div>
+    <!-- The dispatch gate states itself BEFORE any control is drawn. A disabled button with no
+         reason is its own defect; on a published hostname this says which port to use and why. -->
+    <div id="sb-gate" class="mut"></div>
+    <div id="sb-profile" class="mut"></div>
+  </section>
+
+  <section>
+    <!-- SPEND, IN THE UNIT THE ACCOUNT IS ACTUALLY BILLED IN. The plan is DETECTED, never
+         configured: a subscription reports null dollar limits and a metered account populates them,
+         so the panel reads which it is rather than being told. On a flat-rate plan a USD column is
+         an invention, and what constrains the fleet is the rate-limit window, not a price. -->
+    <div class="hd"><h2>Spend and limits</h2><span class="n" id="sb-usage-n">—</span>
+      <span class="mut hd-note">the plan is detected from the account's own usage cache — dollars are shown only when they were measured</span></div>
+    <div id="sb-usage" class="chiprow" aria-live="polite"></div>
+    <div id="sb-usage-why" class="mut"></div>
+    <div class="tw"><table><thead><tr><th>Window</th><th>Used</th><th>Resets</th><th>Limit</th></tr></thead><tbody id="sb-usage-rows"></tbody></table></div>
+    <div id="sb-tokens" class="mut"></div>
+  </section>
+
+  <section>
+    <!-- ONE ROW PER SESSION. The window a session lives in used to be a second table keyed
+         differently, so you could read both and still not know which agent was working on what.
+         Name, project and window are the same fact about one session and now sit on one row. -->
+    <div class="hd"><h2>Sessions</h2><span class="n" id="sb-runs-n">—</span>
+      <span class="mut hd-note">awaiting_approval is its own state — a bounded stall is still a stall nobody can see. <b>unattributed</b> is a live session whose ids name no window; <b>unknown</b> is one opened before identity resolution existed. One was asked and found nothing, the other was never asked</span></div>
+    <div class="tw"><table><thead><tr><th>Session</th><th>Project</th><th>Status</th><th>Model</th><th>Turns / tokens</th><th>Touched</th><th>Last said</th><th>Act</th></tr></thead><tbody id="sb-runs"></tbody></table></div>
+    <div id="sb-win-extra" class="mut"></div>
+  </section>
+
+  <section>
+    <div class="hd"><h2>Plans and tasks</h2><span class="n" id="sb-plans-n">—</span>
+      <span class="mut hd-note">plans carrying no project slug appear under <b>unattributed</b> rather than being filtered away — a plan with no slug is not a plan belonging to nobody</span></div>
+    <!-- The filter is a VIEW over the rows already fetched, so narrowing to one project cannot be
+         mistaken for the fleet having gone quiet: the count states both numbers. -->
+    <div class="chiprow">
+      <label class="mut" for="sb-plan-project">Project</label>
+      <select id="sb-plan-project" aria-label="Filter plans by project"><option value="">all projects</option></select>
+      <label class="mut" for="sb-plan-status">Status</label>
+      <select id="sb-plan-status" aria-label="Filter plans by status">
+        <option value="">any status</option><option value="active">active</option>
+        <option value="pending">pending</option><option value="completed">completed</option>
+      </select>
+      <span class="mut" id="sb-plans-shown"></span>
+    </div>
+    <div class="tw"><table><thead><tr>
+      <th><button class="lnk" data-ow-sort="name">Plan / task</button></th>
+      <th><button class="lnk" data-ow-sort="status">Status</button></th>
+      <th>Held by</th>
+      <th><button class="lnk" data-ow-sort="started">Started</button></th>
+      <th><button class="lnk" data-ow-sort="updated">Last updated</button></th>
+      <th>Act</th>
+    </tr></thead><tbody id="sb-plans"></tbody></table></div>
+  </section>
+
+
+  <section>
+    <!-- LAUNCHING AN AGENT FROM HERE. The buttons send a preset ID, never prompt text: every brief
+         lives in admin/lib/agent-launch.mjs and is reviewable as code. A panel that accepted a
+         prompt would be an arbitrary-instruction channel into an agent holding this operator's
+         tools. Plan mode is pinned by the route, so nothing started here can edit files. -->
+    <div class="hd"><h2>Launch new agent</h2><span class="n" id="sb-launch-n">—</span>
+      <span class="mut hd-note">the brief is written in tracked code and picked by name — this page never sends prompt text, and the route pins plan mode so a launched agent cannot edit files</span></div>
+    <div id="sb-launch-presets" class="chiprow"></div>
+    <div class="chiprow">
+      <label class="mut" for="sb-launch-project">Project</label>
+      <select id="sb-launch-project" aria-label="Project to launch the agent in"><option value="">no project</option></select>
+      <label class="mut" for="sb-launch-backend">Backend</label>
+      <select id="sb-launch-backend" aria-label="Runner backend"><option value="">runner default</option></select>
+      <label class="mut" for="sb-launch-skill">Skill</label>
+      <select id="sb-launch-skill" aria-label="Optional skill to run"><option value="">no skill</option></select>
+      <label class="mut"><input type="checkbox" id="sb-launch-repo-only" checked> repo-oriented skills only</label>
+    </div>
+    <div id="sb-launch-skill-why" class="mut"></div>
+    <div id="sb-launch-status" class="mut" role="status" aria-live="polite"></div>
+  </section>
+
+  <section>
+    <div class="hd"><h2>Runners</h2><span class="n" id="sb-be-n">—</span>
+      <span class="hd-note mut">a local port is NOT probed on render, so no readiness is claimed for one — an unprobed "ready" is grey rendered as green</span></div>
+    <div class="tw"><table><thead><tr><th>Backend</th><th>Kind</th><th>Dials</th><th>State</th><th>Why not</th></tr></thead><tbody id="sb-backends"></tbody></table></div>
+  </section>
+</main>
+
+<main class="wrap vhide" id="view-verdicts">
+  <section>
+    <div class="hd"><h2>Guard decisions</h2><span class="n" id="vd-n">—</span></div>
+    <div class="tw"><table><thead><tr><th>Gate</th><th>State</th><th>Last verdict</th><th>When</th><th>Silenced</th><th>Entries</th></tr></thead><tbody id="vd-gates"></tbody></table></div>
+    <div class="hd" data-explain="sweep"><h2>Full scan outcomes</h2></div>
+    <div class="tw"><table><thead><tr><th>Area</th><th>State</th><th>Slice</th><th>Rollup</th><th>Issues</th><th>Duration</th><th>When</th></tr></thead><tbody id="vd-areas"></tbody></table></div>
+    <div id="vd-fleet" class="mut"></div>
+    <!-- R1: --tally's fatigue + calibration sections, served through the read-time allowlist
+         (admin/lib/served-projection.mjs). A zero here is only green when it is corroborated. -->
+    <div class="hd"><h2>Suppression fatigue</h2><span class="n" id="vd-fat-n">—</span>
+      <span class="mut hd-note">targets suppressed again and again and never adjudicated — adjudicate or retune; read-only, proposal-only</span></div>
+    <div class="tw"><table><thead><tr><th>Target</th><th>Suppressed</th><th>Labels</th><th>Expiring</th></tr></thead><tbody id="vd-fatigue"></tbody></table></div>
+    <div class="hd"><h2>Calibration</h2><span class="n" id="vd-cal-n">—</span>
+      <span class="mut hd-note">per check · model, from finding adjudications — a rate over zero adjudications is an invention and renders as none</span></div>
+    <div class="tw"><table><thead><tr><th>Check</th><th>Model</th><th>Adjudicated</th><th>Unadjudicated</th><th>False-alarm rate</th><th>False-clean rate</th></tr></thead><tbody id="vd-calib"></tbody></table></div>
+    <!-- R1/1.5: N-chain review that did not converge (bin/issue-llm.mjs). truth is null on every
+         row BY DESIGN — self-consistency is never ground truth, so nothing here may render as
+         adjudicated. Evidence/basis are sha256 envelopes on disk; only their existence shows. -->
+    <div class="hd"><h2>Escalations — awaiting human adjudication</h2><span class="n" id="vd-esc-n">—</span>
+      <span class="mut hd-note">chains that disagreed, errored, or tripped the reasoning lint — a queue for a person, never a verdict</span></div>
+    <div class="tw"><table><thead><tr><th>When</th><th>Finding</th><th>Category</th><th>Reason</th><th>Chains</th><th>Model</th><th>Evidence</th></tr></thead><tbody id="vd-esc"></tbody></table></div>
+    <!-- triage queue: ranked rows, deferred never dropped -->
+    <div class="hd"><h2>Review queue — what people have time to check</h2><span class="n" id="vd-tri-n">—</span>
+      <span class="mut hd-note">unknown results for the current project, ranked by the rules below and limited to what one review cycle can handle · a recorded answer goes to the decision log with its basis sealed as sha256 · accepts changes only from this machine</span></div>
+    <div id="vd-tri-sum" class="mut"></div>
+    <details class="card card-tight"><summary class="point">ranking rules</summary><ol id="vd-tri-rules"></ol></details>
+    <div class="tw"><table><thead><tr><th>#</th><th>Repo</th><th>Lane</th><th>Finding</th><th>Claimed</th><th>Why undetermined</th><th>Adjudicate</th></tr></thead><tbody id="vd-tri"></tbody></table></div>
+    <div id="vd-tri-def" class="mut"></div>
+    <div class="foot">The oversight layer's own decision history — what each guard DECIDED, per run, including the turns it held back. Guard rows are a <b>redacted projection</b> (verdict enums, counts, timestamps — never headlines, test names, file lists or session labels; those live in <code>.claude/</code>, which nothing serves). Full scan rows come from each area's <code>sweep-journal.jsonl</code>, structured-only at the point of writing. <b>no result — guard not running</b> is a displayed state, never a clean one: a disconnected guard, a guard that never ran and a guard whose log folder cannot be written all look different here, on purpose. CLI equivalent: <code>node bin/verdict-journal.mjs --tally</code>.</div>
+  </section>
+</main>
+<!-- ── OVERSIGHT ───────────────────────────────────────────────
+     Verdicts is what the GATES decided. This is what PEOPLE decided about those decisions, and the
+     two sit side by side deliberately: an instrument that is never checked and a checker whose work
+     is never recorded fail the same way, quietly.
+     THE CHAIN VERDICT IS RENDERED, not assumed. A ledger whose chain is broken must not present as
+     a list of trustworthy signatures, so broken/torn counts appear beside the rows rather than in a
+     log nobody opens. -->
+<main class="wrap vhide" id="view-oversight">
+  <section>
+    <div class="hd"><h2>Human oversight</h2><span class="n" id="ov-n">—</span></div>
+    <div id="ov-chain" class="mut"></div>
+    <div class="tw"><table><thead><tr><th>When</th><th>Who</th><th>Stance</th><th>Subject</th><th>Basis</th></tr></thead><tbody id="ov-rows"></tbody></table></div>
+    <div class="foot">A record here states that a person read a determination this fleet published and either <b>corroborates</b> it or <b>disputes</b> it. It changes no severity and hides no row — suppression is the scanner-annotation vocabulary’s job, kept separate on purpose, because a mechanism that both attests and suppresses lets “I reviewed this” quietly delete things. <b>dispute</b> is classified as an alarm: a human saying a published determination is wrong is the most expensive finding here, because it is the one a reader can check. Identity is repo/file/rule, never the line — code moves for reasons unrelated to the finding. Absence is its own state: <b>no oversight</b> and <b>disputed</b> are opposite facts and are never rendered alike. Ledger: <code>.claude/verdicts/oversight.jsonl</code>, the same hash chain the gates write to.</div>
+  </section>
+</main>
+<!-- ── STPA/HAZOP — commitwork's own control loop ──────────────────────────────────────────────
+     A SENSOR, not an actuator: monitor/stpa-sweep.mjs re-derives the admin-panel/LLM-remediation
+     control loop from CURRENT source (trigger()'s job-kind dispatch, the remediation-policy
+     escalation gate, the diff apply-time re-check) and classifies it against the fixed UCA/HAZOP
+     table evaluations/SPEC-stpa-hazop-control-loop-panel-2026-09-01.md designed, reusing the
+     loss/hazard/UCA/HAZOP vocabulary evaluations/STPA-capec-attack-2026-08-23.md shipped for the
+     CWE→CAPEC→ATT&CK axis. It never edits any of the files it reads — doing so would itself be an
+     instance of the RECURSIVE hazard the spec names. Drop-out collapsed by default, mirroring the
+     sweep console's live-console pattern (appendLine/ansiHtml, EventSource-first with a poll
+     fallback) rather than inventing a new progress mechanism. -->
+<main class="wrap vhide" id="view-stpa">
+  <section>
+    <div class="hd"><h2>STPA/HAZOP — control loop</h2><span class="n" id="stpa-n">—</span></div>
+    <details id="stpa-drop" class="card card-tight">
+      <summary class="point name t-title" id="stpa-summary">never run</summary>
+      <div class="actrow gap-t">
+        <button type="button" id="stpa-run" class="pri">▶ run stpa sweep</button>
+      </div>
+      <div id="stpa-console" class="card card-tight jshide">
+        <div class="con-head">
+          <span id="stpa-ico" class="spin"></span>
+          <b id="stpa-ctitle" class="con-title">STPA/HAZOP sweep running…</b>
+          <span id="stpa-celapsed" class="gen tnum push-right"></span>
+        </div>
+        <pre id="stpa-log" class="con-log"></pre>
+      </div>
+    </details>
+    <div class="foot">Re-derives commitwork's own admin-panel/remediation control loop from current source on every run, rather than describing it once and going stale — this loop is the highest-churn part of the repo, so a static document would be wrong within the week. Classifies each control action against a fixed UCA/HAZOP guideword table (reused from the shipped CWE→CAPEC→ATT&CK analysis, including its two <code>++</code> extensions, RECURSIVE and ADVERSARIAL); <span class="pill part">unclassified</span> means a shape this checker cannot verify, never a false pass. The <code>++ADVERSARIAL</code> row (prompt injection reaching the remediation prompt via scanned source) is always surfaced as a named, permanent open finding — no mitigation exists for it today, and this tool says so rather than marking it designed-out. CLI-equivalent: <code>node monitor/stpa-sweep.mjs [project]</code>.</div>
+  </section>
+</main>
+<!-- ── SETTINGS ─────────────────────────────────────────────────────────────────────────────────
+     Three questions that must be answered together: what the threshold is, what overrides it here,
+     and what is over it right now. One payload (/api/settings) carries all three so a count can
+     never be rendered against a threshold that did not produce it. -->
+<main class="wrap vhide" id="feature-off-notice">
+  <section>
+    <div class="hd"><h2>Feature switched off</h2></div>
+    <p id="feature-off-text" class="mut"></p>
+  </section>
+</main>
+<main class="wrap vhide" id="view-settings">
+  <section id="sec-features">
+    <div class="hd"><h2>Experimental features</h2><span class="n" id="feat-n">—</span>
+      <span class="mut hd-note">every group is ON until you switch it off · CW_FEATURE_&lt;ID&gt; and CW_EXPERIMENTAL override this</span></div>
+    <div id="feat-warn" class="pk-err jshide"></div>
+    <div id="feat-rows" class="kvs"><div class="mut">loading…</div></div>
+    <div class="foot">A switched-off group is refused by the server (404 naming the flag), hidden from this
+      navigation, omitted from the MCP tool list and from <code>commitwork help</code>, and not installed by
+      <code>monitor/install-agents.mjs</code>. The groups are declared in <code>manifests/feature-charter.json</code>.</div>
+  </section>
+  <section id="sec-local-models">
+    <div class="hd"><h2>Local models</h2><span class="n" id="lm-state">—</span>
+      <span class="mut hd-note">every runner is OFF until you switch it on, host by host</span></div>
+    <div id="lm-warn" class="pk-err jshide"></div>
+    <div id="lm-hosts" class="kvs"><div class="mut">loading…</div></div>
+    <div class="hd"><h3>Roles</h3>
+      <span class="mut hd-note">A, B and Adjudicator · an unset role falls back to the nearest enabled host, preferring local, then LAN, then hosted</span></div>
+    <div id="lm-roles" class="kvs"><div class="mut">loading…</div></div>
+    <div class="foot"><button type="button" id="lm-save" class="btn">Apply</button>
+      <span id="lm-msg" class="mut"></span></div>
+    <div class="foot">Switching a host on is the whole authorisation: nothing here is probed, offered
+      or called until you do. Three of the declared hosts bind <b>every interface</b> by default, so
+      starting one publishes an unauthenticated generation endpoint to your LAN, and four will
+      <b>fetch a model</b> when asked for an id they do not have — each row says which. A host that is
+      switched off reads as <i>off</i>, never as "no model found": that distinction is the same one
+      the rest of this panel keeps between an absence of evidence and a measured negative.</div>
+  </section>
+
+  <section id="sec-integrations">
+    <div class="hd"><h2>Vuln-intel sources</h2><span class="n" id="ig-n">—</span>
+      <span class="mut hd-note">a key set here is stored locally and redacted on every read back — an env var of the same name always overrides it</span></div>
+    <div id="ig-warn" class="pk-err jshide"></div>
+    <div id="ig-rows" class="kvs"><div class="mut">loading…</div></div>
+    <div class="foot">Free/community tiers only — this adds detail to existing findings (is a CVE actively
+      exploited, per VulnCheck's KEV catalog) or adds coverage; none of it invents a finding. A
+      source with no key configured contributes nothing and is not scored as clean.</div>
+  </section>
+
+  <section id="sec-agent-surface">
+    <div class="hd"><h2>AI agent controls</h2><span class="n" id="as-n">—</span>
+      <p class="mut">commitwork's own guards, MCP servers and launch programs. Enable or disable one; a hook toggle is journaled. Three states: registered (in config), live (selftest/probe), installed (on disk).</p></div>
+    <div id="as-warn" class="pk-err jshide"></div>
+    <div id="as-rows" class="kvs"><div class="mut">loading…</div></div>
+  </section>
+
+  <section>
+    <div class="hd"><h2>Full scan limits</h2><span class="n" id="set-n">—</span>
+      <span class="mut hd-note">effective value and where it came from · env beats the store, the store beats the default</span></div>
+    <div id="set-store-warn" class="pk-err jshide"></div>
+    <div id="set-globals" class="kvs"><div class="mut">loading…</div></div>
+    <div class="foot">A <b>kill threshold</b> is a declaration. Nothing here stops a full scan — the
+      panel marks a run <code>kill-eligible</code> and stopping it stays a human act, the same split
+      the deployment tooling keeps between describing a tunnel and applying one.</div>
+  </section>
+
+  <section>
+    <div class="hd"><h3>Full scans against these limits</h3><span class="n" id="set-health-n">—</span>
+      <span class="mut hd-note">a live pid past the threshold is LONG, not hung — the discriminator is the pid, never the age</span></div>
+    <div class="tw"><table id="set-health-table">
+      <thead><tr><th>area</th><th>state</th><th>age</th><th>hang</th><th>kill</th><th>pid</th><th>why</th></tr></thead>
+      <tbody id="set-health-rows"><tr><td colspan="7" class="mut">loading…</td></tr></tbody>
+    </table></div>
+    <div id="set-health-warn" class="foot"></div>
+  </section>
+
+  <section>
+    <div class="hd"><h3>Overrides</h3>
+      <span class="mut hd-note">rules apply in order and the LAST match wins · <code>*</code> means any · an EXCLUDE row removes the target</span></div>
+    <div id="set-rules"><div class="mut">loading…</div></div>
+  </section>
+
+  <section>
+    <div class="hd"><h3>Cadence in force</h3><span class="n" id="set-cad-n">—</span>
+      <span class="mut hd-note">an area's declared cadence drives BOTH its schedule and its staleness threshold, so the two cannot disagree</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>area</th><th>cadence</th><th>source</th></tr></thead>
+      <tbody id="set-cad-rows"><tr><td colspan="3" class="mut">loading…</td></tr></tbody>
+    </table></div>
+  </section>
+</main>
+
+<!-- Scanner performance: the hardware profile and the two knobs, and — the point of the view — the
+     per-scanner consequence of a setting BEFORE it is applied. Every slider move re-resolves
+     through /api/perf/preview, which cannot write; only Apply POSTs. A scanner that will not run
+     always states WHY, because an unexplained off row reads exactly like a deliberate exclusion. -->
+<main class="wrap vhide" id="view-perf">
+  <!-- One tab and one route (/perf/<id>/) per scanner, drawn by static/perf-console.js. A scanner
+       route hides the overview sections (data-pc-overview) and shows #perf-scanner alone. -->
+  <nav class="pc-subnav" id="perf-subnav" aria-label="scanners"></nav>
+  <div class="mut" id="perf-subnav-note"></div>
+  <section id="perf-scanner" class="pc-scanner" hidden></section>
+  <section data-pc-overview>
+    <div class="hd"><h2>Scanner performance</h2><span class="n" id="perf-n">—</span>
+      <span class="mut hd-note">resolved live · nothing on this page is in force until Apply</span></div>
+    <div id="perf-warn" class="pk-err" style="display:none"></div>
+    <div class="kvs" id="perf-knobs">
+      <div class="set-row">
+        <div class="set-lbl"><b>Hardware profile</b>
+          <div class="mut t-meta" id="perf-hw">detecting…</div></div>
+        <div class="set-val">
+          <select id="perf-profile" aria-label="hardware profile"></select>
+          <span class="pill unk" id="perf-match">unknown</span>
+        </div>
+        <div class="set-note mut" id="perf-profile-note"></div>
+      </div>
+      <div class="set-row">
+        <div class="set-lbl"><b>Scan depth</b>
+          <div class="mut t-meta">how much of each repo is read — tree, lockfiles, history, vendored trees</div></div>
+        <div class="set-val">
+          <input type="range" id="perf-depth" min="1" max="5" step="1" value="3" aria-label="scan depth">
+          <b id="perf-depth-label">—</b>
+        </div>
+        <div class="set-note mut" id="perf-depth-desc"></div>
+      </div>
+      <div class="set-row">
+        <div class="set-lbl"><b>Intensity</b>
+          <div class="mut t-meta">how much of this machine a full scan may use while it runs</div></div>
+        <div class="set-val">
+          <input type="range" id="perf-intensity" min="1" max="5" step="1" value="3" aria-label="scan intensity">
+          <b id="perf-intensity-label">—</b>
+        </div>
+        <div class="set-note mut" id="perf-intensity-desc"></div>
+      </div>
+    </div>
+    <div class="row-actions gap-top">
+      <button type="button" id="perf-apply" class="pri">apply these settings</button>
+      <button type="button" id="perf-reset-ovr" title="Clear every per-check override and hand each lane back to the derivation. Takes effect on Apply, like everything else on this page.">reset all checks to auto</button>
+      <span id="perf-msg" class="mut"></span>
+    </div>
+    <div class="foot">Depth and intensity are orthogonal: depth decides <b>what is read</b>, intensity
+      decides <b>how hard the box works while reading it</b>. A profile marked <b>PROJECTED</b> is a
+      specification, not a measurement taken on hardware anyone has run — its numbers are what the
+      vendor claims, so a tuning derived from it is a prediction.</div>
+  </section>
+
+  <section data-pc-overview>
+    <div class="hd"><h3>Depth and intensity per repository</h3><span class="n" id="perf-repos-n">—</span>
+      <span class="mut hd-note">a repository set here uses its own value instead of the fleet's; the sweep applies it</span></div>
+    <div class="row-actions"><input type="search" id="perf-repos-filter" placeholder="filter repositories or areas" aria-label="filter repositories">
+      <button type="button" id="perf-repos-save" class="pri">save repository settings</button><span id="perf-repos-msg" class="mut"></span></div>
+    <div class="tw pc-repos"><table>
+      <thead><tr><th>repository</th><th>area</th><th>depth</th><th>intensity</th><th>from</th></tr></thead>
+      <tbody id="perf-repos-body"><tr><td colspan="5" class="mut">loading…</td></tr></tbody>
+    </table></div>
+    <div class="foot" id="perf-repos-note"></div>
+  </section>
+
+  <section data-pc-overview>
+    <div class="hd"><h3>Effect on each check</h3><span class="n" id="perf-sum">—</span>
+      <span class="mut hd-note">what this setting would do to each check, before it is applied</span></div>
+    <div id="perf-warnings" class="foot"></div>
+    <div class="tw"><table>
+      <thead><tr><th>scanner</th><th>cost</th><th>depth</th><th>intensity</th><th>operator</th><th>at these settings</th><th>timeout</th><th>weight</th><th>why</th></tr></thead>
+      <tbody id="perf-rows"><tr><td colspan="9" class="mut">loading…</td></tr></tbody>
+    </table></div>
+    <div class="foot">A check that will not run states its reason. <b>Undetermined</b> is neither on nor
+      off: the tuning model did not say, and this table will not guess in either direction.
+      <b>auto</b> leaves the check to the derivation; <b>on</b> and <b>off</b> overrule it, and an
+      overridden row says so. Forcing a check <b>on</b> does not make it runnable — a check with no container runtime, no live target or no token is marked <b>forced on · cannot run</b>, which is
+      neither on nor off, and it is never counted among the checks that run. A check forced <b>off</b>
+      reports <b>not scanned</b>: its silence is an absence of evidence, never a clean result.
+      <b>Depth</b> per scanner: <b>n/a</b> runs at every depth; <b>binary</b> is switched on or off by depth;
+      <b>graded</b> has levels of its own, and the depth above is mapped proportionally onto them over the
+      range where the scanner runs — 3 of 5 on a three-level scanner is its middle level. The top level is
+      always what the scanner ran before levels existed.</div>
+  </section>
+
+  <section data-pc-overview>
+    <div class="hd"><h3>Not governed by depth</h3><span class="n" id="perf-outside-n">—</span>
+      <span class="mut hd-note">detectors that run outside the lane runner, so depth, intensity and the overrides above do not reach them</span></div>
+    <div class="tw"><table>
+      <thead><tr><th>detector</th><th>what it does</th><th>where it runs</th><th>code</th></tr></thead>
+      <tbody id="perf-outside-body"><tr><td colspan="4" class="mut">loading…</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <!-- MEASURED, and kept apart from the table above on purpose. Everything above this point is what
+       the tuning model PREDICTS a lane will cost; everything below is what runs actually took. Shown
+       in one table, the specification would be read with the record's authority. -->
+  <section data-pc-overview>
+    <div class="hd"><h3>What each check has actually cost</h3><span class="n" id="lt-n">—</span>
+      <span class="mut hd-note">measured from the run records — not the projection above</span></div>
+    <div id="lt-warn" class="pk-err" style="display:none"></div>
+    <div class="tw"><table>
+      <thead><tr><th>lane</th><th>runs</th><th>median</th><th>p95</th><th>slowest</th>
+        <th>over time (daily median)</th><th>not run</th></tr></thead>
+      <tbody id="lt-rows"><tr><td colspan="7" class="mut">loading…</td></tr></tbody>
+    </table></div>
+    <div class="foot" id="lt-foot">A check that was <b>skipped</b> has no duration and is not on this
+      axis at all — it is counted in <b>not run</b> instead, because a check that did not run is not a fast check. The median is used rather than the mean: one cold container pull or one hung run
+      would otherwise become a permanent step in the line. A day with no runs draws no point, so a
+      gap in a line is a gap in the evidence rather than a dip in the cost.</div>
+  </section>
+</main>
+
+<main class="wrap vhide" id="view-comments">
+  <section>
+    <div class="hd"><h2>Slop Bucket</h2><span class="n" id="cmt-n">—</span>
+      <span class="mut hd-note">drafts, not decisions — edit before accepting</span></div>
+    <div id="cmt-warn" class="pk-err" style="display:none"></div>
+    <p class="mut" id="cmt-note">Comment blocks longer than the schema&#39;s limit. The first pass keeps the sentences that
+      carry a counterfactual; the second pass drops claims that cannot stand alone and tightens the rest. The original is
+      marked against the hatched column: green kept in full, orange reworded, red deleted. A block a heuristic cannot
+      collapse without dropping or reordering — a list, or one with no counterfactual — carries no draft, and you write
+      the replacement by hand. Save writes the hatched column at once; Accept writes every ticked row. Either way the
+      replacement must pass the schema, the file is re-parsed, and a file that stops parsing is restored.</p>
+    <div id="cmt-summary"></div>
+    <div class="actions" style="margin:10px 0">
+      <button type="button" class="btn" id="cmt-sweep">↻ Sweep</button>
+      <label class="mut"><input type="checkbox" id="cmt-all"> select all shown</label>
+      <label class="mut" style="margin-left:14px"><input type="checkbox" id="cmt-narr" checked> narrative only</label>
+      <button type="button" class="btn" id="cmt-accept" disabled>Accept selected</button>
+      <span class="mut" id="cmt-sel">none selected</span>
+    </div>
+    <div id="cmt-rows"></div>
+  </section>
+</main>
+
+<main class="wrap vhide" id="view-determinations">
+  <section>
+    <div class="hd"><h2>Evidence &amp; confidence</h2><span class="n" id="dt-n">—</span></div>
+    <div class="hd" data-explain="finding-evidence"><h3>Why a result is unknown</h3><span class="n" id="dt-unknown-n">—</span></div>
+    <div id="dt-why"></div>
+    <div class="foot">This is the primary number, not a footnote. <b>A gap in our tooling and a gap in the code look identical</b> unless the reason is stated: "reachability unknown for N findings" is either an alarming fact about the fleet or a mundane fact about which analysers we run, and a reader cannot tell which without this breakdown. <code>no-analyser-for-ecosystem</code> means nothing in the fleet could have proven anything about that finding — it is never a finding about the code.</div>
+    <div class="hd"><h3>Coverage, three ways</h3></div>
+    <div id="dt-denoms"></div>
+    <div class="foot">All three are true. The same work reads as ~2% or ~89% depending only on which denominator is quoted, so none is published alone. <b>Analyser ran</b> is the one that means something: findings in repos where the analyser actually produced evidence.</div>
+    <div class="hd" data-explain="finding"><h3>Findings</h3><span class="n" id="dt-rows-n">—</span></div>
+    <div class="tw"><table><thead><tr><th>Repo</th><th>Lane</th><th>Advisory / rule</th><th>Package / file</th><th>Reachability</th><th>Evidence</th><th>Why / via</th></tr></thead><tbody id="dt-rows"></tbody></table></div>
+    <div class="foot" id="dt-foot"></div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-cra">
+  <section>
+    <div class="hd"><h2>CRA Art. 14 clocks</h2><span class="n" id="cra-n">—</span></div>
+    <div id="cra-skew" class="foot" style="display:none"></div>
+    <div class="hd"><h3>Regulatory — owed to a named advisory body</h3><span class="n" id="cra-n-a14">—</span></div>
+    <div id="cra-article14"></div>
+    <div class="hd"><h3>Best practice — Art. 14 timeline, no advisory body delegated</h3><span class="n" id="cra-n-bp">—</span></div>
+    <div id="cra-bestpractice"></div>
+    <div class="hd"><h3>Internal policy — critical, no evidence of exploitation</h3><span class="n" id="cra-n-int">—</span></div>
+    <div id="cra-internal"></div>
+    <div class="hd"><h3>Unclassified — opened before the track split</h3><span class="n" id="cra-n-unk">—</span></div>
+    <div id="cra-unknown"></div>
+    <div class="foot">Every countdown ticks from the <b>server's</b> clock, never the browser's: the page records the offset between <code>serverNow</code> and local time at load and renders through it, so a skewed laptop cannot invent time remaining on a legal deadline. If the offset exceeds a minute it is displayed above rather than silently corrected. <b>The three tracks are never totalled together.</b> Only the regulatory track can be filed, and even there submission is a human act — nothing on this page files anything. Bands: <span class="pill part">50%</span> elapsed, <span class="pill high">75%</span>, <span class="pill high">90%</span>, then OVERDUE. CLI equivalent: <code>node cra/watch.mjs list --json</code>.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-rollups">
+  <section>
+    <div class="hd"><h2>Rollups</h2><span class="n" id="ru-n">—</span></div>
+    <p class="mut t-meta">When each project last rolled up and when its next sweep runs, from the launchd job installed for it. The last 30 days are graded from each project's own sweep journal: <b class="ru-k good">good</b> ran and published · <b class="ru-k warn">warn</b> published with a failed step · <b class="ru-k broken">broken</b> the rollup did not publish or a scan did not run · <b class="ru-k none">did not run</b> a scheduled day with no run · <b class="ru-k empty">empty</b> nothing in scope. A day nothing was scheduled for is left blank: missing a run nobody asked for is not a failure. Hover a day for its CVE and KEV counts. Project names take the colour of their worst open exposure.</p>
+    <div class="ru-top"><figure class="ru-fig"><figcaption>Projects that ran, per day</figcaption><div id="ru-chart"></div></figure>
+      <figure class="ru-fig"><figcaption>30-day clock: run outcomes per day, oldest at twelve o'clock</figcaption><div id="ru-clock"></div></figure></div>
+    <div id="ru-table"></div>
+  </section>
+</main>
+<!-- Remediation across every project: each row is one project's plan, prompts, runs and absent
+     inputs, from GET /api/remediation/fleet. A project with nothing on disk is a row naming what is
+     missing, never a dropped row — a fleet list that shrinks to the swept projects reads as done. -->
+<main class="wrap vhide" id="view-remfleet">
+  <section>
+    <div class="hd"><h2>Remediation</h2><span class="n" id="rf-n">—</span>
+      <span class="mut hd-note">every project's fix plan, review prompts and remediation runs · a missing input is named with the step that produces it · open a project to act on it</span></div>
+    <div id="rf-banner"></div>
+    <div id="rf-table"><span class="mut">loading…</span></div>
+    <div class="foot"><b>Fix plan</b> is the CVE plan the rollup writes (<code>REMEDIATION.md</code>): packages and findings as its own section headings state them, KEV as its headline states it. <b>Review prompts</b> tallies the per-check prompts against that project's latest results with the same classifier as its Remediation page — no signal is not clean. <b>Triage</b> and <b>CodeQL runs</b> are what the layer has done so far; none yet is not a missing input. <b>Missing</b> names every input the project lacks: without <code>rollup.json</code> it was never scanned, which is no result rather than a clean one.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-projects">
+  <section>
+    <div class="hd"><h2>Projects</h2><span class="n" id="pj-n">—</span>
+      <span class="push-right"></span>
+      <button type="button" id="pj-add" class="vtab vtab-sm" title="register a new explicit project entry in monitor/projects.json — declaration only, no scan runs">+ add project</button>
+      <button type="button" id="pj-review" class="vtab vtab-sm" title="open the selected project's area on the Overview tab">⊙ review area</button>
+      <button type="button" id="pj-rescan" class="vtab vtab-sm" title="re-walk the designated folder">↻ rescan</button>
+    </div>
+    <div id="pj-list"></div>
+    <div id="pj-root" class="mut"></div>
+    <!-- add-project form: hidden until + add project. POSTs one explicit registry entry; the
+         server validates the WHOLE modified registry with loadRegistry's own two gates before a
+         byte is written, so a bad add is a refusal here, never a panel that refuses to boot. -->
+    <form id="pj-form" class="jshide" autocomplete="off">
+      <div class="row-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.5rem 0">
+        <input id="pjf-name" aria-label="project name" placeholder="name (A-Za-z0-9._-)" size="18">
+        <input id="pjf-path" aria-label="project path" placeholder="path (~/Repositories/…)" size="34">
+        <input id="pjf-area" aria-label="area slug" placeholder="area slug" size="14" list="pjf-areas"><datalist id="pjf-areas"></datalist>
+        <input id="pjf-manifest" aria-label="manifest" placeholder="manifest (default: security-baseline)" size="24">
+        <label class="chk" title="declare a new areas[] block for this slug (label defaults to the project name)"><input type="checkbox" id="pjf-newarea"> new area</label>
+        <button type="submit" class="vtab vtab-sm pri">register</button>
+        <button type="button" id="pjf-cancel" class="vtab vtab-sm">cancel</button>
+      </div>
+      <div id="pjf-msg" class="mut"></div>
+    </form>
+    <div id="pj-groups"></div>
+    <div class="foot">The designated folder (<code>roots[]</code> in <code>monitor/projects.json</code>, or <code>CW_PROJECTS_ROOT</code>), walked as it is laid out on disk and matched against the list the full scan itself uses — so this page can never disagree with what actually gets scanned. <b>registered</b> = explicit registry entry · <b>discovered</b> = picked up by the roots walk · <b>excluded</b> = deliberately out of scope · <b>unlisted</b> = a git repo the resolver did not return (a coverage gap, not a clean state) · <b>not a repo</b> = a folder with no <code>.git</code>. Adding a project here <em>registers</em> it (declaration in the registry) — it does not run anything.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-malware">
+  <section>
+    <div class="hd"><h2>Malicious packages</h2><span class="n" id="mal-n">—</span></div>
+    <div id="mal-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Package</th><th>Version</th><th>Ecosystem</th><th>Advisory</th></tr></thead><tbody id="mal-rows"></tbody></table></div>
+    <div class="foot" id="mal-foot">OpenSSF <code>MAL-</code> advisories, ingested by osv.dev and parsed out of each repo's <code>osv.sarif</code> alongside ordinary CVEs. Every hit is critical: a confirmed-malicious package has no severity gradient. Treat as an incident, not a backlog item — any credential the machine that ran <code>install</code> could reach is suspect.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-supplychain">
+  <section>
+    <div class="hd"><h2>Supply-chain heuristics</h2><span class="n" id="gd-n">—</span></div>
+    <div id="gd-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Package</th><th>Signal</th></tr></thead><tbody id="gd-rows"></tbody></table></div>
+    <div class="foot" id="gd-foot">GuardDog package-metadata heuristics, from each repo's <code>guarddog.sarif</code>. A signal here is <em>worth a look</em>, not a verdict — unlike a <code>MAL-</code> record, which is one. GuardDog is docker-gated, so its coverage is partial by construction; the banner above states how partial.</div>
+  </section>
+</main>
+<!-- Socket alerts. A SEPARATE lane from GuardDog above, and from Malware: three different claims
+     about a dependency, from three feeds, and folding any two of them would let one lane's
+     reputation stand in for another's. The category `supplyChain` had a declared row schema and a
+     drill-down NOWHERE, while the tab named "Supply chain" rendered GuardDog — so an operator who
+     opened it to check Socket saw different evidence and reasonably concluded they had looked.
+     That is worse than an absent lane: it is a lane that answers a question it was not asked. -->
+<main class="wrap vhide" id="view-socket">
+  <section>
+    <div class="hd"><h2>Socket alerts</h2><span class="n" id="sk-n">—</span></div>
+    <div id="sk-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Alert</th><th>Package</th><th>Ecosystem</th><th>Sev</th><th>Detail</th><th>Kind</th><th>Why</th></tr></thead><tbody id="sk-rows"></tbody></table></div>
+    <div class="foot" id="sk-foot">Socket supply-chain alerts, from each repo's <code>socket.json</code>. Socket inspects package BEHAVIOUR — install scripts, network and filesystem access, obfuscation — so an alert is a described capability, not a severity ranking. Distinct from <b>Malicious packages</b> (a curated <code>MAL-</code> verdict) and from <b>Supply-chain signals</b> (GuardDog registry metadata); the three are never summed.</div>
+  </section>
+</main>
+<!-- SAST / IaC / DAST — the drill-down behind the categories that until 2026-08-02 reached the
+     panel as counts only (6,175 findings with no rows anywhere in the site). Same contract as
+     Secrets/Malware/Supply chain: rendered from `scannerFindings` on the /api/state payload,
+     coverage banner BEFORE rows, and the rollup's field whitelist is the only thing that crosses
+     — SARIF snippets, code flows and nuclei hostnames never reach this page. -->
+<main class="wrap vhide" id="view-sast">
+  <!-- SAST sub-menu. Seven analysers had been rendering as one stacked wall, and four more had no
+       surface at all — a category with no tab is invisible whether it found nothing or never ran,
+       which is the distinction this panel exists to keep. Each sub-tab carries its own count badge
+       so the menu itself says where the findings are before anything is clicked. -->
+  <nav class="subnav" id="sast-subnav" aria-label="SAST analysers">
+    <button type="button" data-sub="sg" class="vtab pri">Semgrep<span class="vn" id="sn-sg"></span></button>
+    <button type="button" data-sub="cqjs" class="vtab">CodeQL JS/TS<span class="vn" id="sn-cqjs"></span></button>
+    <button type="button" data-sub="cqjava" class="vtab">CodeQL Java<span class="vn" id="sn-cqjava"></span></button>
+    <button type="button" data-sub="go" class="vtab">Go · gosec<span class="vn" id="sn-go"></span></button>
+    <button type="button" data-sub="shell" class="vtab">Shell<span class="vn" id="sn-shell"></span></button>
+    <button type="button" data-sub="wf" class="vtab">Workflows<span class="vn" id="sn-wf"></span></button>
+    <button type="button" data-sub="docker" class="vtab">Dockerfile<span class="vn" id="sn-docker"></span></button>
+  </nav>
+  <section data-sub="sg">
+    <div class="hd"><h2>Code security — Semgrep</h2><span class="n" id="sg-n">—</span></div>
+    <div id="sg-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="sg-rows"></tbody></table></div>
+    <div class="foot">Semgrep, from each repo's <code>semgrep.sarif</code> in the latest results. Rows are GROUPED by diagnosis: identical rule+severity+message collapse into one row, with the affected sites behind the count. The results keep only these fields (rule / file / line / severity / message) — SARIF snippets and code flows never reach this page. Messages are capped at 4000 chars and say so when truncated; the old 240 cut 48% of them mid-sentence, silently.</div>
+  </section>
+  <section data-sub="cqjs" hidden>
+    <div class="hd"><h2>SAST — CodeQL (JS/TS)</h2><span class="n" id="cqjs-n">—</span></div>
+    <div id="cqjs-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="cqjs-rows"></tbody></table></div>
+    <div class="foot">CodeQL JS/TS, from each repo's <code>codeql.sarif</code> in the latest batch — this project's sweep, not the fleet run the CodeQL tab shows. Same whitelist and grouping as Semgrep.</div>
+  </section>
+  <section data-sub="cqjava" hidden>
+    <div class="hd"><h2>SAST — CodeQL (Java)</h2><span class="n" id="cqjava-n">—</span></div>
+    <div id="cqjava-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="cqjava-rows"></tbody></table></div>
+    <div class="foot">CodeQL Java, from each repo's <code>codeql-java.sarif</code> in the latest results. Same whitelist and grouping as Semgrep.</div>
+  </section>
+  <section data-sub="go" hidden>
+    <div class="hd"><h2>SAST — Go (gosec)</h2><span class="n" id="gos-n">—</span></div>
+    <div id="gos-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Location</th><th>Message</th><th>Weakness</th><th>Corroborated by</th></tr></thead><tbody id="gos-rows"></tbody></table></div>
+    <div class="foot">gosec, from each repo's <code>gosec.sarif</code>. Applies only where <code>go.mod</code> exists — a repo with no Go is <b>n/a</b>, which is not the same as clean.</div>
+  </section>
+  <section data-sub="shell" hidden>
+    <div class="hd"><h2>SAST — Shell (shellcheck)</h2><span class="n" id="shl-n">—</span></div>
+    <div id="shl-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Code</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="shl-rows"></tbody></table></div>
+    <div class="foot">shellcheck (SCxxxx) per script, and every inline <code>run:</code> block in a workflow. Identity is code+file, never the line, so a quoting fix three lines above does not re-open a finding that has not moved.</div>
+  </section>
+  <section data-sub="wf" hidden>
+    <div class="hd"><h2>SAST — Workflow correctness (actionlint)</h2><span class="n" id="wfl-n">—</span></div>
+    <div id="wfl-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Kind</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="wfl-rows"></tbody></table></div>
+    <div class="foot">actionlint — workflow correctness, SEPARATE from the zizmor posture audit on the Actions tab. A green posture audit must not stand in for a lint that never ran.</div>
+  </section>
+  <section data-sub="docker" hidden>
+    <div class="hd"><h2>SAST — Dockerfile (hadolint)</h2><span class="n" id="hdl-n">—</span></div>
+    <div id="hdl-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="hdl-rows"></tbody></table></div>
+    <div class="foot">hadolint, from each repo's <code>hadolint.json</code>. Was reporting into a category the rollup never spoke for.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-iac">
+  <section>
+    <div class="hd"><h2>IaC config</h2><span class="n" id="iac-n">—</span></div>
+    <div id="iac-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="iac-rows"></tbody></table></div>
+    <div class="foot">Trivy misconfiguration scan, from each repo's <code>trivy-config.sarif</code> in the latest results. Same fields as the code security tabs.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-actions">
+  <section>
+    <div class="hd"><h2>Build automation safety (GitHub Actions)</h2><span class="n" id="za-n">—</span></div>
+    <div id="za-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>Location</th><th>Message</th></tr></thead><tbody id="za-rows"></tbody></table></div>
+    <div class="foot">zizmor, from each repo's <code>zizmor.sarif</code> in the latest results. The build automation runs with the credentials of the repository, and no code scanner looks at it. <b>template-injection</b> is remote code execution by anyone who can open an issue; <b>unpinned-uses</b> is the class the tag-mutation supply-chain attacks exploit; <b>artipacked</b> leaves the checkout token in <code>.git/config</code> for every later step. Runs fully offline, so unlike the cloud settings check, a missing token cannot leave it without a result.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-dast">
+  <section>
+    <div class="hd"><h2>Live website test — nuclei</h2><span class="n" id="dast-n">—</span></div>
+    <div id="dast-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Template</th><th>Sev</th><th>Path</th><th>Finding</th></tr></thead><tbody id="dast-rows"></tbody></table></div>
+    <div class="foot">nuclei, from each repo's <code>nuclei.jsonl</code> in the latest results. Hostnames are removed when results are collected — a row keeps only the test, severity and path. The Runtime tab holds the live-target report; this is the record from the full scan.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-minify">
+  <section>
+    <div class="hd"><h2>Minified / obfuscated code</h2><span class="n" id="min-n">—</span></div>
+    <div id="min-cov"></div>
+    <div class="tw"><table><thead><tr><th>Service</th><th>Rule</th><th>Sev</th><th>File</th><th>Metric</th></tr></thead><tbody id="min-rows"></tbody></table></div>
+    <div class="foot">minify-detect, from each repo's <code>minify.json</code> in the latest results. This check takes the opposite view of unreadable code from the others — CodeQL drops <code>*.min.js</code>, semgrep skips &gt;1MB, gitleaks allowlists vendor/dist — so it makes readability itself the signal and scans the files the others exclude. Metrics and construct COUNTS only; source is never carried. Runs in the <b>deep</b> group until someone records its baseline, then it moves into the nightly full scan.</div>
+  </section>
+</main>
+<!-- Issues — the issue tracker's open work items for this area, from /api/issues. The payload is
+     panelRows()'s producer-side field whitelist and nothing else (this crosses the published
+     tunnel); the ingest banner ALWAYS renders, because "never ingested" is absence of evidence
+     and must never look like a clean empty queue. -->
+<!-- Findings feed (experimental flag `feed`): one grouped list over the project's rollup, joined
+     to the issue store. admin/static/panel-feed.js owns everything inside this element. -->
+<main class="wrap vhide" id="view-feed"></main>
+<!-- Guided setup (experimental flag `journey`): nine steps read from their own records.
+     admin/static/panel-journey.js owns everything inside this element. -->
+<main class="wrap vhide" id="view-journey"></main>
+<!-- Correlations: coincidence leads, engine divergence, artifact anomalies, and the history of the
+     unknown rate and the ratchet floors. admin/static/panel-correlations.js owns this element. -->
+<main class="wrap vhide" id="view-correlations"></main>
+<main class="wrap vhide" id="view-issues">
+  <section>
+    <div class="hd" data-explain="suppression"><h2>Issues</h2><span class="n" id="iss-n">—</span></div>
+    <div id="iss-banner"></div>
+    <div class="tw"><table><thead><tr><th>Sev</th><th>Id</th><th>Area</th><th>Kind</th><th>State</th><th>Age</th><th>SLA</th><th>Title</th></tr></thead><tbody id="iss-rows"></tbody></table></div>
+    <div class="foot">The durable work queue (<code>monitor/private/issues.json</code>) — states, atomic claims, evidence-gated closes. Rows carry the panel whitelist only (id / area / kind / severity / state / age / SLA / title — no file paths, no scanner message text). Click a row to lodge a remediation against it: a <b>ruling</b> on whether the finding is real, a <b>fix type</b> for how it was addressed, and the review note explaining both. Both are <b>claims</b> — they are recorded and attributed, and the issue stays in the queue. <b>fixed</b> closes for auto-sourced issues happen at ingest on scan evidence, never by assertion. The review prompt (and the local-model / Claude Code runs that consume it) carries the anchored source, so it is served only on the operator port, <code>127.0.0.1:7879</code> by default or <code>commitwork.local</code> — never through the published tunnel.</div>
+  </section>
+</main>
+<!-- Daily suggestions — the /daily report for this project's area (bin/daily-run.mjs), from
+     /api/daily. Served on this machine only: suggestions carry paths and change text from source.
+     "No report" and "unreadable report" are their own states, never an empty table. -->
+<main class="wrap vhide" id="view-daily">
+  <section>
+    <div class="hd"><h2>Daily suggestions</h2><span class="n" id="daily-n">—</span></div>
+    <div id="daily-banner"></div>
+    <div class="tw"><table><thead><tr><th>P</th><th>Suggestion</th><th>Where</th><th>Change</th><th>Verify</th><th>Confidence</th><th>Todo</th></tr></thead><tbody id="daily-rows"></tbody></table></div>
+    <div class="foot">Written by Claude after each complete sweep of the area, with no tools and a schema it must meet, then checked against the sweep's digest: every finding accounted for once, every line real, verify limited to the repo's lanes and test runners. Suggestions are text to act on, not fixes. p0 to p2 suggestions are filed on the veld todo list; a todo closes itself when every finding in it is fixed. Run <code>node bin/daily-run.mjs --area &lt;area&gt; --status</code> for the runs and their cost.</div>
+  </section>
+</main>
+<!-- THE GENERIC LANE. Eleven categories declared a drill-down row in monitor/detail-schema.mjs
+     and had no view anywhere in the panel — 47,936 findings that existed only as a number nobody
+     could act on (stubs alone is 38,550). Now that cells derive from the schema, a lane needs no
+     renderer, so it needs no bespoke container either: these eleven SHARE this one, and the active
+     tab decides which category fills it.
+     Sharing means only the ACTIVE lane may write here — see renderScannerTabs, where a generic lane
+     that is not on screen still computes its badge (from `scanners`, never from the DOM) but writes
+     nothing. Without that, the last lane in SCANNER_TABS would overwrite every earlier one. -->
+<main class="wrap vhide" id="view-lane">
+  <section>
+    <div class="hd"><h2 id="lane-title">—</h2><span class="n" id="lane-n">—</span></div>
+    <div id="lane-cov"></div>
+    <div class="tw"><table><thead id="lane-thead"></thead><tbody id="lane-rows"></tbody></table></div>
+    <div class="foot" id="lane-foot"></div>
+  </section>
+</main>
+<!-- Renovate · deps — native tab: the Mend Renovate App state of the selected project's repo,
+     snapshotted per area by monitor/renovate-status.mjs and read through
+     /reports/renovate.json?project= (gh runs server-side only; no token or gh call in this page).
+     Falls back to the repo's renovate.json config groups/gates until the app's first scheduled
+     run opens the Dependency Dashboard / PRs. -->
+<!-- Remediation · plan — the KEV-ranked REMEDIATION.md the rollup already generates for every
+     area. It was written to disk on every sweep but never surfaced: the overview's Remediation
+     table lists the ITEMS, this shows the ordered PLAN (headline, ranking rationale, steps). -->
+<!-- Exposure — native tab. "Vulnerability" in the operator's sense: something reachable from
+     outside running software with known unpatched findings. Both halves were previously invisible
+     here (nuclei hostnames are stripped server- AND client-side, and nothing rendered hosts, ports
+     or certificates at all). The join is hostname -> area -> that area's rollup, and the deployment
+     half comes from the same monitor/deploy-state.mjs the `deploy --verify` CLI uses, so the panel
+     and the CLI cannot disagree about what is published. -->
+<main class="wrap vhide" id="view-bola">
+  <section>
+    <div class="hd"><h2>Access control — can users reach data that is not theirs (BOLA)</h2><span class="n" id="bola-n">—</span></div>
+    <div id="bola-cov"></div>
+    <!-- live console for a running probe (its own, keyed to the 'bola' job on /api/status) -->
+    <div id="bola-console" class="card card-tight jshide">
+      <div class="con-head">
+        <span id="bola-ico" class="spin"></span>
+        <b id="bola-ctitle" class="con-title">BOLA probe running…</b>
+        <span id="bola-celapsed" class="gen tnum push-right"></span>
+      </div>
+      <pre id="bola-log" class="con-log"></pre>
+    </div>
+    <div id="bola-fleet"></div>
+    <div class="foot">Object-level authorization testing (<code>bin/bola-run.mjs</code>), one row per project that declares a <code>bola</code> block in <code>monitor/projects.json</code>. Each run mints the declared actor matrix — anonymous, two users and two admins across two tenants — and, for every object one actor owns, checks whether another actor can read it. A 2xx that <b>discloses an object</b> is the finding; the class follows from who reached whose object. Credentials are named, never stored here: a project can only run once its secrets resolve (<code>bin/secrets.mjs</code>), and until then its run reads <span class="pill part">BLOCKED</span>, not ready. Runs against the declared <b>local testbed</b> base — never the public origin.</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-exposure">
+  <section>
+    <div class="hd"><h2>Exposure</h2><span class="n" id="expn">—</span>
+      <!-- Scope. This view listed every hostname the box publishes regardless of the selected
+           project, so reading commitwork-admin showed three other projects' rows and
+           the KPI row counted them. Project scope is the DEFAULT; the fleet remains one click
+           away and says so, because an undeclared hostname is a finding that belongs to nobody
+           and would have nowhere to appear if this view could only ever show one project. -->
+      <label class="chk" for="exp-scope"><input type="checkbox" id="exp-scope"> show all hostnames on this box</label>
+      <span class="mut hd-note">open connections × unpatched software · declaration vs the applied tunnel · read-only</span></div>
+    <div class="kpis" id="exp-kpis"></div>
+    <div class="tw gap-top"><table id="exp-table">
+      <thead><tr><th>hostname</th><th>area</th><th>declared</th><th>origin</th><th>dns</th><th>reachable</th><th>unpatched</th><th>state</th></tr></thead>
+      <tbody id="exp-rows"><tr><td colspan="8" class="mut">loading…</td></tr></tbody>
+    </table></div>
+    <div id="exp-drift" class="gap-top"></div>
+    <div class="foot" id="exp-foot"></div>
+  </section>
+</main>
+<!-- Report — the EVIDENCE tab, deliberately one strip position before Remediation: this page is
+     the state of the world the next tab's plan acts on, and a plan without its evidence is an
+     instruction, not an argument. Two properties are load-bearing and both are enforced
+     SERVER-SIDE (serve.mjs reportStates/reportEvidence), so no rendering choice here can weaken
+     them:
+       · REPLAYABLE — every sweep slice is one recorded state change, and the dropdown lists them
+         all, newest first. Selecting one re-renders this page from that slice's own file: what
+         was known then beside what was done about it (the delta band — born / cleaned /
+         accepted are the operator's own historical actions, in order), never a smoothed
+         retrospective. Labels carry when · kind · open counts · what changed, enough for a human
+         to find "the state after Thursday's dependency cleanup" — and nothing an outsider could
+         aim.
+       · REDACTED FOR HAND-OFF — written to survive a leak. Rows carry public identifiers (CVE
+         ids, packages, rule ids) because those ARE the evidence; they carry no file paths, no
+         lines, no commits, no hosts, no endpoints, and no reachability join, so a leaked copy
+         cannot compose findings into an attack chain. What is withheld is COUNTED and stated —
+         the located and joined views stay on the authenticated tabs (Secrets, SAST, Exposure).
+     "Safe" is a moving target: KEV/EPSS enrichment drifts under a fixed code state, so a state
+     that was clean can be unsafe today with zero commits. That is why states are dated and
+     replayable rather than one latest-wins page. -->
+<!-- All findings — every open row the per-check tables hold for the selected project, most severe
+     first, built from the same /api/state payload so the two can never disagree. -->
+<main class="wrap vhide" id="view-allfindings">
+  <section>
+    <div class="hd"><h2>All findings</h2><span class="n" id="af-n">—</span>
+      <label class="scope push-right">Show
+        <select id="af-cat" aria-label="Which findings to show">
+          <option value="all">Everything</option>
+          <option value="security">Security risks</option>
+          <option value="quality">Code quality</option>
+          <option value="other">Other checks</option>
+        </select></label></div>
+    <p id="af-sum" class="mut"></p>
+    <div id="af-notes"></div>
+    <div class="tw"><table><thead><tr><th>Severity</th><th>Finding</th><th>Where</th><th>Found by</th></tr></thead>
+      <tbody id="af-rows"></tbody></table></div>
+    <p id="af-more" class="mut"></p>
+  </section>
+</main>
+<main class="wrap vhide" id="view-report">
+  <section>
+    <div class="hd"><h2>Report — evidence</h2><span class="n" id="rep-n">—</span>
+      <label class="scope push-right">state
+        <select id="rep-state" title="replay a recorded state — one entry per sweep slice, labelled when · kind · open counts · what changed"></select></label></div>
+    <div id="rep-banner"></div>
+    <div class="kpis gap-strip" id="rep-kpis"></div>
+    <div id="rep-delta"></div>
+    <div class="tw"><table><thead><tr><th>Sev</th><th>Repo</th><th>Tool</th><th>Id</th><th>Package</th><th>Fixed in</th><th>KEV</th><th>EPSS</th><th>State</th></tr></thead><tbody id="rep-rows"></tbody></table></div>
+    <div id="rep-scanner"></div>
+    <div class="foot" id="rep-foot"></div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-remediation">
+  <section>
+    <div class="hd"><h2>Inputs</h2><span class="n" id="rem-in-n">—</span>
+      <span class="mut hd-note">what this page reads for the selected project · a missing input names the step that produces it · absent is not clean</span></div>
+    <div id="rem-inputs"><span class="mut">loading…</span></div>
+  </section>
+  <!-- Review prompts FIRST: the manifests carry per-check remediationPrompt guidance written to be
+       handed to an agent with that scanner's artifact. It reached /api/config and nothing else —
+       the one tab an operator opens to ACT never showed it. Prompts for categories with live
+       findings float to the top; clean and no-signal prompts stay present but collapsed, because
+       a documented procedure does not stop existing on a clean day. -->
+  <section>
+    <div class="hd"><h2>Review prompts</h2><span class="n" id="rp-n">—</span>
+      <span class="mut hd-note">per-check guidance from the configuration files — copy one to an agent together with the output of the check · counts join the latest results · findings float to the top · this plan acts on the Report tab's evidence (one strip position left) — read or replay that state first</span></div>
+    <div id="rp-cards"><span class="mut">loading…</span></div>
+  </section>
+  <section>
+    <div class="hd"><h2>Fix plan</h2><span class="n" id="remplann">—</span></div>
+    <div class="card" id="remplan">loading…</div>
+  </section>
+</main>
+<main class="wrap vhide" id="view-renovate">
+  <section>
+    <div class="hd"><h2>Renovate — dependency updates</h2><span class="n" id="rn-n"></span></div>
+    <!-- paste ingest — feed the tab BEFORE the app's scheduled run opens PRs: paste the GitHub
+         Dependency Dashboard issue markdown (checkbox lists under Open / Rate-Limited / Awaiting
+         Schedule…), a renovate log excerpt, or PR titles. Parsed SERVER-SIDE (POST
+         /api/renovate/paste → reports/renovate-manual.json); merged below with the live snapshot,
+         live wins on a normalized-title match. -->
+    <details id="rn-paste" class="card card-tight gap-strip">
+      <summary class="point name t-title">paste ingest — Dependency Dashboard / renovate log / PR titles</summary>
+      <div class="mut rn-help">Paste the Dependency Dashboard issue markdown (e.g. <code>- [ ] chore(deps): update spring (major)</code> under an <code>## Awaiting Schedule</code> heading), a renovate log excerpt, or a list of conventional deps PR titles. Entries land as <span class="pill part">pasted</span> rows below and dedupe automatically once a matching live PR exists.</div>
+      <!-- the placeholder below is example text, not a label — it vanishes on input, so the
+           accessible name comes from aria-label instead -->
+      <textarea id="rn-ta" rows="8" spellcheck="false" aria-label="Dependency Dashboard markdown, renovate log excerpt, or PR titles to ingest" placeholder="## Awaiting Schedule&#10;&#10; - [ ] chore(deps): update spring (major)&#10; - [ ] chore(deps): update dependency eslint to v10"></textarea>
+      <div class="actrow gap-t">
+        <button type="button" id="rn-ingest" class="pri">ingest</button>
+        <button type="button" id="rn-clear">clear pasted</button>
+        <span id="rn-paste-msg" class="mut t-note"></span>
+      </div>
+    </details>
+    <div class="tw"><table><thead><tr><th>Update</th><th>PR</th><th>State</th><th>Age</th><th>Source</th></tr></thead><tbody id="rn-rows"></tbody></table></div>
+    <div class="grid2 gap-top">
+      <div class="card"><h3>Dependency Dashboard</h3><div id="rn-dash"></div></div>
+      <div class="card"><h3>Config — groups &amp; gates</h3><div id="rn-config"></div></div>
+    </div>
+    <div class="foot" id="rn-foot"></div>
+  </section>
+</main>
+<!-- Profile — the account this browser is signed in as, and the two pieces of it an operator may
+     change about themselves. It is the only tab that describes a PERSON rather than a fleet, and
+     it earns its place because that person is the `who` stamped on every attestation and
+     annotation (monitor/attribution.mjs classifies that string human / machine / unknown, and an
+     unsigned entry is unknown — never human). Read from /api/me, which 401s when nobody is
+     logged in: that 401 renders as its own state below, because an empty identity card would say
+     "no second factor, no GitHub" about an account this page never even saw.
+     Hidden by CLASS, not by a style attribute — setView drops .vhide on its first pass. -->
+<main class="wrap vhide" id="view-profile">
+  <section>
+    <div class="hd"><h2>Identity</h2><span class="n" id="pf-n">—</span></div>
+    <div id="pf-identity"><span class="mut">loading…</span></div>
+    <div class="foot">Whoever is signed in here is the <code>who</code> written onto every acceptance, exemption and review note made from this browser. That signature is what tells a later reader whether a suppressed finding was a decision a person took or one an agent took on its own — so an unsigned entry is filed as <b>unknown</b> and never quietly promoted to human. Nothing on this page is a secret: no password hash, no TOTP secret, no OAuth token is ever served by <code>/api/me</code>.</div>
+  </section>
+  <section>
+    <div class="hd"><h2>Second factor</h2><span class="n" id="pf-totp-n">—</span></div>
+    <div id="pf-totp"><span class="mut">loading…</span></div>
+    <div class="foot"><b>Enrolled</b> and <b>on</b> are different answers. A secret can exist on the account without a single code ever having been checked against it — bootstrap and every re-issue leave it exactly there — and in that state enforcement is OFF while the account looks provisioned. It is shown as its own state for the same reason a grey scanner is never green. Confirming needs the password as well as a code (a session cookie alone must not be able to turn enforcement on), and disabling needs a valid code from the current authenticator — if that device is gone, the way back is <code>node bin/panel-breakglass.mjs</code> on the box, not this page.</div>
+  </section>
+  <section>
+    <div class="hd"><h2>Linked GitHub</h2><span class="n" id="pf-gh-n">—</span></div>
+    <div id="pf-github"><span class="mut">loading…</span></div>
+    <div class="foot">Display only — a linked login is <em>never</em> a way in. Sign-in resolves accounts by email, and nothing in the auth path reads this field, so linking an account grants it no access and unlinking revokes none. No access token is held here or anywhere else in the panel; only the login and the numeric id an OAuth flow already resolved are recorded.</div>
+  </section>
+<section class="account-security-controls">
+<div class="hd"><h2>Sign-in methods &amp; recovery</h2></div>
+<p class="mut">Manage passwords and passkeys. Verify your identity before changing sign-in methods.</p>
+      <div id="reauth" class="sect jshide">
+        <div class="pop-h" role="presentation">Verify it is you</div>
+        <div class="mut" id="reauth-why"></div>
+        <label class="pk-fld jshide" id="reauth-pw-row" for="reauth-pw">password
+          <input type="password" id="reauth-pw" autocomplete="current-password"></label>
+        <div class="row-actions">
+          <button type="button" id="reauth-go" class="jshide">verify</button>
+          <button type="button" id="reauth-sso" class="jshide">Verify with SSO</button>
+        </div>
+        <span id="reauth-msg" class="mut jshide"></span>
+      </div>
+      <div id="pwblock" class="sect jshide">
+        <div class="pop-h" role="presentation">Password</div>
+        <div class="pk-state">
+          <span class="pk-dot unk" id="pw-dot" aria-hidden="true"></span>
+          <span id="pw-state">password state unknown</span>
+        </div>
+        <label class="pk-fld jshide" id="pw-cur-row" for="pw-cur">current password
+          <input type="password" id="pw-cur" autocomplete="current-password"></label>
+        <label class="pk-fld" for="pw-new">new password <span class="mut">(12 characters or more)</span>
+          <input type="password" id="pw-new" autocomplete="new-password"></label>
+        <div class="row-actions">
+          <button type="button" id="pw-go" class="pri">set password</button>
+        </div>
+        <span id="pw-msg" class="mut jshide"></span>
+        <div id="pw-codes" class="pf-once jshide">
+          <b>Write these down now.</b> Setting a password rotates your recovery codes, so any you
+          held before are void. They are shown once and are not recoverable from the panel.
+          <code id="pw-codes-list"></code>
+        </div>
+      </div>
+      <div id="pkenroll" class="sect jshide">
+        <div id="totp-state" class="pk-state">
+          <span class="pk-dot unk" aria-hidden="true"></span>
+          <span id="totp-state-txt">second-factor state unknown</span>
+        </div>
+        <div id="pk-state" class="pk-state">
+          <span class="pk-dot unk" aria-hidden="true"></span>
+          <span id="pk-state-txt">passkey state unknown</span>
+        </div>
+        <ul id="pk-list" class="pk-list jshide"></ul>
+        <div id="pk-revoke" class="jshide">
+          <div class="mut" id="pk-revoke-what"></div>
+          <label class="pk-fld" for="pk-revoke-pass">confirm your password to remove it
+            <input type="password" id="pk-revoke-pass" autocomplete="current-password"></label>
+          <div class="row-actions">
+            <button type="button" id="pk-revoke-go">remove</button>
+            <button type="button" id="pk-revoke-cancel">cancel</button>
+          </div>
+        </div>
+        <div class="pk-launch">
+          <button type="button" id="pk-add" class="pk-fp"
+                  title="enrol this device's Touch ID as a passkey for the account you are signed in as">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+                 stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <path d="M12 2.6c-3.1 0-5.7 1.6-7.1 3.6"/>
+              <path d="M19.1 6.2A8.4 8.4 0 0 0 12 2.6"/>
+              <path d="M3.2 10.4A8.8 8.8 0 0 1 12 6.2a8.8 8.8 0 0 1 8.8 4.2"/>
+              <path d="M6.6 12.2a5.4 5.4 0 0 1 10.8 0v2.2"/>
+              <path d="M9.6 12.2a2.4 2.4 0 0 1 4.8 0v3.6"/>
+              <path d="M12 12.4v5.4"/>
+              <path d="M6.6 16.4v1.6"/>
+              <path d="M17.4 16.8c0 1.6-.3 3-1 4.2"/>
+              <path d="M8.4 21a9 9 0 0 0 1.4-4.6"/>
+              <path d="M14.4 19.6c-.3 1-.7 1.9-1.2 2.6"/>
+            </svg>
+            <span id="pk-add-label">Enrol fingerprint</span>
+          </button>
+          <span id="pk-warn" class="pk-warn jshide"></span>
+          <div id="pk-err" class="pk-err jshide" role="alert">
+            <span id="pk-err-txt"></span>
+            <button type="button" id="pk-err-x" class="pk-err-x" title="dismiss">✕</button>
+          </div>
+        </div>
+        <div id="pk-form" class="jshide">
+          <label class="pk-fld" for="pk-pass">confirm your password
+            <input type="password" id="pk-pass" autocomplete="current-password"></label>
+          <label class="pk-fld" for="pk-label">name this passkey
+            <input type="text" id="pk-label" placeholder="e.g. MacBook Touch ID" autocomplete="off"></label>
+          <label class="pk-fld pk-chk"><input type="checkbox" id="pk-roaming">
+            <span>use a security key or a phone instead of this device</span></label>
+          <div class="row-actions">
+            <button type="button" id="pk-go" class="pri">enrol</button>
+            <button type="button" id="pk-cancel">cancel</button>
+          </div>
+        </div>
+        <span id="pk-msg" class="mut jshide"></span>
+      </div>
+      <div id="ssoext" class="sect jshide">
+        <label class="chk" for="sso-external"><input type="checkbox" id="sso-external"> Allow external sign-in</label>
+        <span id="sso-note" class="mut jshide"></span>
+      </div>
+</section>
+
+</main>
+</div><!-- workspace-content -->
+<!-- Extracted view modules. Classic scripts, loaded BEFORE the panel client so their function
+     declarations are in scope by the time setView() dispatches. The client follows in the order the
+     header of static/panel-core.js explains; panel-boot.js must stay last. -->
+<script src="/static/learning.js"></script>
+<script src="/static/features.js"></script>
+<script src="/static/comments.js"></script>
+<script src="/static/overwatch-layer.js"></script>
+<script src="/static/bola.js"></script>
+<script src="/static/perf-console.js"></script>
+<script src="/static/panel-core.js"></script>
+<script src="/static/panel-console.js"></script>
+<script src="/static/panel-posture.js"></script>
+<script src="/static/panel-views.js"></script>
+<script src="/static/panel-router.js"></script>
+<script>
+// ── TWO-LEVEL NAVIGATION ────────────────────────────────────────────────────────────────────────
+// The strip held 28 flat tabs — 10 when it was last designed — and 14 of those are evidence lanes
+// the Overview's scanner-coverage table already indexes with MORE information than a tab can carry
+// (a tab shows a count; the table shows the count and whether the count means anything). Flat, the
+// strip also asked the reader to re-derive a taxonomy at every step: conditions, vendors,
+// techniques and artefacts side by side.
+//
+// So the primary strip lists QUESTIONS and the secondary strip lists the views that answer one.
+//
+// THE GROUP IS DERIVED FROM THE VIEW, never stored beside it. That is the whole reason this change
+// touches no routing: VALID_VIEWS, viewUrl(), urlView() and the hash/popstate handlers are all
+// untouched, and `#codeql` still resolves to codeql — it simply arrives with Findings selected. A
+// redirect map would have been a second vocabulary to keep in step with the first.
+//
+// UNMAPPED TABS RENDER, they do not vanish. This file gained 18 tabs in eleven days across about a
+// dozen sessions; a hand-maintained 28-entry list would silently swallow the 29th, and a view that
+// exists but cannot be reached is the disappearing-evidence failure this panel exists to refuse.
+// Anything unmapped collects under "Other" — visibly wrong, rather than invisibly absent.
+// WHAT EACH VIEW IS ABOUT, declared once. `fleet` views answer for every project and ignore the
+// picker; `project` views (the default) answer for the selected one; `account` is the operator.
+// The rail, breadcrumb, header, URL, run controls and picker redirect all read this one table;
+// separate lists drift, and a page kept open with no project must never be labelled with one.
+const VIEW_SCOPE=Object.freeze({fleet:'fleet',projects:'fleet',rollups:'fleet',remfleet:'fleet',verdicts:'fleet',oversight:'fleet',correlations:'fleet',
+  overwatch:'fleet',cra:'fleet',stpa:'fleet',bola:'fleet',comments:'fleet',spinecomments:'fleet',
+  settings:'fleet',perf:'fleet',held:'fleet',journey:'fleet',profile:'account'});
+const scopeOf=(v)=>Object.prototype.hasOwnProperty.call(VIEW_SCOPE,v)?VIEW_SCOPE[v]:'project';
+const TAB_GROUPS=Object.freeze({
+  // what is true now. `fleet` is FIRST because a section click opens its section's first tab, and
+  // the fleet page is the one view here that answers with no project selected — landing an operator
+  // who clicked "Overview" on a page that says "choose a project" is the state this tab replaced.
+  fleet:'overview', overview:'overview', dashboard:'overview', lanes:'overview', report:'overview', verdicts:'overview', oversight:'overview', correlations:'overview', posture:'overview',
+  // what exists, and what of it is reachable
+  sitemap:'surface', exposure:'surface',
+  // the evidence lanes
+  // credentials: held on this box, in the working tree, in committed history
+  held:'secrets', secrets:'secrets', secretshistory:'secrets',
+  // read the code without running it
+  allfindings:'static', feed:'static', sast:'static', codeql:'static', iac:'static', actions:'static', cspm:'static',
+  // what the tree pulls in, and from whom
+  malware:'deps', socket:'deps', supplychain:'deps', depsjvm:'deps', depsgo:'deps',
+  depsretire:'deps', vendor:'deps', renovate:'deps',
+  // not vulnerabilities: readability, unfinished work, standards conformance
+  a11y:'quality', stubs:'quality', minify:'quality',
+  // is this idiomatic / safe-by-pattern. The boundary is LANE_KINDS, not the tool name: every
+  // member is lane(H,'not-a-vulnerability'), so a lint-clean repo earns no security row. The five
+  // language lanes are GENERATED tabs and place themselves via LANE_SECTION in monitor/lane-tabs.mjs.
+  denolint:'lint',
+  // do the types hold — a compile-time answer, not a pattern match. deno check is the only type
+  // checker in the roster.
+  denotypes:'types',
+  // the Slop Bucket is quality by the same rule as the rest of this row: it is readability, not a vulnerability.
+  comments:'quality',spinecomments:'quality',
+  overwatch:'act',
+  // need something running to answer
+  dast:'dynamic', bola:'dynamic', stpa:'dynamic', tls:'dynamic', apifuzz:'dynamic', runtime:'dynamic',
+  // doing something about it
+  remediation:'act', issues:'act', daily:'act', delivery:'act',
+  // `settings` (sweep hang/kill thresholds and cadence overrides) is another session's in-flight
+  // tab. Declared here so it renders in a section rather than under "Other" — the fallback caught
+  // it, which is what the fallback is for. Filed under `act` because changing a threshold acts on
+  // the fleet's behaviour rather than reporting on it.
+  // D16 APPLIED BY ITS OWNER, 2026-08-23: `settings` is NOT here, because it is no longer a strip
+  // tab — it configures the fleet (sweep hang/kill thresholds, cadence overrides) and now lives in
+  // the ≡ menu beside projects and profile. A TAB_GROUPS entry for a non-tab grades nothing, which
+  // is what the guard below refuses.
+  cra:'act',
+  // `perf` acts on the fleet's behaviour (which lanes run, and how hard) rather than reporting on
+  // it, so it files beside the other levers rather than with the evidence lanes it governs.
+  perf:'act',
+  // what we KNOW about a finding, and why we do not know more
+  determinations:'static',
+  // longer than this sweep
+  timeline:'history', modmap:'history',
+});
+const GROUP_ORDER=['overview','surface','secrets','static','deps','dynamic','lint','types','quality','act','history'];
+// ONE WORD EACH, because the strip is now a NAVBAR and nine labels share one line with the brand,
+// the project picker and the run controls. `Static Testing` and `Dynamic Testing` were the two that
+// spent the width, and neither word was carrying the distinction — what separates them is "reads the
+// code" against "needs something running", which no adjective fits and GROUP_TITLE already says in
+// full. Same rule the tabs below follow: the label is one line, the gloss is title=.
+const GROUP_LABEL={overview:'Overview',surface:'Surface',secrets:'Secrets',
+  static:'Static',deps:'Deps',dynamic:'Dynamic',lint:'Lint',types:'Types',quality:'Quality',
+  act:'Remediation',history:'History',ungrouped:'Other'};
+const GROUP_TITLE={
+  overview:'what is true right now for the selected project',
+  surface:'what exists, and which of it is reachable from outside',
+  secrets:'credentials: held on this box, leaked into the working tree, or left in committed history',
+  static:'lanes that read the code without running it',
+  deps:'what the tree pulls in, and from whom',
+  quality:'not vulnerabilities — readability, unfinished work, standards conformance. Excluded from the security headline on purpose.',
+  lint:'is this idiomatic and safe by pattern — linters only, and every lane here is non-additive: a finding cannot reach the severity headline, so a lint-clean repo earns no green SAST row',
+  types:'do the types hold — compile-time type checking, a different question from any pattern match and one a clean linter must not be read as answering',
+  dynamic:'lanes that need something running to answer — a live URL or a target',
+  act:'the work: remediation plan, issue tracker, delivery gates',
+  history:'what spans more than the current sweep',
+  ungrouped:'tabs with no declared section — they are shown here rather than hidden, which means TAB_GROUPS needs a line adding',
+};
+// hasOwnProperty, not `TAB_GROUPS[v]||…`: the `||` form resolved `constructor`, `toString` and
+// `__proto__` to INHERITED members, which are truthy, so groupOf returned a function instead of a
+// section name and every downstream comparison silently misbehaved. Same closed-set discipline as
+// checkForScanner() in monitor/scanner-checks.mjs — and the same reason: a lookup whose miss path
+// can return something other than the declared fallback is not a closed set.
+// Two maps, deliberately: TAB_GROUPS is the hand-written strip's declaration and stays frozen;
+// TAB_GROUPS_EXTRA holds placements for tabs this page GENERATED. Merging them would make a derived
+// placement indistinguishable from a declared one, and the difference is exactly what a reader
+// auditing an unfamiliar tab needs.
+const groupOf=(v)=>Object.prototype.hasOwnProperty.call(TAB_GROUPS,v)?TAB_GROUPS[v]
+  :(Object.prototype.hasOwnProperty.call(TAB_GROUPS_EXTRA,v)?TAB_GROUPS_EXTRA[v]:'ungrouped');
+let curGroup=groupOf(curView);
+
+/** Live tabs, in DOM order, bucketed by section. Read from the DOM so a tab added by any session
+ *  is picked up without this code being told about it. */
+function tabsByGroup(){
+  const out=new Map();
+  for(const b of document.querySelectorAll('#views .vtab')){
+    const g=groupOf(b.dataset.v);
+    if(!out.has(g))out.set(g,[]);
+    out.get(g).push(b);
+  }
+  return out;
+}
+
+// A badge counts CHECKS CARRYING FINDINGS, then their summed findings: `n(total)`. A sum alone
+// lets one noisy check bury an incident in another. Unknown is excluded rather than counted as
+// zero, and where nothing is known the badge says nothing.
+function badgeModel(tabs){
+  const known=tabs.map(t=>t.querySelector('.vn')).filter(n=>n&&n.textContent.trim()!=='');
+  const carrying=known.filter(n=>Number(n.textContent.trim())>0).length;
+  const sum=known.reduce((a,n)=>a+(Number(n.textContent.trim())||0),0);
+  const crit=known.some(n=>n.classList.contains('crit'));
+  return {text:known.length?`${carrying}(${sum})`:'',crit,warn:!crit&&carrying>0,
+    title:known.length
+      ?`${carrying} of ${known.length} checks with a result carry findings · ${sum} finding(s) in total across them`
+      :'nothing known about these checks yet'};
+}
+function setNavBadge(el,tabs){
+  const m=badgeModel(tabs);
+  let vn=el.querySelector('.vn');
+  if(!vn){vn=document.createElement('span');vn.className='vn';el.appendChild(vn);}
+  vn.textContent=m.text;
+  vn.classList.toggle('crit',m.crit);
+  vn.classList.toggle('warn',m.warn);
+  el.title=m.title;
+}
+// A tab with no counter at all is a page, not a check: it never says "no result yet".
+function pickerLabel(tab){
+  const label=tab.childNodes[0]?.textContent.trim()||tab.dataset.v;
+  const vn=tab.querySelector('.vn'); if(!vn)return label;
+  const txt=vn.textContent.trim();
+  if(txt==='')return `${label} — no result yet`;
+  return Number.isNaN(Number(txt))?label:`${label} — ${Number(txt)}`;
+}
+// Option text is written in place rather than through innerHTML: rebuilding the select on a count
+// change would close it under a reader who has it open.
+function refreshGroupBadges(){
+  const findings=navigationTabs().filter(t=>workspaceOf(t.dataset.v)==='findings');
+  const rail=document.querySelector('[data-workspace="findings"]');
+  if(rail)setNavBadge(rail,findings);
+  document.querySelectorAll('#groups [data-category]').forEach(b=>
+    setNavBadge(b,findings.filter(t=>b.dataset.category==='all'||findingCategory(t.dataset.v)===b.dataset.category)));
+  const picker=$('check-picker');
+  if(picker)for(const o of picker.options){
+    const tab=findings.find(t=>t.dataset.v===o.value); if(tab)o.textContent=pickerLabel(tab);
+  }
+}
+
+// Primary sections describe tasks. Scanner groups remain the legacy route vocabulary.
+// WORKSPACE_LABELS are the PROJECT section's tasks; the All-projects section is one workspace
+// (`fleet`) entered from fixed rail links, so no per-project task ever lists a fleet page.
+const WORKSPACE_LABELS={summary:'Summary',findings:'Findings',surface:'Websites & services',map:'Site map',work:'Work',history:'History'};
+const FINDING_LABELS={all:'All findings',security:'Security risks',quality:'Code quality',accessibility:'Accessibility',other:'Other checks'};
+const NAV_LABELS={secrets:'Exposed credentials',static:'Code security',deps:'Dependencies',dynamic:'Running services',lint:'Code conventions',types:'Type checks',quality:'Code quality',other:'Other checks',ungrouped:'Other checks'};
+const WORKSPACE_DEFAULTS={summary:'overview',findings:'allfindings',surface:'exposure',map:'sitemap',work:'remediation',history:'timeline'};
+function workspaceOf(v){
+  if(['profile','settings','perf','held','journey'].includes(v))return 'manage';
+  if(scopeOf(v)==='fleet')return 'fleet';
+  if(v==='sitemap')return 'map';
+  if(['exposure','vendor'].includes(v))return 'surface';
+  if(['report','timeline'].includes(v))return 'history';
+  if(['remediation','issues','daily','delivery','modmap'].includes(v))return 'work';
+  if(['overview','dashboard','lanes','posture'].includes(v))return 'summary';
+  return 'findings';
+}
+function findingCategory(v){
+  if(v==='allfindings')return 'all';
+  if(v==='a11y'||v==='accessibility')return 'accessibility';
+  const g=groupOf(v);
+  if(['lint','types','quality'].includes(g))return 'quality';
+  return ['secrets','static','deps','dynamic'].includes(g)?'security':'other';
+}
+// A view whose experimental flag is off is not navigation (admin/static/features.js).
+function navigationTabs(){return [...document.querySelectorAll('#views .vtab')].filter(b=>!(typeof featureOffFlag==='function'&&featureOffFlag(b.dataset.v)));}
+function railFocusables(){
+  return [...$('workspace-rail').querySelectorAll('a[href],button:not([disabled]),summary,select')].filter(el=>el.offsetParent!==null);
+}
+function openWorkspaceRail(){
+  document.body.classList.add('rail-open');
+  $('nav-toggle').setAttribute('aria-expanded','true');
+  $('workspace-content').setAttribute('inert','');
+  ($('workspace-rail').querySelector('[aria-current]')||railFocusables()[0])?.focus();
+}
+function closeWorkspaceRail({restoreFocus=false}={}){
+  document.body.classList.remove('rail-open');
+  $('nav-toggle').setAttribute('aria-expanded','false');
+  $('workspace-content').removeAttribute('inert');
+  if(restoreFocus)$('nav-toggle').focus();
+}
+function navigateWorkspace(v,{keepFocus=false}={}){
+  closeWorkspaceRail();setView(v);
+  if(!keepFocus)$('workspace-content').focus({preventScroll:true});
+}
+function clearAccountSecrets(){
+  document.querySelectorAll('.account-security-controls input[type="password"]').forEach(el=>{el.value='';});
+  const codes=$('pw-codes-list');if(codes)codes.textContent='';
+  const once=$('pw-codes');if(once)once.classList.add('jshide');
+}
+function renderGroups(){
+  const nav=$('workspace-nav');if(!nav)return;
+  nav.innerHTML=Object.entries(WORKSPACE_LABELS).map(([id,label])=>`<button type="button" class="workspace-link" data-workspace="${id}">${label}</button>`).join('');
+  nav.querySelectorAll('[data-workspace]').forEach(b=>b.onclick=()=>{
+    if(curProj)navigateWorkspace(WORKSPACE_DEFAULTS[b.dataset.workspace]);
+  });
+  applyGroup(curView);
+}
+// The header states the scope of the page under it, and every control in it acts on that scope or
+// names what it acts on instead. The picker used to sit here as a global while half the pages
+// ignored it, so "commitwork" was selected above fleet totals.
+function syncScopeChrome(v){
+  const scope=scopeOf(v),chip=$('scope-chip');
+  if(chip){
+    chip.dataset.scope=scope;
+    chip.textContent=scope==='fleet'?'All projects':scope==='account'?'Your account':(curProj?'Project · '+curProj:'No project selected');
+    chip.title=scope==='fleet'?'this page covers every project; the project picker does not apply to it'
+      :scope==='account'?'your own account settings':'this page covers the selected project only';
+  }
+  renderGen();
+  const sweep=$('sweep');
+  if(sweep){
+    // A running sweep keeps its stop control on every page; otherwise the run control exists only
+    // where a project is in scope, and says which one it will run.
+    sweep.hidden=!sweepRunningNow&&!(scope==='project'&&curProj);
+    if(!sweepRunningNow){sweep.textContent=sweepIdleLabel()+(sweepLastStopped?' (last: STOPPED)':'');sweep.title=curProj?'run every check for '+curProj:'';}
+  }
+  const bar=$('healthbar');
+  if(bar&&!bar.classList.contains('jshide'))bar.style.display=scope==='project'?'block':'none';
+  for(const id of ['health','hb-run']){
+    const b=$(id);if(!b)continue;
+    b.title=curProj?'build-health refresh for '+curProj+' (unused code, toolchain, result origin, release checks) into its latest results — does not start a new scan':'choose a project first — a healthcheck runs for one project';
+    if(id==='health')b.disabled=!curProj;
+  }
+}
+function applyGroup(v){
+  if(typeof featureMarkNav==='function')featureMarkNav();
+  curGroup=groupOf(v);
+  const workspace=workspaceOf(v),category=findingCategory(v),tabs=navigationTabs(),scope=scopeOf(v);
+  for(const b of tabs){
+    b.classList.toggle('ghide',workspace==='findings'||workspaceOf(b.dataset.v)!==workspace||workspace==='manage');
+    if(b.dataset.v===v)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+  }
+  document.querySelectorAll('[data-workspace]').forEach(b=>{
+    const active=b.dataset.workspace===workspace;b.classList.toggle('active',active);
+    if(active)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current');
+    b.disabled=!curProj;b.title=curProj?'':'choose a project above first';
+  });
+  document.querySelectorAll('[data-scope-head]').forEach(h=>h.classList.toggle('active',h.dataset.scopeHead===scope));
+  document.querySelectorAll('[data-route]').forEach(b=>{
+    const active=b.dataset.route===v;b.classList.toggle('active',active);
+    if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+  });
+  const nav=$('groups');
+  const available=new Set(tabs.filter(b=>workspaceOf(b.dataset.v)==='findings').map(b=>findingCategory(b.dataset.v)));
+  const categoryMarkup=workspace==='findings'?Object.entries(FINDING_LABELS).filter(([id])=>available.has(id)).map(([id,label])=>`<button type="button" class="gtab${id===category?' pri':''}" data-category="${id}"${id===category?' aria-current="true"':''}>${label}</button>`).join(''):'';
+  // Polls must not replace focused controls or close the native check picker.
+  if(nav.innerHTML!==categoryMarkup){
+    nav.innerHTML=categoryMarkup;
+    nav.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{
+      const candidates=navigationTabs().filter(t=>workspaceOf(t.dataset.v)==='findings'&&findingCategory(t.dataset.v)===b.dataset.category);
+      const first=candidates.find(t=>t.dataset.v==='sast')||candidates[0];if(first)navigateWorkspace(first.dataset.v);
+    });
+  }
+  nav.hidden=workspace!=='findings';
+  const picker=$('check-picker');$('check-picker-row').hidden=workspace!=='findings'||category==='all';
+  if(workspace==='findings'){
+    const groups=new Map();
+    for(const b of tabs.filter(t=>workspaceOf(t.dataset.v)==='findings'&&findingCategory(t.dataset.v)===category)){
+      const g=groupOf(b.dataset.v);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(b);
+    }
+    const markup=[...groups].map(([g,bs])=>`<optgroup label="${esc(NAV_LABELS[g]||'Other checks')}">${bs.map(b=>`<option value="${esc(b.dataset.v)}">${esc(b.childNodes[0]?.textContent.trim()||b.dataset.v)}</option>`).join('')}</optgroup>`).join('');
+    if(picker.innerHTML!==markup)picker.innerHTML=markup;
+    if(picker.value!==v)picker.value=v;
+  }
+  const tab=tabs.find(b=>b.dataset.v===v);
+  const title=tab?.childNodes[0]?.textContent.trim()||({projects:'Project list',rollups:'Rollups',remfleet:'Remediation',profile:'Account & security',settings:'Check schedules',perf:'Check configuration',held:'Credentials & connections'}[v])||v;
+  const where=scope==='account'?'Your account':scope==='fleet'?'All projects':curProj||'Choose a project';
+  const section=workspace==='fleet'?null:(WORKSPACE_LABELS[workspace]||'Manage');
+  $('workspace-location').textContent=[where,section,workspace==='findings'?FINDING_LABELS[category]:null,title].filter(Boolean).filter((s,i,a)=>s!==a[i-1]).join(' / ');
+  const help={fleet:'Every project at once: coverage, scans, decisions and deadlines. Choosing a project opens its own pages.',summary:'See what needs attention in this project, when its checks last ran, and where coverage is missing.',surface:'Inspect this project\'s exposed services and third-party assets.',map:'Explore this project as a 3-D site map: its services, files and wiring, and where known vulnerabilities sit.',work:'Plan fixes and assign work for this project. A reviewed issue is not necessarily fixed.',history:'See this project\'s previous checks and evidence reports.',manage:'Manage service settings or your account. Changes here affect how the service operates.'};
+  $('workspace-help').textContent=workspace==='findings'?({all:'Every open finding for this project in one list, most severe first. Open a check to act on its findings.',security:'Potential weaknesses in code, dependencies or running services. Select a check to review its evidence; a finding is not proof of an incident.',quality:'Readability, unfinished work and coding checks. These results are separate from security risks.',accessibility:'Find barriers that may prevent people from using your site. Automated checks cover only part of accessibility.',other:'Checks awaiting classification. They remain available here so new evidence is never hidden.'}[category]):help[workspace];
+  refreshGroupBadges();
+  syncScopeChrome(v);
+}
+// Arrow keys fire `change` on a closed select in some browsers, so choosing a check must not
+// throw focus out of the control the reader is still using.
+$('check-picker').onchange=e=>navigateWorkspace(e.target.value,{keepFocus:true});
+document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>navigateWorkspace(b.dataset.route));
+$('nav-toggle').onclick=()=>document.body.classList.contains('rail-open')?closeWorkspaceRail():openWorkspaceRail();
+document.addEventListener('keydown',e=>{
+  if(!document.body.classList.contains('rail-open'))return;
+  if(e.key==='Escape'){e.preventDefault();closeWorkspaceRail({restoreFocus:true});return;}
+  if(e.key!=='Tab')return;
+  // Stepped by hand: the opener lives in the header, so native Tab order would leave it for the
+  // controls behind the drawer instead of entering the rail.
+  const ring=[$('nav-toggle'),...railFocusables()], at=ring.indexOf(document.activeElement);
+  e.preventDefault();
+  ring[(at+(e.shiftKey?-1:1)+ring.length)%ring.length].focus();
+});
+document.addEventListener('click',e=>{
+  if(document.body.classList.contains('rail-open')&&!e.target.closest('#workspace-rail,#nav-toggle'))closeWorkspaceRail();
+});
+// `inert` must never outlive the drawer: widening to desktop while it is open would strand it.
+matchMedia('(min-width:801px)').addEventListener('change',e=>{if(e.matches)closeWorkspaceRail();});
+renderGroups();
+
+</script>
+<script src="/static/panel-features.js"></script>
+<script src="/static/panel-settings.js"></script>
+<script>
+document.querySelectorAll('#menupop .menu-view').forEach(b=>b.onclick=()=>{
+  navigateWorkspace(b.dataset.v);
+  const pop=$('menupop'), btn=$('menubtn');
+  if(pop)pop.hidden=true;
+  if(btn)btn.setAttribute('aria-expanded','false');
+});
+
+// ≡ menu popout. Closes on outside click and on Escape, and returns focus to the button — a menu
+// that can only be dismissed by picking something from it traps the keyboard.
+(function(){
+  const btn=$('menubtn'), pop=$('menupop'); if(!btn||!pop) return;
+  const setOpen=(open)=>{ pop.hidden=!open; btn.setAttribute('aria-expanded', String(open)); };
+  btn.onclick=(e)=>{ e.stopPropagation(); setOpen(pop.hidden); if(!pop.hidden)loadPanelHealth(); };
+  document.addEventListener('click',(e)=>{ if(!pop.hidden && !pop.contains(e.target) && e.target!==btn) setOpen(false); });
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape' && !pop.hidden){ setOpen(false); btn.focus(); } });
+})();
+
+</script>
+<script src="/static/panel-palette.js"></script>
+<script src="/static/panel-feed.js"></script>
+<script src="/static/panel-journey.js"></script>
+<script src="/static/panel-correlations.js"></script>
+<script src="/static/panel-boot.js"></script>
+</body></html>

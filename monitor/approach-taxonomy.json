@@ -1,0 +1,1522 @@
+{
+  "title": "The integrated security approaches — what each one IS, declared rather than inferred",
+  "note": "monitor/posture.mjs joins this table to the live rollup to answer 'what security approaches do we run, what kind of thing is each, and did it actually run in the last 7 days'. Every entry is DECLARED here, never derived from a check id or a tool name: 'sast-codeql-java' does not tell you it is deep taint analysis of JVM bytecode-free source, and guessing that from the string is how a description goes stale silently. monitor/test/posture-taxonomy.test.mjs asserts this table covers every check in every bundled manifest, so a new scanner cannot enter the fleet without someone saying what it is.",
+  "types": {
+    "secrets": "credential material found in source or history",
+    "sca": "software composition analysis — known-vulnerable dependencies",
+    "sast": "static analysis of first-party source",
+    "supply-chain": "package provenance, behaviour and integrity",
+    "iac": "infrastructure and container configuration",
+    "dast": "dynamic testing against a running target",
+    "api-contract": "the running API against its own declared contract",
+    "posture": "platform and repository configuration controls",
+    "inventory": "an accounting artifact — SBOM, provenance, attestation",
+    "hygiene": "unfinished work and maintenance debt, not vulnerabilities",
+    "build-health": "the build's own integrity and currency",
+    "quality-gate": "a release precondition enforced as a check",
+    "accessibility": "conformance of the served interface to WCAG, an external standard with legal weight"
+  },
+  "sourceKinds": {
+    "source": "first-party code in the working tree",
+    "history": "the git object graph, including deleted and rewritten content",
+    "dependencies": "the resolved third-party tree",
+    "artifact": "a built image or archive",
+    "config": "declarative configuration files",
+    "runtime": "a live endpoint",
+    "platform": "the hosting platform's own configuration"
+  },
+  "weaknessClassNote": "Lane E — the weakness-CLASS axis. Each approach DECLARES (never infers) which CWE weakness-classes it looks for, as slugs from weaknessClassVocab below, plus an oracleTier. A repo cleared only by lanes whose weaknessClasses never include authz/business-logic/race is a DECLARED VOID on those classes, not a clean result — monitor/coverage-manifest.mjs::weaknessClassVoids reports them (voidKind 'no-tool-class') beside the ecosystem-axis voids. Declared CONSERVATIVELY, because over-declaring coverage is the false-clean defect this axis exists to kill: accessibility/hygiene/build-health/quality-gate/inventory carry [] (they are conformance or accounting, not weakness classes), and SCA lanes carry the agnostic '*-advisory-dep' (a known-vuln dependency is CWE-agnostic and is NOT first-party logic coverage). This per-approach `weaknessClasses` (claim slugs, lowercase) is DISTINCT from the per-finding `weaknessClass` (raw CWE-nnn ids) in lifecycle records. CROSS-CHECK: an approach may bind `ruleIds` (ids present in monitor/ruleId-cwe.json); monitor/test/posture.test.mjs then fails any declared class that no bound rule backs (a stale claim). semgrep(sast) and gosec are deliberately NOT bound — ruleId-cwe.json is result-seeded (rules that have FIRED on the corpus), so binding a broad standard ruleset to it would misread 'has not fired here' as 'not configured' and manufacture a false void (grey != red); the codeql lanes and the internal authz detectors, whose declared classes are a conservative subset of an authoritative catalogue, ARE bound.  MEMORY SAFETY added 2026-09-01: this vocabulary was web-shaped and had no class for what a C/C++ lane finds, so sast-codeql-cpp declared only cwe-78/cwe-22 — an under-description — and the new cppcheck/flawfinder lanes could not be declared at all. Omitting the axis is REFUSED by posture.test.mjs because an undeclared class axis silently reads as covered, and that refusal is correct: the fix belongs in the vocabulary, not in the row. sast-codeql-cpp and sast-joern should gain these too; not done here because those rows are not mine to rewrite.",
+  "weaknessClassVocab": {
+    "cwe-89-injection": {
+      "label": "SQL / query injection",
+      "cwes": [
+        "CWE-89"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-78-command-injection": {
+      "label": "OS command injection",
+      "cwes": [
+        "CWE-78",
+        "CWE-77"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-79-xss": {
+      "label": "cross-site scripting",
+      "cwes": [
+        "CWE-79"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-22-path": {
+      "label": "path traversal",
+      "cwes": [
+        "CWE-22"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-502-deserialization": {
+      "label": "unsafe deserialization",
+      "cwes": [
+        "CWE-502"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-918-ssrf": {
+      "label": "server-side request forgery",
+      "cwes": [
+        "CWE-918"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-611-xxe": {
+      "label": "XML external entity injection",
+      "cwes": [
+        "CWE-611"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-1321-prototype-pollution": {
+      "label": "prototype pollution",
+      "cwes": [
+        "CWE-1321"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-352-csrf": {
+      "label": "cross-site request forgery",
+      "cwes": [
+        "CWE-352"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-798-hardcoded-creds": {
+      "label": "hard-coded / leaked credentials",
+      "cwes": [
+        "CWE-798",
+        "CWE-259",
+        "CWE-321"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-284-authz": {
+      "label": "broken access control / authorization (BOLA, IDOR, cross-tenant)",
+      "cwes": [
+        "CWE-284",
+        "CWE-285",
+        "CWE-862",
+        "CWE-863",
+        "CWE-639"
+      ],
+      "axis": "first-party",
+      "keystone": true
+    },
+    "cwe-840-business-logic": {
+      "label": "business-logic flaw",
+      "cwes": [
+        "CWE-840"
+      ],
+      "axis": "first-party",
+      "keystone": true
+    },
+    "cwe-362-race": {
+      "label": "race condition / TOCTOU",
+      "cwes": [
+        "CWE-362",
+        "CWE-367"
+      ],
+      "axis": "first-party",
+      "keystone": true
+    },
+    "cwe-20-input-validation": {
+      "label": "improper input validation / unhandled input",
+      "cwes": [
+        "CWE-20"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-668-exposure": {
+      "label": "exposed resource / default credential / sensitive endpoint",
+      "cwes": [
+        "CWE-668",
+        "CWE-200",
+        "CWE-1188"
+      ],
+      "axis": "runtime"
+    },
+    "cwe-319-transport": {
+      "label": "transport security (TLS, certificate, cleartext, weak crypto)",
+      "cwes": [
+        "CWE-319",
+        "CWE-295",
+        "CWE-326",
+        "CWE-327"
+      ],
+      "axis": "transport"
+    },
+    "iac-misconfig": {
+      "label": "infrastructure / container misconfiguration",
+      "cwes": [
+        "CWE-250",
+        "CWE-732",
+        "CWE-668"
+      ],
+      "axis": "config"
+    },
+    "ci-workflow-injection": {
+      "label": "CI/CD workflow injection & mutable action supply chain",
+      "cwes": [
+        "CWE-94",
+        "CWE-77",
+        "CWE-829",
+        "CWE-1104"
+      ],
+      "axis": "config"
+    },
+    "platform-posture-control": {
+      "label": "hosting-platform configuration control (branch protection, scanning)",
+      "cwes": [
+        "CWE-284",
+        "CWE-732",
+        "CWE-693"
+      ],
+      "axis": "platform"
+    },
+    "malicious-package": {
+      "label": "malicious / behavioural supply-chain package",
+      "cwes": [
+        "CWE-506",
+        "CWE-829",
+        "CWE-1357"
+      ],
+      "axis": "dependency"
+    },
+    "*-advisory-dep": {
+      "label": "known-vulnerable dependency (CWE-agnostic advisory match)",
+      "cwes": [],
+      "axis": "dependency",
+      "agnostic": true
+    },
+    "cwe-787-memory-write": {
+      "label": "out-of-bounds write",
+      "cwes": [
+        "CWE-787",
+        "CWE-121",
+        "CWE-122"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-125-memory-read": {
+      "label": "out-of-bounds read",
+      "cwes": [
+        "CWE-125"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-416-use-after-free": {
+      "label": "use-after-free / double free",
+      "cwes": [
+        "CWE-416",
+        "CWE-415"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-120-buffer-overflow": {
+      "label": "unbounded buffer copy",
+      "cwes": [
+        "CWE-120",
+        "CWE-119"
+      ],
+      "axis": "first-party"
+    },
+    "cwe-134-format-string": {
+      "label": "format string",
+      "cwes": [
+        "CWE-134"
+      ],
+      "axis": "first-party"
+    }
+  },
+  "oracleTiers": {
+    "1": "mechanical / ground-truth — a decidable oracle (a live authz/BOLA probe, a declared-property set-diff); the result is proof, not a pattern match",
+    "2": "consistency / anomaly — asserts the target against an advisory DB or a rule/ruleset; evidence, not proof",
+    "3": "inference / LLM — a judgement a model or heuristic makes; the weakest oracle and the one that most needs a second witness"
+  },
+  "approaches": [
+    {
+      "check": "a11y-wcag",
+      "weaknessClasses": [],
+      "oracleTier": 2,
+      "name": "WCAG 2.2 accessibility audit",
+      "type": "accessibility",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "level A before AA — an A failure (an unlabelled control, a missing lang, an image with no alt) excludes people from using the interface at all, while AA degrades it. UNCHECKED criteria are the ones to watch: they are not passes, they block a conformance claim exactly as a failure does, and closing them needs a browser or a person rather than another scan.",
+      "note": "Static and zero-dependency, so unlike a pa11y/axe lane it needs no browser and no live URL and cannot be gated into a permanent void. The trade is coverage: roughly a third of the criteria it lists are not statically decidable, and it COUNTS those rather than reporting them clean."
+    },
+    {
+      "check": "secrets",
+      "weaknessClasses": [
+        "cwe-798-hardcoded-creds"
+      ],
+      "oracleTier": 2,
+      "name": "TruffleHog — git-history secret detection",
+      "type": "secrets",
+      "sourceKind": "history",
+      "findsSourceVulns": true,
+      "escalates": "a VERIFIED result is a live credential and is an incident, not a finding: rotation at the provider is required before any code change, and removing it from HEAD does not un-leak it.",
+      "note": "The only scanner in this fleet that reads deleted and rewritten history, so it is the only one that can find a credential that was committed and then 'removed'."
+    },
+    {
+      "check": "secrets-gitleaks",
+      "weaknessClasses": [
+        "cwe-798-hardcoded-creds"
+      ],
+      "oracleTier": 2,
+      "name": "Gitleaks — working-tree secret scan",
+      "type": "secrets",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "a hit is a credential to rotate; scope is bounded by manifests/gitleaks.toml, so a clean result means clean WITHIN that scope.",
+      "note": "Complements TruffleHog rather than duplicating it: fast enough to run pre-commit, which is prevention rather than detection."
+    },
+    {
+      "check": "secrets-betterleaks",
+      "weaknessClasses": [
+        "cwe-798-hardcoded-creds"
+      ],
+      "oracleTier": 2,
+      "name": "Betterleaks — working-tree secret scan with inline validation",
+      "type": "secrets",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "a validated-live hit is a credential to rotate at its provider before any code change; a low-confidence generic hit is a candidate to read, not a verdict.",
+      "note": "A second engine over gitleaks' scope file and rule format. It adds generic-password and generic-credential-uri rules and tests candidates against their issuers, which the gitleaks lane does through a separate TruffleHog pass."
+    },
+    {
+      "check": "sast",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-78-command-injection",
+        "cwe-79-xss",
+        "cwe-22-path",
+        "cwe-611-xxe",
+        "cwe-502-deserialization",
+        "cwe-918-ssrf",
+        "cwe-352-csrf",
+        "cwe-798-hardcoded-creds"
+      ],
+      "oracleTier": 2,
+      "name": "Semgrep — pattern SAST",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "highest security-severity first; a finding is a code defect to fix at the root cause."
+    },
+    {
+      "check": "sast-codeql",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-22-path",
+        "cwe-1321-prototype-pollution"
+      ],
+      "oracleTier": 2,
+      "ruleIds": [
+        "js/sql-injection",
+        "js/path-injection",
+        "js/prototype-pollution"
+      ],
+      "name": "CodeQL — deep taint analysis (JS/TS)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "each result carries a source→sink path; an unreachable path is not an exposure, and reachability must be established before the fix is judged."
+    },
+    {
+      "check": "sast-codeql-java",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-22-path",
+        "cwe-918-ssrf",
+        "cwe-502-deserialization",
+        "cwe-79-xss"
+      ],
+      "oracleTier": 2,
+      "ruleIds": [
+        "java/sql-injection",
+        "java/path-injection",
+        "java/ssrf",
+        "java/unsafe-deserialization",
+        "java/xss"
+      ],
+      "name": "CodeQL — deep taint analysis (JVM)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "as for the JS lane; a cross-tenant path from a request header to a data access is the highest-yield class this fleet looks for."
+    },
+    {
+      "check": "sast-codeql-python",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-78-command-injection",
+        "cwe-22-path",
+        "cwe-79-xss"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — deep taint analysis (Python)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "as for the JS lane."
+    },
+    {
+      "check": "sast-codeql-ruby",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-79-xss",
+        "cwe-22-path"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — deep taint analysis (Ruby)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "as for the JS lane."
+    },
+    {
+      "check": "sast-codeql-cpp",
+      "weaknessClasses": [
+        "cwe-78-command-injection",
+        "cwe-22-path",
+        "cwe-787-memory-write",
+        "cwe-125-memory-read",
+        "cwe-416-use-after-free",
+        "cwe-120-buffer-overflow",
+        "cwe-134-format-string"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — deep taint analysis (C/C++)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "extraction is routinely degraded under build-mode none (worst measured 0.64) — read coverage.state before trusting a low count; a zero under partial coverage is undetermined, never clean.",
+      "note": "Memory-safety classes adopted 2026-09-02. The basis is the shipped C/C++ query pack, not the check id: this lane is CodeQL data-flow and taint analysis for C and C++, and its pack carries the out-of-bounds write/read, use-after-free, buffer-overflow and tainted-format-string queries. UNBOUND deliberately — monitor/ruleId-cwe.json is result-seeded and holds zero C/C++ rules, so nothing local can back these yet and binding ruleIds here would manufacture a cross-check that has no data behind it. Until this lane produces findings the declaration is a CAPABILITY claim, and is recorded as one. Why it mattered: sast-c-cppcheck (tier 2, AST) and sast-c-flawfinder (tier 3, lexical) already declared these classes, so the coverage axis showed the fleet reaching C/C++ memory safety through an AST checker and a grep while its only SEMANTIC C/C++ engine was recorded as not looking for them at all."
+    },
+    {
+      "check": "sast-codeql-swift",
+      "weaknessClasses": [
+        "cwe-22-path",
+        "cwe-319-transport"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — deep taint analysis (Swift)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "deep-group only, by containment ruling (autobuild executed third-party build tooling under group all) — an absent result in an all sweep is the containment working, not a void to fix."
+    },
+    {
+      "check": "sast-codeql-csharp",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-79-xss",
+        "cwe-22-path",
+        "cwe-502-deserialization"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — deep taint analysis (C#)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "buildless: Razor views and source generators are invisible to the extractor, so a clean run bounds compiled C# only."
+    },
+    {
+      "check": "deps-rust-audit",
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "oracleTier": 2,
+      "name": "cargo-audit — RustSec advisories (second opinion)",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "non-additive by declaration — deps-osv counts the same advisory universe. Read this lane for DISAGREEMENT: an advisory only one of the two reports is a translation gap, and the unmaintained/unsound/yanked warnings are classes the OSV import drops."
+    },
+    {
+      "check": "sast-codeql-rust",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-22-path",
+        "cwe-918-ssrf",
+        "cwe-319-transport"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — deep taint analysis (Rust)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "coverage is unmeasurable by construction (the rust extractor emits no expected-files baseline), so every zero carries coverageIncomplete — treat a clean run as a floor, never an all-clear."
+    },
+    {
+      "check": "sast-codeql-go",
+      "weaknessClasses": [
+        "cwe-78-command-injection",
+        "cwe-22-path",
+        "cwe-89-injection"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — deep taint analysis (Go)",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "deep-group only, by containment: the lane traces `go build`, which downloads modules and runs the C compiler for cgo packages, so an absent result in an all sweep is the containment working, not a void to fix. A module that does not compile is read as partial coverage, never clean.",
+      "note": "Declared conservatively. Command injection is the one class measured to fire on a fixture (2026-09-18); path and SQL injection are classes the shipped Go query pack carries, declared from the pack and not yet measured on this fleet. Request forgery and XSS queries also exist in the pack and are left undeclared until measured. UNBOUND to ruleIds: monitor/ruleId-cwe.json is result-seeded and holds no Go CodeQL rules yet."
+    },
+    {
+      "check": "sast-go-gosec",
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-78-command-injection",
+        "cwe-22-path",
+        "cwe-798-hardcoded-creds"
+      ],
+      "oracleTier": 2,
+      "name": "gosec — Go SAST with taint rules",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "triage by CLASS before count: G104 unhandled-error noise dominates the raw number, while the taint and transport rules are the ones that matter."
+    },
+    {
+      "check": "deps-osv",
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "oracleTier": 2,
+      "name": "OSV-Scanner — multi-ecosystem advisories",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "MAL- records ride in on this feed alongside ordinary CVEs and are confirmed malware, not a severity gradient — those are incidents.",
+      "note": "The breadth feed: it reports any advisory touching the resolved tree, with no reachability claim."
+    },
+    {
+      "check": "deps-go-govulncheck",
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "oracleTier": 2,
+      "name": "govulncheck — Go advisories WITH reachability",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "a finding whose trace names a function is a proven call path and outranks a module-level hit, which frequently is not reachable at all.",
+      "note": "The only dependency scanner here that can say a vulnerable package is present but unreached."
+    },
+    {
+      "check": "deps-jvm",
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "oracleTier": 2,
+      "name": "Trivy rootfs — JVM dependency CVEs",
+      "type": "sca",
+      "sourceKind": "artifact",
+      "findsSourceVulns": false,
+      "escalates": "these are the jars actually bundled in the built artifact, so a fix must land in the build definition and be rebuilt to count."
+    },
+    {
+      "check": "deps-retire",
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "oracleTier": 2,
+      "name": "retire.js — known-vulnerable front-end libraries",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "covers vendored/bundled front-end libraries that never appear in a lockfile."
+    },
+    {
+      "check": "npm-audit",
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "oracleTier": 2,
+      "name": "npm audit — registry advisories",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "the ecosystem's own advisory view; overlaps OSV deliberately."
+    },
+    {
+      "check": "supply-chain-socket",
+      "weaknessClasses": [
+        "malicious-package"
+      ],
+      "oracleTier": 2,
+      "name": "Socket — package behaviour analysis",
+      "type": "supply-chain",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "a typosquat or install-script-malware alert is an incident: the install machine's credentials are in scope.",
+      "note": "Behaviour, not advisories — install scripts, network access at install time, obfuscation. Token-gated."
+    },
+    {
+      "check": "supply-chain-guarddog",
+      "weaknessClasses": [
+        "malicious-package"
+      ],
+      "oracleTier": 2,
+      "name": "GuardDog — registry-metadata heuristics",
+      "type": "supply-chain",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "heuristic signals, not verdicts; every dismissal must be recorded with a reason or it is indistinguishable from not looking.",
+      "note": "Reads registry metadata across the resolved tree. A clean result means no metadata signal, NOT that no dependency contains malicious code."
+    },
+    {
+      "check": "iac-config",
+      "weaknessClasses": [
+        "iac-misconfig"
+      ],
+      "oracleTier": 2,
+      "name": "Trivy config — IaC and container misconfiguration",
+      "type": "iac",
+      "sourceKind": "config",
+      "findsSourceVulns": false,
+      "escalates": "a public ingress or a privileged container is a standing exposure, not a style note."
+    },
+    {
+      "check": "dockerfile-lint",
+      "weaknessClasses": [
+        "iac-misconfig"
+      ],
+      "oracleTier": 2,
+      "name": "Hadolint — Dockerfile security and practice lint",
+      "type": "iac",
+      "sourceKind": "config",
+      "findsSourceVulns": false,
+      "escalates": "an unpinned base image or a root USER is a supply-chain and blast-radius decision, respectively."
+    },
+    {
+      "check": "dast-nuclei",
+      "weaknessClasses": [
+        "cwe-668-exposure"
+      ],
+      "oracleTier": 1,
+      "name": "Nuclei — templated exploit DAST",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "findsSourceVulns": false,
+      "escalates": "a live exposure on a running target is already exploitable — this outranks a static finding of the same nominal severity.",
+      "note": "Sees what static analysis cannot: exposed actuators, default credentials, live fingerprints."
+    },
+    {
+      "check": "dast-authz-bola",
+      "weaknessClasses": [
+        "cwe-284-authz"
+      ],
+      "oracleTier": 1,
+      "ruleIds": [
+        "bola-cross-tenant-read",
+        "tenant-guard-bypass"
+      ],
+      "name": "BOLA / IDOR / cross-tenant probe",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "findsSourceVulns": false,
+      "escalates": "the highest breach-yield class in this fleet: a confirmed cross-tenant read is a data-exposure incident, not a bug.",
+      "note": "Enumerates object-level endpoints from the live OpenAPI. Without tokens it runs only the unauthenticated slice — a partial statement, not a clean one."
+    },
+    {
+      "check": "tls-headers",
+      "weaknessClasses": [
+        "cwe-319-transport"
+      ],
+      "oracleTier": 1,
+      "name": "Security headers + TLS/certificate grade",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "findsSourceVulns": false,
+      "escalates": "an expired or untrusted certificate is an outage-grade defect; missing headers are hardening, fixed once at the shared edge."
+    },
+    {
+      "check": "api-fuzz",
+      "weaknessClasses": [
+        "cwe-20-input-validation"
+      ],
+      "oracleTier": 1,
+      "name": "Schemathesis — API contract fuzzing",
+      "type": "api-contract",
+      "sourceKind": "runtime",
+      "findsSourceVulns": true,
+      "escalates": "a generated input that reaches a 500 is an unhandled-input defect in the handler, and the reproducing request is in the event stream.",
+      "note": "Tests the running app against its own OpenAPI. If the spec never loads, NOTHING was tested — that is a void, not a pass."
+    },
+    {
+      "check": "cspm-github",
+      "weaknessClasses": [
+        "platform-posture-control"
+      ],
+      "oracleTier": 2,
+      "name": "Prowler — GitHub platform posture (CSPM)",
+      "type": "posture",
+      "sourceKind": "platform",
+      "findsSourceVulns": false,
+      "escalates": "a failing control is a standing gap across every repo it governs — branch protection and secret-scanning push protection first.",
+      "note": "Configuration of the hosting platform, which no code scanner can see."
+    },
+    {
+      "check": "actions-zizmor",
+      "weaknessClasses": [
+        "ci-workflow-injection"
+      ],
+      "oracleTier": 2,
+      "name": "zizmor — GitHub Actions workflow audit",
+      "type": "posture",
+      "sourceKind": "config",
+      "findsSourceVulns": true,
+      "escalates": "a template-injection finding is remote code execution by anyone who can open an issue or a PR, running on a runner that holds repository credentials — that outranks most application findings. Unpinned third-party actions are the same class the tag-mutation supply-chain attacks exploit.",
+      "note": "The CI configuration is itself a privileged execution surface, and no code scanner looks at it. Fully static and offline, so unlike the cspm lane beside it this one cannot be gated into a permanent void by a missing token."
+    },
+    {
+      "check": "authz-test",
+      "weaknessClasses": [
+        "cwe-284-authz"
+      ],
+      "oracleTier": 1,
+      "ruleIds": [
+        "tenant-guard-bypass"
+      ],
+      "name": "Tenant-isolation policy test",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "findsSourceVulns": false,
+      "escalates": "a failure here is a proven isolation breach in the repo's own test terms."
+    },
+    {
+      "check": "sbom",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "CycloneDX SBOM (npm)",
+      "type": "inventory",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "an accounting artifact — its absence blocks attestation and audit, it reports no findings of its own."
+    },
+    {
+      "check": "sbom-syft",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Syft SBOM (all ecosystems)",
+      "type": "inventory",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "as above; covers the JVM/Go trees the npm-only SBOM misses."
+    },
+    {
+      "check": "deps-renovate",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Renovate configuration validity",
+      "type": "build-health",
+      "sourceKind": "config",
+      "findsSourceVulns": false,
+      "escalates": "a config-only gate: automated dependency updates are either wired up or they are not."
+    },
+    {
+      "check": "deps-updates",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Renovate dry-run — pending updates",
+      "type": "build-health",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "reports what Renovate WOULD raise; a large backlog is the leading indicator of the next CVE being unfixable quickly.",
+      "source": {
+        "block": "depsUpdates",
+        "key": "count",
+        "kind": "count"
+      }
+    },
+    {
+      "check": "stub-detect",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Unfinished-work markers",
+      "type": "hygiene",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "hygiene, deliberately excluded from the security headline: a TODO is not a vulnerability and would swamp the number that matters."
+    },
+    {
+      "check": "tls-testssl",
+      "weaknessClasses": [
+        "cwe-319-transport"
+      ],
+      "oracleTier": 1,
+      "name": "testssl.sh — full TLS configuration grade",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "findsSourceVulns": false,
+      "escalates": "protocol and cipher posture at the TLS-terminating edge; needs an https listener, so it is a hosted-environment check rather than a local one.",
+      "note": "The deeper half of the tls-headers pair, split out because it needs a real HTTPS endpoint the local gateway does not provide."
+    },
+    {
+      "check": "format",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Conformance to the formatter the repo DECLARES",
+      "type": "build-health",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "not a vulnerability and never reported as one — a deviation count is a CI-parity signal, showing a repo whose own declared format gate its tree no longer passes. Its value is that it is scoped: a repo that declares no formatter is n/a, never a finding.",
+      "source": {
+        "block": "buildHealth",
+        "key": "format"
+      },
+      "note": "Deliberately measures the repo's OWN standard rather than a tool default. A default-run flags ~100% of files on any repo that never adopted the tool, which is the false-FINDING signature this taxonomy exists to keep out (see the guarddog capability-* and prowler security_and_analysis entries), not a fleet with a style problem."
+    },
+    {
+      "check": "lint",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Conformance to the lint bar the repo DECLARES, at the severity IT declared",
+      "type": "build-health",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "not a vulnerability and never reported as one. A repo that DENIES its own lints and no longer passes them has a broken gate, which is a CI-parity signal; a repo that only warns has a count, which is not a failure at all. The two must not be summed.",
+      "source": {
+        "block": "buildHealth",
+        "key": "lint"
+      },
+      "note": "SEVERITY IS PART OF THE DECLARATION, and that is the whole design. memory-layer's CI runs `cargo clippy --all-targets -- -W clippy::all`, counts warnings and prints 'Status | Passed' unconditionally — it declares clippy as an advisory count, never a gate, so reporting it as FAILING would assert a bar it never set. A -W repo therefore reports `advisory` with the count in the payload and can never emit findings:. Only a repo that itself denies does. Second guard: an ABORTED linter is a FLOOR, not a count — one that dies on a target still prints findings for the targets it reached, so a repo whose lint CRASHES would otherwise look cleaner than one whose lint finishes. Measured on memory-layer 2026-08-23: two runs of the same command on the same tree floored at 105 and 212 before `error: could not compile`, so either number published as a count is irreproducible. Incomplete runs report `unreadable` with findingsFloor, diagnostics retained."
+    },
+    {
+      "check": "deadcode",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Unused dependencies and dead documentation links",
+      "type": "build-health",
+      "sourceKind": "dependencies",
+      "findsSourceVulns": false,
+      "escalates": "an undeclared dependency is a supply-chain gap (it is installed but nothing pins it); an unused one is surface area with no owner.",
+      "source": {
+        "block": "buildHealth",
+        "key": "deadcode"
+      }
+    },
+    {
+      "check": "toolchain",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Build+test on the DECLARED toolchain version",
+      "type": "build-health",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "a repo that only builds on a version it does not declare cannot be reproduced by anyone else, which blocks every other verification here.",
+      "source": {
+        "block": "buildHealth",
+        "key": "toolchain"
+      }
+    },
+    {
+      "check": "provenance",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Shipped artifact matches the declared toolchain",
+      "type": "build-health",
+      "sourceKind": "artifact",
+      "findsSourceVulns": false,
+      "escalates": "a mismatch means the thing scanned is not the thing shipped — every dependency finding above it is then about the wrong artifact.",
+      "source": {
+        "block": "buildHealth",
+        "key": "provenance"
+      }
+    },
+    {
+      "check": "boottest",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Full-context Spring boot test execution",
+      "type": "build-health",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "executes the full application context; a failure here means the service does not start, which no static check can tell you."
+    },
+    {
+      "check": "qg-boot-test",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Gate — a full-context boot test exists",
+      "type": "quality-gate",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "presence ratchet: the test must exist before its execution can be enforced.",
+      "source": {
+        "block": "qualityGates",
+        "key": "bootTest"
+      }
+    },
+    {
+      "check": "qg-boot-test-pass",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Gate — the executed boot test passed",
+      "type": "quality-gate",
+      "sourceKind": "artifact",
+      "findsSourceVulns": false,
+      "escalates": "the enforcement half of the boot-test ratchet, reading the latest executed run rather than the file's existence.",
+      "source": {
+        "block": "qualityGates",
+        "key": "bootTestPass"
+      }
+    },
+    {
+      "check": "qg-contract-tests",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Gate — consumer-contract tests exist",
+      "type": "quality-gate",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "without one, an interface change between services is only found in production.",
+      "source": {
+        "block": "qualityGates",
+        "key": "contracts"
+      }
+    },
+    {
+      "check": "qg-openapi",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Gate — interface spec present and drift-wired",
+      "type": "quality-gate",
+      "sourceKind": "config",
+      "findsSourceVulns": false,
+      "escalates": "the API fuzzer and the BOLA probe both DISCOVER their targets from this spec — no spec means those two lanes silently test nothing.",
+      "source": {
+        "block": "qualityGates",
+        "key": "openapi"
+      }
+    },
+    {
+      "check": "qg-ci",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Gate — CI covers this service",
+      "type": "quality-gate",
+      "sourceKind": "config",
+      "findsSourceVulns": false,
+      "escalates": "a service absent from every workflow is one whose checks only ever run here, by hand.",
+      "source": {
+        "block": "qualityGates",
+        "key": "ci"
+      }
+    },
+    {
+      "check": "jackson-caseinsensitive-guard",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "Jackson case-insensitive-properties guard",
+      "type": "quality-gate",
+      "sourceKind": "config",
+      "findsSourceVulns": false,
+      "escalates": "a ratchet holding one accepted CVE's risk at nil while its bump is gated — a violation re-opens that acceptance."
+    },
+    {
+      "check": "sast-c-cppcheck",
+      "name": "cppcheck — C/C++ static analysis",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "oracleTier": 2,
+      "escalates": "error before warning. cppcheck's `style` class is CORRECTNESS, not a security verdict, and must not be escalated as one — severity comes from the SARIF level. An ABSENT artifact means the lane did not run: cppcheck writes SARIF to stderr, so a redirect mistake yields no artifact rather than an empty one, and that is a void, never a clean scan.",
+      "weaknessClasses": [
+        "cwe-787-memory-write",
+        "cwe-125-memory-read",
+        "cwe-416-use-after-free"
+      ]
+    },
+    {
+      "check": "sast-c-flawfinder",
+      "name": "flawfinder — C/C++ lexical security scan",
+      "type": "sast",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "oracleTier": 3,
+      "escalates": "CWE-134 and CWE-120 first. LEXICAL: it flags dangerous FUNCTIONS, not proven dataflow, so every hit is a candidate rather than a proof and a zero here is weaker evidence than a zero from sast-codeql-cpp. Tier 3 for that reason — it corroborates, it does not adjudicate.",
+      "weaknessClasses": [
+        "cwe-120-buffer-overflow",
+        "cwe-134-format-string"
+      ]
+    },
+    {
+      "check": "sast-auto",
+      "name": "Semgrep OSS engine (no --pro-intrafile)",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-78-command-injection",
+        "cwe-79-xss",
+        "cwe-22-path"
+      ],
+      "escalates": "This lane exists to MEASURE, not to protect: it runs the same three rule packs as `sast` with the Pro engine disabled, so the delta between them is the only thing worth reading. A finding here that `sast` also has is not a second opinion — same rules, same engine family. Escalate the DIFFERENCE, and treat a `sast-auto`-only finding as a Pro-engine false negative worth reporting upstream.",
+      "note": "Group `compare`, not `all` — it is an instrument aimed at another lane, and counting it as coverage would double-count Semgrep."
+    },
+    {
+      "check": "sast-opengrep",
+      "name": "Opengrep (OSS Semgrep fork) at measured parity",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-78-command-injection",
+        "cwe-79-xss",
+        "cwe-22-path"
+      ],
+      "escalates": "Consumes the same rule packs as `sast`, so its findings are NOT independent corroboration and must never be counted as a second analyst. Measured at parity and 4.6x faster (2026-08-11, opengrep 1.26.0). Escalate a divergence from `sast` as a rules-engine defect in whichever tool is the outlier, not as a new vulnerability.",
+      "note": "Group `compare`. Shares the advisory/rule source with sast and sast-auto — independence must be DECLARED, and here it is absent."
+    },
+    {
+      "check": "sast-bearer",
+      "name": "Bearer — sensitive data-flow analysis",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-668-exposure",
+        "cwe-319-transport"
+      ],
+      "escalates": "Asks a question no other lane asks: Semgrep, CodeQL, gosec and Joern all trace EXPLOIT paths (can an attacker reach a sink), Bearer traces where SENSITIVE DATA goes. So a Bearer finding with no counterpart elsewhere is the normal case, not an anomaly, and must not be triaged as a duplicate. Escalate PII or credential material crossing a process, log or network boundary first."
+    },
+    {
+      "check": "sast-joern",
+      "name": "Joern code-property-graph analysis",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-78-command-injection",
+        "cwe-89-injection"
+      ],
+      "escalates": "The only lane that builds a joint AST/CFG/PDG from SOURCE WITH NO BUILD, so it reaches code the build-requiring engines skip entirely — a repo that fails to compile still gets analysed. Escalate findings in code no other lane covered; conversely, an empty CPG is NOT a clean result and must be read as unscanned (see the JS empty-CPG CWD defect, 2026-09-02).",
+      "note": "Classes kept deliberately narrow: Joern is query-driven, so its coverage is whatever query set ran, and declaring the full CPG capability would over-claim what this lane actually executes."
+    },
+    {
+      "check": "sast-python-bandit",
+      "name": "Bandit — Python security static analysis",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-78-command-injection",
+        "cwe-798-hardcoded-creds",
+        "cwe-502-deserialization"
+      ],
+      "escalates": "Closes a real void: before this lane Python source had only CodeQL plus whatever fraction of Semgrep generic rules apply. Escalate subprocess-with-shell and unsafe deserialization (yaml.load, pickle) above the hardcoded-credential hits, which overlap the secrets lanes and are usually already known there."
+    },
+    {
+      "check": "sast-ruby-brakeman",
+      "name": "Brakeman — Rails-specific security analysis",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-79-xss",
+        "cwe-352-csrf",
+        "cwe-78-command-injection"
+      ],
+      "escalates": "Rails-idiomatic classes a generic ruleset misses — mass assignment, dangerous eval, controller/model/view-shaped SQLi and XSS. Escalate mass-assignment and CSRF findings first: both are framework-configuration defects that apply to every action at once rather than to one call site."
+    },
+    {
+      "check": "sast-php-phpcs",
+      "name": "PHP_CodeSniffer + phpcs-security-audit",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-89-injection",
+        "cwe-79-xss",
+        "cwe-78-command-injection",
+        "cwe-22-path"
+      ],
+      "escalates": "A pure lexer/tokenizer pass — no autoload and no execution of the scanned code, verified against a real install, so it is safe on untrusted source but sees no cross-file dataflow. Escalate its findings as LEADS: a tokenizer cannot tell a sanitised sink from an unsanitised one, so the false-positive rate on XSS and SQLi is structurally high."
+    },
+    {
+      "check": "sast-elixir-sobelow",
+      "name": "Sobelow — Elixir/Phoenix security analysis",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-79-xss",
+        "cwe-352-csrf",
+        "cwe-89-injection",
+        "cwe-78-command-injection",
+        "cwe-22-path"
+      ],
+      "escalates": "Closed a TOTAL void — when it landed, an Elixir repository was read by nothing in this roster. Escalate Config.CSRF and Config.Secrets findings first: they are application-wide settings, not single call sites. Absence of this lane on an Elixir repo means no source coverage at all, which is a scan-scope gap rather than a clean result."
+    },
+    {
+      "check": "node-hazards",
+      "name": "Node/JS constructs that are defects by presence",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-319-transport",
+        "cwe-79-xss"
+      ],
+      "escalates": "Structurally non-substitutable with a taint engine: NODE_TLS_REJECT_UNAUTHORIZED='0' disables certificate verification whatever the input, and {{{ x }}} bypasses the escaping that WAS the defence, so no dataflow path exists to find. Escalate the TLS-disabling constructs above the template ones — the first is process-wide and unconditional. The template half also reads .ejs/.hbs/.pug, a file population Semgrep's JS rules do not parse at all.",
+      "note": "Every rule ships a negative control and the load-bearing assertion is that a clean idiomatic app yields ZERO — the guard against the GuardDog capability-* shape, where a rule true of almost everything wears a verdict."
+    },
+    {
+      "check": "sast-cobol-cobolwork",
+      "name": "COBOL, JCL and CICS security analysis",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-78-command-injection",
+        "cwe-89-injection",
+        "cwe-798-hardcoded-creds",
+        "cwe-284-authz",
+        "cwe-20-input-validation"
+      ],
+      "escalates": "Closed a TOTAL void: before it, a COBOL repository was read by nothing on this roster, and Semgrep reported it clean after loading its rules and reading none of it. Escalate by evidence before severity. A `construct` credential in job data is a rotation, first, in RACF, ACF2 or Top Secret. A `path` from a JCL PARM, terminal input or web input to an OS command or dynamic SQL is the injection class, and crossProgram paths are the ones no single-file reader could find. `tampering` (payloads in columns 73-80, agent directives in comments, invisible characters) is a review question about who committed it. `coverage` rows are undetermined and `context` rows describe the estate; neither is a finding, and a partial lane means a low count is not yet a clean one.",
+      "note": "weaknessClasses lists only the classes whose CWEs the rules declare exactly: CWE-78, CWE-89, CWE-798, CWE-284 and CWE-20. The file-path rules declare CWE-73, which cwe-22-path does not list; the dynamic-call rules declare CWE-470 and the exfiltration rules CWE-201, which have no slug here. Mapping them to the nearest class would put a claim in the void computation that no rule makes. Tier 2 like every rule-based reading, but its field sizes are Tier 1 evidence in a Tier 2 lane: the parser is graded against GnuCOBOL's own listing on held-out corpora (0 size disagreements of 15,888 items on 100 repositories, 8 of 94,786 on 300), and the CICS length checks are only as good as that."
+    },
+    {
+      "check": "weak-random",
+      "name": "Insufficient randomness in security-sensitive values",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [],
+      "escalates": "Detects a non-cryptographic RNG or a clock reading becoming a token, key, nonce, salt or session id, across JS/TS, Python, Rust, Go, Java/Kotlin/Scala, C#, PHP and C/C++. Escalate by what the value BECOMES, not by the RNG call: Math.random in a jitter or a test fixture is noise, the same call minting a password-reset token is critical.",
+      "note": "weaknessClasses is empty deliberately — CWE-330/338 has no slug in weaknessClassVocab, and inventing one here would put a class in the void computation that no other lane is measured against."
+    },
+    {
+      "check": "lint-go-golangci",
+      "name": "golangci-lint — Go correctness and hygiene",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "NOT a security scan, and kept out of the SAST category deliberately so a linter can never earn a green SAST row. Go security coverage is sast-go-gosec and sast-codeql; a green result here says nothing about either. Escalate nothing from this lane as a vulnerability."
+    },
+    {
+      "check": "lint-rust-clippy",
+      "name": "clippy — Rust correctness and suspicious patterns",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Clippy ships no security rule pack and no taint analysis. Rust security coverage is sast-codeql-rust and deps-rust-audit. Escalate nothing here as a vulnerability; a clean clippy run is a correctness statement only."
+    },
+    {
+      "check": "format-rust-rustfmt",
+      "name": "rustfmt — Rust formatting conformance",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "A formatting deviation is not a vulnerability. Its value is predicting a red CI: where the repo gates on cargo fmt --check, every deviating file is a build that will fail on push. Escalate nothing here as a security finding."
+    },
+    {
+      "check": "lint-python-ruff",
+      "name": "ruff — Python correctness and hygiene",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "NOT a security scan. Python security coverage is sast-python-bandit and sast-codeql-python. Kept out of SAST for the same reason as lint-go-golangci: a linter must not be able to produce a green security row."
+    },
+    {
+      "check": "lint-java-pmd",
+      "name": "PMD — Java correctness and hygiene",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "NOT a security scan; Java security coverage is sast-codeql-java. Read an EMPTY result carefully: PMD's files[] lists only files WITH a violation, so a clean run and a run against zero .java files produce a byte-identical empty body, and only stderr (`No files to analyze`) distinguishes them. A Kotlin-only Gradle module must read not-scanned, never clean."
+    },
+    {
+      "check": "lint-haskell-hlint",
+      "name": "HLint — Haskell style and correctness",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "No security rule pack and no taint analysis, named lint- rather than sast- for deno-check's reason. Haskell has NO security lane in this roster, so a green result here must not be read as Haskell being covered — it is an uncovered language with a style checker on it."
+    },
+    {
+      "check": "deno-lint",
+      "name": "deno lint — static analysis for Deno sources",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "A Deno repo has NO dependency-vulnerability lane anywhere in this roster (see deno-check), so this and deno-check are the only static signal it gets. That makes a green result here MORE dangerous to misread, not less: it is the absence of a linter complaint, not the absence of vulnerable dependencies."
+    },
+    {
+      "check": "deno-check",
+      "name": "deno check --all — Deno type check",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "NOT a vulnerability scan, and named so deliberately: no advisory database covers Deno's URL/JSR import graph the way OSV covers Cargo and npm, and osv-scanner rejects Deno lockfiles. The escalation here is the GAP itself — a Deno repo is structurally uncovered on the dependency axis, and that belongs in a report as an unknown rather than as a pass."
+    },
+    {
+      "check": "shell-lint",
+      "name": "shellcheck — shell correctness and injection lint",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "The fleet runs shell in CI steps, install scripts and hooks and nothing was reading it. SC2086 (unquoted expansion) IS the word-splitting/glob-injection class, so escalate SC2086 in any script that interpolates a variable an outside party can influence — a CI input, a filename, a webhook payload. Classified build-health rather than sast because shellcheck is a correctness linter with no taint analysis; the injection overlap is real but partial, and typing it as sast would let a linter close the SAST axis for shell."
+    },
+    {
+      "check": "actions-actionlint",
+      "name": "actionlint — GitHub Actions workflow correctness",
+      "type": "build-health",
+      "sourceKind": "config",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Complements actions-zizmor rather than duplicating it: zizmor audits workflow SECURITY posture (permissions, injection sinks, artifact handling) and owns the ci-workflow-injection class; actionlint audits workflow CORRECTNESS. A green actionlint says nothing about workflow security — read the zizmor row for that."
+    },
+    {
+      "check": "deps-ruby-bundler-audit",
+      "name": "bundler-audit — Ruby gem advisories",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "escalates": "THE SECOND OPINION, deliberately — but NOT an independent one: deps-osv reads the same Gemfile.lock against OSV, which imports the Ruby advisory DB, so the two share their advisory source. Agreement between them must not be counted as corroboration; only a DISAGREEMENT is informative, and that is the thing to escalate."
+    },
+    {
+      "check": "deps-gradle-declared",
+      "name": "Gradle declared-coordinate CVEs via deps.dev + OSV",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "escalates": "A FLOOR, not a ceiling, and the distinction is the whole point: Gradle constraints, resolutionStrategy, BOMs and plugins can override a declared coordinate, so the resolved graph may differ from what was scanned. Escalate findings normally, but never report this lane's silence as \"no vulnerable dependencies\" — report it as the declared-coordinate floor."
+    },
+    {
+      "check": "deps-reachability",
+      "name": "OWASP dep-scan — second engine plus reachability",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "escalates": "A SECOND OPINION on the CVE lane rather than an extension: same advisory data, independent engine, plus the only reachability signal in the fleet. Escalate a REACHABLE finding above an unreachable one — but read the reachability field literally: dep-scan's default in_triage must never be scored as reachable (measured: 100 of 105 findings whose true proof count was zero)."
+    },
+    {
+      "check": "yarn-audit",
+      "name": "npm advisory audit for yarn.lock repos",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "escalates": "Exact pinned versions from yarn.lock, npm-audit v2 shape. Shares its advisory source with npm-audit and deps-osv, so treat all three as one analyst for corroboration purposes. Escalate on severity and reachability from the other lanes, not on how many of these three agree."
+    },
+    {
+      "check": "vendor-scan",
+      "name": "Vendored-asset advisory scan",
+      "type": "sca",
+      "sourceKind": "dependencies",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "*-advisory-dep"
+      ],
+      "escalates": "Every OTHER dependency lane is manifest-gated — deps-osv wants a lockfile, deps-retire and npm-audit want a package.json, guarddog wants a package-lock.json — so a vendored copy with no manifest is invisible to all of them. This lane is the only thing that sees it. Escalate a vendored library that is BOTH outdated and unmanifested: nothing else in the fleet will ever report it."
+    },
+    {
+      "check": "dep-provenance",
+      "name": "Where each dependency was resolved from",
+      "type": "inventory",
+      "sourceKind": "dependencies",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "An accounting lane, like sbom: it records whether each dependency came from a registry, a git ref, a local path or a bare archive, by reading the `resolved` line in every yarn.lock and package-lock.json. It judges nothing. Escalate git and bare-archive resolutions for review — those bypass registry-side controls that every advisory lane implicitly assumes."
+    },
+    {
+      "check": "gradle-wrapper",
+      "name": "Gradle wrapper integrity",
+      "type": "supply-chain",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Where ./gradlew fetches its Gradle distribution from, and what the committed gradle-wrapper.jar and gradlew script actually are. Static — runs no Gradle and needs no container. Escalate a non-HTTPS or non-services.gradle.org distributionUrl, and any wrapper jar that does not match a published release: a committed wrapper jar is executable code that runs before any build step is reviewed."
+    },
+    {
+      "check": "authz-bola",
+      "name": "BOLA / IDOR / tenant-isolation probe",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "cwe-284-authz"
+      ],
+      "escalates": "Enumerates object-level GET endpoints from the live OpenAPI and tests unauthenticated exposure and whether the gateway TRUSTS a client-supplied X-Tenant-Id. A ground-truth oracle: a cross-tenant read either happened or it did not. Escalate any confirmed cross-tenant leak above everything else in the fleet — it is the one class where a single finding is a breach rather than a risk."
+    },
+    {
+      "check": "bola-run",
+      "name": "Manifest-driven BOLA/IDOR/BFLA actor matrix",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "cwe-284-authz"
+      ],
+      "escalates": "The generic successor to authz-bola: runs a bundled manifest's full actor matrix (anon/user/admin x 2 tenants) against CW_TARGET_URL. Escalate as for authz-bola. CAVEAT that limits the confidence: bola-run imports NONE of bin/lib/probe-oracle.mjs's four rules (positive control, planted canary, read/write split, verified consent), so a negative verdict here is weaker than the tier-1 label implies until that is closed."
+    },
+    {
+      "check": "api-fuzz-schemathesis",
+      "name": "Schemathesis — property-based API contract fuzzing",
+      "type": "api-contract",
+      "sourceKind": "runtime",
+      "oracleTier": 1,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-20-input-validation"
+      ],
+      "escalates": "Generates inputs for every operation in the OpenAPI spec and asserts the app never 500s or violates its own schema. Decidable: the response either conformed or it did not. Escalate 500s above schema violations — an unhandled exception is a reachable crash path, while a schema violation may be a stale spec. Both are real; only one is a defect in the running code."
+    },
+    {
+      "check": "posture-scorecard",
+      "name": "OpenSSF Scorecard — supply-chain posture from outside",
+      "type": "posture",
+      "sourceKind": "platform",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "platform-posture-control"
+      ],
+      "escalates": "Scores this checkout's GitHub origin from the OUTSIDE: branch protection, pinned dependencies, token permissions, dangerous workflows, signed releases, fuzzing, SAST, maintenance. Escalate Dangerous-Workflow and Token-Permissions first — both are directly exploitable, while a low Fuzzing or Signed-Releases score is a maturity signal. Read an unavailable check as unknown, never as zero."
+    },
+    {
+      "check": "minify-detect",
+      "name": "Minified / obfuscated code detection",
+      "type": "hygiene",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Inverts the fleet's posture toward unreadable code: every other lane EXCLUDES the least-readable files (CodeQL drops *.min.js at the extractor baseline; semgrep skips them), so unreadable code is exactly where the fleet is blind. Escalate minified or obfuscated content that is NOT a known vendored library — that is either an unreviewable dependency or something hiding. Readability is a property, not a verdict, and must be published as such rather than as a severity."
+    },
+    {
+      "check": "mobile-manifest",
+      "name": "AndroidManifest.xml and Info.plist scan",
+      "type": "iac",
+      "sourceKind": "config",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "iac-misconfig"
+      ],
+      "escalates": "Closes Top 100 entry 109 — exported components, deep links, unprotected IPC — which nothing else in the fleet reaches. Escalate exported components with no permission and deep-link handlers that accept untrusted input: both are entry points into the app from any other app on the device. A non-empty artifact is not a written one; an unparsed manifest must read as not-scanned."
+    },
+    {
+      "check": "sast-php-psalm",
+      "name": "Psalm taint analysis (PHP)",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-78-command-injection",
+        "cwe-79-xss",
+        "cwe-89-injection",
+        "cwe-22-path"
+      ],
+      "escalates": "The only PHP lane that answers REACHABILITY. sast-php-phpcs is a tokenizer pass and cannot tell a sanitised sink from an unsanitised one, so its findings are leads; Psalm traces an untrusted source to a sink across function boundaries, so its findings are paths. Escalate a Psalm taint result above a phpcs hit on the same file. READ THE MODE BEFORE READING THE ZERO: in degraded mode (no vendor/ in the repo) third-party symbols do not resolve, so taint entering or leaving a dependency is invisible and a zero means only that no FIRST-PARTY path was found.",
+      "note": "Verified non-redundant by probe, not by argument (2026-09-02): on a two-sink fixture Psalm reported TaintedShell and TaintedHtml through a function boundary phpcs sees as unrelated tokens. Positive and negative controls both pass through the lane's own invocation. The vendor/ requirement is real but surmountable — a stub autoloader hosted OUTSIDE the repo satisfies psalm and leaves the scanned tree untouched, which is what the lane does. The binding constraint turned out to be psalm's own stability: 4 of 10 real repos fail on upstream defects (Amp\\\\Parallel crashes, a NAN coercion, and a phar-only class redeclare). Exit 2 means findings and must not be read as failure."
+    },
+    {
+      "check": "deps-content",
+      "name": "Dependency content — install hooks, lockfile integrity, installed-vs-locked drift",
+      "type": "supply-chain",
+      "sourceKind": "dependencies",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "malicious-package"
+      ],
+      "escalates": "Escalate dep-install-exec first and on its own: a preinstall/install/postinstall hook that fetches from the network or executes decoded content ran, or will run, on every machine that installs the tree, holding whatever that machine holds. dep-version-drift is second — an installed tree that disagrees with its lockfile means the build was not produced from what was reviewed. Integrity findings are a gap in the control rather than an exploit: a missing hash lets a substituted artefact pass, it does not show one did.",
+      "note": "Reads the lockfile's own keys and the installed package.json at each — no registry, no network, no walk. A clean result means no locked package on disk declares a fetch-or-exec hook and every registry-resolved entry carries a sha512; it says nothing about a hook whose package is not installed (the lockfile carries only hasInstallScript, and the scanner reports that as declared-but-not-on-disk only under CW_DEPS_INSTALL_SCRIPTS=1). An absent lockfile is a declared void, an unparseable or v1 one a could-not-run — both are filesScanned 0, never a clean zero."
+    },
+    {
+      "check": "agent-instructions",
+      "name": "Agent instruction files — hidden characters and injected directives",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [],
+      "escalates": "Escalate agent-directive-exfil first: a sentence pairing a credential path or variable with a send sink is the intrusion class the July 2026 Hugging Face entry used, and an agent that reads the file will act on it before any human sees it. hidden-unicode next — a bidi override or zero-width character in an instruction file has no benign reason to exist, and what it hides is the finding. html-comment-directive and agent-directive-exec are the same directive class with the text visible or not. encoded-blob is a lead, not a verdict: report the length and decode it under quarantine, never in the agent that found it.",
+      "note": "Every finding is a CANDIDATE — the lane cannot settle intent, so docs/TOP-100.md rows 88 and 89 read Indicative, not Provable. weaknessClasses is empty deliberately: CWE-1427 (prompt injection) has no slug in weaknessClassVocab, and inventing one here would put a class in the void computation no other lane is measured against. The definition of a hidden character is minify-detect's HIDDEN_TEXT, imported rather than copied, so the two lanes cannot disagree about which code points count. Details carry counts, code points and line numbers only: the scanned file is addressed to the model that will read the report."
+    },
+    {
+      "check": "commit-provenance",
+      "name": "Commit provenance — who made each commit, and was it signed where signing is expected",
+      "type": "supply-chain",
+      "sourceKind": "history",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Reads `git log` for the last N commits and classifies every author and committer human/machine with the same classifyWho the panel applies to annotations. Escalate machine-author-unregistered first — a bot identity nobody declared is either an automation the project forgot to register or an identity that is not what it says — then a bot-authored merge with no `authorized by <person>` marker, which is an agent merging its own work with no human in the loop (TOP-100 row 94). unsigned-on-protected-branch applies ONLY where manifests/branch-protection.json lists the repo with requireSigned:true; everywhere else it is not-applicable, and a not-applicable rule is neither a pass nor a finding. author-committer-mismatch is low because a rebase or cherry-pick produces it legitimately; it is context for the other three.",
+      "note": "weaknessClasses is empty deliberately: CWE-345/347 have no slug in weaknessClassVocab, and inventing one here would put a class in the void computation no other lane is measured against. Both directions are exercised in bin/test/scanner-canary-fires.test.mjs against a synthetic history the test materialises from fixtures/scan-canary/{dirty,clean}/.commitwork-provenance-fixture.json — a nested .git cannot be committed, so the fixture is a description of commits rather than commits. The report never carries subjects, bodies, names or emails: sha, rule, severity, CWE and classification words only."
+    },
+    {
+      "check": "commit-velocity",
+      "name": "Commit velocity — machine-speed commits, CI-file and credential-file edits per author",
+      "type": "supply-chain",
+      "sourceKind": "history",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Reads `git log` metadata (author, timestamp, changed-path classes; never content) and raises a finding when one author's commits, .github/workflows edits or credential/config-file touches cross a per-hour threshold inside a rolling window. Escalate workflow-edit-burst first: a burst of CI edits is the vector the July 2026 intrusion used to move on stolen tokens. machine-speed-commits from a human-classified identity is the case a signature-based lane cannot see; from a registered bot it is still reported, and a human confirms it was authorised. sensitive-file-burst is medium because config churn has benign causes; it is context for the other two.",
+      "note": "weaknessClasses is empty deliberately: CWE-799 has no slug in weaknessClassVocab. Both directions are exercised by bin/test/commit-velocity.test.mjs against a git repo it builds with controlled GIT_AUTHOR_DATE timestamps, which is the only honest canary for a metadata lane. Thresholds are env-overridable and read at call time; a bad value is could-not-run."
+    },
+    {
+      "check": "agent-config",
+      "name": "Agent configuration — MCP servers, hooks, permission grants, inline env secrets",
+      "type": "posture",
+      "sourceKind": "config",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "cwe-798-hardcoded-creds"
+      ],
+      "escalates": "Reads the TARGET's .mcp.json, .claude/settings*.json, .cursor/mcp.json, .vscode/mcp.json, .claude/hooks/** and .claude/commands/** — the files that decide what an agent may run and where it reaches. Escalate env-secret-inline first (a standing credential in configuration: rotate before anything else), then a remote MCP server or a hook that fetches from a non-loopback host (code from elsewhere running with the repository's credentials), then an unpinned npx package and a Bash(*)-class grant. Reports key names, hosts and package names only; a configured value never leaves the target. filesScanned 0 is a void, not a clean tree.",
+      "note": "weaknessClasses carries only cwe-798-hardcoded-creds. CWE-829 (untrusted functionality) and CWE-250 (execution with unnecessary privileges) have no slug in weaknessClassVocab, and inventing one here would put a class in the void computation that no other lane is measured against — the same reason weak-random declares []. Per-finding CWEs are on the rows (RULE_CWE in bin/agent-config.mjs)."
+    },
+    {
+      "check": "model-artefacts",
+      "name": "Model artefacts — pickle globals, safetensors headers, dataset loader configs, hub loads, Keras Lambda layers, TF graph ops",
+      "type": "supply-chain",
+      "sourceKind": "artifact",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-502-deserialization"
+      ],
+      "ruleIds": [
+        "pickle-dangerous-global",
+        "safetensors-header-invalid",
+        "dataset-config-template",
+        "dataset-config-remote-scheme",
+        "hf-trust-remote-code",
+        "hf-unpinned-revision",
+        "keras-lambda-layer",
+        "tf-graph-file-op",
+        "tf-graph-python-op"
+      ],
+      "escalates": "Escalate pickle-dangerous-global first and on its own: a .pkl/.pt/.bin/.ckpt/.joblib whose opcode stream names os, subprocess, builtins, importlib, socket, runpy, sys, shutil, posix, nt, pty or commands executes on load, on every machine that loads it, and the walker reads opcodes without ever unpickling. dataset-config-template is second — a Jinja or shell-style marker in a data_files, path or fsspec reference field of dataset_infos.json, a dataset yaml or a README front matter is the July 2026 Hugging Face entry vector, read by the loader as a template rather than a path. dataset-config-remote-scheme and hf-trust-remote-code are the reach: a loader that fetches from s3/gs/http/file, and a from_pretrained that runs hub-hosted code. hf-unpinned-revision is the provenance gap that lets any of the above change under a fixed name. safetensors-header-invalid is integrity, not execution — a header that overruns the file or fails to parse is a corrupt or hostile artefact, quarantined rather than loaded.",
+      "note": "Zero-dependency opcode walker over the pickle stream (GLOBAL, STACK_GLOBAL, INST, OBJ, NEWOBJ, REDUCE, framed protocol 4+), with zip-wrapped .pt/.pth/.bin opened through a local-file-header/central-directory reader (STORED, and DEFLATE via node:zlib) and every .pkl member walked. A file whose magic the walker cannot read is a stated `unreadable` count; a file over CW_MODEL_MAX_BYTES is `skippedOversize` — neither is a clean skip, and a zero beside either is a floor. modelscan is an optional second witness recorded in summary.secondWitness, never the only one. Reports name modules, opcode counts and key paths, never file contents. Keras (2026-09-17): a Lambda layer by class_name in a .keras zip's config.json, a SavedModel's keras_metadata.pb, or a Keras-2 .h5's model_config attribute — the H5 and keras_metadata.pb reads locate every config blob by its own opening anywhere in the bytes (h5py stores the attribute as a heap-referenced vlen string), not an HDF5 or protobuf reader; the attribute name only witnesses that a config was declared, and declared-but-unlocated or unparseable is unreadable rather than clean; a weights-only file is counted as kerasWithoutConfig. TF graphs (saved_model.pb, *.pb, *.pbtxt): NodeDef ops matched by protobuf signature (tag 0x12, one-byte length, exact name) against ReadFile/WriteFile (tf-graph-file-op, CWE-73) and PyFunc/PyFuncStateless/EagerPyFunc (tf-graph-python-op, CWE-94); a graph with no op-shaped string is counted as tfGraphsWithoutNodes."
+    },
+    {
+      "check": "actions-gaps",
+      "name": "Actions gaps — self-hosted runners, triggering-head checkouts, absent permissions",
+      "type": "posture",
+      "sourceKind": "config",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "ci-workflow-injection"
+      ],
+      "ruleIds": [
+        "self-hosted-runner",
+        "workflow-run-trigger",
+        "permissions-absent", "exit-masked-by-pipe"
+      ],
+      "escalates": "Escalate workflow-run-trigger first: a workflow_run or pull_request_target job holds the base repository's token and secrets, and a step that checks out the triggering head or downloads the triggering run's artifacts hands that job content a fork controls — the poisoned-pipeline shape, and zizmor's dangerous-triggers fires on the trigger alone without saying whether the job took the content. self-hosted-runner is second and is an infrastructure question, not a workflow edit: which triggers reach the job, whether the runner is ephemeral, and what it can reach; the report says who owns the finding, the runner's owner decides what to do. permissions-absent is the floor under both — a job with no permissions: block on itself or the workflow takes the repository default, which on an older repository is write-all.",
+      "note": "Zero-dependency block-YAML reader over .github/workflows/*.yml at the root only, which is the only place GitHub reads workflows from. Measured 2026-09-16 against zizmor 1.30.1: excessive-permissions and dangerous-triggers fire at the regular persona the fleet runs; self-hosted-runner fires only at --persona auditor, which also emits anonymous-definition and concurrency-limits on every job. This lane is therefore the only witness for self-hosted-runner at the fleet's persona, the only witness anywhere for the trigger-plus-checkout compound, and the witness for all three on a hosted runner where zizmor is absent. weaknessClasses carries ci-workflow-injection (CWE-829 and CWE-1104 are in its cwes); CWE-250 and CWE-284 ride on the rows through ruleId-cwe.json. runsOnDynamic and runnerGroups are stated counts of what the walk could not settle, never findings."
+    },
+    {
+      "check": "actions-health",
+      "name": "Actions health — red streaks, jobs Actions refused to start, billed minutes",
+      "type": "build-health",
+      "sourceKind": "platform",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Escalate ci-never-started first: when Actions refuses to start jobs, every workflow in the repository reports nothing, and on 2026-09-19 that held across the whole account for five days unseen; the cause is budget, billing or policy, and it is fixed in the account settings, not in any workflow. ci-red-streak is second: a workflow that has failed on every default-branch run since a date tells nobody anything and is billed for it; fix or disable it rather than let it run red.",
+      "note": "Read-only through gh api from the repository origin: repos, actions/runs and actions/runs/{id}/jobs. The API is the ground truth for what ran and what it cost, hence tier 1. Weighted minutes follow GitHub billing (each job rounded up to a minute; Linux 1x, Windows 2x, macOS 10x; public repositories and self-hosted runners free) and are a sample of the newest runs, never a monthly total. No github.com origin, no gh, or no access is a void row."
+    },
+    {
+      "check": "cobol-inventory",
+      "weaknessClasses": [],
+      "oracleTier": 1,
+      "name": "cobolwork — COBOL coverage: copybooks, source formats, unreadable members",
+      "type": "hygiene",
+      "sourceKind": "source",
+      "findsSourceVulns": false,
+      "escalates": "nothing here is a vulnerability, so nothing escalates on severity. What escalates is a COMBINATION: unresolved copybooks in this lane beside a zero in sast-cobol-cobolwork means the zero was measured over fields nobody read. A repository with neither is the only one whose zero means what it looks like.",
+      "note": "Tier 1 because the oracle is decidable: a COPY either resolves to a copybook in the tree or it does not, and the answer is a set difference rather than a pattern match. It is the coverage half of sast-cobol-cobolwork and is deliberately a separate lane, so the coverage row cannot disappear by the finding half being skipped."
+    },
+    {
+      "check": "secrets-cobol-jcl",
+      "weaknessClasses": [
+        "cwe-798-hardcoded-creds"
+      ],
+      "oracleTier": 2,
+      "name": "Gitleaks with cobolwork's mainframe rule pack — RACF, JCL, TSO, CICS signon",
+      "type": "secrets",
+      "sourceKind": "source",
+      "findsSourceVulns": true,
+      "escalates": "a hit is a credential to rotate BEFORE it is removed, and cobol-value-credential outranks the rest: a VALUE clause is compiled into the load module, so cleaning the source leaves the credential live in the binary and the module itself has to be treated as compromised.",
+      "note": "Closes a measured void rather than adding an opinion: gitleaks and TruffleHog ship no rule for a RACF password, a JCL PASSWORD= or a TSO logon, confirmed against positive controls on 2026-09-16, so these shapes were found by nothing. Same engine as secrets-gitleaks, different pack and a different corpus — which is why it is its own category and neither lane's zero may be read as the other's."
+    }
+  ],
+  "sourceNote": "`source` names where a NON-SCANNER approach's result lives in rollup.json — repos[].<block>[<key>]. Declared per approach rather than derived from the check id, for the same reason `type` is: 'qg-openapi' does not tell you it reads qualityGates.openapi, and a guess that silently misses leaves the approach grey forever while its data sits one key away. An approach with no `source` and no scanner category genuinely has nowhere to read from, and stays grey saying so. Value vocabulary, measured across 60 repos 2026-08-02 and corrected 2026-08-12: buildHealth clean|green|ok|RED|advisory|skipped|n/a|no-tests|unreadable|env-blocked|null; qualityGates present|MISSING|n/a|null. The 2026-08-02 measurement OMITTED skipped and n/a — deriveStatus could always emit both, they simply had not occurred in the sampled 60, and a vocabulary derived from observation rather than from the emitter drifts the moment an unobserved branch fires. It is now pinned by bin/test/build-health-vocabulary.test.mjs against the emitter's own exported list. no-tests|unreadable|env-blocked were added with the toolchain phase split (schemaVersion 2). 'n/a' is a DETERMINATION that the gate does not apply, which is not the same as null (never evaluated) and must not render alike."
+}

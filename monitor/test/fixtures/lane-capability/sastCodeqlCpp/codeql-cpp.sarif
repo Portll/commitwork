@@ -1,0 +1,1617 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "organization": "GitHub",
+     "semanticVersion": "2.27.1",
+     "notifications": [
+      {
+       "id": "cpp/diagnostics/failed-extractor-invocations",
+       "name": "cpp/diagnostics/failed-extractor-invocations",
+       "shortDescription": {
+        "text": "Failed extractor invocations"
+       },
+       "fullDescription": {
+        "text": "Gives the command line of compilations for which extraction did not run to completion."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Gives the command line of compilations for which extraction did not run to completion.",
+        "id": "cpp/diagnostics/failed-extractor-invocations",
+        "kind": "diagnostic",
+        "name": "Failed extractor invocations"
+       }
+      },
+      {
+       "id": "cpp/diagnostics/successfully-extracted-files",
+       "name": "cpp/diagnostics/successfully-extracted-files",
+       "shortDescription": {
+        "text": "Extracted files"
+       },
+       "fullDescription": {
+        "text": "Lists all files in the source code directory that were extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "successfully-extracted-files"
+        ],
+        "description": "Lists all files in the source code directory that were extracted.",
+        "id": "cpp/diagnostics/successfully-extracted-files",
+        "kind": "diagnostic",
+        "name": "Extracted files"
+       }
+      },
+      {
+       "id": "cpp/diagnostics/extraction-warnings",
+       "name": "cpp/diagnostics/extraction-warnings",
+       "shortDescription": {
+        "text": "Extraction warnings"
+       },
+       "fullDescription": {
+        "text": "List all extraction warnings for files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all extraction warnings for files in the source code directory.",
+        "id": "cpp/diagnostics/extraction-warnings",
+        "kind": "diagnostic",
+        "name": "Extraction warnings"
+       }
+      },
+      {
+       "id": "cpp/baseline/expected-extracted-files",
+       "name": "cpp/baseline/expected-extracted-files",
+       "shortDescription": {
+        "text": "Expected extracted files"
+       },
+       "fullDescription": {
+        "text": "Files appearing in the source archive that are expected to be extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "expected-extracted-files",
+         "telemetry"
+        ]
+       }
+      },
+      {
+       "id": "cli/file-coverage-baseline",
+       "name": "cli/file-coverage-baseline",
+       "shortDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "fullDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/platform",
+       "name": "cli/platform",
+       "shortDescription": {
+        "text": "Platform"
+       },
+       "fullDescription": {
+        "text": "Platform"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/build-mode",
+       "name": "cli/build-mode",
+       "shortDescription": {
+        "text": "Database build mode"
+       },
+       "fullDescription": {
+        "text": "Database build mode"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/sip-enablement",
+       "name": "cli/sip-enablement",
+       "shortDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "fullDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/autobuilder/buildless/mode-active",
+       "name": "cpp/autobuilder/buildless/mode-active",
+       "shortDescription": {
+        "text": "C/C++ was extracted with build-mode set to 'none'"
+       },
+       "fullDescription": {
+        "text": "C/C++ was extracted with build-mode set to 'none'"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/autobuilder/summary",
+       "name": "cpp/autobuilder/summary",
+       "shortDescription": {
+        "text": "autobuild summary"
+       },
+       "fullDescription": {
+        "text": "autobuild summary"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/extractor/platform",
+       "name": "cpp/extractor/platform",
+       "shortDescription": {
+        "text": "C++ extractor platform telemetry"
+       },
+       "fullDescription": {
+        "text": "C++ extractor platform telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/bmn/standalone-extraction-started",
+       "name": "cpp/bmn/standalone-extraction-started",
+       "shortDescription": {
+        "text": "Standalone extraction started"
+       },
+       "fullDescription": {
+        "text": "Standalone extraction started"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/bmn/overlay-information",
+       "name": "cpp/bmn/overlay-information",
+       "shortDescription": {
+        "text": "Overlay information"
+       },
+       "fullDescription": {
+        "text": "Overlay information"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/bmn/platform-information",
+       "name": "cpp/bmn/platform-information",
+       "shortDescription": {
+        "text": "Platform information"
+       },
+       "fullDescription": {
+        "text": "Platform information"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/bmn/compiler-information",
+       "name": "cpp/bmn/compiler-information",
+       "shortDescription": {
+        "text": "Compiler information"
+       },
+       "fullDescription": {
+        "text": "Compiler information"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/bmn/folder-scan-information",
+       "name": "cpp/bmn/folder-scan-information",
+       "shortDescription": {
+        "text": "Folder scan information"
+       },
+       "fullDescription": {
+        "text": "Folder scan information"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/bmn/extraction-information",
+       "name": "cpp/bmn/extraction-information",
+       "shortDescription": {
+        "text": "Extraction information"
+       },
+       "fullDescription": {
+        "text": "Extraction information"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/bmn/standalone-extraction-completed",
+       "name": "cpp/bmn/standalone-extraction-completed",
+       "shortDescription": {
+        "text": "Standalone extraction completed"
+       },
+       "fullDescription": {
+        "text": "Standalone extraction completed"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cpp/extractor/summary",
+       "name": "cpp/extractor/summary",
+       "shortDescription": {
+        "text": "C++ extractor telemetry"
+       },
+       "fullDescription": {
+        "text": "C++ extractor telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      }
+     ],
+     "rules": [
+      {
+       "id": "cpp/command-line-injection",
+       "name": "cpp/command-line-injection",
+       "shortDescription": {
+        "text": "Uncontrolled data used in OS command"
+       },
+       "fullDescription": {
+        "text": "Using user-supplied data in an OS command, without neutralizing special elements, can make code vulnerable to command injection."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-078",
+         "external/cwe/cwe-088"
+        ],
+        "description": "Using user-supplied data in an OS command, without\n              neutralizing special elements, can make code vulnerable\n              to command injection.",
+        "id": "cpp/command-line-injection",
+        "kind": "path-problem",
+        "name": "Uncontrolled data used in OS command",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "9.8"
+       }
+      },
+      {
+       "id": "cpp/double-free",
+       "name": "cpp/double-free",
+       "shortDescription": {
+        "text": "Potential double free"
+       },
+       "fullDescription": {
+        "text": "Freeing a resource more than once can lead to undefined behavior and cause memory corruption."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "warning"
+       },
+       "properties": {
+        "tags": [
+         "reliability",
+         "security",
+         "external/cwe/cwe-415"
+        ],
+        "description": "Freeing a resource more than once can lead to undefined behavior and cause memory corruption.",
+        "id": "cpp/double-free",
+        "kind": "path-problem",
+        "name": "Potential double free",
+        "precision": "high",
+        "problem.severity": "warning",
+        "security-severity": "9.3"
+       }
+      }
+     ]
+    },
+    "extensions": [
+     {
+      "name": "codeql/cpp-queries",
+      "semanticVersion": "1.9.0+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/cpp-queries/1.9.0/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/cpp-queries/1.9.0/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/cpp-all",
+      "semanticVersion": "12.1.1+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/cpp-queries/1.9.0/.codeql/libraries/codeql/cpp-all/12.1.1/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/cpp-queries/1.9.0/.codeql/libraries/codeql/cpp-all/12.1.1/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "invocations": [
+    {
+     "toolExecutionNotifications": [
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "main.c",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": "File successfully extracted."
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "cpp/diagnostics/successfully-extracted-files",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "File successfully extracted."
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "main.c",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "cpp/baseline/expected-extracted-files",
+        "index": 3
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:56:48.581372Z",
+       "descriptor": {
+        "id": "cli/file-coverage-baseline",
+        "index": 4
+       },
+       "properties": {
+        "attributes": {
+         "durationMilliseconds": 87
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:56:51.390075Z",
+       "descriptor": {
+        "id": "cli/platform",
+        "index": 5
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "name": "Mac OS X",
+         "version": "26.4"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:56:51.395024Z",
+       "descriptor": {
+        "id": "cli/build-mode",
+        "index": 6
+       },
+       "properties": {
+        "attributes": {
+         "buildMode": "none"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:56:51.405488Z",
+       "descriptor": {
+        "id": "cli/sip-enablement",
+        "index": 7
+       },
+       "properties": {
+        "attributes": {
+         "isEnabled": true
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "C/C++ was extracted with build-mode set to 'none'. This means that all C/C++ source in the working directory will be scanned.\n\nIf you would prefer to analyse using a build command, see the manual[1].\n\n[1]: https://docs.github.com/en/enterprise-server/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-the-codeql-workflow-for-compiled-languages#adding-build-steps-for-a-compiled-language",
+        "markdown": "C/C++ was extracted with build-mode set to 'none'. This means that all C/C++ source in the working directory will be scanned.\n\nIf you would prefer to analyse using a build command, see the manual[1].\n\n[1]: https://docs.github.com/en/enterprise-server/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-the-codeql-workflow-for-compiled-languages#adding-build-steps-for-a-compiled-language"
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:57Z",
+       "descriptor": {
+        "id": "cpp/autobuilder/buildless/mode-active",
+        "index": 8
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": true,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:57Z",
+       "descriptor": {
+        "id": "cpp/autobuilder/summary",
+        "index": 9
+       },
+       "properties": {
+        "attributes": {
+         "tried": []
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Internal telemetry for the C++ extractor.\n\nNo action needed.",
+        "markdown": "Internal telemetry for the C++ extractor.\n\nNo action needed."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:57.319326Z",
+       "descriptor": {
+        "id": "cpp/extractor/platform",
+        "index": 10
+       },
+       "properties": {
+        "attributes": {
+         "armcc_version": 0,
+         "build_mode": "none",
+         "clang_version": 210106,
+         "compiler": "clang",
+         "compiler family": "Clang",
+         "gnu_version": 80100,
+         "microsoft_version": 1926,
+         "os": "macos",
+         "sizeof(int)": 4,
+         "sizeof(long long)": 8,
+         "sizeof(long)": 8,
+         "sizeof(nullptr)": 8,
+         "std_version": 201710
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:51.989835Z",
+       "descriptor": {
+        "id": "cpp/bmn/standalone-extraction-started",
+        "index": 11
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:52.005419Z",
+       "descriptor": {
+        "id": "cpp/bmn/overlay-information",
+        "index": 12
+       },
+       "properties": {
+        "attributes": {
+         "overlay_mode": "full",
+         "overlay_support_enabled": false
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:52.074216Z",
+       "descriptor": {
+        "id": "cpp/bmn/platform-information",
+        "index": 13
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "family": "unix",
+         "num_cpus": 18,
+         "os": "macos"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:53.282851Z",
+       "descriptor": {
+        "id": "cpp/bmn/compiler-information",
+        "index": 14
+       },
+       "properties": {
+        "attributes": {
+         "Clang C compiler version": "21.0.0",
+         "Clang C++ compiler version": "21.0.0",
+         "family": "Clang"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:53.310696Z",
+       "descriptor": {
+        "id": "cpp/bmn/folder-scan-information",
+        "index": 15
+       },
+       "properties": {
+        "attributes": {
+         "folder_indexing_time_seconds": 0.0007378329755738378,
+         "include_directories_added": 0,
+         "missing_includes": 0,
+         "project_stats": {
+          "#all_files": 27,
+          "#header_files": 0,
+          "#source_files": 1
+         }
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:57.568753Z",
+       "descriptor": {
+        "id": "cpp/bmn/extraction-information",
+        "index": 16
+       },
+       "properties": {
+        "attributes": {
+         "extraction_cpu_time_seconds": 4.18013334274292,
+         "extraction_status": {
+          "#errors": 0,
+          "#partial": 0,
+          "#success": 1,
+          "#total": 1,
+          "all_counts": {
+           "ExitCode: 0": 1
+          }
+         },
+         "slowest_extraction_args": [
+          "--mimic",
+          "/usr/bin/clang",
+          "-c",
+          "/fixture/repo/main.c"
+         ],
+         "slowest_extraction_time_seconds": 4.18013334274292,
+         "total_extraction_time_seconds": 4.1851019859313965
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:57.602282Z",
+       "descriptor": {
+        "id": "cpp/bmn/standalone-extraction-completed",
+        "index": 17
+       },
+       "properties": {
+        "attributes": {
+         "standalone_extraction_time_seconds": 5
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Internal telemetry for the C++ extractor.\n\nNo action needed.",
+        "markdown": "Internal telemetry for the C++ extractor.\n\nNo action needed."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:56:57.930209Z",
+       "descriptor": {
+        "id": "cpp/extractor/summary",
+        "index": 18
+       },
+       "properties": {
+        "attributes": {
+         "cache-hits": 0,
+         "cache-misses": 1,
+         "compilers": [
+          {
+           "program": "clang",
+           "version": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
+          }
+         ],
+         "extractor-failures": 0,
+         "extractor-successes": 1,
+         "trap-caching": "disabled"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      }
+     ],
+     "executionSuccessful": true
+    }
+   ],
+   "artifacts": [
+    {
+     "location": {
+      "uri": "main.c",
+      "uriBaseId": "%SRCROOT%",
+      "index": 0
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "cpp/command-line-injection",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "cpp/command-line-injection",
+      "index": 28
+     },
+     "message": {
+      "text": "This argument to an OS command is derived from [user input (a command-line argument)](1), dangerously concatenated into [__builtin___snprintf_chk output argument](2), and then passed to system((unnamed parameter 0))."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 10,
+         "startColumn": 12,
+         "endColumn": 15
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "eadbbd73df8a8dda:1",
+      "primaryLocationStartColumnFingerprint": "7"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.c",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 5,
+              "startColumn": 27,
+              "endColumn": 31
+             }
+            },
+            "message": {
+             "text": "**argv"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.c",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 9,
+              "startColumn": 40,
+              "endColumn": 47
+             }
+            },
+            "message": {
+             "text": "*access to array"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.c",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 9,
+              "startColumn": 14,
+              "endColumn": 17
+             }
+            },
+            "message": {
+             "text": "__builtin___snprintf_chk output argument"
+            }
+           },
+           "taxa": [
+            {
+             "id": "Config",
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.c",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 10,
+              "startColumn": 12,
+              "endColumn": 15
+             }
+            },
+            "message": {
+             "text": "*cmd"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 5,
+         "startColumn": 27,
+         "endColumn": 31
+        }
+       },
+       "message": {
+        "text": "user input (a command-line argument)"
+       }
+      },
+      {
+       "id": 2,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 9,
+         "startColumn": 14,
+         "endColumn": 17
+        }
+       },
+       "message": {
+        "text": "__builtin___snprintf_chk output argument"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 5,
+         "startColumn": 27,
+         "endColumn": 31
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "cpp/double-free",
+     "ruleIndex": 1,
+     "rule": {
+      "id": "cpp/double-free",
+      "index": 30
+     },
+     "message": {
+      "text": "Memory pointed to by [p](1) may already have been freed by [call to free](2)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 12,
+         "startColumn": 10,
+         "endColumn": 11
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "159b1e195de78f3f:1",
+      "primaryLocationStartColumnFingerprint": "5"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.c",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 11,
+              "startColumn": 10,
+              "endColumn": 11
+             }
+            },
+            "message": {
+             "text": "pointer to free output argument"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.c",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 12,
+              "startColumn": 10,
+              "endColumn": 11
+             }
+            },
+            "message": {
+             "text": "p"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 12,
+         "startColumn": 10,
+         "endColumn": 11
+        }
+       },
+       "message": {
+        "text": "p"
+       }
+      },
+      {
+       "id": 2,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 11,
+         "startColumn": 5,
+         "endColumn": 9
+        }
+       },
+       "message": {
+        "text": "call to free"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.c",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 11,
+         "startColumn": 10,
+         "endColumn": 11
+        }
+       }
+      }
+     ]
+    }
+   ],
+   "columnKind": "utf16CodeUnits",
+   "properties": {
+    "semmle.formatSpecifier": "sarif-latest",
+    "metricResults": [
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 9,
+      "message": {
+       "text": "calls"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 298,
+      "message": {
+       "text": "functions"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 1028,
+      "message": {
+       "text": "variables"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 251,
+      "message": {
+       "text": "expressions"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 1,
+      "message": {
+       "text": "compilations"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 0,
+      "message": {
+       "text": "syntax errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 0,
+      "message": {
+       "text": "compiler errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 93,
+      "message": {
+       "text": "source/header files"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 11550,
+      "message": {
+       "text": "lines of code"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 17424,
+      "message": {
+       "text": "lines of text"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 298,
+      "message": {
+       "text": "functions without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 1,
+      "message": {
+       "text": "compilations without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 1028,
+      "message": {
+       "text": "variables with a known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 9,
+      "message": {
+       "text": "calls with an explicit target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 251,
+      "message": {
+       "text": "expressions with a known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 93,
+      "message": {
+       "text": "source/header files without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 203,
+      "message": {
+       "text": "successfully resolved #include directives"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 203,
+      "message": {
+       "text": "#include directives"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 251,
+      "message": {
+       "text": "non-error expressions"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-metrics",
+       "index": 51
+      },
+      "ruleId": "cpp/telemetry/extraction-metrics",
+      "ruleIndex": 51,
+      "value": 11550,
+      "message": {
+       "text": "lines of code without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of functions without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of compilations without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of variables with a known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of calls with an explicit target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of expressions with a known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of source/header files without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of successfully resolved #include directives"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of non-error expressions"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/database-quality",
+       "index": 53
+      },
+      "ruleId": "cpp/telemetry/database-quality",
+      "ruleIndex": 53,
+      "value": 100,
+      "message": {
+       "text": "Percentage of lines of code without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-information",
+       "index": 54
+      },
+      "ruleId": "cpp/telemetry/extraction-information",
+      "ruleIndex": 54,
+      "value": 100,
+      "message": {
+       "text": "Percentage of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-information",
+       "index": 54
+      },
+      "ruleId": "cpp/telemetry/extraction-information",
+      "ruleIndex": 54,
+      "value": 6,
+      "message": {
+       "text": "Number of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-information",
+       "index": 54
+      },
+      "ruleId": "cpp/telemetry/extraction-information",
+      "ruleIndex": 54,
+      "value": 100,
+      "message": {
+       "text": "Percentage of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-information",
+       "index": 54
+      },
+      "ruleId": "cpp/telemetry/extraction-information",
+      "ruleIndex": 54,
+      "value": 49,
+      "message": {
+       "text": "Number of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-information",
+       "index": 54
+      },
+      "ruleId": "cpp/telemetry/extraction-information",
+      "ruleIndex": 54,
+      "value": 0,
+      "message": {
+       "text": "Number of expressions with unknown type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/extraction-information",
+       "index": 54
+      },
+      "ruleId": "cpp/telemetry/extraction-information",
+      "ruleIndex": 54,
+      "value": 0,
+      "message": {
+       "text": "Number of calls with missing call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/succeeded-includes",
+       "index": 55
+      },
+      "ruleId": "cpp/telemetry/succeeded-includes",
+      "ruleIndex": 55,
+      "value": 1,
+      "message": {
+       "text": "<string.h>"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/succeeded-includes",
+       "index": 55
+      },
+      "ruleId": "cpp/telemetry/succeeded-includes",
+      "ruleIndex": 55,
+      "value": 1,
+      "message": {
+       "text": "<stdlib.h>"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/telemetry/succeeded-includes",
+       "index": 55
+      },
+      "ruleId": "cpp/telemetry/succeeded-includes",
+      "ruleIndex": 55,
+      "value": 1,
+      "message": {
+       "text": "<stdio.h>"
+      }
+     },
+     {
+      "rule": {
+       "id": "cpp/summary/lines-of-code",
+       "index": 56
+      },
+      "ruleId": "cpp/summary/lines-of-code",
+      "ruleIndex": 56,
+      "value": 11550
+     },
+     {
+      "rule": {
+       "id": "cpp/summary/lines-of-user-code",
+       "index": 57
+      },
+      "ruleId": "cpp/summary/lines-of-user-code",
+      "ruleIndex": 57,
+      "value": 13,
+      "baseline": 13
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+{
+  "$comment": "commitwork/codeql-remediation.v1 — the two structured verdict shapes of the dual-agent CodeQL remediation pipeline (admin/routes/codeql-remediation.mjs). `analysis` is the independent first pass each agent produces; `cross` is the second pass after each agent has read the other's verdict. Enforced engine-side for the local model (LM Studio response_format.json_schema) and stated in the prompt for the claude -p agent, whose reply is shape-checked against the same fields. An unreadable schema FAILS the run — a silently free-form reply is the drift this file exists to stop.",
+  "analysis": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["classification", "investigation", "falsePositiveAnalysis", "remediation", "diff", "confidence"],
+    "properties": {
+      "classification": { "type": "string", "enum": ["real", "false-positive", "needs-human"] },
+      "investigation": { "type": "string", "description": "what the finding actually is at this site — the code path, the data flow, what the rule matched" },
+      "falsePositiveAnalysis": { "type": "string", "description": "the explicit case for and against this being a false positive, and which side wins" },
+      "remediation": { "type": "string", "description": "the appropriate remediation in prose — or why none is needed / why a human must decide" },
+      "diff": { "type": "string", "description": "a unified diff (git apply, a/ b/ prefixes, repo-root relative) realising the remediation; empty string when classification is false-positive or needs-human" },
+      "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
+    }
+  },
+  "cross": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["classification", "agreesWithPeer", "positionChanged", "response", "remediation", "diff", "confidence"],
+    "properties": {
+      "classification": { "type": "string", "enum": ["real", "false-positive", "needs-human"] },
+      "agreesWithPeer": { "type": "boolean", "description": "whether, after re-analysis, this agent agrees with the other agent's classification" },
+      "positionChanged": { "type": "boolean", "description": "whether reading the other agent's verdict changed this agent's own position" },
+      "response": { "type": "string", "description": "this agent's analysis of the other agent's verdict — what it got right, what it missed" },
+      "remediation": { "type": "string", "description": "this agent's FINAL remediation position after cross-review" },
+      "diff": { "type": "string", "description": "the FINAL unified diff this agent stands behind; empty string when no code change is warranted" },
+      "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
+    }
+  }
+}

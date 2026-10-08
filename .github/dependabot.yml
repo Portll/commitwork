@@ -1,0 +1,62 @@
+# Dependabot — the HOSTED half of dependency currency. There is a local half already, and the two
+# are deliberately different instruments rather than a duplicate.
+#
+# WHAT ACTUALLY MOVES HERE. commitwork declares ZERO runtime dependencies and the CI job that runs
+# the suite has no `npm ci` step, precisely so the day that changes cannot pass unnoticed. So the
+# npm ecosystem below is nearly empty by design — one devDependency — and the surface that genuinely
+# moves is the set of GitHub Actions pinned in .github/workflows/. That is the supply chain this
+# repository has, and it is the one the trivy-action / tj-actions compromises came through.
+#
+# WHY NOT JUST bin/pin-actions.mjs. It exists, it works, and it is not sufficient alone:
+#   · pin-actions refreshes WITHIN THE SAME MAJOR only — "a major bump is a review, not a refresh".
+#     Nothing in it ever proposes v4 -> v5, so a major that carries the security fix is invisible.
+#   · It runs when a human runs it, on the fleet machine. Dependabot runs on a schedule, off-box,
+#     and opens a reviewable PR — which is what a major bump should be.
+# The two agree on FORMAT (`uses: owner/repo@<40-hex> # vX.Y.Z`), which is what makes them
+# composable rather than a fight: pin-actions keeps the pin current, Dependabot proposes the bumps
+# pin-actions is not allowed to make. If they ever disagree, pin-actions is the witness — run it in
+# report mode and it names every line as CURRENT / STALE / UNPINNED / UNVERIFIABLE.
+#
+# Every PR from here still lands through review. Dependabot is a proposal mechanism, never an
+# applier — the same declaration-split-from-authority rule the rest of this repository follows.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # A release younger than a week is the window in which a compromised tag is still live and not
+    # yet yanked; the tj-actions repoint was caught inside it.
+    cooldown:
+      default-days: 7
+    commit-message:
+      # No `Co-Authored-By`. The house rule forbids that trailer, bin/commit-phase.mjs refuses a
+      # commit carrying one, and /close blocks a session on it. Dependabot does not add one, but the
+      # prefix is set explicitly so its subject lines match the rest of the history rather than
+      # arriving in a second voice.
+      prefix: "actions"
+    groups:
+      # One PR for the routine refresh, separate PRs for majors. A batch of eight patch bumps is a
+      # single glance; a major is a decision, and burying it inside a batch is how it gets waved
+      # through. This is the same split pin-actions.mjs draws locally.
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "deps"
+    # ZERO runtime dependencies is a property this project asserts, not an accident of the moment.
+    # If a `dependencies` entry ever appears, that is a decision someone made and it must be
+    # reviewed as one — so nothing here is configured to auto-merge, and the empty state is the
+    # expected state. The one devDependency today is `renovate`, carried as a headless CLI for local
+    # dry-runs, not as a hosted app; there is deliberately no renovate.json.
+    ignore: []

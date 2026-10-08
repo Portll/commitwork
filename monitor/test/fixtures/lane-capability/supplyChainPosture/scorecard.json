@@ -1,0 +1,11 @@
+{
+  "ran": true,
+  "aggregateScore": 5.8,
+  "counts": {
+    "passing": 8,
+    "failing": 10,
+    "inconclusive": 0
+  },
+  "inconclusiveChecks": [],
+  "detail": "scorecard.raw.json"
+}

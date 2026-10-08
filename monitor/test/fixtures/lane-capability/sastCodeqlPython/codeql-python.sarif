@@ -1,0 +1,933 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "organization": "GitHub",
+     "semanticVersion": "2.27.1",
+     "notifications": [
+      {
+       "id": "py/diagnostics/successfully-extracted-files",
+       "name": "py/diagnostics/successfully-extracted-files",
+       "shortDescription": {
+        "text": "Extracted Python files"
+       },
+       "fullDescription": {
+        "text": "Lists all Python files in the source code directory that were extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "successfully-extracted-files"
+        ],
+        "description": "Lists all Python files in the source code directory that were extracted.",
+        "id": "py/diagnostics/successfully-extracted-files",
+        "kind": "diagnostic",
+        "name": "Extracted Python files"
+       }
+      },
+      {
+       "id": "py/diagnostics/extraction-warnings",
+       "name": "py/diagnostics/extraction-warnings",
+       "shortDescription": {
+        "text": "Python extraction warnings"
+       },
+       "fullDescription": {
+        "text": "List all extraction warnings for Python files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all extraction warnings for Python files in the source code directory.",
+        "id": "py/diagnostics/extraction-warnings",
+        "kind": "diagnostic",
+        "name": "Python extraction warnings"
+       }
+      },
+      {
+       "id": "py/baseline/expected-extracted-files",
+       "name": "py/baseline/expected-extracted-files",
+       "shortDescription": {
+        "text": "Expected extracted files"
+       },
+       "fullDescription": {
+        "text": "Files appearing in the source archive that are expected to be extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "expected-extracted-files",
+         "telemetry"
+        ]
+       }
+      },
+      {
+       "id": "cli/file-coverage-baseline",
+       "name": "cli/file-coverage-baseline",
+       "shortDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "fullDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/platform",
+       "name": "cli/platform",
+       "shortDescription": {
+        "text": "Platform"
+       },
+       "fullDescription": {
+        "text": "Platform"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/build-mode",
+       "name": "cli/build-mode",
+       "shortDescription": {
+        "text": "Database build mode"
+       },
+       "fullDescription": {
+        "text": "Database build mode"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/sip-enablement",
+       "name": "cli/sip-enablement",
+       "shortDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "fullDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "py/extractor/summary",
+       "name": "py/extractor/summary",
+       "shortDescription": {
+        "text": "Python extractor telemetry"
+       },
+       "fullDescription": {
+        "text": "Python extractor telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "py/extractor/parser-statistics",
+       "name": "py/extractor/parser-statistics",
+       "shortDescription": {
+        "text": "Python parser statistics"
+       },
+       "fullDescription": {
+        "text": "Python parser statistics"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      }
+     ],
+     "rules": [
+      {
+       "id": "py/sql-injection",
+       "name": "py/sql-injection",
+       "shortDescription": {
+        "text": "SQL query built from user-controlled sources"
+       },
+       "fullDescription": {
+        "text": "Building a SQL query from user-controlled sources is vulnerable to insertion of malicious SQL code by the user."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-089"
+        ],
+        "description": "Building a SQL query from user-controlled sources is vulnerable to insertion of\n              malicious SQL code by the user.",
+        "id": "py/sql-injection",
+        "kind": "path-problem",
+        "name": "SQL query built from user-controlled sources",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "8.8"
+       }
+      },
+      {
+       "id": "py/command-line-injection",
+       "name": "py/command-line-injection",
+       "shortDescription": {
+        "text": "Uncontrolled command line"
+       },
+       "fullDescription": {
+        "text": "Using externally controlled strings in a command line may allow a malicious user to change the meaning of the command."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "correctness",
+         "security",
+         "external/cwe/cwe-078",
+         "external/cwe/cwe-088"
+        ],
+        "description": "Using externally controlled strings in a command line may allow a malicious\n              user to change the meaning of the command.",
+        "id": "py/command-line-injection",
+        "kind": "path-problem",
+        "name": "Uncontrolled command line",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "9.8",
+        "sub-severity": "high"
+       }
+      }
+     ]
+    },
+    "extensions": [
+     {
+      "name": "codeql/python-queries",
+      "semanticVersion": "1.8.11+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/python-queries/1.8.11/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/python-queries/1.8.11/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/python-all",
+      "semanticVersion": "7.2.6+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/python-queries/1.8.11/.codeql/libraries/codeql/python-all/7.2.6/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/python-queries/1.8.11/.codeql/libraries/codeql/python-all/7.2.6/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/threat-models",
+      "semanticVersion": "1.0.58+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/python-queries/1.8.11/.codeql/libraries/codeql/threat-models/1.0.58/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/python-queries/1.8.11/.codeql/libraries/codeql/threat-models/1.0.58/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "invocations": [
+    {
+     "toolExecutionNotifications": [
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "app.py",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "py/diagnostics/successfully-extracted-files",
+        "index": 0
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "app.py",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "py/baseline/expected-extracted-files",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:53:02.267723Z",
+       "descriptor": {
+        "id": "cli/file-coverage-baseline",
+        "index": 3
+       },
+       "properties": {
+        "attributes": {
+         "durationMilliseconds": 180
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:53:03.943293Z",
+       "descriptor": {
+        "id": "cli/platform",
+        "index": 4
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "name": "Mac OS X",
+         "version": "26.4"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:53:03.949444Z",
+       "descriptor": {
+        "id": "cli/build-mode",
+        "index": 5
+       },
+       "properties": {
+        "attributes": {
+         "buildMode": "none"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:53:03.959305Z",
+       "descriptor": {
+        "id": "cli/sip-enablement",
+        "index": 6
+       },
+       "properties": {
+        "attributes": {
+         "isEnabled": true
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Internal telemetry for the Python extractor.\n\nNo action needed.",
+        "markdown": "Internal telemetry for the Python extractor.\n\nNo action needed."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:53:07.734039Z",
+       "descriptor": {
+        "id": "py/extractor/summary",
+        "index": 7
+       },
+       "properties": {
+        "attributes": {
+         "extractor_flags": "filter",
+         "extractor_version": "7.1.10",
+         "python_analysis_version": "3.12",
+         "python_runtime_version": "3.9.6"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Internal parser telemetry for the Python extractor.\n\nNo action needed.",
+        "markdown": "Internal parser telemetry for the Python extractor.\n\nNo action needed."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T10:53:07.846291Z",
+       "descriptor": {
+        "id": "py/extractor/parser-statistics",
+        "index": 8
+       },
+       "properties": {
+        "attributes": {
+         "old_parser_file_count": 1,
+         "tree_sitter_parser_file_count": 0
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      }
+     ],
+     "executionSuccessful": true
+    }
+   ],
+   "artifacts": [
+    {
+     "location": {
+      "uri": "app.py",
+      "uriBaseId": "%SRCROOT%",
+      "index": 0
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "py/sql-injection",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "py/sql-injection",
+      "index": 14
+     },
+     "message": {
+      "text": "This SQL query depends on a [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.py",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 19,
+         "startColumn": 25,
+         "endColumn": 74
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "62e2678283841ba4:1",
+      "primaryLocationStartColumnFingerprint": "20"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 4,
+              "startColumn": 26,
+              "endColumn": 33
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for ImportMember"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 4,
+              "startColumn": 26,
+              "endColumn": 33
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for request"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 17,
+              "startColumn": 12,
+              "endColumn": 19
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for request"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 17,
+              "startColumn": 12,
+              "endColumn": 24
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for Attribute"
+            }
+           },
+           "taxa": [
+            {
+             "id": "AdditionalTaintStep",
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 17,
+              "startColumn": 12,
+              "endColumn": 36
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for Attribute()"
+            }
+           },
+           "taxa": [
+            {
+             "id": "dict.get",
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 17,
+              "startColumn": 5,
+              "endColumn": 9
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for name"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 19,
+              "startColumn": 25,
+              "endColumn": 74
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for BinaryExpr"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.py",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 4,
+         "startColumn": 26,
+         "endColumn": 33
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.py",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 4,
+         "startColumn": 26,
+         "endColumn": 33
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "py/command-line-injection",
+     "ruleIndex": 1,
+     "rule": {
+      "id": "py/command-line-injection",
+      "index": 37
+     },
+     "message": {
+      "text": "This command line depends on a [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.py",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 11,
+         "startColumn": 15,
+         "endColumn": 38
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "e6dcfaefe14ad4b5:1",
+      "primaryLocationStartColumnFingerprint": "10"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 4,
+              "startColumn": 26,
+              "endColumn": 33
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for ImportMember"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 4,
+              "startColumn": 26,
+              "endColumn": 33
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for request"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 11,
+              "startColumn": 15,
+              "endColumn": 22
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for request"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 11,
+              "startColumn": 15,
+              "endColumn": 27
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for Attribute"
+            }
+           },
+           "taxa": [
+            {
+             "id": "AdditionalTaintStep",
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.py",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 11,
+              "startColumn": 15,
+              "endColumn": 38
+             }
+            },
+            "message": {
+             "text": "ControlFlowNode for Attribute()"
+            }
+           },
+           "taxa": [
+            {
+             "id": "dict.get",
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.py",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 4,
+         "startColumn": 26,
+         "endColumn": 33
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.py",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 4,
+         "startColumn": 26,
+         "endColumn": 33
+        }
+       }
+      }
+     ]
+    }
+   ],
+   "columnKind": "unicodeCodePoints",
+   "properties": {
+    "semmle.formatSpecifier": "sarif-latest",
+    "metricResults": [
+     {
+      "rule": {
+       "id": "py/summary/lines-of-code",
+       "index": 41
+      },
+      "ruleId": "py/summary/lines-of-code",
+      "ruleIndex": 41,
+      "value": 14
+     },
+     {
+      "rule": {
+       "id": "py/summary/lines-of-user-code",
+       "index": 42
+      },
+      "ruleId": "py/summary/lines-of-user-code",
+      "ruleIndex": 42,
+      "value": 14,
+      "baseline": 14
+     }
+    ]
+   }
+  }
+ ]
+}

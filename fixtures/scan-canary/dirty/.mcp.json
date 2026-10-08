@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "docs-remote": {
+      "type": "http",
+      "url": "https://mcp.canary.invalid/sse"
+    },
+    "fetcher": {
+      "command": "npx",
+      "args": ["-y", "canary-mcp-fetch"]
+    },
+    "gateway": {
+      "type": "http",
+      "url": "${MCP_HOST}/sse"
+    }
+  }
+}

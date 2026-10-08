@@ -1,0 +1,219 @@
+node_modules/
+# The deps-content canary. bin/deps-content.mjs discovers install hooks by reading
+# <root>/node_modules/<pkg>/package.json at the lockfile's own key, so the plant has to live on
+# that path or the scanner cannot see it — and the rule above would hide it from git. Re-included
+# for the two canary trees only; nothing under them is code, and the walking lanes still skip
+# node_modules through manifests/scan-exclude-dirs.txt.
+!/fixtures/scan-canary/*/node_modules/
+.DS_Store
+*.log
+# Golden lane fixtures record a tool's .log output byte for byte; they are tracked.
+!/monitor/test/fixtures/lane-capability/**/*.log
+# npx download cache for the host renovate dry-run (NPM_CONFIG_CACHE target; regenerable,
+# bypasses the root-owned ~/.npm) — see monitor/renovate-dryrun.mjs
+/.npm-cache/
+# scan outputs (SARIF/JSON can be large; treat as artifacts, not source)
+# NO TRAILING SLASH. `reports` is a SYMLINK to a git-excluded directory outside the repo
+# (the 16G of sweep evidence must not live in a tracked tree). A trailing slash matches
+# DIRECTORIES ONLY, and git classifies a symlink as a file — so `/reports/` silently stopped
+# matching the moment this became a link, and the link became visible to `git add`. Same trap
+# CLAUDE.md records for /evaluations.
+/reports
+# artifacts a local run may drop into this dir
+/tmp/
+reflection.json
+sbom.json
+results.sarif
+osv-results.sarif
+# move-aside backups (monitor's pre-program/pre-mapglue convention) — kept on disk, not tracked
+*.pre-program-*
+*.pre-mapglue-*
+# sitemap fleet manifests are regenerable artifacts (node monitor/sitemap-data.mjs).
+# The S0 demo fixture (sitemap/build-fixture.mjs) is ALSO regenerable-only now (bifocal C1): it
+# harvests a real client's source tree, so a committed copy is a client's structural data (file
+# paths, symbol names, internal hostnames) plus whatever secrets sit in scanned config — exactly
+# what happened here (a live GlitchTip DSN from vite.config.ts, rotated + purged from tracking).
+# No un-ignore: it must never be re-added to the index.
+/sitemap/data/*.sitemap.json
+# CRA attestation private keys — NEVER commit (public .pub is committable)
+cra/.keys/*.key
+# The rule above is path-pinned, but CW_ATTEST_KEYDIR (cra/lib.mjs resolveKeyDir) points the keydir
+# anywhere, including inside this repo, and a key placed by hand rather than by `attest.mjs keygen`
+# gets no keydir-local .gitignore either. Private key material is not source under any name here:
+# zero .key/.pem files are tracked or on disk as of 2026-08-25, so this ignores nothing real. A
+# future legitimate one needs `git add -f`, which is the right amount of friction.
+*.key
+*.pem
+
+# Generated sitemap data — regenerated on demand, never committed (portable: relative paths).
+#   slices snapshots: node bin/slices.mjs snapshot <slug> --date <d>
+#   mainline harvest: node bin/mainline-data.mjs <repoDir>
+# client-a.snapshots.json (front-end discovery list) points into slices/, which is gitignored below
+# — a committed copy is a dangling pointer on every checkout (bifocal C1).
+sitemap/data/slices/
+sitemap/data/mainline.*.json
+/sitemap/data/*.snapshots.json
+
+# monitor/data network caches (bifocal C5) — regenerable: CISA KEV catalogue and FIRST.org EPSS
+# scores. Never track these: (1) they churn on every scan/watch run, and (2) a git-tracked copy
+# means a fresh clone's mtime is "now", which used to be misread as "freshly fetched" by code that
+# judged these files' currency from file mtime instead of their own content (kev.json's
+# catalogVersion/dateReleased). Freshness is judged from content now; see monitor/rollup.mjs and
+# cra/watch.mjs.
+/monitor/data/kev.json
+/monitor/data/epss.json
+/monitor/data/learning.json
+
+# Claude Code local harness config (machine-specific; not part of the platform)
+/.claude/
+
+# Generated from monitor/failure-taxonomy.json by bin/taxonomy-db.mjs --build; never the source of truth.
+monitor/commitwork.db
+
+# ── THIS OPERATOR'S FLEET, NOT THE TOOL ─────────────────────────────────────────────────────────
+# What a scanner FOUND, and whose code it was pointed at, are facts about the scanned party — not
+# about commitwork. A public clone must carry the instrument and none of the evidence.
+#
+# THESE FOUR RULES WERE INERT FROM THE DAY THEY WERE WRITTEN, AND WERE MADE EFFECTIVE 2026-08-27.
+# gitignore is only consulted for UNTRACKED files, so a rule added over a path already in the index
+# does nothing at all — while reading, to anyone auditing this file, exactly like protection. All
+# four paths stayed tracked: 7.8 MB of issue store, 55 KB of registry, and 5.3 MB of two clients'
+# scan output. The block above even SAID so about projects.json ("while the file itself stayed
+# tracked") — the inertness was observed, written down as prose, and left in place.
+#
+# What was actually done: `git rm --cached` on all four, then the stores moved into
+# commitwork-sidecar (a private git repo) and are reached through the symlinks below.
+#
+# THE RESIDUE, STATED RATHER THAN IMPLIED: `git rm --cached` removes a file from the index, never
+# from history. Every byte these rules were meant to keep out of the repository is still reachable
+# in it, and commitwork's origin is a GitHub remote, so it is still reachable there too. Making
+# these paths untracked stops the NEXT commit publishing them; it does not unpublish the last two
+# hundred. Actually removing them needs a filter-repo rewrite (as was done for the Co-Authored-By
+# trailers) plus a delete-and-recreate on GitHub, because a force-push removes the reference and
+# not the object. That is a separate decision and has NOT been taken.
+#
+# No trailing slashes below: a trailing-slash pattern matches directories only, git classifies a
+# symlink as a file, and every path here is now a symlink. `/map/data/client-a/` would silently stop
+# matching. bin/test/inert-ignore-rules.test.mjs fails if any of these goes inert again.
+
+# The registry — real repo names, filesystem paths and deploy scoping for this operator's fleet AND
+# for client work (a client's service set). monitor/projects.example.json is the shipped template.
+# CW_REGISTRY overrides the path; the default is monitor/private/projects.json.
+#
+# The derived issue store — 54 repos' findings, 415 rows naming client repos. Generated and
+# hash-chained ("never hand-edit"), so tracking it published a client's vulnerability posture as a
+# side effect of version-controlling a cache. CW_ISSUES overrides the path.
+/monitor/private
+# ...and the OLD path it replaced. The rule above was added when the store moved; this one was not,
+# so when one commit untracked monitor/projects.json (2026-08-27) and a later one re-added it (2026-09-01)
+# reading the removal as an accidental deletion, `git check-ignore` matched nothing and the restore
+# was silent. The live registry is monitor/private/projects.json (35 areas, in commitwork-sidecar);
+# the file at this path was a stale 30-area duplicate and is NOT a symlink to it — a file symlink
+# would be renamed over by the first atomic write. No trailing slash, per the block above.
+/monitor/projects.json
+# Same shape, found the same hour: the issue store's rule also names only the new path, and an
+# unignored monitor/issues.json was sitting at the old one — untracked, so not yet published, and
+# one `git add -u` from being. The declared store is monitor/private/issues.json.
+/monitor/issues.json
+
+# Client scan output held for the map viewer: client-a's CVE history and security-findings.json
+# (2.3 MB, 3,719 references to their private repo names), and internal-b-dev's equivalent. This is
+# another party's security posture; it is theirs to disclose, not ours.
+/map/data/client-a
+/map/data/internal-b-dev
+# evaluations/ — the cycle artifacts. Untracked 2026-08-26 on operator instruction, ahead of
+# publication, and this REVERSES a documented rule (see CLAUDE.md's documentation tiers, updated in
+# the same commit): they were tracked deliberately, because parking an audit's own evidence
+# somewhere untracked is a named failure mode here. That reasoning has not become wrong — it has
+# been outranked. Measured 2026-08-26: 255 tracked files, 6.2 MB, naming one client in 38, its
+# service prefix in 32, a second client in 15 and other projects in 25 more. An audit document
+# quotes the evidence it audits, so it discloses whatever it audited; that is the property that makes these
+# useful internally and unpublishable.
+#
+# NOT a secrets problem, checked rather than assumed: the credential-shaped strings in here are
+# truncated prose (`AKIA...` describing a regex weakness, `RENOVATE_TOKEN=ghp_…` in a usage line),
+# not live material.
+#
+# THE COST IS REAL AND IS NOT MITIGATED BY THIS LINE: the evidence for every finding this fleet has
+# published now lives only on one disk. If publication proceeds as a separate public repository
+# rather than by opening this one, prefer reverting this and excluding the directory THERE — that
+# keeps the audit trail in version control where the failure mode says it belongs.
+#
+# UPDATE 2026-08-27 — the cost above is now MITIGATED, and this line lost its trailing slash for a
+# reason that is not cosmetic. `evaluations` is a SYMLINK into ~/Repositories/Portll/commitwork-
+# sidecar, a private git repo that versions it. A trailing-slash pattern matches only directories,
+# and git treats a symlink as a FILE — so `/evaluations/` stops matching the instant the path
+# becomes a link, and 306 files of client-naming audit output reappear as untracked, one `git add
+# -A` away from being committed. Do not restore the slash.
+/evaluations
+.wrangler/
+
+# docsite/.versions/ — the rolling overwrite-protection snapshots lib/docsite-versions.mjs writes
+# (editor saves, imports, state/reorder-triggered rebuilds, the taxonomy generators). Local safety
+# net, not a durable record — same reasoning /reports/ gets above. bin/docsite-publish.mjs never
+# picks it up regardless (it assembles the bundle from the manifest's declared docs, not a
+# directory walk of docsite/), so this line is about keeping it out of `git status`, not the
+# public site.
+/docsite/.versions/
+
+# Vendored reference corpus — operator ruling 2026-09-07. None of it travels with the public
+# repository; it lives in commitwork-sidecar/reference and is regenerated there. Nothing in this
+# repo reads it: the apparent consumers are a docsite page name, a comment about DROPPING vendored
+# components, a synthetic test fixture path, and scan manifests passing --exclude reference.
+# The working copy is removed from disk too, not merely untracked — the sidecar copy is the durable
+# one, verified byte-identical before either step.
+# No trailing slash: git classifies a symlink as a file, so a directory-only pattern stops
+# matching the moment the path becomes a link.
+/reference
+
+# operational record: the status document is written to monitor/private/ (sidecar), never tracked
+/PROJECTSTATUS.md
+
+# Customer and fleet records, moved to the private dir 2026-09-30 (monitor/private is the sidecar
+# link; monitor/store-paths.mjs resolves each, CW_* overrides). The old paths stay ignored so a stray
+# copy is never re-added. The *.example.json files beside them are the public shapes.
+/monitor/annotations.json
+/monitor/gate-exemptions.json
+/monitor/image-acceptance.json
+/monitor/stub-allowlist.json
+# per-area editorial sidecars for build-security-data (the shared monitor/security-annotations.json stays)
+/monitor/security-annotations.*.json
+/monitor/owner-map.json
+/monitor/program-worklist.json
+/monitor/config-correctness-ledger.json
+# derived from the private worklist by worklist-reconcile.mjs; written beside it, never here
+/monitor/worklist-reconciled.json
+# operator BOLA manifests live in monitor/private/bola/; only the synthetic example ships here. The
+# two old paths are named rather than globbed: a negation that re-includes the example matches a
+# tracked file, which bin/test/inert-ignore-rules.test.mjs reports as an inert rule.
+/manifests/bola/client-a.json
+/manifests/bola/client-d-supabase.json
+# the CRA product registry is monitor/private/cra-products.json; cra/products.example.json ships
+/cra/products.json
+/monitor/credential-scope.json
+/monitor/data/epss-detail.json
+
+# Hand-made backups taken before the 2026-07-19 lifecycle change, removed 2026-09-30. Each live copy
+# is tracked (the .mjs) or a private record (projects.json, program-worklist.json). A backup of that
+# kind is never source; nothing reads one, and the walkers in bin/comment-schema.mjs and
+# admin/routes/comments.mjs already skip the name.
+*.pre-lifecycle-*
+
+# Draft and hidden docsite documents live in the private docsite root (monitor/private/docsite,
+# CW_DOCSITE_PRIVATE). These are their old public-root paths, so a stale copy cannot be re-added.
+/docsite/content/guide.md
+/docsite/content/capabilities.md
+/docsite/content/budget.md
+/docsite/content/taxonomy-remediation.md
+/docsite/imported/taxonomy.html
+/docsite/imported/taxonomy-proposed.html
+/docsite/imported/scanner-subject-taxonomy.html
+/docsite/imported/e231ef2a-e056-497e-86c8-1e6c204f284a.html
+/docsite/pages/guide
+/docsite/pages/capabilities
+/docsite/pages/13144632-3d0d-40b1-ac19-549141d61dcc
+/docsite/pages/e231ef2a-e056-497e-86c8-1e6c204f284a
+/docsite/pages/e231ef2a-e056-497e-86c8-1e6c204f284a.html
+/docsite/pages/taxonomy.html
+/docsite/pages/taxonomy-proposed.html
+/docsite/pages/scanner-subject-taxonomy.html

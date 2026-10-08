@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- docsite editor shell — static; all state lives in editor.js talking to the drafting origin.
+     __CW_API_BASE__ is '' when served by the origin itself, or the origin's URL in the published
+     Cloudflare Pages bundle. No inline script (script-src 'self') — every handler in editor.js is
+     wired via addEventListener, never an onclick attribute here. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="cw-api-base" content="__CW_API_BASE__">
+<title>Edit — commitwork docs</title>
+<link rel="stylesheet" href="/edit-assets/tokens.css">
+<link rel="stylesheet" href="/edit-assets/editor.css">
+</head>
+<body>
+<a class="skip" href="#source">Skip to editor</a>
+<header>
+  <span class="brand"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="16" fill="#14161A"/><circle cx="16" cy="16" r="14.5" fill="none" stroke="#C9A227" stroke-width="1"/><circle cx="12" cy="20" r="2.4" fill="#C9A227"/><circle cx="21" cy="11" r="2.4" fill="none" stroke="#C9A227" stroke-width="1.3"/><path d="M13.7 18.3 L19.3 12.7" stroke="#C9A227" stroke-width="1.3" fill="none"/></svg>commitwork docs · editor</span>
+  <button id="themebtn" type="button" class="ghost" title="Toggle light/dark (defaults to your system setting)">◐</button>
+  <button id="syncbtn" type="button" class="ghost">Sync</button>
+  <button id="purgebtn" type="button" class="ghost" title="Purge the CDN edge cache — a deploy is correct immediately, the custom domain's cache can lag behind it">Purge cache</button>
+  <button id="importbtn" type="button" class="ghost" title="Upload a .md file and see what it would change before anything is written">Import .md</button>
+  <input id="importfile" aria-label="Markdown file to import" type="file" accept=".md,.markdown,text/markdown,text/plain" hidden>
+  <label for="statebadge" class="vh">State of the open document</label>
+  <select id="statebadge" class="stateselect" hidden></select>
+  <span id="dirty" class="dirty" title="unsaved changes" hidden>●</span>
+  <span class="spacer"></span>
+  <span id="wordcount" class="mut"></span>
+</header>
+<div id="banner" class="banner" hidden></div>
+<!-- THE GATE. /edit/ ships in the PUBLIC bundle, so anyone can load this shell; the drafting
+     origin gates every mutating route with a session (admin/routes/docsite.mjs:6) and answers
+     401. Before this, that 401 produced only a banner — the editor stayed fully laid out and
+     the document list stayed EMPTY, which reads as "signed in, and there are no documents":
+     exactly the picture a genuinely empty site would give. An unknown must not render as a
+     clean zero, so the unauthenticated state now names itself and covers the editor. -->
+<div id="authgate" hidden>
+  <div class="gate-card">
+    <h1 id="gate-title">Sign in to edit</h1>
+    <p id="gate-detail"></p>
+    <p><a id="gate-login" class="gate-cta" href="/">Log in at the panel</a></p>
+    <p class="gate-foot">Anything you have typed is kept in this browser and is not lost by signing in.</p>
+  </div>
+</div>
+<!-- Three panes on a fluid grid. The column widths are CSS custom properties, not fixed track
+     sizes, so the splitters below can move them without this markup knowing any measurement.
+     Each splitter is a real focusable role="separator" — dragging is a pointer affordance, and a
+     pane you can only resize with a mouse is a pane a keyboard user cannot resize at all. -->
+<main>
+  <nav id="doclist-pane" aria-label="Documents">
+    <ul id="doclist"></ul>
+  </nav>
+  <div id="split-list" class="splitter" role="separator" aria-orientation="vertical" tabindex="0"
+       aria-label="Resize the document list" aria-valuemin="10" aria-valuemax="40" aria-valuenow="15"
+       title="Drag to resize · double-click to reset · arrow keys to nudge"></div>
+  <section class="pane pane-source">
+    <div id="fmtbar" class="fmtbar" role="toolbar" aria-label="Formatting">
+      <button type="button" data-fmt="bold" title="Bold (⌘B)"><b>B</b></button>
+      <button type="button" data-fmt="italic" title="Italic (⌘I)"><i>I</i></button>
+      <button type="button" data-fmt="underline" title="Underline (⌘U)"><u>U</u></button>
+      <button type="button" data-fmt="strike" title="Strikethrough"><s>S</s></button>
+      <button type="button" data-fmt="sup" title="Superscript">x²</button>
+      <button type="button" data-fmt="sub" title="Subscript">x₂</button>
+      <span class="fmtbar-sep"></span>
+      <button type="button" data-fmt="link" title="Link (⌘K)">🔗</button>
+      <button type="button" data-fmt="quote" title="Blockquote">❝</button>
+      <button type="button" data-fmt="code" title="Code block">{ }</button>
+      <button type="button" data-fmt="ul" title="Bulleted list">•—</button>
+      <button type="button" data-fmt="ol" title="Numbered list">1.—</button>
+      <span class="fmtbar-sep"></span>
+      <button type="button" data-fmt="reference" title="Insert reference">[1]</button>
+      <button type="button" data-fmt="table" title="Insert table">▦</button>
+      <button type="button" data-fmt="tablerow" title="Add table row (cursor in a table)">▦+row</button>
+      <button type="button" data-fmt="tablecol" title="Add table column (cursor in a table)">▦+col</button>
+    </div>
+    <label for="source" class="vh">Markdown source</label>
+    <textarea id="source" spellcheck="true" autocomplete="off" disabled placeholder="Select a document…"></textarea>
+  </section>
+  <div id="split-source" class="splitter" role="separator" aria-orientation="vertical" tabindex="0"
+       aria-label="Resize source against preview" aria-valuemin="20" aria-valuemax="80" aria-valuenow="50"
+       title="Drag to resize · double-click to reset · arrow keys to nudge"></div>
+  <section class="pane preview-pane" aria-label="Live preview">
+    <!-- An IFRAME, not a div: the preview is a real document so it can load the very stylesheet the
+         published page is built from (/edit-assets/page.css, served from lib/docsite-page.mjs's own
+         CSS export). A div in this document cannot — the page's body/:root/h1 rules would style the
+         editor's own chrome — which is why the rules here used to be a hand-copy, and why that copy
+         had drifted. sandbox="allow-same-origin" so the parent can write into it and read its
+         scrollTop; no allow-scripts, because nothing in a rendered document needs to run. -->
+    <iframe id="preview" class="preview" title="Live preview" sandbox="allow-same-origin"></iframe>
+  </section>
+</main>
+<div id="diffpane" class="conflict" hidden>
+  <div class="conflict-head">
+    <strong>Import preview</strong> <span id="diffsum" class="mut"></span>
+    <button id="diffmerge" type="button">Merge selected</button>
+    <button id="difftakeall" type="button" class="ghost">Take whole file</button>
+    <button id="diffcancel" type="button" class="ghost">Cancel</button>
+  </div>
+  <!-- Nothing here writes. The merge assembles text into the editor buffer and leaves it dirty, so
+       the existing save path — with its baseHash check — stays the only thing that reaches disk. -->
+  <div id="difflist" class="difflist"></div>
+</div>
+<div id="conflict" class="conflict" hidden>
+  <div class="conflict-head">
+    <strong>Changed on disk</strong> <span id="conflictsum" class="mut"></span>
+    <button id="keepnewer" type="button" title="Compare the disk copy's modified time with your last keystroke and keep whichever is later">Keep newer</button>
+    <button id="takemine" type="button" class="ghost" title="Overwrite the disk copy with the editor buffer">Keep mine</button>
+    <button id="takeserver" type="button" class="ghost" title="Replace the editor buffer with the disk copy">Keep disk</button>
+    <button id="conflictmerge" type="button" class="ghost" title="Assemble the ticked blocks into the editor, then save">Merge selected</button>
+    <button id="conflictlater" type="button" class="ghost" title="Leave the panel; autosave stays paused until you decide">Later</button>
+  </div>
+  <!-- Base is the DISK copy; the candidate is the editor buffer. A ticked block takes the buffer's
+       side; an unticked one keeps what is on disk. Deletions start unticked, so Merge selected
+       with nothing touched keeps both sides' additions. -->
+  <div id="conflictlist" class="difflist"></div>
+</div>
+<footer><span id="status" role="status" aria-live="polite"></span></footer>
+<script type="module" src="/edit-assets/editor.js"></script>
+</body>
+</html>

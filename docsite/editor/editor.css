@@ -1,0 +1,205 @@
+/* docsite editor — CHROME ONLY. The bond-paper/gold livery (admin/static/panel-light.css +
+   panel.css, carried via lib/brand-tokens.mjs; parity asserted by
+   bin/test/brand-tokens-parity.test.mjs), light-first per the same house ruling docsite pages
+   already carry. Split-pane grid from the md-live-editor spike.
+
+   The light token set is NOT restated here — it is served from lib/brand-tokens.mjs's PAPER_CSS at
+   /edit-assets/tokens.css and linked ahead of this file. It used to be a third copy (the shell has
+   one, this had one, the documents have one) and copies drift: measured 2026-09-01, four of six
+   selectors this file shared with the published shell had diverged.
+
+   Nothing here styles the preview any more. The preview is an iframe holding a real document that
+   links /edit-assets/page.css — the published page's own stylesheet — so it inherits from the page
+   it styles rather than imitating it. Adding a `.preview x` rule here would re-open exactly the
+   fork that was just closed; style the SHELL instead and both surfaces move together.
+
+   Three-state theming, not two, and it governs the CHROME alone: tokens.css is what a viewer with
+   no explicit preference sees; @media (prefers-color-scheme: dark) covers an OS-level dark
+   preference; the [data-theme] blocks are the explicit in-app toggle (#themebtn in editor.js) and
+   win over both. The previewed document stays light in every case, because the published page is
+   light — a dark preview would be lying about the artifact. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17181a;--panel:#1e1f22;--panel2:#26272a;--line:#333438;--line2:#44454a;
+    --head:#f4f3ef;--ink:#e4e2dc;--mut:#98958e;--dim:#8a877e;
+    --acc:#c9a227;--acc2:#9a7b1d;--wash:rgba(201,162,39,.10);--on-acc:#1a120e;--crit:#fe5b66;--ok:#5fd08a;--sev:#b47cff;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17181a;--panel:#1e1f22;--panel2:#26272a;--line:#333438;--line2:#44454a;
+  --head:#f4f3ef;--ink:#e4e2dc;--mut:#98958e;--dim:#8a877e;
+  --acc:#c9a227;--acc2:#9a7b1d;--wash:rgba(201,162,39,.10);--on-acc:#1a120e;--crit:#fe5b66;--ok:#5fd08a;--sev:#b47cff;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans)}
+.vh{position:absolute;left:-9999px}
+.skip{position:absolute;left:-9999px}.skip:focus{position:static;padding:.4rem}
+header{display:flex;align-items:center;gap:.7rem;padding:.55rem .9rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{color:var(--head);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:.31rem}
+/* The chrome is light unless a dark preference or the toggle says otherwise, so the default mark
+   (white disc, black ring, gold key) is the base and the dark-ground seal is restored for dark. */
+.brand svg circle:first-of-type{fill:#FFFFFF}.brand svg circle:nth-of-type(2){stroke:#101011}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .brand svg circle:first-of-type{fill:#14161A}:root:not([data-theme="light"]) .brand svg circle:nth-of-type(2){stroke:#C9A227}}
+:root[data-theme="dark"] .brand svg circle:first-of-type{fill:#14161A}:root[data-theme="dark"] .brand svg circle:nth-of-type(2){stroke:#C9A227}
+.brand svg{width:1.2rem;height:1.2rem;flex:none}
+.spacer{flex:1}
+select{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:5px;padding:.3rem .5rem;font:inherit;max-width:20rem}
+button{background:var(--acc);color:var(--on-acc);border:0;border-radius:5px;padding:.35rem .9rem;font:600 13px var(--sans);cursor:pointer}
+button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+button:disabled{opacity:.5;cursor:default}
+.stateselect{max-width:none;font-size:12px;padding:.2rem .35rem}
+header .stateselect{max-width:9rem}
+.badge{font:600 11px/1 var(--mono);letter-spacing:.06em;padding:.3em .55em;border-radius:4px;border:1px solid var(--line2);color:var(--mut)}
+.dirty{color:var(--acc);font-size:1.1rem;line-height:1}
+.mut{color:var(--mut);font:12px var(--mono)}
+.banner{padding:.6rem .9rem;border-bottom:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
+.banner a{color:var(--acc)}
+.banner pre{margin:.4rem 0 0;font:12px/1.5 var(--mono);white-space:pre-wrap;color:var(--mut)}
+/* FLUID GRID. The three panes size from custom properties rather than fixed tracks, so a splitter
+   drag is one property write instead of a template rewrite. --w-list is a length; --w-src and
+   --w-prev are fr factors kept summing to 2, which makes the split a RATIO — it stays correct when
+   the window resizes, where a stored pixel width would not.
+   minmax(0, …) on every flexible track is load-bearing: a grid track's default minimum is auto, so
+   one long unbroken line in the source or the preview widens its column past the viewport and puts
+   a horizontal scrollbar on the whole editor. */
+main{flex:1;display:grid;min-height:0;
+  grid-template-columns:
+    minmax(8rem, var(--w-list, 15rem))
+    var(--split-w, 6px)
+    minmax(0, var(--w-src, 1fr))
+    var(--split-w, 6px)
+    minmax(0, var(--w-prev, 1fr));
+}
+.pane{display:flex;min-height:0}
+.pane-source{flex-direction:column}
+/* The visible rule is 6px but the grab area is wider — a boundary you can see and cannot hit is
+   worse than no affordance. touch-action:none so a pointer drag is not stolen by scroll on a
+   trackpad or touchscreen. */
+.splitter{cursor:col-resize;background:var(--line);position:relative;touch-action:none}
+.splitter::before{content:"";position:absolute;inset:0 -4px}
+.splitter:hover,.splitter[data-dragging]{background:var(--acc)}
+.splitter:focus-visible{outline:2px solid var(--acc);outline-offset:1px;background:var(--acc)}
+body[data-resizing]{cursor:col-resize;-webkit-user-select:none;user-select:none}
+/* Mid-drag the pointer crosses the preview iframe, which swallows pointermove and stalls the drag
+   halfway. Taking the panes out of hit-testing for the duration is what lets a drag cross them. */
+body[data-resizing] .preview,body[data-resizing] #source{pointer-events:none}
+.fmtbar{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;padding:.4rem .6rem;
+  border-bottom:1px solid var(--line);background:var(--panel)}
+.fmtbar button{width:auto;min-height:0;background:transparent;color:var(--ink);border:1px solid transparent;
+  border-radius:4px;padding:.2rem .45rem;font:600 12px var(--sans);cursor:pointer;line-height:1.3}
+.fmtbar button:hover{background:var(--panel2);border-color:var(--line2)}
+.fmtbar button b,.fmtbar button i,.fmtbar button u,.fmtbar button s{font-size:inherit}
+.fmtbar-sep{width:1px;align-self:stretch;background:var(--line);margin:0 .2rem}
+#doclist-pane{overflow-y:auto;border-right:1px solid var(--line);background:var(--panel)}
+#doclist{list-style:none;margin:0;padding:0}
+.docrow{border-bottom:1px solid var(--line);padding:.55rem .6rem}
+.docrow.current{background:var(--panel2)}
+.docrow.loadable{cursor:pointer}
+.docrow.loadable:hover{background:var(--panel2)}
+.docrow.loadable:hover .doctitle{color:var(--acc)}
+.docrow.loadable:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.docrow-main{display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap}
+.doctitle{color:var(--ink);font-size:12.5px;font-weight:600;line-height:1.35;flex:1 1 auto;word-break:break-word}
+.kindbadge{font:600 9.5px/1 var(--mono);letter-spacing:.05em;color:var(--mut);border:1px solid var(--line2);border-radius:3px;padding:.15em .35em}
+.docrow-controls{display:flex;align-items:center;gap:.3rem;margin-top:.4rem;flex-wrap:wrap}
+.reorder,.history{background:transparent;color:var(--mut);border:1px solid var(--line2);padding:.15rem .4rem;font:600 11px var(--sans);width:auto;min-height:0;border-radius:4px}
+.openbtn{width:auto;min-height:0;padding:.15rem .5rem;font:600 11px var(--sans);border-radius:4px}
+.openbtn:disabled{opacity:.6}
+.reorder{padding:.15rem .35rem}
+.reorder:hover:not(:disabled),.history:hover{color:var(--ink);border-color:var(--mut)}
+.viewlive{color:var(--mut);text-decoration:none;font-size:13px;padding:.15rem .3rem;border:1px solid var(--line2);border-radius:4px}
+.viewlive:hover{color:var(--acc);border-color:var(--acc)}
+.history-pane{margin-top:.45rem;padding-top:.45rem;border-top:1px dashed var(--line2);font-size:11.5px}
+.vpool{margin-bottom:.5rem}
+.vpool b{display:block;color:var(--mut);font:600 10px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.25rem}
+.vpool ul{list-style:none;margin:0;padding:0}
+.vpool li{display:flex;align-items:center;gap:.4rem;padding:.2rem 0}
+.vpool li{flex-wrap:wrap}
+.vtime{font:11px var(--mono);color:var(--ink);flex:1 1 auto}
+.vsub{flex:1 1 100%;color:var(--mut);font:11px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vbytes{color:var(--mut);font:10.5px var(--mono)}
+.vbtn{width:auto;min-height:0;padding:.15rem .45rem;font-size:10.5px;background:transparent;color:var(--mut);border:1px solid var(--line2)}
+.vbtn:hover:not(:disabled){color:var(--ink);border-color:var(--mut)}
+.restore{width:auto;min-height:0;padding:.15rem .45rem;font-size:10.5px;background:var(--acc)}
+/* Narrow the list rather than rewriting the template — the ratio between source and preview is the
+   operator's choice and must survive a window resize. A width the operator has actually dragged is
+   set inline on <main> and outranks this, which is the intended precedence. */
+@media (max-width: 1100px){ main{--w-list:12rem} }
+#source{flex:1;resize:none;border:0;outline:none;padding:1rem 1.1rem;background:var(--bg);color:var(--ink);font:13.5px/1.65 var(--mono);border-right:1px solid var(--line)}
+.preview-pane{overflow:hidden;background:var(--panel)}
+/* The iframe fills the pane and scrolls internally — the previewed document owns its own measure
+   (the shell sets p{max-width:84ch} inside .wrap), so imposing one here would misreport the line
+   length the published page actually produces. colorScheme:light keeps the frame on the paper
+   ground even when the chrome around it is in dark mode, because the published page is light. */
+.preview{width:100%;height:100%;border:0;display:block;background:var(--panel);color-scheme:light}
+.conflict{border-top:2px solid var(--crit);background:var(--panel);padding:.7rem .9rem;max-height:38vh;display:flex;flex-direction:column;gap:.5rem}
+.conflict-head{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;color:var(--ink)}
+.conflict[data-watch]{border-top-color:var(--acc)}
+footer{border-top:1px solid var(--line);background:var(--panel);padding:.4rem .9rem;min-height:1.9rem}
+#status{font:12px/1.4 var(--mono);color:var(--ok)}
+#status.err{color:var(--crit)}
+/* Stacked — and the preview STAYS. It was display:none here, which deleted the feature instead of
+   reflowing it: below 900px the editor silently became source-only, with nothing on screen saying
+   the live preview had been withdrawn. A pane that is absent for a reason the reader cannot see is
+   indistinguishable from one that is broken. */
+@media (max-width: 900px){
+  main{grid-template-columns:minmax(0,1fr);
+       grid-template-rows:auto minmax(0,1fr) minmax(0,1fr)}
+  .splitter{display:none}
+  #doclist-pane{max-height:14rem;border-right:0;border-bottom:1px solid var(--line)}
+  #source{border-right:0}
+  .preview-pane{display:flex;border-top:1px solid var(--line)}
+}
+
+/* ── Import preview ──────────────────────────────────────────────────────────────────────────────
+   Reuses .conflict's shell: same "something needs your decision before it lands" shape, so it reads
+   as the same kind of moment rather than a new one. Colour carries the state and is never the only
+   carrier — each row is also LABELLED, because a reader who cannot separate the greens from the reds
+   would otherwise be told nothing at all. */
+.difflist{overflow:auto;display:flex;flex-direction:column;gap:.35rem;font:12px/1.5 var(--mono)}
+.drow{display:grid;grid-template-columns:auto 5.5rem 1fr;gap:.5rem;align-items:start;
+  border:1px solid var(--line);border-radius:6px;padding:.4rem .55rem;background:var(--bg)}
+.drow input{margin:.2rem 0 0}
+.drow .dstate{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding-top:.15rem}
+.drow .dtext{white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.drow .dtext del{background:rgba(198,40,40,.16);color:var(--crit);text-decoration:line-through}
+.drow .dtext ins{background:rgba(21,128,61,.16);color:var(--ok);text-decoration:none}
+.drow[data-s="ADDED"]{border-left:3px solid var(--ok)}
+.drow[data-s="DELETED"]{border-left:3px solid var(--crit)}
+.drow[data-s="EDITED"]{border-left:3px solid var(--acc)}
+.drow[data-s="MATCHED"],.drow[data-s="WHITESPACE_ONLY"]{opacity:.55}
+.drow[data-s="UNRESOLVED"],.drow[data-s="AMBIGUOUS"]{border-left:3px solid var(--mut)}
+.drow .dnote{grid-column:3;font-size:10px;color:var(--mut)}
+
+/* ─── the auth gate ─────────────────────────────────────────────────────────
+   /edit/ is public; the drafting origin is not. A 401 used to leave the editor
+   laid out with an empty document list, which is indistinguishable from a real
+   empty site. This covers the editor and names the state instead. */
+#authgate {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(2px);
+}
+#authgate[hidden] { display: none; }
+.gate-card {
+  max-width: 34rem; margin: 1.5rem; padding: 1.6rem 1.8rem;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 3px; box-shadow: 0 8px 32px rgba(20, 20, 15, .10);
+}
+.gate-card h1 { margin: 0 0 .6rem; font-size: 1.15rem; }
+.gate-card p { margin: .5rem 0; color: var(--mut); line-height: 1.55; }
+/* --on-acc as ink: 7.64:1 on the dark gold, 5.66:1 on paper gold. Hover moves the edge, not the
+   fill: the darker --acc2 took the dark ink to 4.42:1. */
+.gate-cta {
+  display: inline-block; margin-top: .3rem; padding: .5rem .95rem;
+  background: var(--acc); color: var(--on-acc); text-decoration: none; border-radius: 2px;
+}
+.gate-cta:hover { box-shadow: 0 0 0 2px var(--acc2); }
+.gate-foot { font-size: .87rem; color: var(--dim); }
+/* An explicit empty/void row — never a blank list. */
+.docrow-void {
+  padding: .8rem .9rem; color: var(--dim);
+  font-style: italic; line-height: 1.5; list-style: none;
+}

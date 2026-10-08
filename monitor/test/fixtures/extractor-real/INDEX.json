@@ -1,0 +1,12 @@
+{
+ "note": "Real tool output that extractor tests read, credited by monitor/lane-capability.mjs as extractor-test evidence after executing the extractor on it. file resolves against this directory; artifact is the name the extractor reads; exit, when present, is written as the artifact's .exit sidecar exactly as the test writes it. Each entry's test must read the file (monitor/test/lane-capability.test.mjs checks).",
+ "fixtures": [
+  { "category": "sastPhp", "file": "sastPhp/phpcs.json", "artifact": "phpcs.json", "test": "monitor/test/phpcs-extractor.test.mjs", "tool": "PHP_CodeSniffer 4.0.4 + phpcs-security-audit", "captured": "2026-09-01" },
+  { "category": "lintJava", "file": "lintJava/pmd.json", "artifact": "pmd.json", "test": "monitor/test/pmd-extractor.test.mjs", "tool": "PMD 7.27.0", "captured": "2026-09-01" },
+  { "category": "sastBrakeman", "file": "sastBrakeman/brakeman.json", "artifact": "brakeman.json", "test": "monitor/test/ruby-lanes-extractor.test.mjs", "tool": "Brakeman 5.4.1", "captured": "2026-09-01" },
+  { "category": "depsBundlerAudit", "file": "depsBundlerAudit/bundler-audit.json", "artifact": "bundler-audit.json", "test": "monitor/test/ruby-lanes-extractor.test.mjs", "tool": "bundler-audit 0.9.3", "captured": "2026-09-01" },
+  { "category": "lintHaskell", "file": "lintHaskell/hlint.json", "artifact": "hlint.json", "exit": 0, "test": "monitor/test/hlint-extractor.test.mjs", "tool": "hlint", "captured": "2026-08-27" },
+  { "category": "lintRust", "file": "lintRust/clippy.json", "artifact": "clippy.json", "exit": 0, "test": "monitor/test/clippy-extractor.test.mjs", "tool": "cargo clippy, folded by the manifest", "captured": "2026-08-26" },
+  { "category": "sastCobol", "file": "../cobolwork/kinds.json", "artifact": "cobolwork.json", "test": "monitor/test/cobolwork-lane-extractor.test.mjs", "tool": "cobolwork 0.2.0", "captured": "2026-09-21" }
+ ]
+}

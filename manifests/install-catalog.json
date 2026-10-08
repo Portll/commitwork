@@ -1,0 +1,482 @@
+{
+  "note": "Scanner install catalog for `commitwork setup` (bin/setup.mjs). Per tool: a short `why`, one package id per supported manager (brew = macOS/Linux, winget/scoop = Windows, pipx = anywhere Python is), and a `url` fallback printed when no manager is available or an install fails. `manual: true` tools are checked and reported but never auto-installed. brew ids verified 2026-07-24; winget/scoop ids are from each project's install docs and are re-probed after install, so a stale id degrades to the url fallback rather than a silent failure. SEVEN TOOLS WERE ADDED 2026-09-02 (bandit, brakeman, bundle-audit, elixir, mix, hlint, phpcs) after a census found eight tools declared in security-baseline.json requires.tools and absent from here — cargo-audit was the one already listed. `commitwork setup` could therefore never install them, and their lanes skipped forever with `n/a — tool:x`, which reads exactly like correct language gating. bin/test/install-catalog-covers-manifest.test.mjs now fails if the two files disagree. overwatch-layer-spine WAS ADDED 2026-09-04: not a scanner, but the one catalogued thing that is configuration rather than a binary — its `steps` are keyed by the check ids admin/lib/spine-preconditions.mjs reports, so the Overwatch tab can name the exact step that is absent WINDOWS PASS 2026-09-04. Two entry SHAPES exist and bin/setup.mjs implemented only one: brew/winget/scoop/pipx/npm carry a PACKAGE ID, while cargo/gem/composer/go carry a WHOLE COMMAND STRING. The command-string managers were declared here and absent from setup.mjs's MANAGERS table, so they were INERT — cargo-audit, brakeman, bundle-audit, psalm and phpcs-security-audit have no other installer and therefore printed 'no installer for this platform' on EVERY platform, including a Windows box with cargo on PATH. An entry no manager can act on is worse than a missing one: the missing one is a gap somebody can see. `providedBy` (mix<-elixir, cargo-clippy<-cargo) was likewise unread. Four ids were added in this pass and each was VERIFIED ON THE BOX rather than copied from docs: zizmor.zizmor and GolangCI.golangci-lint resolve in `winget search`; the two `go install` lines were RUN, and both binaries now resolve on PATH. Nothing was added that could not be checked — opengrep and sobelow stay uninstallable and are now REPORTED as a catalog gap of ours rather than as a platform limitation.",
+  "tools": {
+    "cargo-audit": {
+      "why": "RustSec advisories for resolved Cargo graphs (deps-rust-audit second-opinion lane)",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "cargo": "cargo install cargo-audit --locked",
+      "url": "https://github.com/rustsec/rustsec/tree/main/cargo-audit"
+    },
+    "trufflehog": {
+      "why": "verified/unknown secrets across git history",
+      "brew": "trufflehog",
+      "winget": "TruffleSecurity.TruffleHog",
+      "scoop": "trufflehog",
+      "release": {
+        "repo": "trufflesecurity/trufflehog",
+        "tag": "v3.99.0",
+        "linux": {
+          "x64": { "asset": "trufflehog_3.99.0_linux_amd64.tar.gz", "sha256": "e35ae3fd1e4b7a0c1699d0fda1814282bf906d03379bd4337b092b3a84c6740b" },
+          "arm64": { "asset": "trufflehog_3.99.0_linux_arm64.tar.gz", "sha256": "ad6fb802f0e6f097829c1eee659b97fc0533a08fa34633cde15bc8fc3258dfb7" }
+        }
+      },
+      "url": "https://github.com/trufflesecurity/trufflehog#floppy_disk-installation"
+    },
+    "gitleaks": {
+      "why": "fast filesystem secret scan + pre-commit hook",
+      "brew": "gitleaks",
+      "winget": "Gitleaks.Gitleaks",
+      "scoop": "gitleaks",
+      "release": {
+        "repo": "gitleaks/gitleaks",
+        "tag": "v8.30.1",
+        "linux": {
+          "x64": { "asset": "gitleaks_8.30.1_linux_x64.tar.gz", "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" },
+          "arm64": { "asset": "gitleaks_8.30.1_linux_arm64.tar.gz", "sha256": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080" }
+        }
+      },
+      "url": "https://github.com/gitleaks/gitleaks#installing"
+    },
+    "betterleaks": {
+      "why": "second secret-scan engine with confidence and live validation",
+      "brew": "betterleaks",
+      "winget": "Betterleaks.Betterleaks",
+      "scoop": null,
+      "url": "https://github.com/betterleaks/betterleaks"
+    },
+    "semgrep": {
+      "why": "SAST (auto rules, SARIF)",
+      "brew": "semgrep",
+      "pipx": "semgrep",
+      "url": "https://semgrep.dev/docs/getting-started/quickstart"
+    },
+    "pipx": {
+      "why": "Python application installer; nine scanners (semgrep among them) install through it, and on Linux without Homebrew it is the manager that unblocks the most",
+      "brew": "pipx",
+      "scoop": "pipx",
+      "apt": "pipx",
+      "dnf": "pipx",
+      "url": "https://pipx.pypa.io/stable/installation/"
+    },
+    "gem": {
+      "why": "RubyGems, which brakeman and bundler-audit install through; arrives with Ruby",
+      "brew": "ruby",
+      "scoop": "ruby",
+      "apt": "ruby",
+      "dnf": "ruby",
+      "url": "https://www.ruby-lang.org/en/documentation/installation/"
+    },
+    "bwrap": {
+      "why": "bubblewrap, the Linux host sandbox every lane runs inside; without it each lane runs unconfined and records isolation none",
+      "platforms": ["linux"],
+      "apt": "bubblewrap",
+      "dnf": "bubblewrap",
+      "url": "https://github.com/containers/bubblewrap"
+    },
+    "pasta": {
+      "why": "pasta (package passt), the user-mode network for Linux lanes with egress: it gives each one its own network namespace with the internet and no host loopback. Without it those lanes are refused and record noscan",
+      "platforms": ["linux"],
+      "apt": "passt",
+      "dnf": "passt",
+      "url": "https://passt.top/"
+    },
+    "go": {
+      "why": "Go toolchain — required by gosec and govulncheck. A toolchain OLDER than a repo's `go` directive cannot load its module graph, so both scanners fail open rather than reporting",
+      "brew": "go",
+      "winget": "GoLang.Go",
+      "scoop": "go",
+      "apt": "golang-go",
+      "dnf": "golang",
+      "url": "https://go.dev/dl/"
+    },
+    "gosec": {
+      "why": "Go SAST — the Go lane the codeql checks (js-ts, java) do not cover",
+      "brew": "gosec",
+      "url": "https://github.com/securego/gosec#install",
+      "go": "go install github.com/securego/gosec/v2/cmd/gosec@latest"
+    },
+    "govulncheck": {
+      "why": "Go dependency + stdlib vulns WITH reachability — the only lane that can say an advisory is present but unreached",
+      "brew": "govulncheck",
+      "url": "https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck",
+      "go": "go install golang.org/x/vuln/cmd/govulncheck@latest"
+    },
+    "trivy": {
+      "why": "JVM/container/IaC dependency + config scanning",
+      "brew": "trivy",
+      "winget": "AquaSecurity.Trivy",
+      "scoop": "trivy",
+      "url": "https://trivy.dev/latest/getting-started/installation/"
+    },
+    "syft": {
+      "why": "SBOM generation",
+      "brew": "syft",
+      "winget": "Anchore.Syft",
+      "scoop": "syft",
+      "url": "https://github.com/anchore/syft#installation"
+    },
+    "hadolint": {
+      "why": "Dockerfile lint",
+      "brew": "hadolint",
+      "winget": "hadolint.hadolint",
+      "scoop": "hadolint",
+      "url": "https://github.com/hadolint/hadolint#install"
+    },
+    "opengrep": {
+      "why": "OSS fork of Semgrep, kept as a standby engine. Same rule YAML, same p/ registry packs, same SARIF — so a licensing change costs a binary swap rather than a rewrite. No Homebrew formula: download the signed release asset and VERIFY IT, do not pipe an installer to a shell. `cosign verify-blob --certificate opengrep_osx_arm64.cert --signature opengrep_osx_arm64.sig --certificate-identity-regexp 'https://github.com/opengrep/opengrep/.*' --certificate-oidc-issuer https://token.actions.githubusercontent.com <binary>` returns Verified OK for v1.26.0.",
+      "url": "https://github.com/opengrep/opengrep/releases"
+    },
+    "actionlint": {
+      "why": "GitHub Actions workflow correctness + inline-run shellcheck. Catches the untrusted-input script-injection sink that zizmor's posture audit and semgrep's source rules both leave to the workflow layer.",
+      "brew": "actionlint",
+      "winget": "rhysd.actionlint",
+      "scoop": "actionlint",
+      "url": "https://github.com/rhysd/actionlint#installation"
+    },
+    "shellcheck": {
+      "why": "shell correctness + injection lint for CI steps, install scripts and hooks. Run with --format=json1, never --format=json: the bare array the latter emits makes a clean run and a run that examined nothing byte-identical.",
+      "brew": "shellcheck",
+      "winget": "koalaman.shellcheck",
+      "scoop": "shellcheck",
+      "url": "https://github.com/koalaman/shellcheck#installing"
+    },
+    "codeql": {
+      "why": "deep SAST. The CLI alone cannot analyse: `database analyze` needs QUERY PACKS, downloaded separately and PER LANGUAGE — a pack list that lags the lane list fails at analyze time, after the database has already built.",
+      "brew": "codeql",
+      "winget": "GitHub.CodeQL",
+      "scoop": "codeql",
+      "url": "https://github.com/github/codeql-action/releases",
+      "postInstall": [
+        [
+          "codeql",
+          "pack",
+          "download",
+          "codeql/javascript-queries",
+          "codeql/java-queries",
+          "codeql/python-queries",
+          "codeql/ruby-queries"
+        ]
+      ],
+      "ready": {
+        "cmd": [
+          "codeql",
+          "resolve",
+          "queries",
+          "codeql/python-queries"
+        ],
+        "expect": "python-queries",
+        "why": "the binary resolves but `database analyze` aborts with \"Query pack codeql/<lang>-queries cannot be found\" — measured 0 passes / 27 noscans across a fleet sweep while the CLI was on PATH the whole time. The readiness probe asks for PYTHON deliberately: it is the pack most recently added to the lane set, so it is the one a stale postInstall will be missing."
+      }
+    },
+    "act": {
+      "why": "run real workflow YAML locally (--act checks)",
+      "brew": "act",
+      "winget": "nektos.act",
+      "scoop": "act",
+      "url": "https://nektosact.com/installation/"
+    },
+    "osv-scanner": {
+      "why": "OSV dependency scan without the Docker detour",
+      "brew": "osv-scanner",
+      "winget": "Google.OSVScanner",
+      "scoop": "osv-scanner",
+      "url": "https://google.github.io/osv-scanner/installation/"
+    },
+    "nuclei": {
+      "why": "templated DAST against live targets (runtime manifest)",
+      "brew": "nuclei",
+      "winget": "ProjectDiscovery.Nuclei",
+      "scoop": "nuclei",
+      "url": "https://docs.projectdiscovery.io/tools/nuclei/install"
+    },
+    "testssl.sh": {
+      "why": "TLS/cipher audit of live endpoints (runtime manifest)",
+      "brew": "testssl",
+      "url": "https://testssl.sh/"
+    },
+    "schemathesis": {
+      "why": "OpenAPI property-based API fuzzing (runtime manifest)",
+      "brew": "schemathesis",
+      "pipx": "schemathesis",
+      "url": "https://schemathesis.readthedocs.io/"
+    },
+    "prowler": {
+      "why": "AWS/cloud posture scan (needs cloud creds)",
+      "brew": "prowler",
+      "pipx": "prowler",
+      "url": "https://docs.prowler.com/"
+    },
+    "docker": {
+      "why": "daemon for osv-scanner (docker path), deps-updates, dast",
+      "manual": true,
+      "url": "https://docs.docker.com/get-docker/"
+    },
+    "guarddog": {
+      "why": "supply-chain metadata heuristics over the resolved npm tree (typosquats, deceptive authors, hijackable maintainer domains) — Apache-2.0, no account, no token. OPTIONAL: supply-chain-guarddog runs the ghcr.io/datadog/guarddog image via docker, so the native CLI is only needed for per-package deep source analysis (`guarddog npm scan <pkg>`), which verify cannot do",
+      "pipx": "guarddog",
+      "url": "https://github.com/DataDog/guarddog"
+    },
+    "safe-chain": {
+      "why": "INSTALL-TIME gate (Aikido Safe Chain, tokenless, no build data shared): proxies npm/yarn/pnpm/bun and pip/uv/poetry installs and blocks known-malicious packages BEFORE the tarball is fetched. Not a scanner and not a commitwork check — the sweep never installs, so nothing here can cover the moment a postinstall script actually executes. Install it on developer machines; in CI use the --ci flag (PATH shims instead of shell aliases)",
+      "manual": true,
+      "url": "https://github.com/AikidoSec/safe-chain#installation"
+    },
+    "bandit": {
+      "why": "Python SAST (sast-python-bandit) — AST-level checks for the Python idioms that become vulnerabilities",
+      "brew": "bandit",
+      "winget": null,
+      "scoop": null,
+      "pipx": "bandit",
+      "url": "https://bandit.readthedocs.io/en/latest/start.html"
+    },
+    "brakeman": {
+      "why": "Rails-aware SAST (sast-ruby-brakeman) — routes/controllers/views, not generic pattern rules",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "gem": "gem install brakeman",
+      "url": "https://brakemanscanner.org/docs/install/",
+      "postInstall": "needs Ruby >= 3.2. macOS system Ruby is 2.6, where gem silently installs brakeman 5.4.1 instead of failing — install brew ruby first, and symlink the gem bin into the brew prefix, which brew does not do for gems."
+    },
+    "bundle-audit": {
+      "why": "ruby-advisory-db lookups for a resolved Gemfile.lock (deps-ruby-bundler-audit)",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "gem": "gem install bundler-audit",
+      "url": "https://github.com/rubysec/bundler-audit#install",
+      "postInstall": "same gem-bin-not-on-PATH caveat as brakeman."
+    },
+    "elixir": {
+      "why": "Erlang/Elixir runtime the sobelow ESCRIPT runs on, and the mix that installs it — the sast-elixir-sobelow lane invokes sobelow directly, never a mix task",
+      "brew": "elixir",
+      "winget": "Elixir.Elixir",
+      "scoop": "elixir",
+      "apt": "elixir",
+      "dnf": "elixir",
+      "url": "https://elixir-lang.org/install.html",
+      "requiredBy": "sobelow"
+    },
+    "mix": {
+      "why": "Elixir build tool the sobelow lane runs through — SHIPPED WITH elixir, never installed on its own",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "url": "https://elixir-lang.org/install.html",
+      "providedBy": "elixir"
+    },
+    "hlint": {
+      "why": "Haskell lint (lint-haskell-hlint)",
+      "brew": "hlint",
+      "winget": null,
+      "scoop": null,
+      "url": "https://github.com/ndmitchell/hlint#installing-and-running-hlint"
+    },
+    "phpcs": {
+      "why": "PHP_CodeSniffer (sast-php-phpcs)",
+      "brew": "php-code-sniffer",
+      "winget": null,
+      "scoop": null,
+      "url": "https://github.com/PHPCSStandards/PHP_CodeSniffer#installation"
+    },
+    "bearer": {
+      "why": "data-flow/PII SAST across JS, Ruby, Java, PHP, Python, Go (sast-bearer)",
+      "brew": "bearer/tap/bearer",
+      "winget": null,
+      "scoop": null,
+      "url": "https://docs.bearer.com/reference/installation/",
+      "postInstall": "third-party tap: `brew tap bearer/tap` then `brew trust bearer/tap` — Homebrew refuses to load an untrusted tap formula."
+    },
+    "joern-scan": {
+      "why": "code-property-graph SAST without a build (sast-joern) — the only C/C++ deep lane here",
+      "brew": "joern",
+      "winget": null,
+      "scoop": null,
+      "url": "https://docs.joern.io/installation/",
+      "postInstall": "run joernwork/bin/fix-local-joern.sh after EVERY brew upgrade — the local repairs live in the Cellar and an upgrade reverts them silently. bin/test/joern-local-repairs.test.mjs fails if they have."
+    },
+    "cppcheck": {
+      "why": "C/C++ static analysis (sast-c-cppcheck)",
+      "brew": "cppcheck",
+      "winget": "Cppcheck.Cppcheck",
+      "scoop": "cppcheck",
+      "url": "https://cppcheck.sourceforge.io/"
+    },
+    "flawfinder": {
+      "why": "C/C++ dangerous-function scan (sast-c-flawfinder)",
+      "brew": "flawfinder",
+      "winget": null,
+      "scoop": null,
+      "pipx": "flawfinder",
+      "url": "https://dwheeler.com/flawfinder/"
+    },
+    "golangci-lint": {
+      "why": "aggregated Go linters (lint-go-golangci)",
+      "brew": "golangci-lint",
+      "winget": "GolangCI.golangci-lint",
+      "scoop": "golangci-lint",
+      "url": "https://golangci-lint.run/welcome/install/"
+    },
+    "pmd": {
+      "why": "Java static analysis (lint-java-pmd)",
+      "brew": "pmd",
+      "winget": null,
+      "scoop": null,
+      "url": "https://pmd.github.io/pmd/pmd_userdocs_installation.html"
+    },
+    "ruff": {
+      "why": "Python lint (lint-python-ruff)",
+      "brew": "ruff",
+      "winget": "astral-sh.ruff",
+      "scoop": "ruff",
+      "pipx": "ruff",
+      "url": "https://docs.astral.sh/ruff/installation/"
+    },
+    "scorecard": {
+      "why": "OpenSSF Scorecard repository posture (posture-scorecard)",
+      "brew": "scorecard",
+      "winget": null,
+      "scoop": null,
+      "url": "https://github.com/ossf/scorecard#installation"
+    },
+    "zizmor": {
+      "why": "GitHub Actions workflow auditing (actions-zizmor)",
+      "brew": "zizmor",
+      "winget": "zizmor.zizmor",
+      "scoop": null,
+      "pipx": "zizmor",
+      "url": "https://docs.zizmor.sh/installation/"
+    },
+    "rustfmt": {
+      "why": "Rust formatter the format-rust-rustfmt lane invokes through cargo fmt — SHIPPED WITH the rust toolchain as the rustfmt component, never installed on its own",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "url": "https://rustup.rs/",
+      "providedBy": "cargo"
+    },
+    "cargo-clippy": {
+      "why": "Rust lint the lint-rust-clippy lane invokes — SHIPPED WITH the rust toolchain, never installed on its own",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "url": "https://rustup.rs/",
+      "providedBy": "cargo"
+    },
+    "cargo": {
+      "why": "Rust toolchain; lint-rust-clippy runs through it",
+      "brew": "rust",
+      "winget": "Rustlang.Rustup",
+      "scoop": "rustup",
+      "apt": "cargo",
+      "dnf": "cargo",
+      "url": "https://rustup.rs/"
+    },
+    "psalm": {
+      "why": "Psalm taint analysis (sast-php-psalm). PIN: composer global require vimeo/psalm:6.x-dev. The 6.16.1 RELEASE crashes on any codebase referencing the NAN constant (TLiteralFloat::getKey coerces it to string; PHP >= 8.5 raises); the fix is on the 6.x branch and unreleased -- verified 2026-09-02 by swapping the upstream file in and out of a pristine 6.16.1 install. Composer names that branch 6.x-dev, NOT dev-6.x. Do not use the brew phar: it additionally hits a PsalmPhar\\Composer\\InstalledVersions redeclare on any repo referencing that class (laravel, symfony, doctrine). PINNING A DEV BRANCH IS A REAL TRADE and was measured, not assumed: 6.x-dev fixes the NAN crash and introduces a php-parser AssertionError (assert(!isFirstClassCallable) in CallLike::getArgs) that aborts runs on a box with zend.assertions=1. The lane works around it by running psalm under zend.assertions=-1; upstream should still hear about it.",
+      "brew": null,
+      "composer": "vimeo/psalm:6.x-dev",
+      "winget": null,
+      "scoop": null,
+      "url": "https://psalm.dev/docs/running_psalm/installation/"
+    },
+    "sobelow": {
+      "why": "Elixir/Phoenix SAST (sast-elixir-sobelow) — the ESCRIPT, not the mix task: the task runs inside the scanned project and needs its deps fetched",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "url": "https://github.com/nccgroup/sobelow#installation",
+      "postInstall": "mix escript.install hex sobelow, then symlink ~/.mix/escripts/sobelow onto PATH — mix does not link escripts itself. Requires elixir."
+    },
+    "composer": {
+      "why": "PHP dependency manager; required to install the phpcs-security-audit ruleset",
+      "brew": "composer",
+      "winget": "Composer.Composer",
+      "scoop": "composer",
+      "apt": "composer",
+      "dnf": "composer",
+      "url": "https://getcomposer.org/download/",
+      "requiredBy": "phpcs-security-audit"
+    },
+    "phpcs-security-audit": {
+      "why": "THIRD-PARTY ruleset that gives sast-php-phpcs its security rules — PHP_CodeSniffer itself ships none, so phpcs alone is a style linter",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "composer": "composer global require pheromone/phpcs-security-audit",
+      "url": "https://github.com/FloeDesignTechnologies/phpcs-security-audit",
+      "postInstall": "lands at ~/.composer/vendor/pheromone/phpcs-security-audit/Security, which is the path the lane defaults to (override with CW_PHPCS_SECURITY_STANDARD).",
+      "requiredBy": "phpcs"
+    },
+    "overwatch-layer-spine": {
+      "why": "The spine: the task ledger agent sessions file into, read by the panel Overwatch tab. NOT a scanner and NOT a binary on PATH — four hand-set pieces outside this repo, each checked read-only by admin/lib/spine-preconditions.mjs under the same ids as `steps`. DECLARATION ONLY: the panel shows which step is absent or misregistered and a human runs it; nothing in commitwork writes to ~/.claude.json or settings.json. The component is not published, so there is no url to fall back to and `steps` is the whole instruction. The registration MUST go in ~/.claude.json via `claude mcp add` — an mcpServers block in ~/.claude/settings.json is a key Claude Code never reads and was the first, silent, failure.",
+      "manual": true,
+      "steps": {
+        "mcp-registration": "claude mcp add --scope user <name> -e SUBSTRATE_TASKS_DB=$HOME/.substrate/tasks.db -- node <checkout>/spine/mcp.mjs   # <name> is the server name the mcp__spine__* tools resolve to; then `claude mcp list` must show it ✔ Connected",
+        "prompt-hook": "in ~/.claude/settings.json hooks.UserPromptSubmit, a command hook that emits hookSpecificOutput.additionalContext instructing the session to use mcp__spine__* for task management (open_session first, list_plans, create_plan/create_task, update_task/set_status, close_session last)",
+        "stop-hook": "in ~/.claude/settings.json hooks.Stop, a command hook that emits systemMessage \"spine: did the session record task progress? If so call mcp__spine__update_task and mcp__spine__set_status\"",
+        "hook-targets": "every hook command in ~/.claude/settings.json must name a file that resolves. When one dangles, repoint the symlink at the surviving copy (`ln -sfn <new-target> ~/.claude/hooks/<name>`) or delete the hook entry — a hook whose target is gone stays declared and fires nothing. Same for ~/.claude/_functions, the @fn: primitive tree: it is one directory symlink and is resolved by session discipline, so a dangling tree reports nothing at all. D18 (commitwork evaluations/DECISIONS.md): 69 links from ~/.claude point into the vscode-skills checkout, so repoint before retiring it, never after.",
+        "corpus-links": "the 52 commands, 10 skills and the @fn: primitive tree under ~/.claude are symlinks into a checkout. Every one must resolve, and the @fn: tree is ONE directory link with no runtime resolver — if it breaks, every command silently loses its primitives and nothing errors. Repoint each link at the surviving checkout (spine under D18); never delete a checkout while any link still names it.",
+        "launch-agent": "macOS: ~/Library/LaunchAgents/net.portll.substrate.plist running node <checkout>/server/serve.mjs with RunAtLoad, then `launchctl load` it; the operator socket answers on 127.0.0.1:7980. Pair it with net.portll.substrate-spine-reap.plist so orphaned sessions are swept."
+      }
+    },
+    "git": {
+      "why": "commit-provenance reads the object graph through `git log`; on macOS the Xcode command-line tools already provide it",
+      "brew": "git",
+      "winget": "Git.Git",
+      "scoop": "git",
+      "url": "https://git-scm.com/downloads"
+    },
+    "gh": {
+      "why": "actions-health reads a repository's Actions history through gh api, with gh's own authentication",
+      "brew": "gh",
+      "winget": "GitHub.cli",
+      "scoop": "gh",
+      "url": "https://cli.github.com/"
+    },
+    "modelscan": {
+      "why": "OPTIONAL second witness for the model-artefacts lane: Protect AI's scanner over pickle/torch/keras artefacts. The lane runs its own zero-dependency opcode walker and records modelscan's verdict in summary.secondWitness when the binary is present; absence is stated, never a skip of the lane, so this is not in any check's requires.tools. Every release pins Requires-Python <3.13, so pipx must run a 3.10–3.12 interpreter (`pipx install --python python3.12 'modelscan[tensorflow,h5py]'`); without the extras it cannot open Keras or SavedModel files and reports a DEPENDENCY error per file rather than a verdict. Measured 2026-09-18 over the real canary artefacts: it agrees on the two Lambda layers and ReadFile, and does not flag EagerPyFunc.",
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "pipx": "modelscan[tensorflow,h5py]",
+      "url": "https://github.com/protectai/modelscan#installation"
+    },
+    "cobolwork": {
+      "why": "COBOL, JCL and CICS security analysis and mainframe credential rules (sast-cobol-cobolwork, cobol-inventory, secrets-cobol-jcl lanes) - the only reader of mainframe source on the roster. Manual: the lanes run the release manifests/tool-pins.json pins, installed by bin/cobolwork-pin.mjs, never a cobolwork on PATH, and the repository is private",
+      "manual": true,
+      "brew": null,
+      "winget": null,
+      "scoop": null,
+      "steps": [
+        "the repository is private: `gh auth status` must show an account with read access to Portll/cobolwork",
+        "node bin/cobolwork-pin.mjs --install",
+        "node bin/cobolwork-pin.mjs --check"
+      ],
+      "url": "https://github.com/Portll/cobolwork/releases",
+      "postInstall": "--install downloads the asset manifests/tool-pins.json pins (gh release download, or --from <tgz>), refuses it unless its sha256, its lib/revision.json commit and its capabilities --json match the pin, and installs it under ~/.commitwork/tools/cobolwork/<version> (CW_TOOLS_ROOT moves it). Upgrading is --latest, which rewrites the pin, then a commit, then --install. CW_COBOLWORK_BIN runs another cobolwork in its place.",
+      "requiresAccount": {
+        "vendor": "GitHub",
+        "needs": ["read access to the private Portll/cobolwork repository, through the account `gh auth status` shows"]
+      }
+    },
+    "socket": {
+      "why": "supply-chain / malicious-package detection (typosquats, install-script malware, obfuscation) — LISTED LAST because installing it is not enough to make it run",
+      "npm": "@socketsecurity/cli",
+      "url": "https://docs.socket.dev/docs/socket-cli",
+      "requiresAccount": {
+        "vendor": "Socket (socket.dev)",
+        "needs": [
+          "an external Socket account (signup + login at socket.dev)",
+          "membership of an ORGANIZATION — `socket scan create` resolves an org slug and exits without one",
+          "an API token stored as SOCKET_CLI_API_TOKEN (see requires.secrets on supply-chain-socket)",
+          "an org role permitted to create scans; a read-only member cannot"
+        ],
+        "why": "Every socket.json artifact in this repo's history is {ok:false, \"Org name … (missing)\"} — 0 pass / 40 token-skip / 25 noscan across 159 scan units on 2026-07-31. The binary installs fine and the check still never runs, so `✓ socket` in setup would otherwise read as coverage this fleet has never had.",
+        "freeTier": "Free plan covers unlimited private repos and developers but caps at 1,000 scans/month. MEASURED BY RUNNING IT 2026-08-10: a full fleet sweep costs 27 scans — the check applies only where package.json exists, 27 of 62 resolved repos — so nightly would be 810/month, INSIDE the tier. Two earlier figures were wrong in opposite directions: ~5,010 (counted every repo, wrong by 186×) and 23 (derived from a repo list that omitted area members). Both were arithmetic; 27 is observed. Quote the observed one. Socket is out of the `all` group regardless: 810/1000 is a 19% margin with no alarm on it, and an exhausted quota returns a refusal that lands as {ok:false}."
+      }
+    }
+  }
+}

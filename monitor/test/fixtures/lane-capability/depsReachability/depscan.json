@@ -1,0 +1,38 @@
+{
+  "tool": "depscan",
+  "generatedAt": "2026-09-30T16:07:31Z",
+  "src": "/fixture/repo",
+  "sandbox": "container, network severed",
+  "coverage": "reduced",
+  "reachabilityAnalyzer": "SemanticReachability",
+  "vdb": {
+    "image": "ghcr.io/appthreat/vdbxz-app-2y:v6.7.x",
+    "builtAt": "2026-09-25T17:46:24+00:00",
+    "pulledAt": "2026-09-25T18:47:25Z",
+    "maxAgeDays": 7,
+    "stale": false,
+    "note": null,
+    "bound": "advisories published after 2026-09-25T17:46:24+00:00 are not represented in this result"
+  },
+  "ran": true,
+  "exit": 0,
+  "counts": {
+    "crit": 0,
+    "high": 0,
+    "med": 1,
+    "low": 0,
+    "total": 1,
+    "components": 2
+  },
+  "prioritizedByTool": 0,
+  "reachability": {
+    "state": "not-produced",
+    "analyzer": "SemanticReachability",
+    "sliceObjects": 0,
+    "reason": "the slicer wrote no object slices. With the network severed the analyser cannot install the dependencies it needs to slice, so reachability is UNAVAILABLE in this mode — not zero. Re-run with CW_DEPSCAN_ALLOW_NET=1 (which also lets the scan container reach the network) to obtain it."
+  },
+  "detail": [
+    "sbom-build-universal.cdx.json",
+    "sbom-build-universal.vdr.json"
+  ]
+}

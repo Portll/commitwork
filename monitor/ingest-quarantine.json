@@ -1,0 +1,19 @@
+{
+  "note": "commitwork external-ingest QUARANTINE — every judgement the return path refused, with the raw payload kept as an opaque STRING. Never re-applied, never parsed back into the issue store. Written by monitor/ingest-external.mjs; never edit by hand.",
+  "version": 1,
+  "dropped": 0,
+  "entries": [
+    {
+      "at": "2026-08-03T11:14:22.984Z",
+      "channel": "http",
+      "who": null,
+      "refused": "no-identity",
+      "errors": [
+        "no resolvable identity — an external judgement is worth exactly the identity behind it, and an unsigned one launders a machine assertion into the ledger as though a person made it. Sign in (panel) or supply the acting + authorizing identities (MCP)."
+      ],
+      "payloadSha": "sha256:df74054ef11d01087ec4ee95a0535d74853ac973d0f81d86bf306c2d9b96421b",
+      "payloadTruncated": false,
+      "payload": "{\"doc\":{\"issues\":{}},\"session\":null}"
+    }
+  ]
+}

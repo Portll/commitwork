@@ -1,0 +1,2738 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "organization": "GitHub",
+     "semanticVersion": "2.27.1",
+     "notifications": [
+      {
+       "id": "rust/diagnostics/extraction-errors",
+       "name": "rust/diagnostics/extraction-errors",
+       "shortDescription": {
+        "text": "Extraction errors"
+       },
+       "fullDescription": {
+        "text": "List all extraction errors for files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all extraction errors for files in the source code directory.",
+        "id": "rust/diagnostics/extraction-errors",
+        "kind": "diagnostic",
+        "name": "Extraction errors"
+       }
+      },
+      {
+       "id": "rust/diagnostics/cfg-consistency-counts",
+       "name": "rust/diagnostics/cfg-consistency-counts",
+       "shortDescription": {
+        "text": "Control flow graph inconsistency counts"
+       },
+       "fullDescription": {
+        "text": "Counts the number of control flow graph inconsistencies of each type. This query is intended for internal use."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Counts the number of control flow graph inconsistencies of each type.  This query is intended for internal use.",
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "kind": "diagnostic",
+        "name": "Control flow graph inconsistency counts"
+       }
+      },
+      {
+       "id": "rust/diagnostics/data-flow-consistency-counts",
+       "name": "rust/diagnostics/data-flow-consistency-counts",
+       "shortDescription": {
+        "text": "Data flow inconsistency counts"
+       },
+       "fullDescription": {
+        "text": "Counts the number of data flow inconsistencies of each type. This query is intended for internal use."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Counts the number of data flow inconsistencies of each type.  This query is intended for internal use.",
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "kind": "diagnostic",
+        "name": "Data flow inconsistency counts"
+       }
+      },
+      {
+       "id": "rust/diagnostics/unextracted-elements",
+       "name": "rust/diagnostics/unextracted-elements",
+       "shortDescription": {
+        "text": "Unextracted Elements"
+       },
+       "fullDescription": {
+        "text": "List all elements that weren't extracted due to unimplemented features or parse errors."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all elements that weren't extracted due to unimplemented features or parse errors.",
+        "id": "rust/diagnostics/unextracted-elements",
+        "kind": "diagnostic",
+        "name": "Unextracted Elements"
+       }
+      },
+      {
+       "id": "rust/diagnostics/ast-consistency-counts",
+       "name": "rust/diagnostics/ast-consistency-counts",
+       "shortDescription": {
+        "text": "Abstract syntax tree inconsistency counts"
+       },
+       "fullDescription": {
+        "text": "Counts the number of abstract syntax tree inconsistencies of each type. This query is intended for internal use."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Counts the number of abstract syntax tree inconsistencies of each type.  This query is intended for internal use.",
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "kind": "diagnostic",
+        "name": "Abstract syntax tree inconsistency counts"
+       }
+      },
+      {
+       "id": "rust/diagnostics/type-inference-consistency-counts",
+       "name": "rust/diagnostics/type-inference-consistency-counts",
+       "shortDescription": {
+        "text": "Type inference inconsistency counts"
+       },
+       "fullDescription": {
+        "text": "Counts the number of type inference inconsistencies of each type. This query is intended for internal use."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Counts the number of type inference inconsistencies of each type.  This query is intended for internal use.",
+        "id": "rust/diagnostics/type-inference-consistency-counts",
+        "kind": "diagnostic",
+        "name": "Type inference inconsistency counts"
+       }
+      },
+      {
+       "id": "rust/diagnostics/unresolved-macro-calls",
+       "name": "rust/diagnostics/unresolved-macro-calls",
+       "shortDescription": {
+        "text": "Unresolved Macro Calls"
+       },
+       "fullDescription": {
+        "text": "List all macro calls that were not resolved to a target."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all macro calls that were not resolved to a target.",
+        "id": "rust/diagnostics/unresolved-macro-calls",
+        "kind": "diagnostic",
+        "name": "Unresolved Macro Calls"
+       }
+      },
+      {
+       "id": "rust/diagnostics/successfully-extracted-files",
+       "name": "rust/diagnostics/successfully-extracted-files",
+       "shortDescription": {
+        "text": "Extracted files"
+       },
+       "fullDescription": {
+        "text": "Lists all files in the source code directory that were extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "successfully-extracted-files"
+        ],
+        "description": "Lists all files in the source code directory that were extracted.",
+        "id": "rust/diagnostics/successfully-extracted-files",
+        "kind": "diagnostic",
+        "name": "Extracted files"
+       }
+      },
+      {
+       "id": "rust/diagnostics/extraction-warnings",
+       "name": "rust/diagnostics/extraction-warnings",
+       "shortDescription": {
+        "text": "Extraction warnings"
+       },
+       "fullDescription": {
+        "text": "List all extraction warnings for files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all extraction warnings for files in the source code directory.",
+        "id": "rust/diagnostics/extraction-warnings",
+        "kind": "diagnostic",
+        "name": "Extraction warnings"
+       }
+      },
+      {
+       "id": "rust/diagnostics/ssa-consistency-counts",
+       "name": "rust/diagnostics/ssa-consistency-counts",
+       "shortDescription": {
+        "text": "Static single assignment inconsistency counts"
+       },
+       "fullDescription": {
+        "text": "Counts the number of static single assignment inconsistencies of each type. This query is intended for internal use."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Counts the number of static single assignment inconsistencies of each type.  This query is intended for internal use.",
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "kind": "diagnostic",
+        "name": "Static single assignment inconsistency counts"
+       }
+      },
+      {
+       "id": "rust/diagnostic/database-quality",
+       "name": "rust/diagnostic/database-quality",
+       "shortDescription": {
+        "text": "Low Rust analysis quality"
+       },
+       "fullDescription": {
+        "text": "Low Rust analysis quality"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Low Rust analysis quality",
+        "id": "rust/diagnostic/database-quality",
+        "kind": "diagnostic",
+        "name": "Low Rust analysis quality"
+       }
+      },
+      {
+       "id": "cli/file-coverage-baseline",
+       "name": "cli/file-coverage-baseline",
+       "shortDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "fullDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/platform",
+       "name": "cli/platform",
+       "shortDescription": {
+        "text": "Platform"
+       },
+       "fullDescription": {
+        "text": "Platform"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/build-mode",
+       "name": "cli/build-mode",
+       "shortDescription": {
+        "text": "Database build mode"
+       },
+       "fullDescription": {
+        "text": "Database build mode"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/sip-enablement",
+       "name": "cli/sip-enablement",
+       "shortDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "fullDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "rust/extractor/telemetry",
+       "name": "rust/extractor/telemetry",
+       "shortDescription": {
+        "text": "telemetry"
+       },
+       "fullDescription": {
+        "text": "telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      }
+     ],
+     "rules": [
+      {
+       "id": "rust/access-invalid-pointer",
+       "name": "rust/access-invalid-pointer",
+       "shortDescription": {
+        "text": "Access of invalid pointer"
+       },
+       "fullDescription": {
+        "text": "Dereferencing an invalid or dangling pointer causes undefined behavior and may result in memory corruption."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "reliability",
+         "security",
+         "external/cwe/cwe-476",
+         "external/cwe/cwe-825"
+        ],
+        "description": "Dereferencing an invalid or dangling pointer causes undefined behavior and may result in memory corruption.",
+        "id": "rust/access-invalid-pointer",
+        "kind": "path-problem",
+        "name": "Access of invalid pointer",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "7.5"
+       }
+      },
+      {
+       "id": "rust/cleartext-logging",
+       "name": "rust/cleartext-logging",
+       "shortDescription": {
+        "text": "Cleartext logging of sensitive information"
+       },
+       "fullDescription": {
+        "text": "Logging sensitive information in plaintext can expose it to an attacker."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "warning"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-312",
+         "external/cwe/cwe-359",
+         "external/cwe/cwe-532"
+        ],
+        "description": "Logging sensitive information in plaintext can\n              expose it to an attacker.",
+        "id": "rust/cleartext-logging",
+        "kind": "path-problem",
+        "name": "Cleartext logging of sensitive information",
+        "precision": "high",
+        "problem.severity": "warning",
+        "security-severity": "7.5"
+       }
+      }
+     ]
+    },
+    "extensions": [
+     {
+      "name": "codeql/rust-queries",
+      "semanticVersion": "0.1.43+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/rust-queries/0.1.43/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/rust-queries/0.1.43/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/rust-all",
+      "semanticVersion": "0.2.22+6e9f9e38390175c41b99070a423c875f450759ca",
+      "taxa": [
+       {
+        "id": "codeql/rust/frameworks/stdlib/core.model.yml/1/4",
+        "properties": {
+         "CodeQL/DataExtensionLocation": {
+          "artifactLocation": {
+           "uri": "codeql/rust/frameworks/stdlib/core.model.yml"
+          },
+          "region": {
+           "startLine": 153,
+           "startColumn": 9,
+           "endLine": 153,
+           "endColumn": 9
+          }
+         }
+        }
+       },
+       {
+        "id": "codeql/rust/frameworks/log.model.yml/0/5",
+        "properties": {
+         "CodeQL/DataExtensionLocation": {
+          "artifactLocation": {
+           "uri": "codeql/rust/frameworks/log.model.yml"
+          },
+          "region": {
+           "startLine": 11,
+           "startColumn": 9,
+           "endLine": 11,
+           "endColumn": 9
+          }
+         }
+        }
+       }
+      ],
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/rust-queries/0.1.43/.codeql/libraries/codeql/rust-all/0.2.22/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/rust-queries/0.1.43/.codeql/libraries/codeql/rust-all/0.2.22/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/threat-models",
+      "semanticVersion": "1.0.58+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/rust-queries/0.1.43/.codeql/libraries/codeql/threat-models/1.0.58/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/rust-queries/0.1.43/.codeql/libraries/codeql/threat-models/1.0.58/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "invocations": [
+    {
+     "toolExecutionNotifications": [
+      {
+       "message": {
+        "text": "Multiple toStrings"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple toStrings"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Dead end"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Dead end"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Missing CFG child"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Missing CFG child"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-unique list order"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-unique list order"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Splitting invariant 2"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Splitting invariant 2"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Splitting invariant 3"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Splitting invariant 3"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Splitting invariant 4"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Splitting invariant 4"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Splitting invariant 5"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Splitting invariant 5"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-unique split kind"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-unique split kind"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-PostOrderTree Expr node"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-PostOrderTree Expr node"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Simple and normal successors"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Simple and normal successors"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-unique set representation"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-unique set representation"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "CFG scope lacks initial AST node"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "CFG scope lacks initial AST node"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple successors of the same type"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/cfg-consistency-counts",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple successors of the same type"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Call context too large"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Call context too large"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Speculative step already has Model"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Speculative step already has Model"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Call context for isUnreachableInCall is inconsistent with call graph"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Call context for isUnreachableInCall is inconsistent with call graph"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Node steps to itself"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Node steps to itself"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Nodes without location"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Nodes without location"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Node should have one type"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Node should have one type"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Node should have one location"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Node should have one location"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Node should have one toString"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Node should have one toString"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Missing call for argument node"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Missing call for argument node"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Callable mismatch for parameter"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Callable mismatch for parameter"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple calls for argument node"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple calls for argument node"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-unique content approximation"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-unique content approximation"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Node has multiple PostUpdateNodes"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Node has multiple PostUpdateNodes"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Parameters with overlapping positions"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Parameters with overlapping positions"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "ArgumentNode is missing PostUpdateNode"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "ArgumentNode is missing PostUpdateNode"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Parameter node with multiple positions"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Parameter node with multiple positions"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Call should have one enclosing callable"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Call should have one enclosing callable"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Lambda call enclosing callable mismatch"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Lambda call enclosing callable mismatch"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Node should have one enclosing callable"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Node should have one enclosing callable"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Type compatibility predicate is not reflexive"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Type compatibility predicate is not reflexive"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Origin of readStep is missing a PostUpdateNode"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Origin of readStep is missing a PostUpdateNode"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "PostUpdateNode should have one pre-update node"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "PostUpdateNode should have one pre-update node"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Read step does not preserve enclosing callable"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Read step does not preserve enclosing callable"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Node and call does not share enclosing callable"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Node and call does not share enclosing callable"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Store step does not preserve enclosing callable"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Store step does not preserve enclosing callable"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "PostUpdateNode should not equal its pre-update node"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "PostUpdateNode should not equal its pre-update node"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Local flow step does not preserve enclosing callable"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Local flow step does not preserve enclosing callable"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "PostUpdateNode should not be the target of local flow"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "PostUpdateNode should not be the target of local flow"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "PostUpdateNode does not share callable with its pre-update node"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/data-flow-consistency-counts",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "PostUpdateNode does not share callable with its pre-update node"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "No location"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "No location"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Missing toString"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Missing toString"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple parents"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple parents"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple children"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple children"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple locations"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple locations"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple positions"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple positions"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple toStrings"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple toStrings"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple variable targets"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple variable targets"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Multiple primary QL classes"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ast-consistency-counts",
+        "index": 4
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Multiple primary QL classes"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Ill-formed type mention"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/type-inference-consistency-counts",
+        "index": 5
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Ill-formed type mention"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Missing type parameter ID"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/type-inference-consistency-counts",
+        "index": 5
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Missing type parameter ID"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-injective type parameter ID"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/type-inference-consistency-counts",
+        "index": 5
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-injective type parameter ID"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-functional type parameter ID"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/type-inference-consistency-counts",
+        "index": 5
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-functional type parameter ID"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Non-unique certain type information"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/type-inference-consistency-counts",
+        "index": 5
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Non-unique certain type information"
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "src/main.rs",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": "File successfully extracted."
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "rust/diagnostics/successfully-extracted-files",
+        "index": 7
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "File successfully extracted."
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Definition cannot reach a read"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Definition cannot reach a read"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Phi node has less than two inputs"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Phi node has less than two inputs"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Read has multiple prior references"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Read has multiple prior references"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Read does not have a prior reference"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Read does not have a prior reference"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Read is not dominated by a definition"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Read is not dominated by a definition"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Read cannot be reached from a definition"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Read cannot be reached from a definition"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Read can be reached from multiple definitions"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Read can be reached from multiple definitions"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Phi has less than 2 immediately prior references"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Phi has less than 2 immediately prior references"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "Phi read has less than 2 immediately prior references"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Phi read has less than 2 immediately prior references"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "End of a basic block can be reached by multiple definitions"
+       },
+       "level": "note",
+       "descriptor": {
+        "id": "rust/diagnostics/ssa-consistency-counts",
+        "index": 9
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "End of a basic block can be reached by multiple definitions"
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:50:13.355568Z",
+       "descriptor": {
+        "id": "cli/file-coverage-baseline",
+        "index": 11
+       },
+       "properties": {
+        "attributes": {
+         "durationMilliseconds": 244
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:50:15.111672Z",
+       "descriptor": {
+        "id": "cli/platform",
+        "index": 12
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "name": "Mac OS X",
+         "version": "26.4"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:50:15.123095Z",
+       "descriptor": {
+        "id": "cli/build-mode",
+        "index": 13
+       },
+       "properties": {
+        "attributes": {
+         "buildMode": "none"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:50:15.153245Z",
+       "descriptor": {
+        "id": "cli/sip-enablement",
+        "index": 14
+       },
+       "properties": {
+        "attributes": {
+         "isEnabled": true
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T11:52:58.296605Z",
+       "descriptor": {
+        "id": "rust/extractor/telemetry",
+        "index": 15
+       },
+       "properties": {
+        "attributes": {
+         "durations": {
+          "extract": {
+           "ms": 616,
+           "pretty": "0.616s"
+          },
+          "parseLibrary": {
+           "ms": 3286,
+           "pretty": "3.286s"
+          },
+          "findManifests": {
+           "ms": 7,
+           "pretty": "0.007s"
+          },
+          "extractLibrary": {
+           "ms": 34073,
+           "pretty": "34.073s"
+          },
+          "loadManifest": {
+           "ms": 5746,
+           "pretty": "5.746s"
+          },
+          "crateGraph": {
+           "ms": 270,
+           "pretty": "0.270s"
+          },
+          "loadSource": {
+           "ms": 5197,
+           "pretty": "5.197s"
+          },
+          "parse": {
+           "ms": 6,
+           "pretty": "0.006s"
+          },
+          "total": {
+           "ms": 65091,
+           "pretty": "1min05.091s"
+          }
+         },
+         "numberOfFiles": 1,
+         "numberOfManifests": 1
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      }
+     ],
+     "executionSuccessful": true
+    }
+   ],
+   "artifacts": [
+    {
+     "location": {
+      "uri": "src/main.rs",
+      "uriBaseId": "%SRCROOT%",
+      "index": 0
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "rust/access-invalid-pointer",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "rust/access-invalid-pointer",
+      "index": 5
+     },
+     "message": {
+      "text": "This operation dereferences a pointer that may be [invalid](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main.rs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 9,
+         "startColumn": 25,
+         "endColumn": 26
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "f73ca29253d0c339:1",
+      "primaryLocationStartColumnFingerprint": "16"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "src/main.rs",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 7,
+              "startColumn": 25,
+              "endColumn": 41
+             }
+            },
+            "message": {
+             "text": "...::null(...)"
+            }
+           },
+           "taxa": [
+            {
+             "index": 0,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "source"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "src/main.rs",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 7,
+              "startColumn": 9,
+              "endColumn": 10
+             }
+            },
+            "message": {
+             "text": "p"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "src/main.rs",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 9,
+              "startColumn": 25,
+              "endColumn": 26
+             }
+            },
+            "message": {
+             "text": "p"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main.rs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 7,
+         "startColumn": 25,
+         "endColumn": 41
+        }
+       },
+       "message": {
+        "text": "invalid"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main.rs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 7,
+         "startColumn": 25,
+         "endColumn": 41
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "rust/cleartext-logging",
+     "ruleIndex": 1,
+     "rule": {
+      "id": "rust/cleartext-logging",
+      "index": 12
+     },
+     "message": {
+      "text": "This operation writes [password](1) to a log file."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main.rs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 5,
+         "startColumn": 14,
+         "endColumn": 53
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "49c6c9c2bd86239e:1",
+      "primaryLocationStartColumnFingerprint": "9"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "src/main.rs",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 5,
+              "startColumn": 45,
+              "endColumn": 53
+             }
+            },
+            "message": {
+             "text": "password"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "src/main.rs",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 5,
+              "startColumn": 14,
+              "endColumn": 53
+             }
+            },
+            "message": {
+             "text": "MacroExpr"
+            }
+           },
+           "taxa": [
+            {
+             "index": 1,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "sink"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main.rs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 5,
+         "startColumn": 45,
+         "endColumn": 53
+        }
+       },
+       "message": {
+        "text": "password"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "src/main.rs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 5,
+         "startColumn": 45,
+         "endColumn": 53
+        }
+       }
+      }
+     ]
+    }
+   ],
+   "columnKind": "utf16CodeUnits",
+   "properties": {
+    "semmle.formatSpecifier": "sarif-latest",
+    "metricResults": [
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 99.24299772899319,
+      "message": {
+       "text": "Percentage of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 71.42857142857143,
+      "message": {
+       "text": "Percentage of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 2878,
+      "message": {
+       "text": "Number of files with extension rs"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 1,
+      "message": {
+       "text": "Number of files with extension toml"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 505391,
+      "message": {
+       "text": "Number of lines of code with extension rs"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 0,
+      "message": {
+       "text": "Number of lines of code with extension toml"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 2880,
+      "message": {
+       "text": "Number of files"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 505391,
+      "message": {
+       "text": "Number of lines of code"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 1311,
+      "message": {
+       "text": "Number of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 27.9874213836478,
+      "message": {
+       "text": "Percentage of macro calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 20,
+      "message": {
+       "text": "Number of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 5162,
+      "message": {
+       "text": "Number of macro calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 8,
+      "message": {
+       "text": "Number of expressions with unknown type"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 10,
+      "message": {
+       "text": "Number of calls with missing call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/telemetry/extraction-information",
+       "index": 17
+      },
+      "ruleId": "rust/telemetry/extraction-information",
+      "ruleIndex": 17,
+      "value": 13282,
+      "message": {
+       "text": "Number of macro calls with missing call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 5153487,
+      "message": {
+       "text": "Elements extracted"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Elements unextracted"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Extraction errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Extraction warnings"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 2880,
+      "message": {
+       "text": "Files extracted - total"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 1,
+      "message": {
+       "text": "Files extracted - total user"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Files extracted - with errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 1,
+      "message": {
+       "text": "Files extracted - without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 100,
+      "message": {
+       "text": "Files extracted - without errors %"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - AST"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - CFG"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - Path resolution"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - SSA"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - Type inference"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - data flow"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 8,
+      "message": {
+       "text": "Lines of code extracted"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 8,
+      "message": {
+       "text": "Lines of user code extracted"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 4,
+      "message": {
+       "text": "Macro calls - resolved"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 4,
+      "message": {
+       "text": "Macro calls - total"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Macro calls - unresolved"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 34654,
+      "message": {
+       "text": "Taint edges - number of edges"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Taint reach - nodes tainted"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Taint reach - per million nodes"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 2647,
+      "message": {
+       "text": "Taint reach - total non-summary nodes"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Taint sinks - cryptographic operations"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 3,
+      "message": {
+       "text": "Taint sinks - query sinks"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 0,
+      "message": {
+       "text": "Taint sources - active"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 1,
+      "message": {
+       "text": "Taint sources - disabled"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/summary-statistics",
+       "index": 18
+      },
+      "ruleId": "rust/summary/summary-statistics",
+      "ruleIndex": 18,
+      "value": 1,
+      "message": {
+       "text": "Taint sources - sensitive data"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/number-of-files-extracted-with-errors",
+       "index": 19
+      },
+      "ruleId": "rust/summary/number-of-files-extracted-with-errors",
+      "ruleIndex": 19,
+      "value": 0
+     },
+     {
+      "rule": {
+       "id": "rust/summary/lines-of-code",
+       "index": 20
+      },
+      "ruleId": "rust/summary/lines-of-code",
+      "ruleIndex": 20,
+      "value": 8
+     },
+     {
+      "rule": {
+       "id": "rust/summary/nodes-at-type-path-length-limit",
+       "index": 21
+      },
+      "ruleId": "rust/summary/nodes-at-type-path-length-limit",
+      "ruleIndex": 21,
+      "value": 4
+     },
+     {
+      "rule": {
+       "id": "rust/summary/number-of-successfully-extracted-files",
+       "index": 22
+      },
+      "ruleId": "rust/summary/number-of-successfully-extracted-files",
+      "ruleIndex": 22,
+      "value": 1
+     },
+     {
+      "rule": {
+       "id": "rust/summary/lines-of-user-code",
+       "index": 23
+      },
+      "ruleId": "rust/summary/lines-of-user-code",
+      "ruleIndex": 23,
+      "value": 8
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Extraction errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Extraction warnings"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 1,
+      "message": {
+       "text": "Files extracted - total user"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Files extracted - with errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 1,
+      "message": {
+       "text": "Files extracted - without errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 100,
+      "message": {
+       "text": "Files extracted - without errors %"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - AST"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - CFG"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - Path resolution"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - SSA"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Inconsistencies - data flow"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 8,
+      "message": {
+       "text": "Lines of code extracted"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 8,
+      "message": {
+       "text": "Lines of user code extracted"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 4,
+      "message": {
+       "text": "Macro calls - resolved"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 4,
+      "message": {
+       "text": "Macro calls - total"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/reduced-summary-statistics",
+       "index": 24
+      },
+      "ruleId": "rust/summary/reduced-summary-statistics",
+      "ruleIndex": 24,
+      "value": 0,
+      "message": {
+       "text": "Macro calls - unresolved"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/query-sink-counts",
+       "index": 25
+      },
+      "ruleId": "rust/summary/query-sink-counts",
+      "ruleIndex": 25,
+      "value": 1,
+      "message": {
+       "text": "AccessInvalidPointer"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/query-sink-counts",
+       "index": 25
+      },
+      "ruleId": "rust/summary/query-sink-counts",
+      "ruleIndex": 25,
+      "value": 2,
+      "message": {
+       "text": "LogInjection"
+      }
+     },
+     {
+      "rule": {
+       "id": "rust/summary/query-sink-counts",
+       "index": 25
+      },
+      "ruleId": "rust/summary/query-sink-counts",
+      "ruleIndex": 25,
+      "value": 2,
+      "message": {
+       "text": "CleartextLogging"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

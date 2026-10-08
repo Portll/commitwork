@@ -1,0 +1,7 @@
+[
+  {"check":"secrets","status":"pass"},
+  {"check":"tls-headers","status":"pass"},
+  {"check":"dast-authz-bola","status":"pass"},
+  {"check":"authz-test","status":"skip","reason":"no isolation test present"},
+  {"check":"api-fuzz","status":"skip","reason":"runtime scanner — no live URL"}
+]

@@ -1,0 +1,31 @@
+{
+  "$schema": "../../../../schema/docsite-manifest.schema.json",
+  "version": 1,
+  "note": "test fixture — one uuid-path published doc, one clean-path draft, one imported snapshot",
+  "docs": [
+    {
+      "slug": "alpha",
+      "urlPath": "0a1b2c3d-1111-4222-8333-444455556666",
+      "title": "Alpha doc",
+      "source": "content/alpha.md",
+      "kind": "md",
+      "state": "published"
+    },
+    {
+      "slug": "beta",
+      "urlPath": "beta",
+      "title": "Beta draft",
+      "source": "content/beta.md",
+      "kind": "md",
+      "state": "draft"
+    },
+    {
+      "slug": "legacy",
+      "urlPath": "legacy",
+      "title": "Legacy import",
+      "source": "imported/legacy.html",
+      "kind": "imported",
+      "state": "published"
+    }
+  ]
+}

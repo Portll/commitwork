@@ -1,0 +1,20 @@
+{
+  "ran": true,
+  "target": "http://fake-gateway.local",
+  "findings": [
+    {
+      "type": "bola-unauth-exposure",
+      "path": "/api/v1/orders/12345",
+      "severity": "high",
+      "detail": "Endpoint /api/v1/orders/12345 returned 200 OK without authentication",
+      "direction": "unauth"
+    },
+    {
+      "type": "bola-cross-tenant",
+      "path": "/api/v1/invoices/999",
+      "severity": "critical",
+      "detail": "Tenant A token accessed Tenant B invoice 999 successfully",
+      "direction": "cross-tenant"
+    }
+  ]
+}

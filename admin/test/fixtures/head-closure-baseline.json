@@ -1,0 +1,16 @@
+{
+  "_comment": "Floor for admin/test/head-closure.test.mjs. LINE-FREE keys. The floor comes DOWN as halves land; entries are only ever removed by this re-seed, never added to accept a break.",
+  "version": 1,
+  "seededAt": "2026-09-01",
+  "keys": {
+    "admin/index.html::class::actions": 1,
+    "admin/index.html::class::btn": 1,
+    "admin/index.html::class::clax-void": 1,
+    "admin/index.html::class::cred-unknown": 1,
+    "admin/index.html::class::ig-key-input": 1,
+    "admin/index.html::class::llm-head": 1,
+    "admin/index.html::class::set-addrow": 1,
+    "admin/index.html::class::set-lbl": 1,
+    "admin/index.html::class::subnav": 1
+  }
+}

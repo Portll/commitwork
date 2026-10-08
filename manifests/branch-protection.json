@@ -1,0 +1,15 @@
+{
+  "note": "This is the committed expected-set for GitHub branch-protection required-status-checks across the clientA fleet (A5 of the remediation plan). It is the ratchet's reference point: checks are only ever ADDED to a repo's requiredChecks[] here, in lockstep with a `gh api` PUT that actually flips the check to required on GitHub (enforcement-ladder rung 6 -- see clientA/ENFORCEMENT-LADDER.md) -- never removed as a forward action. bin/verify-branch-protection.mjs asserts live required-status-checks are a superset of this manifest's expected set for every repo entry below; if a check is ever silently un-required in GitHub's UI/API while it is still listed here, the probe fails loudly (exit 3) rather than staying green. Rolling back a flip means removing that ONE check from both GitHub and this manifest together, in the same change -- gates never weaken silently, and this manifest never drifts ahead of or behind live reality without the probe noticing. `requireSigned` (added 2026-09-15, default false) is the signing expectation bin/commit-provenance.mjs reads: only an entry carrying requireSigned:true makes its unsigned-on-protected-branch rule applicable, and a repo absent from this list is not-applicable for that rule rather than clean or dirty.",
+  "repos": [
+    {
+      "repo": "Portll/clientA",
+      "branch": "main",
+      "requiredChecks": [],
+      "requireSigned": false,
+      "baselineSnapshot": "reports/branch-protection/Portll-clientA-baseline-20260720.json",
+      "recordedAt": "2026-07-20",
+      "warning": "pre-ratchet baseline -- zero checks required as of 2026-07-20; every CI job is currently advisory at the merge gate",
+      "liveQueryCaveat": "The live query on 2026-07-20 could not read required-status-checks directly: `gh api repos/Portll/clientA/branches/main/protection` and its `/required_status_checks` sub-resource both return HTTP 403 'Upgrade to GitHub Pro or make this repository public to enable this feature' (private repo, current plan tier -- classic branch-protection AND repository-rulesets detail APIs are both plan-gated). requiredChecks:[] here is corroborated, not merely assumed: the unrestricted `branches/main` endpoint (not plan-gated) independently reports protected:false. Full detail in reports/branch-protection/Portll-clientA-baseline-20260720.json."
+    }
+  ]
+}

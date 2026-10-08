@@ -1,0 +1,9 @@
+{
+ "tool": "clippy",
+ "diagnostics": [
+  { "code": "unused_variables", "level": "warning", "message": "unused variable: `unused`", "file": "src/main.rs", "line": 7 },
+  { "code": "unused_assignments", "level": "warning", "message": "value assigned to `a` is never read", "file": "src/main.rs", "line": 3 },
+  { "code": "clippy::almost_swapped", "level": "warning", "message": "this looks like you are trying to swap `a` and `b`", "file": "src/main.rs", "line": 5 },
+  { "code": "clippy::approx_constant", "level": "warning", "message": "approximate value of `f{32, 64}::consts::PI` found", "file": "src/main.rs", "line": 2 }
+ ]
+}

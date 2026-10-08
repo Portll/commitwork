@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.online/schema/gradle-wrapper.schema.json",
+  "title": "gradle-wrapper.json — the wrapper fetch-path verification document",
+  "description": "Emitted by bin/gradle-wrapper-verify.mjs into CW_REPORT_DIR. Declared because its sibling scannerFindings rows were schema-validated while this document was not, so a consumer could not tell a renamed field from one that was never there. additionalProperties is false ON PURPOSE: a new key must be declared here before it can ship, which is the only thing that makes the absence of a key mean anything.",
+  "type": "object",
+  "required": ["tool", "generatedAt", "root", "ran", "applicable", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": { "enum": ["gradle-wrapper-verify"] },
+    "generatedAt": { "type": "string", "description": "ISO-8601. Honours CW_NOW so runs are byte-reproducible." },
+    "root": { "type": "string", "description": "Repo root, HOME collapsed to ~ so the document does not leak a local path." },
+    "ran": { "type": "boolean", "description": "Always true in a written document — a run that did not happen writes nothing at all. Present so a consumer reading a merged corpus can tell an absent document from a present one." },
+    "applicable": { "type": "boolean", "description": "false means the repo ships no Gradle wrapper. NOT a pass: nothing was verified. Consumers must not fold it into a clean count." },
+    "reason": { "type": "string", "description": "Why applicable is false. Present only in that case." },
+
+    "findings": {
+      "type": "array",
+      "description": "Always an array, including when applicable is false — an absent array and an empty one are the same claim and only one of them throws in a consumer doing .findings.length.",
+      "items": {
+        "type": "object",
+        "required": ["rule", "sev", "message"],
+        "additionalProperties": false,
+        "properties": {
+          "rule": { "type": "string" },
+          "sev": { "enum": ["high", "med", "low"] },
+          "message": { "type": "string" }
+        }
+      }
+    },
+
+    "scope": {
+      "enum": ["wrapper-fetch-path"],
+      "description": "What was verified. Travels WITH the counts so a reader cannot take the finding total for a verdict on the whole build."
+    },
+    "doesNotCover": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "The named blind spots. Required to be non-empty when present: a scope disclosure that lists nothing asserts total coverage by omission."
+    },
+
+    "hasGradlew": { "type": "boolean" },
+    "distributionUrl": { "type": ["string", "null"] },
+    "declaredVersion": { "type": ["string", "null"], "description": "null means the properties file was read and carried no parseable version — distinct from the key being absent, which means it was never read." },
+    "jarSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "jarBytes": { "type": "integer", "minimum": 0 },
+    "gradlewSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "jarMatchesVersion": { "type": "string", "description": "The Gradle version the known-good list attributes this jar hash to. May differ from declaredVersion; that difference is the signal." },
+
+    "checksumCheck": {
+      "enum": ["known", "unknown-hash", "unreadable", "no-reference-list"],
+      "description": "'no-reference-list' and 'unreadable' are UNKNOWNS, not passes — monitor/unknown.mjs maps both. Only 'known' is a verified match."
+    }
+  }
+}

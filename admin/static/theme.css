@@ -1,0 +1,309 @@
+/* commitwork theme — the shared surface vocabulary.
+ *
+ * Extracted 2026-09-03 from the scan-config design review. This is the FIRST piece of a theme, not
+ * a whole one: it covers the button family, keyboard hints, the approval dialog and the selection
+ * grid, because those are what the review settled. Everything else still lives in panel.css.
+ *
+ * WHY A SEPARATE FILE. panel.css holds page-specific rules. These are components, reused
+ * across the panel and any tool that wants the same livery, so they get their own file and their
+ * own tokens rather than being buried where only the panel can find them.
+ *
+ * THE ONE RULE THAT IS NOT TASTE. Every filled button in this palette takes DARK ink. Against
+ * #ffffff and #1a120e: gold 2.42 / 7.64, amber 2.44 / 7.57, olive 2.38 / 7.75, red 3.91 / 4.72.
+ * White text fails AA on every one of them; dark ink passes AA on all four. This palette is warm
+ * and bright, so light-on-colour is not available. The single exception is --cw-ink-invert on
+ * near-black fills, at 19.67:1.
+ */
+
+:root{
+  /* ── ground, structure and type ───────────────────────────────────────────
+     Aliases onto the panel tokens, so a page that links panel.css and panel-light.css draws these
+     controls in the reader's theme. The fallback is the dark value, for a page that links this
+     file alone (theme-demo.html). */
+  --cw-bg:var(--bg,#17181a);
+  --cw-panel:var(--panel,#1e1f22);
+  --cw-panel2:var(--panel2,#26272a);
+  --cw-line:var(--line,#333438);
+  --cw-line2:var(--line2,#44454a);
+  --cw-head:var(--head,#f4f3ef);
+  --cw-ink:var(--ink,#e4e2dc);   /* 13.71 on --cw-bg, 11.53 on --cw-panel2 */
+  --cw-mut:var(--mut,#98958e);
+  --cw-dim:var(--dim,#8a877e);
+  /* Focus ring and tick: the panel's accent, which darkens to paper gold on a light ground where
+     the bright fill gold would fail 3:1 as an edge. */
+  --cw-focus:var(--acc,#c9a227);
+  --cw-ink-on-fill:#1a120e;  /* the dark ink every filled button uses */
+  --cw-ink-invert:#ffffff;   /* only on --cw-obsidian, where it is 19.67:1 */
+
+  /* ── semantic fills. Each is AA against --cw-ink-on-fill. ─────────────── */
+  --cw-acc:#c9a227;          /* neutral / house accent   7.64:1 */
+  --cw-acc-lift:#dcb43a;     /* its hover, same ink */
+  --cw-ok:#9bb069;           /* go / approved            7.75:1 */
+  --cw-ok-lift:#aec27d;
+  --cw-caution:#d69a52;      /* reaches something live   7.57:1 */
+  --cw-caution-lift:#e4ac68;
+  --cw-stop:#e5484d;         /* irreversible / grant-all 4.72:1 */
+  --cw-stop-lift:#ef5f64;
+  --cw-obsidian:#0b0b0c;     /* black with a gold rim; white text 19.67:1 */
+
+  /* ── shape ────────────────────────────────────────────────────────────── */
+  --cw-r-sm:3px;             /* the review settled on 3px for decision buttons */
+  --cw-r-md:6px;
+  --cw-r-lg:10px;
+
+  --cw-mono:"IBM Plex Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --cw-sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+
+/* ══ BUTTONS ══════════════════════════════════════════════════════════════
+   .cw-btn is the ghost default. Add a semantic class for a filled one. */
+
+.cw-btn{
+  font-family:var(--cw-sans);font-size:.78rem;font-weight:520;letter-spacing:.005em;
+  color:var(--cw-mut);background:transparent;border:1px solid var(--cw-line2);
+  border-radius:var(--cw-r-sm);padding:.44rem .9rem;cursor:pointer;
+  display:inline-flex;flex-direction:column;align-items:center;gap:.18rem;
+  transition:background .14s,color .14s,border-color .14s,box-shadow .16s;
+}
+.cw-btn:hover{background:var(--cw-panel2);color:var(--cw-ink);border-color:var(--cw-line2)}
+.cw-btn:focus-visible{outline:2px solid var(--cw-focus);outline-offset:2px}
+
+.cw-btn--fill{color:var(--cw-ink-on-fill);font-weight:600;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+
+.cw-btn--neutral{background:var(--cw-acc);border-color:var(--cw-acc)}
+.cw-btn--ok     {background:var(--cw-ok);border-color:var(--cw-ok)}
+.cw-btn--caution{background:var(--cw-caution);border-color:var(--cw-caution)}
+.cw-btn--stop   {background:var(--cw-stop);border-color:var(--cw-stop)}
+
+/* Black with a gold rim — the only fill that carries light text, and the only one whose colour
+   can be pushed freely because its text contrast is nowhere near the limit. */
+.cw-btn--obsidian{background:var(--cw-obsidian);border-color:var(--cw-acc);
+  color:var(--cw-ink-invert);font-weight:560;
+  box-shadow:inset 0 -2px 0 -1px color-mix(in srgb,var(--cw-acc) 85%,transparent)}
+.cw-btn--obsidian:hover{background:var(--cw-obsidian);border-color:var(--cw-acc-lift);
+  box-shadow:inset 0 -2px 0 -1px var(--cw-acc-lift),0 0 0 3px color-mix(in srgb,var(--cw-acc) 28%,transparent)}
+.cw-btn--obsidian .cw-kbd{color:var(--cw-acc-lift);border-color:currentColor}
+
+/* ══ SEVERITY GLOW ════════════════════════════════════════════════════════
+   The halo is the VARIABLE and the hue is secondary. A shared intensity would make the brightest
+   pigment loudest regardless of consequence, so the eye would rank by hue, not by risk. Radius
+   tracks what the action grants: nothing, one reversible thing, something live, everything. */
+
+/* Each glow is mixed from the token it belongs to (THEME Rule 2), so it follows the fill when a
+   palette re-grades it. The white rim and the black shadows are light, not palette. */
+.cw-btn--ok:hover{background:var(--cw-ok-lift);border-color:var(--cw-ok-lift);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px color-mix(in srgb,var(--cw-ok-lift) 60%,transparent)}
+.cw-btn--neutral:hover{background:var(--cw-acc-lift);border-color:var(--cw-acc-lift);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px color-mix(in srgb,var(--cw-acc-lift) 70%,transparent),
+             0 0 10px 1px color-mix(in srgb,var(--cw-acc) 38%,transparent)}
+.cw-btn--caution:hover{background:var(--cw-caution-lift);border-color:var(--cw-caution-lift);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px color-mix(in srgb,var(--cw-caution-lift) 80%,transparent),
+             0 0 18px 2px color-mix(in srgb,var(--cw-caution) 50%,transparent),
+             0 0 34px 5px color-mix(in srgb,var(--cw-caution) 20%,transparent)}
+.cw-btn--stop:hover{background:var(--cw-stop-lift);border-color:var(--cw-stop-lift);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px color-mix(in srgb,var(--cw-stop-lift) 95%,transparent),
+             0 0 26px 4px color-mix(in srgb,var(--cw-stop) 65%,transparent),
+             0 0 58px 12px color-mix(in srgb,var(--cw-stop) 32%,transparent)}
+
+/* ══ KEYBOARD HINTS ═══════════════════════════════════════════════════════
+   Set on the button, not beside it. Rendered per platform at runtime from data-mac/data-win —
+   never written into markup, because a hardcoded ⌘ is wrong for every Windows and Linux reader.
+   Sized to be read rather than merely noticed: .82rem on a filled chip with real padding. */
+
+.cw-keys{display:flex;align-items:center;gap:.22rem;font-family:var(--cw-mono);
+  font-size:.82rem;font-weight:500;opacity:.9;line-height:1}
+.cw-kbd{display:inline-flex;align-items:center;justify-content:center;
+  min-width:1.5em;padding:.2em .42em;border:1px solid currentColor;border-radius:var(--cw-r-sm);
+  background:rgba(0,0,0,.14);letter-spacing:0}
+.cw-btn--fill .cw-kbd{background:rgba(0,0,0,.16);border-color:color-mix(in srgb,var(--cw-ink-on-fill) 50%,transparent)}
+.cw-btn:not(.cw-btn--fill) .cw-kbd{background:rgba(255,255,255,.05)}
+
+/* A standalone hint outside a button (inline in prose, or in a scale caption). */
+.cw-keys--inline{display:inline-flex;vertical-align:baseline;opacity:.85}
+
+/* ══ APPROVAL DIALOG ══════════════════════════════════════════════════════ */
+
+.cw-scrim{position:fixed;inset:0;background:rgba(10,10,12,.72);z-index:40}
+.cw-dialog{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(34rem,calc(100vw - 2rem));background:var(--cw-panel);
+  border:1px solid var(--cw-line2);border-radius:var(--cw-r-lg);padding:1.1rem 1.2rem 1.2rem;
+  z-index:41;box-shadow:0 14px 36px rgba(0,0,0,.55)}
+.cw-dialog__title{margin:0 0 .4rem;font-family:var(--cw-sans);font-size:.94rem;font-weight:600;
+  letter-spacing:-.01em;color:var(--cw-head)}
+.cw-dialog__body{margin:0;font-size:.8rem;line-height:1.55;color:var(--cw-ink)}
+.cw-dialog__body code{font-family:var(--cw-mono);font-size:.74rem;color:var(--cw-head)}
+.cw-facts{display:flex;flex-wrap:wrap;gap:.35rem;margin:.75rem 0 .2rem}
+.cw-facts span{font-family:var(--cw-mono);font-size:.68rem;color:var(--cw-mut);
+  background:var(--cw-bg);border:1px solid var(--cw-line);border-radius:5px;padding:.18rem .42rem}
+.cw-note{border-left:2px solid var(--cw-stop);padding-left:.6rem;margin:.7rem 0 0;
+  font-size:.78rem;color:var(--cw-ink)}
+
+/* The pair is centred, decline left, affirmative right, 24px apart. */
+.cw-actions{display:flex;justify-content:center;align-items:center;gap:24px;margin-top:1.1rem}
+.cw-actions--right{justify-content:flex-end;gap:.6rem}
+
+/* ══ SELECTION GRID ═══════════════════════════════════════════════════════
+   Flex rows, not a table: each row is a control — checkbox, name, requirement — and none of it is
+   tabular data. A header row's checkbox drives its group. */
+
+.cw-grid{border:1px solid var(--cw-line);border-radius:var(--cw-r-md);overflow:hidden}
+.cw-row{display:flex;align-items:center;gap:.6rem;padding:.44rem .7rem;
+  border-top:1px solid var(--cw-line)}
+.cw-row:first-child{border-top:0}
+.cw-row--group{background:var(--cw-panel2);position:sticky;top:0;z-index:2}
+.cw-row--group .cw-row__name{font-family:var(--cw-mono);font-size:.74rem;color:var(--cw-head);
+  font-weight:600}
+.cw-row--lane:hover{background:var(--cw-panel)}
+.cw-tick{flex:0 0 auto;width:1rem;height:1rem;margin:0;accent-color:var(--cw-focus);cursor:pointer}
+.cw-row__name{flex:0 0 15rem;font-family:var(--cw-mono);font-size:.74rem;color:var(--cw-ink)}
+.cw-row__needs{flex:1 1 auto;font-family:var(--cw-mono);font-size:.68rem;color:var(--cw-mut)}
+.cw-badge{font-family:var(--cw-mono);font-size:.64rem;padding:.1rem .36rem;
+  border-radius:var(--cw-r-sm);border:1px solid var(--cw-line2);color:var(--cw-dim);
+  margin-left:.3rem}
+.cw-badge--binary{border-color:var(--cw-caution);color:var(--cw-caution)}
+.cw-badge--perm{border-color:var(--cw-stop);color:var(--cw-stop)}
+/* An unticked row steps back in ink, never in opacity, so its name still clears AA. */
+.cw-row--off .cw-row__name{color:var(--cw-mut);font-weight:400}
+
+/* ══ SELECT-THIS ══════════════════════════════════════════════════════════
+   White ground, hard border, offset shadow, inverting hover. Deliberately outside the semantic
+   family: it picks a thing, it does not grant anything. */
+
+.cw-pick{font-family:var(--cw-sans);font-size:.76rem;font-weight:600;
+  background:#fff;color:var(--cw-obsidian);border:1px solid var(--cw-obsidian);
+  border-radius:var(--cw-r-sm);padding:.42rem .95rem;cursor:pointer;
+  box-shadow:2px 2px 0 0 var(--cw-obsidian);
+  transition:background .14s,color .14s,box-shadow .14s,transform .14s}
+.cw-pick:hover{background:var(--cw-obsidian);color:#fff;border-color:#fff;
+  box-shadow:2px 2px 0 0 rgba(255,255,255,.55);transform:translate(-1px,-1px)}
+.cw-pick:active{transform:translate(1px,1px);box-shadow:0 0 0 0 var(--cw-obsidian)}
+.cw-pick[aria-pressed="true"]{background:var(--cw-obsidian);color:#fff;
+  border-color:var(--cw-acc);box-shadow:2px 2px 0 0 var(--cw-acc)}
+.cw-pick[aria-pressed="true"]::after{content:" ✓";font-weight:700}
+
+/* ══ LIGHT SURFACE ════════════════════════════════════════════════════════
+   The polarity inverts and it is not a recolour. Fills go dark, text goes white, and the glow
+   becomes a focus ring — a bloom on a light ground reads as a smudge, not as heat. With white
+   text: ok 5.32, caution 4.91, stop 5.54. Gold is the exception in BOTH directions:
+   on white it cannot take white text at any usable lightness (#96770f is 4.25 against white and
+   4.35 against dark ink — it fails both), so it keeps the bright fill and the dark ink. */
+
+/* The fills invert under the panel's light theme too: html[data-mode=light] is what
+   theme-switch.js sets on /config and the other admin pages outside the shell (THEME §2.1). The
+   ground there comes from the panel tokens above; .cw-light keeps its own for a surface without
+   them. */
+.cw-light,html[data-mode=light]{
+  --cw-ink-on-fill:#ffffff;
+  --cw-acc:#c9a227;--cw-acc-lift:#d9b436;   /* keeps DARK ink — see above */
+  --cw-ok:#1f7a4d;--cw-ok-lift:#248a58;
+  --cw-caution:#8a6d14;--cw-caution-lift:#96770f;
+  --cw-stop:#c0343a;--cw-stop-lift:#cf3f45}
+.cw-light{--cw-bg:#fbfbfa;--cw-panel:#fff;--cw-panel2:#f4f4f2;
+  --cw-line:#e3e2e0;--cw-line2:#d4d3d0;
+  --cw-head:#0b0b0c;--cw-ink:#1c1c1e;--cw-mut:#6b6a66;--cw-dim:#87857f;
+  background:var(--cw-bg);color:var(--cw-ink)}
+.cw-light .cw-btn--neutral,html[data-mode=light] .cw-btn--neutral{color:#1a120e;border-color:#a4830e}
+.cw-light .cw-btn--fill,html[data-mode=light] .cw-btn--fill{box-shadow:0 1px 2px rgba(16,16,18,.16)}
+.cw-light .cw-btn--fill:hover,html[data-mode=light] .cw-btn--fill:hover{box-shadow:0 1px 2px rgba(16,16,18,.2),
+  0 0 0 3px color-mix(in srgb,currentColor 0%,var(--cw-line2) 60%)}
+.cw-light .cw-kbd,html[data-mode=light] .cw-kbd{background:color-mix(in srgb,var(--cw-ink-on-fill) 18%,transparent);
+  border-color:color-mix(in srgb,var(--cw-ink-on-fill) 55%,transparent)}
+.cw-light .cw-btn--neutral .cw-kbd,html[data-mode=light] .cw-btn--neutral .cw-kbd{background:rgba(0,0,0,.12);
+  border-color:color-mix(in srgb,currentColor 40%,transparent)}
+
+/* ── Linear livery ───────────────────────────────────────────────────────────
+ *
+ * Variant E of the 2026-09-03 review: dialog left-aligned, actions bottom-right. A dark-only
+ * livery: its ground and indigo accent have no light values, so no themed page wears it. /config's
+ * Scanning section moved onto the decision controls above on 2026-10-07; this stays as the
+ * reviewed variant THEME.md §8 draws.
+ *
+ * It keeps the theme's decided rules rather than restating them. The fill CANNOT go brighter and
+ * keep its text legible — #5e6ad2 carries white at 4.70:1, and its hover edge #7b86e4 would carry
+ * it at 3.30:1 — so hover heat lives in the GLOW, a hot rim plus a bloom, while the fill holds
+ * still. The severity family carries consequence in the glow RADIUS, not the hue, for the reason
+ * docs/THEME.md gives: ranking by pigment brightness would make gold loudest while it means "caution".
+ */
+.cw-linear{
+  --l-bg:#08090a;
+  --l-surface:#0f1011;
+  --l-raise:#191a1d;
+  --l-line:rgba(255,255,255,.07);
+  --l-line2:rgba(255,255,255,.11);
+  --l-ink:#f7f8f8;
+  --l-mut:#8a8f98;
+  --l-acc:#5e6ad2;
+  --l-acc-edge:#7b86e4;
+  --l-on-acc:#ffffff;        /* 4.70:1 on --l-acc */
+  --l-red:#e5484d;
+  /* Severity fills and their hover edges. Each fill carries --l-on-fill. */
+  --l-on-fill:#1a120e;
+  --l-one:#7c87ea;--l-one-edge:#a8b1f5;
+  --l-go:#3fb27f;--l-go-edge:#7fe3b6;
+  --l-all:#ff6166;--l-all-edge:#ffa3a6;
+  --l-hold:#e3b341;--l-hold-edge:#ffdd91;
+  --l-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-family:var(--l-sans);
+}
+
+.cw-linear .cw-stage{background:var(--l-bg);border:1px solid var(--l-line);border-radius:10px;padding:1.1rem}
+.cw-dlg{max-width:34rem;background:var(--l-surface);border:1px solid var(--l-line2);border-radius:10px;
+  padding:1rem 1.05rem;box-shadow:0 12px 32px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.4)}
+.cw-dlg__t{color:var(--l-ink);font-size:.98rem;font-weight:590;letter-spacing:-.01em;margin-bottom:.35rem}
+.cw-dlg__b{color:var(--l-mut);font-size:.82rem;line-height:1.55}
+.cw-dlg__b code{font-family:var(--cw-mono,ui-monospace,monospace);color:var(--l-ink);font-size:.72rem}
+
+/* The facts the operator is consenting to, each its own chip: what runs, from where, over how
+   much. Prose can be skimmed past; a row of chips cannot be read as anything but a list. */
+.cw-meta{display:flex;flex-wrap:wrap;gap:.35rem;margin:.7rem 0 .2rem}
+.cw-meta span{font-family:var(--cw-mono,ui-monospace,monospace);font-size:.64rem;color:var(--l-mut);
+  background:var(--l-raise);border:1px solid var(--l-line);border-radius:5px;padding:.15rem .4rem}
+
+.cw-act{display:flex;align-items:center;gap:.5rem;margin-top:1rem;justify-content:flex-end}
+.cw-linear button{font-family:var(--l-sans);font-size:.75rem;font-weight:510;border-radius:6px;
+  padding:.42rem .8rem;cursor:pointer;transition:box-shadow .16s,border-color .16s,background .12s;
+  display:inline-flex;align-items:center;gap:.45rem}
+.cw-ghost{background:transparent;color:var(--l-mut);border:1px solid var(--l-line2)}
+.cw-ghost:hover{background:var(--l-raise);color:var(--l-ink)}
+.cw-pri{background:var(--l-acc);color:var(--l-on-acc);border:1px solid var(--l-acc);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.cw-pri:hover{border-color:var(--l-acc-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),
+  0 0 0 1px color-mix(in srgb,var(--l-acc-edge) 70%,transparent),0 0 12px 1px color-mix(in srgb,var(--l-acc) 42%,transparent)}
+
+/* Severity by glow radius. Approving one binary and approving all 46 are the same gesture one
+   click apart, so the difference has to be visible before the click, not explained after it. */
+.cw-sev{color:var(--l-on-fill);border:1px solid transparent;font-weight:590;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.cw-sev--one{background:var(--l-one);border-color:var(--l-one)}
+.cw-sev--go{background:var(--l-go);border-color:var(--l-go)}
+.cw-sev--all{background:var(--l-all);border-color:var(--l-all)}
+.cw-sev--hold{background:var(--l-hold);border-color:var(--l-hold)}
+.cw-sev--one:hover{border-color:var(--l-one-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),
+  0 0 0 1px color-mix(in srgb,var(--l-one-edge) 72%,transparent),0 0 9px 1px color-mix(in srgb,var(--l-one) 40%,transparent)}
+.cw-sev--go:hover{border-color:var(--l-go-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),
+  0 0 0 1px color-mix(in srgb,var(--l-go-edge) 72%,transparent),0 0 11px 1px color-mix(in srgb,var(--l-go) 42%,transparent)}
+.cw-sev--all:hover{border-color:var(--l-all-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),
+  0 0 0 1px color-mix(in srgb,var(--l-all-edge) 72%,transparent),0 0 22px 3px color-mix(in srgb,var(--l-all) 50%,transparent)}
+.cw-sev--hold:hover{border-color:var(--l-hold-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),
+  0 0 0 1px color-mix(in srgb,var(--l-hold-edge) 72%,transparent),0 0 13px 1px color-mix(in srgb,var(--l-hold) 45%,transparent)}
+
+/* The lane grid: tickboxes left, the group header selects the group (variant 2 of the review). */
+.cw-lanes{display:flex;flex-direction:column;gap:.15rem}
+.cw-lane{display:grid;grid-template-columns:1.1rem 1fr auto;align-items:baseline;gap:.5rem;
+  padding:.28rem .4rem;border-radius:5px;border:1px solid transparent}
+.cw-lane:hover{background:var(--l-raise);border-color:var(--l-line)}
+.cw-lane__id{font-family:var(--cw-mono,ui-monospace,monospace);font-size:.72rem;color:var(--l-ink)}
+.cw-lane__d{color:var(--l-mut);font-size:.7rem}
+.cw-lane__t{font-family:var(--cw-mono,ui-monospace,monospace);font-size:.62rem;color:var(--l-mut)}
+.cw-lane--held .cw-lane__id{color:var(--l-hold)}
+.cw-lane--off .cw-lane__id,.cw-lane--off .cw-lane__d{opacity:.45}
+.cw-grp{display:flex;align-items:baseline;gap:.5rem;margin:.7rem 0 .25rem;
+  border-bottom:1px solid var(--l-line);padding-bottom:.25rem}
+.cw-grp__n{font-family:var(--cw-mono,ui-monospace,monospace);font-size:.68rem;color:var(--l-acc);font-weight:600}
+
+/* Hash-chained history. A verified link is stated, never assumed: an unchained row says so. */
+.cw-hist{display:flex;flex-direction:column;gap:.2rem;font-size:.7rem}
+.cw-hist__r{display:grid;grid-template-columns:auto auto 1fr;gap:.5rem;padding:.25rem .4rem;
+  border-left:2px solid var(--l-line2);color:var(--l-mut)}
+.cw-hist__at{font-family:var(--cw-mono,ui-monospace,monospace);font-size:.64rem}
+.cw-hist__who{color:var(--l-ink)}

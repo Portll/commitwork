@@ -1,0 +1,843 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "commitwork issue store (monitor/issues.json)",
+  "description": "Hash-chained issue tracker store. Deliberately restricted to the keyword subset monitor/registry.mjs::checkNode implements (type/required/properties/additionalProperties/items/pattern/enum/minItems/minimum/maximum/exclusiveMinimum/oneOf) — an unimplemented keyword is a load failure, not a silent skip. Runtime consumer: monitor/issue-store.mjs::loadIssues (every load).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "note",
+    "version",
+    "nextOrdinal",
+    "byKey",
+    "lastIngest",
+    "events",
+    "issues"
+  ],
+  "properties": {
+    "note": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "organisation": {
+      "type": [
+        "null",
+        "string"
+      ],
+      "pattern": "^[A-Z0-9]{1,12}$"
+    },
+    "aliases": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^(ISS-[0-9A-Z]{6}|ISS-[A-Z0-9]{1,12}-[SFUDC]-[0-9A-Z]{6})$"
+      }
+    },
+    "nextOrdinal": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "byKey": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^(ISS-[0-9A-Z]{6}|ISS-[A-Z0-9]{1,12}-[SFUDC]-[0-9A-Z]{6})$"
+      }
+    },
+    "lastIngest": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sliceId",
+          "generated"
+        ],
+        "properties": {
+          "sliceId": {
+            "type": "string"
+          },
+          "generated": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "issueId",
+          "at",
+          "data",
+          "prevHash",
+          "hash"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "issue-opened",
+              "issue-updated",
+              "issue-claimed",
+              "issue-released",
+              "issue-blocked",
+              "issue-unsatisfiable",
+              "issue-linked",
+              "issue-closed",
+              "issue-reopened",
+              "issue-regraded",
+              "issue-classified",
+              "issue-waived",
+              "issue-gc",
+              "issue-disposition",
+              "issue-disposition-invalidated",
+              "issue-key-migrated",
+              "fix-authored",
+              "fix-verified",
+              "fix-disputed",
+              "fp-reinvestigated",
+              "reopened-contradiction",
+              "paged"
+            ]
+          },
+          "issueId": {
+            "type": "string",
+            "pattern": "^(ISS-[0-9A-Z]{6}|ISS-[A-Z0-9]{1,12}-[SFUDC]-[0-9A-Z]{6}|gc)$"
+          },
+          "at": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          },
+          "prevHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "issues": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "area",
+          "repo",
+          "source",
+          "groupMembers",
+          "kind",
+          "severity",
+          "title",
+          "body",
+          "remediation",
+          "state",
+          "closedAs",
+          "blockedReason",
+          "deps",
+          "claim",
+          "attemptCount",
+          "suspect",
+          "evidence",
+          "anchor",
+          "waiver",
+          "authorityRequired",
+          "slaDueAt",
+          "reopenCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "oneOf": [
+          {
+            "properties": {
+              "state": {
+                "enum": [
+                  "closed"
+                ]
+              },
+              "closedAs": {
+                "enum": [
+                  "fixed",
+                  "accepted",
+                  "refuted",
+                  "superseded"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "state": {
+                "enum": [
+                  "open",
+                  "claimed",
+                  "blocked",
+                  "unsatisfiable"
+                ]
+              },
+              "closedAs": {
+                "type": "null"
+              }
+            }
+          }
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(ISS-[0-9A-Z]{6}|ISS-[A-Z0-9]{1,12}-[SFUDC]-[0-9A-Z]{6})$"
+          },
+          "area": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "repo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "key",
+              "tool",
+              "rule"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "finding",
+                  "scanner-row",
+                  "queue",
+                  "manual"
+                ]
+              },
+              "key": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "tool": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "rule": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "model": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            }
+          },
+          "groupMembers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "enum": [
+              "vuln",
+              "code",
+              "config",
+              "docs",
+              "task"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "crit",
+              "high",
+              "med",
+              "low",
+              "unknown"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remediation": {
+            "description": "What the SCANNER suggests, captured at mint time — 'fix available: 4.17.21' from a dep advisory's fixed version, or the queue entry's own remediation line. Machine-sourced guidance, not a person's account of what they did: that is `fix`. The two are deliberately separate slots because they answer different questions and go stale on different clocks.",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fix": {
+            "description": "The HUMAN's lodged remediation: what kind of fix this is and the annotation explaining it. A CLAIM, never a close — `state` and `closedAs` are untouched by lodging one, exactly as monitor/ingest-external.mjs refuses to let a `remediated` disposition suppress. Not in `required`: a record written before this field existed stays byte-identical and still loads. `dispositionId` back-references the DSP- ruling when the same act also filed one, so 'how it was fixed' and 'what was ruled' are joined without either being derivable from the other.",
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "fixType",
+              "notes",
+              "who",
+              "at"
+            ],
+            "properties": {
+              "fixType": {
+                "enum": [
+                  "code-change",
+                  "config-change",
+                  "dep-upgrade",
+                  "compensating-control",
+                  "suppression",
+                  "wont-fix"
+                ]
+              },
+              "notes": {
+                "description": "Why/what, 8..2000 printable characters. The bound and the control-character exclusion are enforced in issue-store.mjs::lodgeFix — the same rule external-judgement.schema.json puts on `reason`, for the same reason: nothing that could terminate a line, forge a log record or survive into markup.",
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "dispositionId": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "pattern": "^DSP-[0-9a-f]{12}$"
+              }
+            }
+          },
+          "state": {
+            "enum": [
+              "open",
+              "claimed",
+              "blocked",
+              "unsatisfiable",
+              "closed"
+            ]
+          },
+          "closedAs": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unsatisfiable": {
+            "description": "Why this item has no path to done (state `unsatisfiable`). Out of the ready queue, never a close: it is counted apart from both. Not in `required` — records written before this field existed stay byte-identical. Cleared on reopen; the issue-unsatisfiable event keeps it.",
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "reason",
+              "at"
+            ],
+            "properties": {
+              "code": {
+                "enum": [
+                  "lane-retired",
+                  "area-retired",
+                  "blocker-unsatisfiable",
+                  "manual"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "by": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            }
+          },
+          "deps": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "blockedBy",
+              "duplicateOf",
+              "supersededBy"
+            ],
+            "properties": {
+              "blockedBy": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(ISS-[0-9A-Z]{6}|ISS-[A-Z0-9]{1,12}-[SFUDC]-[0-9A-Z]{6})$"
+                }
+              },
+              "duplicateOf": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "supersededBy": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            }
+          },
+          "claim": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "by",
+              "sessionId",
+              "at",
+              "expiresAt"
+            ],
+            "properties": {
+              "by": {
+                "type": "string"
+              },
+              "sessionId": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "expiresAt": {
+                "type": "string"
+              }
+            }
+          },
+          "attemptCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "suspect": {
+            "type": "boolean"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "at",
+                "tier",
+                "detail"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string"
+                },
+                "tier": {
+                  "enum": [
+                    "strong",
+                    "medium",
+                    "scan-absent",
+                    "anchor-drift",
+                    "fix-applied",
+                    "manual"
+                  ]
+                },
+                "sliceId": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "priorKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "class": {
+            "description": "S security · F functionality · U user experience · D data · C customer-raised. Written by bin/issue-rekey.mjs, which stamps the class it encoded into the new id. Undeclared here until 2026-08-20, so a completed re-key produced a store loadIssues() then REJECTED — the migration bricked the tracker it migrated, and every reader failed closed on a store that was structurally fine.",
+            "type": "string",
+            "enum": [
+              "S",
+              "F",
+              "U",
+              "D",
+              "C"
+            ]
+          },
+          "priorIds": {
+            "description": "Every ISS id this issue has been known by, oldest first. The ID counterpart of priorKeys, appended by bin/issue-rekey.mjs; an id is permanent, so a re-key leaves a trail rather than erasing one.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "anchor": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "file",
+              "line",
+              "hash"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hash": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            }
+          },
+          "anchorHistory": {
+            "description": "Where this finding has been SEEN, oldest first. Operator ruling D12 (2026-08-13): identity is line-free and the line is a secondary reference that may always be stale — so movement is recorded rather than inferred. NOT in `required`: the 997 records that predate the ruling have no history and are not retro-fitted (a history invented from a single current position would assert an origin nobody observed). Absence means unrecorded, never unmoved.",
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "at",
+                "line",
+                "hash"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string"
+                },
+                "sliceId": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "file": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "hash": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "why": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "waiver": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "annotationId",
+              "expiresAt"
+            ],
+            "properties": {
+              "annotationId": {
+                "type": "string"
+              },
+              "expiresAt": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            }
+          },
+          "dispositions": {
+            "description": "External human judgements pushed back at this finding through the return path (monitor/ingest-external.mjs). APPEND-ONLY and NOT in `required`: records that never received a judgement stay byte-identical to what they were before this field existed, and a store written by an older binary still loads. A disposition NEVER closes the issue and never sets closedAs:'fixed' — human-green is an OPEN issue carrying an in-force ruling, which is a different state from a scanner-proved close and must stay distinguishable from it.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "disposition",
+                "reason",
+                "who",
+                "whoKind",
+                "channel",
+                "at",
+                "expires",
+                "subjectDigest",
+                "rescan",
+                "invalidatedAt",
+                "invalidatedReason"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^DSP-[0-9a-f]{12}$"
+                },
+                "disposition": {
+                  "enum": [
+                    "false-positive",
+                    "remediated",
+                    "not-applicable"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "who": {
+                  "description": "monitor/attribution.mjs::sessionWho's one spelling of the acting identity.",
+                  "type": "string"
+                },
+                "whoKind": {
+                  "enum": [
+                    "human",
+                    "machine",
+                    "unknown"
+                  ]
+                },
+                "channel": {
+                  "enum": [
+                    "mcp",
+                    "http",
+                    "webhook",
+                    "cli"
+                  ]
+                },
+                "at": {
+                  "type": "string"
+                },
+                "expires": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "subjectDigest": {
+                  "description": "The invalidation key: sha256 over the issue's canonical structured subject at the moment of judgement. A ruling whose subject digest no longer matches is out of force.",
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                },
+                "rescan": {
+                  "type": "string"
+                },
+                "invalidatedAt": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "invalidatedReason": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              }
+            }
+          },
+          "authorityRequired": {
+            "type": "boolean"
+          },
+          "slaDueAt": {
+            "type": "string"
+          },
+          "escalated": {
+            "description": "PROJECTION of the chain-covered `paged` event keyed {issueId, slaDueAt} (monitor/issue-escalate.mjs). The event is the truth; this field is derived at write time and is never the de-dup key. Optional: records never paged carry no field.",
+            "type": "boolean"
+          },
+          "escalatedAt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reopenCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "llm": {
+            "description": "Last local-model triage of this finding. EVIDENCE, never a close: a model verdict is a claim and the tracker keeps claims and proof in different states. Not in required — records written before this existed stay byte-identical. verdict/confidence/truncated are additive and NOT required: a record written before they existed must still load.",
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "at",
+              "engine",
+              "model",
+              "answer",
+              "thinking"
+            ],
+            "properties": {
+              "at": {
+                "type": "string"
+              },
+              "engine": {
+                "description": "Which provider answered: a local server (lmstudio, ollama), claude -p, or a hosted API configured through CW_MODEL_PROVIDER (anthropic, openai-compatible).",
+                "enum": [
+                  "lmstudio",
+                  "ollama",
+                  "claude",
+                  "anthropic",
+                  "openai-compatible"
+                ]
+              },
+              "model": {
+                "type": "string"
+              },
+              "host": {
+                "description": "host[:port] of the server that answered. Absent on records written before it existed.",
+                "type": "string"
+              },
+              "answer": {
+                "type": "string"
+              },
+              "thinking": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "verdict": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            }
+          },
+          "closedAsOriginal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "fixed",
+              "accepted",
+              "refuted",
+              "superseded",
+              null
+            ],
+            "description": "The FIRST verdict this issue carried, written once by regradeClosure and never again. A re-grade moves closedAs; this keeps the original recoverable from the record rather than only by replaying the event chain."
+          },
+          "regradeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many times the verdict has been corrected. Makes a revised record visible without a chain replay."
+          },
+          "defectOwner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "instrument",
+              "upstream",
+              "subject",
+              "undetermined",
+              null
+            ],
+            "description": "Whose defect this is: commitwork (instrument), the scanner (upstream), the scanned code (subject), or nobody has established it. `undetermined` is the common and correct state, never an absence."
+          },
+          "defectBasis": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "commit",
+              "adjudication",
+              "model-agreement",
+              null
+            ],
+            "description": "HOW the owner was decided. `commit` is derived from a sha and is a lookup; `adjudication` is a human judgement; `model-agreement` is a dual-model pass. A rate must be able to state how much of its input was judged rather than derived."
+          },
+          "classifyCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many times the defect classification has changed."
+          }
+        }
+      }
+    }
+  }
+}

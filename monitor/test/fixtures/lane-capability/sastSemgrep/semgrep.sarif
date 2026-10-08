@@ -1,0 +1,81 @@
+{
+ "version": "2.1.0",
+ "runs": [
+  {
+   "invocations": [
+    {
+     "executionSuccessful": true,
+     "toolExecutionNotifications": []
+    }
+   ],
+   "results": [
+    {
+     "fingerprints": {
+      "matchBasedId/v1": "ff0b664e5e68360932de686e4f0211ac74a4992b07a20e10b5a7d1690226233e688d6e9367c10e085e4c5013a8cd0bdd5e7b02d05e49788b506baf1d6fb0f417_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 45,
+         "endLine": 9,
+         "snippet": {
+          "text": "\tcmd := exec.Command(\"sh\", \"-c\", os.Args[1])"
+         },
+         "startColumn": 9,
+         "startLine": 9
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code."
+     },
+     "properties": {},
+     "ruleId": "go.lang.security.audit.dangerous-exec-command.dangerous-exec-command"
+    }
+   ],
+   "tool": {
+    "driver": {
+     "name": "Semgrep OSS",
+     "rules": [
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code."
+       },
+       "help": {
+        "markdown": "Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.\n\n<b>References:</b>\n - [Semgrep Rule](https://semgrep.dev/r/go.lang.security.audit.dangerous-exec-command.dangerous-exec-command)\n - [https://owasp.org/Top10/A03_2021-Injection](https://owasp.org/Top10/A03_2021-Injection)\n",
+        "text": "Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code."
+       },
+       "helpUri": "https://semgrep.dev/r/go.lang.security.audit.dangerous-exec-command.dangerous-exec-command",
+       "id": "go.lang.security.audit.dangerous-exec-command.dangerous-exec-command",
+       "name": "go.lang.security.audit.dangerous-exec-command.dangerous-exec-command",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-94: Improper Control of Generation of Code ('Code Injection')",
+         "LOW CONFIDENCE",
+         "OWASP-A03:2021 - Injection",
+         "OWASP-A05:2025 - Injection",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Semgrep Finding: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command"
+       }
+      }
+     ],
+     "semanticVersion": "1.176.0"
+    }
+   }
+  }
+ ],
+ "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json"
+}

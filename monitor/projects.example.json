@@ -1,0 +1,129 @@
+{
+  "$schema": "../schema/projects.schema.json",
+  "note": "Template for monitor/projects.json, which is REQUIRED and is not shipped — the real one is an operator's live fleet: repo names, filesystem paths, deploy scoping, and (for anyone doing client work) whose code is being scanned. Copy this to projects.json and edit. It is also the registry the SUITE falls back to when projects.json is absent — a fresh clone has no projects.json — so it is kept structurally representative rather than minimal: multi-member and single-member areas, prefixes, thirdParty, a deploy declaration, a paused area, explicit projects, roots, exclude and lifecycle all appear at least once, so a registry-dependent test has something to exercise in a clean checkout. Hand-written, never generated from a real registry, and every name below is a placeholder. Schema: schema/projects.schema.json; unknown top-level keys are fatal. CW_REGISTRY overrides the path.",
+  "reportsRoot": "reports",
+  "retention": {
+    "slices": 30,
+    "note": "historical rollups kept per area"
+  },
+  "areas": [
+    {
+      "slug": "example-area",
+      "label": "Example Area",
+      "out": "example-area",
+      "primary": true,
+      "members": [
+        "example-service"
+      ],
+      "prefixes": [
+        "ex-"
+      ],
+      "note": "slug/out must be unique across areas; members and prefixes must not overlap another area's — areaOf() resolves first-match and an ambiguous declaration routes findings into the wrong report dir. Exactly one area may be `primary`: it is the default scope for an unscoped sweep or view."
+    },
+    {
+      "slug": "example-corpus",
+      "label": "Example Third-Party Corpus",
+      "out": "example-corpus",
+      "thirdParty": true,
+      "cadenceMs": 604800000,
+      "members": [
+        "someone-elses-repo"
+      ],
+      "note": "thirdParty is an OWNERSHIP fact, not a scoping one: tools that would MUTATE a repo refuse on it, because resolving a dependency tree runs that tree's build logic (gradlew, setup.py, cargo, bundler) as the operator. Absence of a deploy block does NOT imply it — a library you own declares neither. cadenceMs sets both the sweep schedule and the staleness deadman, so a weekly area does not report a permanent red."
+    },
+    {
+      "slug": "example-published",
+      "label": "Example Published Service",
+      "out": "example-published",
+      "members": [
+        "example-frontend",
+        "example-api"
+      ],
+      "rollupBatch": "newest-full",
+      "deploy": {
+        "hostnames": [
+          "service.example.invalid",
+          "www.service.example.invalid"
+        ],
+        "service": "http://127.0.0.1:8080",
+        "public": true,
+        "requiresAuth": true,
+        "authAt": "origin",
+        "probePath": "/healthz",
+        "note": "DECLARATION ONLY. bin/deploy.mjs emits a cloudflared ingress fragment from this; commitwork holds no credentials, mutates no DNS and restarts no tunnel. `authAt` is an ATTESTATION rather than a setting — `deploy --verify` re-checks it against the live origin, and a published requiresAuth area whose origin cannot actually authenticate anybody reports UNUSABLE rather than ok, because a 401 from a service with no accounts is the failure state the attestation exists to detect. example.invalid is reserved and non-resolving: a placeholder, never a target."
+      },
+      "note": "MULTI-MEMBER, and therefore rollupBatch newest-full. 'newest' takes the most recent batch whatever its scope, so an area with more than one repo can publish a narrowed batch — one repo's findings — as though it covered them all. Measured on a real fleet: one area published 1 of 5 repos this way, another 1 of 34. A one-repo area cannot express that failure and may leave the default."
+    },
+    {
+      "slug": "example-paused",
+      "label": "Example Paused Area",
+      "out": "example-paused",
+      "members": [
+        "example-dormant"
+      ],
+      "paused": {
+        "since": "2026-01-01",
+        "reason": "Placeholder for the paused state. `paused` is persistent and is NOT `exclude`: exclude means outside every sweep forever, while paused is a standing default that a NAMED run may still override, and the declaration survives so the area keeps its identity, its out dir and its history. Both fields are required — an exclusion with no reason is indistinguishable from an oversight. A paused area must classify as neither clean nor expired: it is an area nobody is currently asking about, and reporting it as a stale red trains readers to ignore the freshness signal."
+      },
+      "note": "Exists so the template covers the state at all. A registry that cannot express 'deliberately not being swept' forces the choice between a permanent false red and deleting the declaration, and deleting it loses the out dir and the history with it."
+    }
+  ],
+  "defaultManifest": "security-baseline",
+  "roots": [
+    {
+      "path": "~/Repositories",
+      "maxDepth": 2,
+      "note": "auto-discovery: every git repo directly under this folder, or one org-folder level down, becomes a project on defaultManifest. Explicit `projects` entries win; commitwork's own checkout is never discovered."
+    }
+  ],
+  "exclude": [
+    "scratch-repo"
+  ],
+  "lifecycle": {
+    "retired-repo": {
+      "state": "superseded",
+      "supersededBy": "example-service",
+      "effectiveFrom": "20260101000000",
+      "note": "state is an object, not a string"
+    }
+  },
+  "projects": [
+    {
+      "name": "example-service",
+      "area": "example-area",
+      "path": "~/Repositories/example-service",
+      "manifest": "security-baseline",
+      "url": "https://example.invalid",
+      "note": "an explicit entry overrides discovery for this repo. `url` is what the runtime lanes (DAST, TLS/header, a11y) are pointed at; without one they record a visible coverage void rather than a pass. Use a host you are authorised to scan — example.invalid is a reserved non-resolving name and is here as a placeholder, not a target."
+    },
+    {
+      "name": "someone-elses-repo",
+      "area": "example-corpus",
+      "path": "~/Repositories/third-party/someone-elses-repo",
+      "manifest": "security-baseline",
+      "note": "findings here are evidence about the SCANNERS, not a work queue: every remediationPrompt is written in the imperative to whoever owns the code, and that is not you. No fix should reach such a repo except through an upstream PR."
+    },
+    {
+      "name": "example-frontend",
+      "area": "example-published",
+      "path": "~/Repositories/example-frontend",
+      "manifest": "security-baseline",
+      "url": "https://service.example.invalid",
+      "note": "One of two members, which is what makes example-published a multi-member area rather than a second single. `url` points the runtime lanes (DAST, TLS/header, a11y) somewhere; without one they record a visible coverage void rather than a pass."
+    },
+    {
+      "name": "example-api",
+      "area": "example-published",
+      "path": "~/Repositories/example-api",
+      "manifest": "security-baseline",
+      "note": "The second member. Deliberately carries NO url: the runtime lanes must report a void for it rather than inheriting its sibling's, and an area where one member is probed and one is not is the ordinary case rather than a defect."
+    },
+    {
+      "name": "example-dormant",
+      "area": "example-paused",
+      "path": "~/Repositories/example-dormant",
+      "manifest": "security-baseline",
+      "note": "Declared and paused. The path may not exist; a declared area whose repos do not resolve must report not-scanned, never clean."
+    }
+  ]
+}

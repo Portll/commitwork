@@ -1,0 +1,25 @@
+{
+  "$schema": "../schema/product.schema.json",
+  "note": "SYNTHETIC EXAMPLE of the product registry. The CRA regulates PRODUCTS placed on the EU market, not repos; this file is the repo-to-product mapping every cra/ tool keys off. The operator's registry is a private record at monitor/private/cra-products.json (CW_PRODUCTS overrides), because it names customers and their repositories. Absent, `node cra/preflight.mjs` reports the module not configured and the other cra/ tools refuse with the path. Copy this file there, or use the panel's CRA wizard, and replace every value. market.eu stays false until someone who knows the commercial reality flips it.",
+  "manufacturer": {
+    "name": "Example Manufacturer Ltd",
+    "contact": "psirt@example.test",
+    "address": "1 Example Street, Example City",
+    "euRepresentative": "N/A",
+    "csirtMemberState": "Example",
+    "establishedInEU": false
+  },
+  "products": [
+    {
+      "id": "example-platform",
+      "name": "Example platform",
+      "version": "0.0.0-set-me",
+      "description": "Synthetic example: the services that ship together as one product.",
+      "repos": ["example-gateway", "example-service"],
+      "market": { "eu": false, "category": "default" },
+      "supportEndsAt": "2030-12-31",
+      "cvdPolicyUrl": "TODO",
+      "advisoriesUrl": "TODO"
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "../schema/tools.schema.json",
+  "title": "Security tool registry — full suite for `commitwork audit`",
+  "note": "Each tool declares its gate (prereq that unlocks it), install check, run template, report format, and dependsOn edges. The audit orchestrator runs every tool whose gate is satisfied and records the rest as blocked:<gate>. The dependency-ordered remediation plan is a topological sort over dependsOn + findings.",
+  "gates": {
+    "static": "no prerequisite — runs on source",
+    "docker-host": "a reachable Docker daemon",
+    "running-app": "a running HTTP(S) endpoint (baseURL)",
+    "openapi": "an OpenAPI/Swagger spec on disk",
+    "registry": "a container registry to push/sign into",
+    "repo-integration": "write access to the git host (PR automation)",
+    "aws": "live AWS credentials (M2)",
+    "prod-runtime": "a production runtime to instrument (M2)"
+  },
+  "tools": [
+    {
+      "id": "gitleaks", "name": "Gitleaks", "category": "secrets", "phase": "0", "milestone": "M1",
+      "gate": "static", "rationale": "Secret PREVENTION — blocks secrets pre-commit; TruffleHog only detects after.",
+      "installed": "command -v gitleaks", "install": "brew install gitleaks",
+      "run": "gitleaks detect --no-banner --report-format sarif --report-path \"$CW_REPORT_DIR/gitleaks.sarif\"",
+      "report": "sarif", "dependsOn": []
+    },
+    {
+      "id": "osv", "name": "OSV-Scanner", "category": "deps", "phase": "0", "milestone": "M1",
+      "gate": "docker-host", "rationale": "Advisory breadth beyond a single CVE feed.",
+      "installed": "docker info", "install": "(docker image ghcr.io/google/osv-scanner)",
+      "run": "SBX=$(node \"$CW_ROOT/bin/sandbox.mjs\" --posture lookup --name \"${CW_CONTAINER_NAME:-cw-tools-osv}\" --mount-source \"$PWD:/src:ro\") || { echo \"sandbox refused to emit flags -- writing NO sarif, which classifies noscan rather than clean\" >&2; exit 2; }; docker run $SBX ghcr.io/google/osv-scanner:latest scan source -r --format=sarif /src > \"$CW_REPORT_DIR/osv.sarif\"",
+      "isolation": "bin/lib/sandbox.mjs posture `lookup`. WIRED 2026-08-26. The previous body was `docker run --rm -v \"$PWD\":/src` and nothing else: default bridge network, root, ALL capabilities, no pids or memory bound, over arbitrary third-party source. It was the weakest of the seven docker call sites in this repository and it was pointed at the least trustworthy input. `lookup` rather than `analyse` because osv-scanner must reach api.osv.dev -- severed, it exits 0 and writes a zero-result SARIF that grades clean, which is the false-clean shape this manifest exists to refuse.",
+      "report": "sarif", "dependsOn": []
+    },
+    {
+      "id": "semgrep", "name": "Semgrep", "category": "sast", "phase": "0", "milestone": "M1",
+      "gate": "static", "rationale": "Fast pattern-SAST breadth (auto rules across JS/TS/Java/...) — complements CodeQL's deep taint analysis; the registry previously carried deep-SAST only (HANDOFF §4).",
+      "installed": "command -v semgrep", "install": "brew install semgrep",
+      "run": "semgrep scan --config auto --sarif --output \"$CW_REPORT_DIR/semgrep.sarif\" --exclude reference --exclude reports --quiet .",
+      "report": "sarif", "dependsOn": []
+    },
+    {
+      "id": "codeql-or-spotbugs", "name": "CodeQL | SpotBugs+FindSecBugs", "category": "sast-deep", "phase": "0", "milestone": "M1",
+      "gate": "static", "rationale": "Deep Java taint / data-flow beyond Semgrep community rules.",
+      "installed": "command -v codeql || command -v spotbugs", "install": "brew install codeql  # or SpotBugs + FindSecBugs plugin via gradle",
+      "run": "codeql database create \"$CW_REPORT_DIR/db\" --language=java --overwrite && codeql database analyze \"$CW_REPORT_DIR/db\" --format=sarif-latest --output \"$CW_REPORT_DIR/codeql.sarif\"",
+      "report": "sarif", "dependsOn": []
+    },
+    {
+      "id": "syft", "name": "Syft", "category": "sbom", "phase": "0", "milestone": "M1",
+      "gate": "static", "rationale": "SBOM generation for audit and for signing.",
+      "installed": "command -v syft", "install": "brew install syft",
+      "run": "syft scan dir:. --exclude './reference/**' --exclude './reports/**' -o cyclonedx-json=\"$CW_REPORT_DIR/sbom.cdx.json\"",
+      "report": "sbom", "dependsOn": []
+    },
+    {
+      "id": "renovate", "name": "Renovate / Dependabot", "category": "auto-remediation", "phase": "1", "milestone": "M1",
+      "gate": "repo-integration", "rationale": "Automated dependency-bump PRs.",
+      "installed": "test -f renovate.json || test -f .github/dependabot.yml", "install": "add renovate.json / .github/dependabot.yml",
+      "run": "(config-only — verifies presence of renovate/dependabot config)",
+      "report": "config", "dependsOn": ["osv", "codeql-or-spotbugs"]
+    },
+    {
+      "id": "cosign", "name": "Cosign / Sigstore", "category": "supply-chain", "phase": "1", "milestone": "M1",
+      "gate": "registry", "rationale": "Image signing + signed SBOM attestation (tamper-evidence).",
+      "installed": "command -v cosign", "install": "brew install cosign",
+      "run": "(gated — signs images + attests SBOM once a registry + built images exist)",
+      "report": "attestation", "dependsOn": ["syft"]
+    },
+    {
+      "id": "docker-bench", "name": "Docker Bench for Security", "category": "host-hardening", "phase": "0", "milestone": "M1",
+      "gate": "docker-host", "rationale": "CIS daemon/host hardening a static config pass cannot see.",
+      "installed": "command -v docker", "install": "git clone github.com/docker/docker-bench-security",
+      "run": "docker run --rm --net host --pid host --cap-add audit_control -v /var/run/docker.sock:/var/run/docker.sock docker/docker-bench-security",
+      "isolation": "DELIBERATELY UNSANDBOXED, and host-equivalent. Reviewed 2026-08-26 alongside the wiring of every other docker call site; this is the one that must NOT be wrapped. docker-bench audits the host and the daemon, so --net host, --pid host and the docker socket are its subject, not an oversight -- a posture that took them away would leave it auditing the inside of a container and reporting the results as the host's. bin/lib/sandbox.mjs REFUSES /var/run/docker.sock as host-equivalent (FORBIDDEN_MOUNTS), and that refusal is correct: mounting the docker socket is root on this box. So the trade is stated here instead of being smuggled through an exemption. It reads only; it never scans repo content; and it is not run over the untrusted corpus.",
+      "report": "text", "dependsOn": []
+    },
+    {
+      "id": "testssl", "name": "testssl.sh + Mozilla Observatory", "category": "tls-headers", "phase": "0", "milestone": "M1/M3",
+      "gate": "running-app", "rationale": "TLS config + security-header grading. Needs an https:// listener specifically: CW_TARGET_URL is the plain-HTTP gateway, and pointing a TLS-only tool at it grades nothing while recording a result.",
+      "installed": "command -v testssl.sh", "install": "brew install testssl",
+      "run": "[ -n \"${CW_TLS_URL:-}\" ] || { echo 'skipped: no CW_TLS_URL — testssl needs an https:// listener (bin/tls-proxy.sh up). Not writing a report: an ungraded endpoint must read as not-scanned, never as a pass.'; exit 0; }; testssl.sh --jsonfile \"$CW_REPORT_DIR/testssl-full.json\" \"$CW_TLS_URL\"",
+      "report": "json", "dependsOn": []
+    },
+    {
+      "id": "nuclei", "name": "Nuclei", "category": "dast-templated", "phase": "0", "milestone": "M1/M3",
+      "gate": "running-app", "rationale": "Templated known-exploit coverage; complements ZAP.",
+      "installed": "command -v nuclei", "install": "brew install nuclei",
+      "run": "nuclei -u \"$CW_TARGET_URL\" -je \"$CW_REPORT_DIR/nuclei.json\"",
+      "report": "json", "dependsOn": []
+    },
+    {
+      "id": "schemathesis", "name": "Schemathesis", "category": "api-fuzz", "phase": "0", "milestone": "M1/M3",
+      "gate": "openapi+running-app", "rationale": "Property-based API contract fuzzing.",
+      "installed": "command -v schemathesis || command -v st", "install": "pipx install schemathesis",
+      "run": "schemathesis run \"$CW_OPENAPI\" --base-url \"$CW_TARGET_URL\" --report \"$CW_REPORT_DIR/schemathesis\"",
+      "report": "text", "dependsOn": []
+    },
+    {
+      "id": "prowler", "name": "Prowler / ScoutSuite", "category": "cspm", "phase": "2", "milestone": "M2",
+      "gate": "aws", "rationale": "AWS account CIS posture (CSPM).",
+      "installed": "command -v prowler", "install": "pipx install prowler",
+      "run": "prowler aws -M json-ocsf -o \"$CW_REPORT_DIR/prowler\"",
+      "report": "json", "dependsOn": []
+    },
+    {
+      "id": "falco", "name": "Falco", "category": "runtime-threat", "phase": "2", "milestone": "M2",
+      "gate": "prod-runtime", "rationale": "Runtime behavioral threat detection.",
+      "installed": "command -v falco", "install": "(deploy Falco to the runtime/k8s)",
+      "run": "(gated — runtime instrumentation, not a scan)",
+      "report": "stream", "dependsOn": []
+    }
+  ]
+}

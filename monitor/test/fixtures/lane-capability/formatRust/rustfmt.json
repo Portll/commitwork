@@ -1,0 +1,28 @@
+{
+ "tool": "rustfmt",
+ "version": "rustfmt 1.9.0-stable (48a229ceae 2026-09-01)",
+ "declared": "config rustfmt.toml",
+ "roots": [
+  {
+   "root": ".",
+   "exit": 1,
+   "diffs": 2,
+   "counted": true
+  }
+ ],
+ "partial": false,
+ "outsideRepo": 0,
+ "files": [
+  {
+   "file": "src/lib.rs",
+   "hunks": 1,
+   "firstLine": 1
+  },
+  {
+   "file": "src/main.rs",
+   "hunks": 1,
+   "firstLine": 1
+  }
+ ],
+ "parseErrors": []
+}

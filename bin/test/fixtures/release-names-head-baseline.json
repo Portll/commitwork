@@ -1,0 +1,10 @@
+{
+  "_comment": "Floor for bin/test/release-names-head.test.mjs — the known remainder of the anonymisation C3 programme AT HEAD. Keyed on PATH only, never a count or a line. Entries are removed by re-seeding as each cleanup LANDS; nothing is ever added to accept a new offender. IDENTITY SUBSTRINGS ARE JSON \\u-ESCAPED so this file does not itself publish the names it floors: JSON.parse yields the true path while the raw bytes carry no literal, so it does not trip the very gates it feeds. Do not \"tidy\" the escapes away.",
+  "version": 1,
+  "seededAt": "2026-09-02",
+  "ref": "HEAD",
+  "paths": {
+  },
+  "content": {
+  }
+}

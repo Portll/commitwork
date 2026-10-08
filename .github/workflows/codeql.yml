@@ -1,0 +1,117 @@
+name: CodeQL
+
+# commitwork ships CodeQL lanes for twenty-odd repositories in the fleet and, until this file, ran
+# none on itself through Actions. It was not unscanned — reports/commitwork-admin/codeql-fleet.json
+# is a real self-scan — but that scan runs on one machine when a human starts a sweep, and its
+# output lands in a gitignored tree. Nothing gated a push on it and nothing outside that box could
+# see the result. A scanner that exempts itself from its own enforcement is the exact shape of
+# defect this repository exists to name.
+#
+# THE EXCLUSIONS BELOW MUST TRACK manifests/codeql-filters.txt, AND THE SYNTAX IS NOT THE SAME.
+# That file is the RAW extractor format (LGTM_INDEX_FILTERS), read by all seven sast-codeql-* lanes
+# in security-baseline.json. `paths-ignore` here is a DIFFERENT layer that the CodeQL action
+# converts into that one. A trailing `/**` is legal here and ILLEGAL there — `exclude:reports/**`
+# fails the build outright with "Illegal use of '**' in exclude path". So these are not a copy of
+# those lines and must not be made into one; they are the same four decisions expressed in the
+# format this layer takes. If you change one side, change the other and say why in the manifest,
+# where the evidence for each exclusion is recorded.
+#
+# WHY THESE FOUR. Measured 2026-08-02: an unfiltered self-scan reported 2 critical / 638 high /
+# 30 medium, of which THIRTY were real source findings. The other 640 were commitwork's own
+# generated output, and it was self-amplifying — each sweep writes report HTML that the next sweep
+# indexes, so the headline grew with the number of areas scanned rather than with risk. Excluding
+# generated trees here is not noise reduction, it is the difference between a number that means
+# something and a number that grows on its own.
+#
+# The over-exclusion risk is real and is stated rather than hidden: an exclude that removes genuine
+# source is a false clean, the worst failure this platform has. Each path below is a directory this
+# repository generates, not a category guessed at.
+
+# DISPATCH ONLY while this repository is private (operator decision, 2026-09-27). Every run here
+# analysed for ~20 minutes and then failed at upload with "configuration error"; security_and_analysis
+# is empty for this repository, consistent with code scanning being unavailable on it. So the job
+# enforced nothing, and it cost 217 billed minutes in 30 days, 186 of them on failed runs, on an
+# account whose Actions budget ran out twice in September. The self-scan the header describes
+# still runs in the fleet sweep. When the repository is public, restore the push, pull_request and
+# weekly schedule triggers from the parent of the commit that introduced this comment.
+on:
+  workflow_dispatch:
+
+# Keyed by event as well as ref, so that once the schedule is restored a push never cancels it.
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze JavaScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # security-events: write is what lets the result reach the Security tab. Without it the job
+      # runs, passes, and uploads nothing — green, and measuring nothing anybody can read. That is
+      # the false-clean shape, so it is granted here at the job rather than inherited.
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      # Actions pinned to commit SHAs, not tags: a tag can be silently repointed by the action owner
+      # (the trivy-action / tj-actions compromise class). The trailing comment names the release each
+      # SHA was resolved from via `git ls-remote --tags`, and bin/pin-actions.mjs verifies every one
+      # of these lines against the upstream tag on demand.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: javascript-typescript
+          # security-and-quality, not the default security-extended. The quality queries are the
+          # half that catches the unreachable branch and the always-true condition, which in a
+          # codebase whose failures are overwhelmingly "a check that could not fire" is the more
+          # relevant family. A noisier suite is affordable here because the findings land in the
+          # Security tab for triage rather than gating the push.
+          queries: security-and-quality
+          config: |
+            paths-ignore:
+              # commitwork's own generated report tree — gitignored, regenerated every sweep, and
+              # the direct source of the 638 above.
+              - 'reports/**'
+              # The modernization map's generated output. The engine SOURCE under map/*.mjs stays
+              # indexed; only the generated tree goes.
+              - 'map/data/**'
+              # Vendored third-party assets carried for offline/file:// rendering. Named explicitly
+              # rather than '**/vendor' so the rule cannot swallow a directory called `vendor` that
+              # holds real source. NOTE the tracked coverage hole this leaves, recorded in
+              # manifests/codeql-filters.txt: a manifest-less vendored bundle is covered by no
+              # dependency lane either, because all four are gated on a package manifest.
+              - 'sitemap/vendor/**'
+              # Evaluation corpora and cycle artifacts: JSON/markdown evidence, never executed.
+              # Absent from a clone in any case — evaluations/ is a symlink to a private sidecar.
+              - 'evaluations/**'
+
+      # No autobuild step, and its absence is a decision rather than an omission. commitwork has no
+      # compile step — zero runtime dependencies is the point — so for javascript-typescript the
+      # extractor reads the source directly. An autobuild here would succeed at doing nothing and
+      # leave a step in the log implying a build happened.
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: /language:javascript-typescript
+          # fact: code scanning on a private repository needs GitHub Advanced Security; without it the
+          # upload fails the job after a complete analysis. Public: upload. Private: keep the SARIF.
+          upload: ${{ github.event.repository.private && 'never' || 'always' }}
+          output: codeql-results
+      - name: Keep the SARIF when it was not uploaded
+        if: ${{ github.event.repository.private }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-sarif
+          path: codeql-results
+          retention-days: 30

@@ -1,0 +1,29 @@
+{
+  "tool": "stub-detect",
+  "summary": {
+    "findings": 2,
+    "byMarker": {
+      "TODO": 1,
+      "FIXME": 1
+    },
+    "filesScanned": 1
+  },
+  "findings": [
+    {
+      "type": "stub-marker",
+      "marker": "TODO",
+      "severity": "low",
+      "path": "app.js",
+      "line": 2,
+      "detail": "// TODO: finish this"
+    },
+    {
+      "type": "stub-marker",
+      "marker": "FIXME",
+      "severity": "low",
+      "path": "app.js",
+      "line": 3,
+      "detail": "return null; // FIXME wrong"
+    }
+  ]
+}

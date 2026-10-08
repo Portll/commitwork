@@ -1,0 +1,47 @@
+{
+  "tool": "commit-provenance",
+  "summary": {
+    "findings": 2,
+    "byRule": {
+      "unsigned-on-protected-branch": 0,
+      "bot-authored-merge": 0,
+      "author-committer-mismatch": 1,
+      "machine-author-unregistered": 1
+    },
+    "filesScanned": 3,
+    "commitsScanned": 3,
+    "depth": 200,
+    "branch": "main",
+    "notApplicable": 1,
+    "rulesNotApplicable": [
+      "unsigned-on-protected-branch"
+    ],
+    "unmeasured": [],
+    "protectedBranch": {
+      "state": "repo-unidentified"
+    },
+    "botRegistry": {
+      "sources": [],
+      "count": 0
+    },
+    "machineAuthored": 1
+  },
+  "findings": [
+    {
+      "rule": "author-committer-mismatch",
+      "path": "main",
+      "sha": "0fe09abfe6b946d801b837e348ebb88a27c74e8b",
+      "sev": "low",
+      "cwe": "CWE-345",
+      "detail": "author=human committer=human, identities differ"
+    },
+    {
+      "rule": "machine-author-unregistered",
+      "path": "main",
+      "sha": "2c4a7146007e0d6070c6736a7e38b8a3ba370c20",
+      "sev": "high",
+      "cwe": "CWE-345",
+      "detail": "author=machine, not in the declared bot list (0 registered)"
+    }
+  ]
+}

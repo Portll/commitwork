@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/bare-catch-baseline.schema.json",
+  "title": "Bare catch ratchet baseline",
+  "type": "object",
+  "required": ["_comment", "version", "keys", "critical", "journal"],
+  "additionalProperties": false,
+  "properties": {
+    "_comment": { "type": "string", "minLength": 1 },
+    "version": { "type": "integer", "minimum": 1 },
+    "keys": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "critical": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "journal": {
+      "type": "array",
+      "description": "One row per write by bin/bare-catch-ratchet.mjs, one branch per action it has. The binding is mirrored — the writer does not consult this schema — so bin/test/schema-required.test.mjs drives the writer through every action and validates what it wrote.",
+      "items": { "oneOf": [
+        { "description": "--seed, and --seed --force", "type": "object", "required": ["at", "action", "keys", "total", "digest"], "additionalProperties": false, "properties": { "at": { "type": "string", "minLength": 1 }, "action": { "enum": ["seed", "reseed"] }, "keys": { "type": "integer", "minimum": 0 }, "total": { "type": "integer", "minimum": 0 }, "digest": { "type": "string", "minLength": 1 } } },
+        { "description": "--rekey <from> <to>", "type": "object", "required": ["at", "action", "from", "to", "moved", "total", "digest"], "additionalProperties": false, "properties": { "at": { "type": "string", "minLength": 1 }, "action": { "const": "rekey" }, "from": { "type": "string", "minLength": 1 }, "to": { "type": "string", "minLength": 1 }, "moved": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }, "criticalAdded": { "type": "string", "minLength": 1 }, "total": { "type": "integer", "minimum": 0 }, "digest": { "type": "string", "minLength": 1 } } },
+        { "description": "--tighten", "type": "object", "required": ["at", "action", "removed", "lowered", "total", "digest"], "additionalProperties": false, "properties": { "at": { "type": "string", "minLength": 1 }, "action": { "const": "tighten" }, "removed": { "type": "integer", "minimum": 0 }, "lowered": { "type": "integer", "minimum": 0 }, "total": { "type": "integer", "minimum": 0 }, "digest": { "type": "string", "minLength": 1 } } },
+        { "description": "--accept --reason", "type": "object", "required": ["at", "action", "reason", "added", "grew", "total", "digest"], "additionalProperties": false, "properties": { "at": { "type": "string", "minLength": 1 }, "action": { "const": "accept" }, "reason": { "type": "string", "minLength": 1 }, "added": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "grew": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "total": { "type": "integer", "minimum": 0 }, "digest": { "type": "string", "minLength": 1 } } }
+      ] }
+    }
+  }
+}

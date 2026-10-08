@@ -1,0 +1,247 @@
+{
+  "contractVersion": 1,
+  "title": "The memory-layer write contract — binding on every implementation",
+  "why": "There are two implementations in two languages in two repositories: lib/memory-layer-client.mjs (Node, commitwork) and .claude/hooks/memory-layer-lib.sh (bash, internal-d, symlinked into ~/.claude/hooks). They cannot share code. This file is what makes them one client instead of two: both are tested against it, so drift is a test failure rather than a discovery months later.",
+  "measuredAgainst": {
+    "internal-cVersion": "0.7.39+7",
+    "date": "2026-08-04"
+  },
+  "tenant": {
+    "value": "portll",
+    "decision": "ONE tenant for everything, and it is THE PERSON. Separation is by tag, never by user_id.",
+    "identityVsOrganisation": "`portll` (lowercase) is the personal user and is what `user_id` carries. `Portll` (capitalised) is the ORGANISATION — the GitHub org and repo namespace — and never appears in `user_id`. They are different things that happen to share a word.",
+    "history": "Three values have sat in this field, none of them an identity: `internal-d` (a project) in monitor/export-overwatch.mjs, `claude-code` (a tool) in memory-layer-lib.sh, and briefly `claude-code` here. The original Node default carried a stated rationale — 'same tenant as internal-d-mcp, deliberate: audit memories must co-mingle with evaluations'.",
+    "whyChanged": "That rationale was checkable and false. Measured 2026-08-04: tenant `internal-d` held 37 memories, 36 tagged `commitwork` and ZERO tagged `memory-layer-project:internal-d`, while internal-d's own evaluations sat in `claude-code`. The co-mingling was not happening in either direction. But the first correction — moving to `claude-code` — repeated the underlying error: `claude-code` names a WRITER, which is precisely what the `scope:` tag already encodes. Swapping a project name for a tool name is not a fix, it is the same category mistake with a different word.",
+    "principle": "memory-layer's RememberRequest has no project field; association is by tag. `user_id` is an IDENTITY — it answers WHO, and there is one human here. Using it to answer WHAT (project) or HOW (writer) partitions the store along an axis no query can cross, so a scoped search returns a partial history that looks complete. `memory-layer-project:` answers WHAT and `scope:` answers HOW; both already work.",
+    "test": "If a candidate value could sensibly appear in a `memory-layer-project:` or `scope:` tag, it is not a tenant.",
+    "migration": "See lib/memory-layer-contract.json#migration."
+  },
+  "scopeTags": {
+    "appliedBy": "the client, never asked of the caller",
+    "why": "A tag every caller must remember is a tag some caller forgets, and an unscoped memory is invisible to a scoped search — it does not fail, it never comes back.",
+    "tags": [
+      {
+        "key": "memory-layer-project:<Name>",
+        "means": "WHICH project owns this record",
+        "note": "deliberately NOT the `project:` namespace, which already means 'the scanned repo this finding is about' (project:client-a)"
+      },
+      {
+        "key": "scope:<writer>",
+        "means": "WHO wrote it",
+        "values": [
+          "commitwork-sweep",
+          "claude-code"
+        ],
+        "note": "a sweep artifact and a session memory are different evidence about one project and must stay separable"
+      }
+    ],
+    "appliesTo": "EVERY write function without exception — upsert, remember, batch and any full-body passthrough. A bypass that silently writes unscoped is the same failure with extra steps."
+  },
+  "endpoints": {
+    "POST /api/upsert": {
+      "use": "every write",
+      "idempotent": true,
+      "keyedOn": "external_id",
+      "measured": "two upserts with one external_id returned the SAME id, was_update false->true, version 1->2",
+      "consequence": "no client-side existence check is needed or wanted"
+    },
+    "GET /api/memory/{id}": {
+      "use": "verification readback — the identity read",
+      "userIdVia": "QUERY PARAM (?user_id=). A header (X-User-Id) is rejected with HTTP 400 'user_id required when API key is not tenant-bound'. So is omitting it.",
+      "synchronous": true,
+      "measured": "reflects an update immediately; content round-tripped byte-identically (sha256 equal) on a 115-byte multi-line body with trailing whitespace"
+    },
+    "POST /api/recall/tags": {
+      "use": "ENUMERATION of records of a kind",
+      "strict": true,
+      "measured": "1 returned for a 1-match tag; 0 for a tag that exists nowhere",
+      "notFor": "existence checks — content-derived tags mean a tag is not an identity"
+    },
+    "POST /api/recall": {
+      "use": "FORBIDDEN with a tags filter; must not be exposed by any implementation",
+      "reason": "it accepts `tags` and silently ignores it. Measured: 5 returned, 4 without the requested tag. A caller scoping by tag here reads other projects' memories and presents them as this project's.",
+      "rule": "an endpoint that lies is removed from the surface, not documented"
+    },
+    "DELETE /api/forget/{id}": {
+      "userIdVia": "QUERY PARAM (?user_id=), same as GET /api/memory",
+      "knownBug": "memory-layer-lib.sh sends X-User-Id, receives 400, and `curl -sf` swallows it — deletion has been a silent no-op"
+    }
+  },
+  "tagsAreNotIdentity": {
+    "fact": "memory-layer MINTS TAGS FROM CONTENT on store.",
+    "measured": "2 tags sent with a 115-byte body -> 19 tags stored, including CVE-2026-1234, COMMITWORK_AUDIT, 1C/2H, 'thing scanner', and the external_id string itself. A second probe: 2 -> 11. On a REAL rollup memory during the 2026-08-05 migration: 6 sent -> 50 stored, and 5 -> 40 on the sweep summary — minting scales with content length, so the small-probe figures UNDERSTATE it. (The 6->50 figure was measured live from migration receipts; it is recorded here because a review correctly found it asserted in a task prompt with no in-repo source.)",
+    "rules": [
+      "Verification compares CONTENT hashes.",
+      "Tags are asserted as a SUBSET (every sent tag present). Tag-set EQUALITY fails on every healthy write.",
+      "A dropped sent-tag is accepted-unverified, not failed: the content is right but the record is not scoped as intended.",
+      "Determinism applies to the SENT payload only. memory-layer owns the stored tag set and can change it between versions."
+    ]
+  },
+  "receipt": {
+    "required": [
+      "external_id",
+      "id",
+      "was_update",
+      "version",
+      "contentSha256",
+      "storedSha256",
+      "tagsSent",
+      "tagsStoredCount",
+      "truncated",
+      "state",
+      "reason",
+      "storedForm",
+      "storedCoverage"
+    ],
+    "states": {
+      "verified": "read back by id; stored content hash equals sent content hash; every sent tag retained",
+      "accepted-unverified": "memory-layer accepted the write and we did not confirm it. NOT a failure and NOT a success. Includes: verification disabled, no id in the response, readback unavailable, readback lacked experience.content, a timeout (memory-layer may well have stored it), or a sent tag not retained.",
+      "failed": "the write did not happen, or the stored content differs from what was sent",
+      "dry-run": "the write was NOT ATTEMPTED — a dry run. Neither a success nor a failure, and never folded into `failed`. monitor/export-overwatch.mjs has emitted this since it was written while this contract declared only three states and the client's tally() had an unguarded `else t.failed++`, so every `--dry` run reported its own no-op as a fleet of failed writes. That is the grey-as-RED half of the house invariant, inside the publishing lane."
+    },
+    "rules": [
+      "`reason` is REQUIRED whenever state is not `verified`. A degraded state with no stated reason is the unsupported finding failure the reporting checks must detect.",
+      "A timeout is never `failed`. Calling it one invents a data-loss event that did not happen.",
+      "`truncated` rides on the receipt because otherwise `verified` reads wider than it is: the receipt proves what was SENT round-tripped, never that it was COMPLETE.",
+      "Counters are three-valued. A two-state sent/failed tally cannot express 'accepted but not read back', which is the state most worth reporting.",
+      "An UNDECLARED state is counted on its own axis (`unknownState`) and named in the summary line, never binned into `failed`. An unguarded else is how `dry-run` was read as data loss for as long as both existed; the next state added anywhere must announce itself rather than inherit a verdict."
+    ],
+    "storedForm": {
+      "why": "Measured 2026-09-02: memory-layer stores a ~410-byte PREVIEW in `content` and discards the rest. metadata.compressed_data decompresses to that same preview plus ~600 NER rows, while ner_entities keeps char offsets (end_char 17392) into a document that is no longer anywhere. Every signal says full document except the document.",
+      "states": {
+        "full": "stored text matches the source — coverage and length ratio both at or above tolerance",
+        "preview": "stored text is a SUBSET of the source: high containment, low coverage. The write succeeded and the record is NOT a durable copy.",
+        "divergent": "stored text is not derived from the source at all — corruption, and it keeps its own name so preview-detection can never swallow it",
+        "unknown": "no content and no decodable blob, or no source text supplied to compare against"
+      },
+      "rules": [
+        "storedForm is an axis SEPARATE from state. A previewed write is accepted-unverified AND not a copy; folding the two loses the second fact.",
+        "`preview` must never be reported as `failed` — over-reporting is not the safe direction, and a check that cannot pass for any document over ~410 bytes is worse than no check.",
+        "`preview` must never be reported as `verified` either. explicit uncertainty.",
+        "Coverage is MEASURED against the source text on disk, never against the buffer that was sent — hashing sent-against-stored closes the channel and leaves the payload selection unwitnessed.",
+        "Two directions are required: coverage (source found in stored) plus containment (stored found in source). Coverage alone cannot tell truncation from corruption.",
+        "Length ratio is the independent witness for coverage, which inflates on repetitive text where one stored copy satisfies many identical source shingles.",
+        "ALL FOUR forms are counted. `divergent` — corruption, the most severe — previously fell through both branches of tally() and had no number anywhere, in the very tally written so a healthy-looking count could not hide an unhealthy store. `full` is counted too, so adding a fifth form cannot silently vanish."
+      ]
+    }
+  },
+  "syncPoints": {
+    "why": "The panel wants a column answering 'is this spine task in sync with memory-layer at the correct points'. No such point set was declared, and writing one from first principles would have produced a checker whose expected-state was invented — which reports `missing` on every row and describes the checker rather than the system. commitwork's own rule names the signature: a lane that fails a control on ~100% of subjects is a defect in the lane. So the points below are DERIVED from what the fleet already does, and each carries its real implementation status.",
+    "key": {
+      "field": "spine_session",
+      "rule": "Any memory-layer record about spine work MUST carry the spine session id verbatim, alongside whatever session id the writer already records.",
+      "why": "Measured 2026-09-02: memory-layer session records are keyed on the Claude Code TRANSCRIPT id; the spine keys sessions on its own s-<uuid> plus agent and pid, and stored no transcript id at all. The two do not join. A join IS constructible by walking the MCP process's pid up to its parent and into the harness presence table, but every hop dies when the session does — and a closed session is exactly when the record needs reading. A key that resolves only while its subject is alive is not a key.",
+      "derivedNotInvented": "One record in the wild already carries spine_session, plan and tasks_completed. This formalises that shape rather than proposing a rival.",
+      "nowAlsoStored": "overwatch-layer's spine gained a sessions.ids column (2026-09-02) holding every knowable id with its provenance, so the join no longer has to be recomputed from a process tree that will be gone.",
+      "tag": "spine-session:<id>",
+      "whyATag": "The field alone is not ENUMERABLE. A reader holding a session id can only find its record by semantic recall, which cannot distinguish 'no record exists' from 'the search did not surface it' — so no reader may emit `missing` from a zero, and the column can never be more than advisory. A TAG makes it exact: /api/recall/tags is strict (measured: 1 for a 1-match tag, 0 for a tag that exists nowhere), unlike /api/recall, which this contract forbids for tag filtering because it accepts the filter and silently ignores it. Carrying the field AND the tag costs one array entry per write and is what lets P1 emit a real verdict the day a close hook exists.",
+      "readerIsBuilt": "admin/lib/memory-layer-sync.mjs already queries the strict path and reports not-wired rather than missing while the writers are absent. Nothing in it changes when a hook lands except the point's `status` here."
+    },
+    "points": [
+      {
+        "id": "P1",
+        "point": "session close",
+        "firesOn": "close_session",
+        "fields": [
+          "spine_session",
+          "plan",
+          "tasks_completed[]"
+        ],
+        "status": "partially-wired",
+        "note": "the shape exists in the wild and is applied voluntarily; no hook produces it"
+      },
+      {
+        "id": "P2",
+        "point": "task complete",
+        "firesOn": "set_status -> completed",
+        "fields": [
+          "spine_session",
+          "plan",
+          "task",
+          "outcome"
+        ],
+        "status": "not-wired",
+        "note": "nothing writes it"
+      },
+      {
+        "id": "P3",
+        "point": "plan archive",
+        "firesOn": "archive_plan",
+        "fields": [
+          "plan",
+          "tasks_completed[]",
+          "open[]"
+        ],
+        "status": "not-wired",
+        "note": "nothing writes it"
+      }
+    ],
+    "verdicts": {
+      "synced": "a record exists for this point AND reads back — subject to the storedForm axis above, so a previewed record is not a verified copy",
+      "missing": "the point is WIRED and the record is absent. A real fault.",
+      "unverifiable": "memory-layer unreachable, or no credential. Absence of evidence, displayed as itself.",
+      "not-wired": "the point is DECLARED but unimplemented. A fact about the fleet, not about the task."
+    },
+    "rules": [
+      "`missing` may only be emitted for a point whose writer exists. Without `not-wired`, the 1036 completed tasks in the spine each report `missing` at P2 and the column becomes a red wall that means nothing — the unsupported finding half of the invariant, the half that went unenforced for months while its mirror was enforced everywhere.",
+      "A point is never reported synced from the writer's own knowledge. The producer writes; the reader checks. Two roles, even inside one session.",
+      "Ids, statuses, counts and hashes only — never task goals, results or notes. memory-layer mints tags from content, so a goal quoting evidence becomes a queryable tag.",
+      "Coverage of P1 is stated as a SAMPLE, never as a rate. Recall is semantic search under a limit and there is no enumeration endpoint, so there is no denominator: measured 2026-09-02, 2 of 29 memories reachable by five session-shaped queries carried spine_session, against 227 plans / 155 closed sessions / 1036 completed tasks in the spine. That supports 'rare and voluntary'. It does not support a percentage."
+    ]
+  },
+  "redaction": {
+    "default": "CLOSED",
+    "why": "Content tokens become tags, and scanner artifacts carry live credentials that cross the published tunnel. A gate whose default is permissive is documentation.",
+    "mechanism": "ALLOW-LIST. Rows are CONSTRUCTED from a declared field list, never spread from a source object — a deny-list alone fails open for the next scanner lane someone adds.",
+    "denyList": [
+      "Raw",
+      "RawV2",
+      "raw",
+      "rawV2",
+      "Secret",
+      "Match",
+      "secret",
+      "match",
+      "password",
+      "passwd",
+      "token",
+      "apiKey",
+      "api_key",
+      "authorization",
+      "privateKey",
+      "private_key"
+    ],
+    "onFailure": "REFUSE the write and report. Never sanitise-and-write: stripping a secret out of prose and writing the remainder is a guess about where the secret ended."
+  },
+  "transport": {
+    "envAtCallTime": "REQUIRED. `const X = process.env.Y` at module load silently defeats any test that sets the override afterwards, so the test passes while proving nothing. The file this client replaced had exactly that at monitor/export-overwatch.mjs:36-44.",
+    "statusNeverSwallowed": "`curl -sf` turning a 4xx into empty output is the single mechanism behind three separate silent failures in memory-layer-lib.sh (the 401 on an unauthenticated remember, the get_memory 400, the forget 400). Implementations must surface the status.",
+    "verifyImmediately": "Verification runs right after its write, never in a deferred batch. Several sessions write this store; a batched pass races another writer and reports a false mismatch.",
+    "bestEffort": "Callers on the nightly path exit 0 on every failure. That is deliberate and must not change — which is exactly why receipts are persisted: with exit-0-always, an unpersisted receipt makes every failure state silent."
+  },
+  "migration": {
+    "id": "M1",
+    "status": "DONE 2026-08-05",
+    "problem": "The store was split across THREE tenants and no query crossed them: `claude-code` 440 (session writes from memory-layer-lib.sh's old default), `internal-d` 37 (commitwork audit exports), `portll` 16 (older /close writes). Tag case was split too — `memory-layer-project:CommitWork` 88 vs `memory-layer-project:commitwork` 3 — and /api/recall/tags matches exactly, so a scoped search saw a fraction of its own project.",
+    "outcome": "477 records consolidated onto `portll` by bin/memory-layer-migrate-tenant.mjs: 476 distinct identities, 1 older duplicate superseded, 477 deleted, 0 failed. `claude-code` and `internal-d` are now empty. A further 8 records already resident in `portll` had their tag case normalised in place (--normalise). Verified after: no mixed-case project tag remains, and a strict recall for `memory-layer-project:commitwork` returns 113 records where it previously returned 3.",
+    "howItWasSafe": "WRITE, VERIFY by reading back and comparing a content hash, and only THEN delete. That ordering is the whole safety argument, standing in for a transaction memory-layer does not offer: interrupted after the write leaves a record in both tenants (harmless, and a re-run absorbs it), while a record in NEITHER place is made impossible because the delete cannot run before the copy has been content-matched. A full readable snapshot of all 506 records was taken to disk first — memory-layer's own /api/backup/create returns a 500 for the `portll` tenant, so the server-side backup was not available for the destination and could not be relied on.",
+    "collisions": "The same external_id in two tenants is ONE logical record written twice, not two records, so upserting both would let arbitrary list order decide which content survived. Identities are grouped before any write and the newest by created_at wins, deterministically. One identity was affected: `commitwork:rollup:commitwork-admin:commitwork`, present in all three tenants.",
+    "cutoverDate": "2026-08-05",
+    "readerRule": "One tenant now: `portll`. Records written before 2026-08-05 may carry no scope tags at all — unmarked means 'no scope tag on this record', never 'not this project'. Records that travelled carry `migrated-from:<old-tenant>`.",
+    "counts": {
+      "beforeMigration": {
+        "claude-code": 440,
+        "internal-d": 37,
+        "portll_at_first_measurement": 16,
+        "portll_at_migration_time": 29,
+        "note": "portll grew 16 -> 29 between first measurement and the migration because session hooks were writing to it live. Earlier drafts of this file and the handoff quoted 16 for both, which does not reconcile with the 509 total."
+      },
+      "afterMigration": {
+        "portll": 509,
+        "claude-code": 0,
+        "internal-d": 0,
+        "arithmetic": "477 migrated + 29 resident = 506, + 3 concurrent live session writes = 509"
+      }
+    }
+  }
+}

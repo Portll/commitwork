@@ -1,0 +1,234 @@
+{
+  "version": "2.1.0",
+  "$schema": "https:\/\/docs.oasis-open.org\/sarif\/sarif\/v2.1.0\/errata01\/os\/schemas\/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.c"
+                },
+                "region": {
+                  "endColumn": 15,
+                  "endLine": 6,
+                  "startColumn": 15,
+                  "startLine": 6
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.c"
+                },
+                "region": {
+                  "endColumn": 30,
+                  "endLine": 7,
+                  "startColumn": 30,
+                  "startLine": 7
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Array 'arr[5]' accessed at index 10, which is out of bounds."
+          },
+          "ruleId": "arrayIndexOutOfBounds"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.c"
+                },
+                "region": {
+                  "endColumn": 5,
+                  "endLine": 10,
+                  "startColumn": 5,
+                  "startLine": 10
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.c"
+                },
+                "region": {
+                  "endColumn": 5,
+                  "endLine": 11,
+                  "startColumn": 5,
+                  "startLine": 11
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Memory pointed to by 'p' is freed twice."
+          },
+          "ruleId": "doubleFree"
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.c"
+                },
+                "region": {
+                  "endColumn": 9,
+                  "endLine": 5,
+                  "startColumn": 9,
+                  "startLine": 5
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Variable 'arr' can be declared as const array"
+          },
+          "ruleId": "constVariable"
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.c"
+                },
+                "region": {
+                  "endColumn": 15,
+                  "endLine": 9,
+                  "startColumn": 15,
+                  "startLine": 9
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Variable 'p' is allocated memory that is never used."
+          },
+          "ruleId": "unusedAllocatedMemory"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https:\/\/cppcheck.sourceforge.io",
+          "name": "Cppcheck",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": ""
+              },
+              "id": "arrayIndexOutOfBounds",
+              "name": "",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "error",
+                "security-severity": "9.9",
+                "tags": [
+                  "external\/cwe\/cwe-788",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": ""
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": ""
+              },
+              "id": "doubleFree",
+              "name": "",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "error",
+                "security-severity": "9.9",
+                "tags": [
+                  "external\/cwe\/cwe-415",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": ""
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": ""
+              },
+              "id": "constVariable",
+              "name": "",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "security-severity": "5.5",
+                "tags": [
+                  "external\/cwe\/cwe-398",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": ""
+              }
+            },
+            {
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": ""
+              },
+              "id": "unusedAllocatedMemory",
+              "name": "",
+              "properties": {
+                "precision": "high",
+                "problem.severity": "warning",
+                "security-severity": "5.5",
+                "tags": [
+                  "external\/cwe\/cwe-563",
+                  "security"
+                ]
+              },
+              "shortDescription": {
+                "text": ""
+              }
+            }
+          ],
+          "semanticVersion": "2.21.0"
+        }
+      }
+    }
+  ]
+}
+

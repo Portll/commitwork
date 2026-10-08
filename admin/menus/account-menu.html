@@ -1,0 +1,44 @@
+<div class="menu">
+    <button type="button" id="menubtn" class="vtab" aria-expanded="false" aria-controls="menupop" title="reading the session…">
+      <span class="avatar unk" id="acct-av" aria-hidden="true">?</span>
+      <span class="acct-name" id="acct-name">session…</span>
+    </button>
+    <div id="menupop" class="pop" hidden>
+      <div class="pop-acct" id="acct-head" role="presentation">
+        <span class="avatar unk" id="acct-av2" aria-hidden="true">?</span>
+        <span class="acct-lines"><b id="acct-who">session unknown</b><span class="mut" id="acct-sub">the panel has not read /auth/session yet</span></span>
+      </div>
+      <div class="pop-h" role="presentation">Preferences</div>
+      <div class="pop-fld" role="presentation">
+        <span class="pop-lbl">Appearance</span>
+        <div class="theme-row" role="radiogroup" aria-label="Appearance">
+          <button type="button" class="theme-opt" data-theme-set="auto" role="radio" aria-checked="true" title="follow this machine's light/dark setting, and keep following it when it changes">AUTO</button>
+          <button type="button" class="theme-opt" data-theme-set="light" role="radio" aria-checked="false" title="always light, regardless of this machine's setting">LIGHT</button>
+          <button type="button" class="theme-opt" data-theme-set="dark" role="radio" aria-checked="false" title="always dark, regardless of this machine's setting">DARK</button>
+        </div>
+      </div>
+      <label class="pop-fld" id="cvd-row" title="Re-grade the severity, status and attribution colours for a colour-vision deficiency. Each palette is searched against that condition's own simulation, so the distinctions survive it rather than merely looking different.">
+        <span class="pop-lbl">Vision</span>
+        <select id="cvd-sel" aria-label="colour vision palette">
+          <option value="normal">Normal</option>
+          <option value="protanopia">Protanopia (red-blind)</option>
+          <option value="deuteranopia">Deuteranopia (green-blind)</option>
+          <option value="tritanopia">Tritanopia (blue-blind)</option>
+          <option value="achromatopsia">Achromatopsia (no colour)</option>
+        </select>
+        <span class="mut" id="cvd-note"></span>
+      </label>
+      <label class="pop-fld chk" id="learn-row" title="Contextual information for people who aren't software engineers. Short plain-English notes appear beside the terms this panel uses without defining them. Dismiss each one on its own; it stays dismissed.">
+        <input type="checkbox" id="learn-on"> <span class="pop-lbl">Learning mode</span>
+        <span class="mut" id="learn-note"></span>
+      </label>
+      <button type="button" class="menu-view" data-v="profile">Account &amp; security</button>
+<div class="pop-h" role="presentation">Session</div>
+      <div id="oauth" class="sect row-actions">
+        <button type="button" id="login-google" data-p="google" title="Sign in with Google" class="jshide">Google</button>
+        <button type="button" id="login-github" data-p="github" title="Sign in with GitHub" class="jshide">GitHub</button>
+        <button type="button" id="logout" title="log out">Log out</button>
+      </div>
+      <span id="oauth-who" class="mut jshide"></span>
+      </div>
+  </div>

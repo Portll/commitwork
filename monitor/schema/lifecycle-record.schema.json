@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork/monitor/schema/lifecycle-record.schema.json",
+  "title": "Vulnerability-lifecycle record (C01) — the enforceable schema for the new columns",
+  "description": "Extends the commitwork finding (rollup.mjs:401-403) + ledger record (ledger.mjs:53-57) with the vuln-lifecycle fields: CVE/CWX identity, the 4 time anchors, derived-foundational, taxonomy, n-dimensional defence vector, escalation/SLA, scan provenance, and dwell. New fields carry x-new:true. Vocabulary imported from status-enum.json.",
+  "x-enforced-by": "monitor/validate-authored-judgment.mjs :: validateLifecycleRecords — structural, hand-rolled (no AJV, zero-dependency house rule). It reads `required`, the severity/residualVerdict/bugVisibleTo/weaknessClassSource enums and the CWE/CWX patterns OUT OF THIS FILE, so the checker cannot drift from the contract. Called on every sweep from lifecycle.mjs:assembleLifecycle (violations ride out in the return value and are written into lifecycle.json + history/LOG.md) and from this file's CLI over the live reports/*/lifecycle.json artifacts. Before 2026-07-29 this schema had NO consumer at all and required a field no producer emitted.",
+  "type": "object",
+  "required": ["primaryId", "key", "repo", "severity", "lifecycleStatus", "scanProvenance"],
+  "properties": {
+    "primaryId":   { "type": "string", "description": "CVE-.../GHSA-... (public) OR CWX-nnnnnn (self-found). Encodes provenance; see status-enum primaryIdFormat.", "x-new": true },
+    "cwxRef":      { "type": ["string", "null"], "pattern": "^CWX-([0-9]{6}|[0-9A-F]{6}|[0-9A-Z]{6})$", "description": "Retained internal id when a CWX later maps to a public advisory (primaryId becomes the CVE/GHSA; cwxRef proves we found it first). Never deleted.", "x-new": true },
+    "aliasIds":    { "type": "array", "items": { "type": "string" }, "description": "existing (ledger)" },
+    "weaknessClass": { "type": "array", "items": { "type": "string", "pattern": "^CWE-[0-9]{1,5}$" }, "description": "MITRE CWE class(es) — the separate retained field (NOT the primary id). C23 populates. An EMPTY array means 'no class determined' and is never to be read as 'no weakness'.", "x-new": true },
+    "cweIds":      { "type": "array", "items": { "type": "string", "pattern": "^CWE-[0-9]{1,5}$" }, "description": "Raw advisory-supplied CWE ids for the finding (F.5.2). Written by the lifecycle assembler from npm audit via[].cwe / GitHub Advisory Database; weaknessClass prefers this over the ruleId table.", "x-new": true },
+    "weaknessClassSource": {
+      "type": ["string", "null"],
+      "enum": ["advisory", "advisory-transitive", "rule-map", null],
+      "description": "PROVENANCE of weaknessClass, so a class is never mistaken for a stronger claim than it is. advisory = the finding's own advisory carried cwe[]; advisory-transitive = reached by following npm audit's via-string edges to the advisory that causes it (the tool's own causal edge, not our inference); rule-map = the scanner ruleId -> CWE table; null = weaknessClass is [] and nothing determined it.",
+      "x-new": true
+    },
+
+    "key":         { "type": "string", "description": "existing repo|tool|id|package|path (rollup.mjs:273)" },
+    "legacyKey":   { "type": "string", "description": "existing repo|id|package (v0 bridge)" },
+    "repo":        { "type": "string" },
+    "tool":        { "type": "string" },
+    "package":     { "type": "string" },
+    "version":     { "type": "string" },
+    "fixedVersion":{ "type": "string" },
+    "path":        { "type": "string", "description": "provenance file path" },
+    "severity":    { "type": "string", "enum": ["crit", "high", "med", "low", "unknown"],
+                     "description": "'unknown' is a REAL producer value, not an omission: rollup.mjs:sevFromCvss returns it when an advisory carries no CVSS score (58 live internal-d records, all RUSTSEC-*, 2026-07-29), and SEVRANK/GLYPH/LABEL have always carried it. It was missing from this enum only because nothing ever validated against the schema — the first run of validateLifecycleRecords found it. It means 'no score available' and must never be read as 'low'." },
+    "cvss":        { "type": "number" },
+    "epss":        { "type": "number" },
+    "kev":         { "type": "boolean" },
+    "title":       { "type": "string" },
+    "advisory":    { "type": "string" },
+
+    "bugIntroducedDate": { "type": ["string", "null"], "format": "date-time", "description": "UTC — vulnerable code/dep entered our tree. Seed from bornSlice stamp is a FLOOR (scanner birthday); real value needs C24 git-blame. Until C24, blindExposure is NOT rendered.", "x-new": true },
+    "bugInitialReport":  { "type": ["string", "null"], "format": "date-time", "description": "UTC — became known to us. IMMUTABLE = min(OSV.published, first-observing-slice). Never hand-lowered (eval D-GAMING).", "x-new": true },
+    "bugSquashedOn":     { "type": ["string", "null"], "format": "date-time", "description": "UTC — fix shipped. FREEZES on first resolution like ledger.at. Prefer fixCommit author-date; else detection-bounded upper bound (eval D-SQUASH).", "x-new": true },
+    "bugIsFoundational": { "type": "boolean", "description": "DERIVED from primaryId, NOT stored-editable: ^CWX- => true, ^CVE-|^GHSA- => false (status-enum foundationalDerivation). Removes the gaming lever.", "x-new": true, "x-derived": true },
+
+    "bugReportedTo": { "type": "array", "items": { "type": "string" }, "description": "escalation recipients (NOT annotations.who = author; separate field per eval B-F4).", "x-new": true },
+    "bugVisibleTo":  { "type": "string", "enum": ["public", "internal", "embargoed"], "x-new": true },
+    "bugPlatform":   { "type": "string", "enum": ["jvm", "npm", "image-os", "runtime-dast", "source-sast", "config"], "x-new": true },
+    "bugBelongsTo":  { "type": "string", "description": "owning service/team (from owner-map.json / C07)", "x-new": true },
+
+    "defenceVector": {
+      "type": "object", "x-new": true,
+      "description": "8 axes; each { state, evidence, ref, who?, at? }. patchAvailability is NOT counted toward quorum (eval D-ORTHO). reachability=blocks short-circuits dataAtRisk to n/a (no double-count). hand-set states carry who/at (eval D-GAMING).",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "state": { "type": "string", "enum": ["blocks", "partial", "open", "n/a"] },
+          "evidence": { "type": "string" },
+          "ref": { "type": "string" },
+          "rationale": { "type": "string", "description": "REQUIRED when state = n/a" },
+          "who": { "type": "string" }, "at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["state"]
+      }
+    },
+    "residualVerdict": { "type": "string", "enum": ["exploitable", "contained", "inexploitable", "fixed", "undetermined"], "description": "RECOMPUTED from defenceVector (no hand-set). contained/inexploitable REQUIRE expires+recheckTrigger; inexploitable REQUIRES a DAST/BOLA probe row. 'undetermined' (D-UNMEASURED) is emitted when NO axis carries a state or evidence — an unread vector must not publish as 'exploitable', which is a finding nobody made.", "x-new": true },
+    "residualExpires": { "type": ["string", "null"], "format": "date-time", "description": "REQUIRED when residualVerdict in {contained, inexploitable} — parity with image-acceptance.json:88 (eval D-EXPIRE/D-RECONCILE).", "x-new": true },
+    "recheckTrigger": { "type": ["string", "null"], "description": "what would reopen this (e.g. 'debian ships perl fix', 'next fleet upgrade'). REQUIRED with residualExpires.", "x-new": true },
+
+    "lifecycleStatus": { "type": "string", "description": "from status-enum lifecycleStatus" },
+    "escalation": {
+      "type": "object", "x-new": true,
+      "properties": {
+        "escalated": { "type": "boolean" },
+        "escalatedTo": { "type": "array", "items": { "type": "string" } },
+        "escalatedAt": { "type": ["string", "null"], "format": "date-time" },
+        "slaTier": { "type": "number", "description": "days knowable-exposure" },
+        "slaBreached": { "type": "boolean" },
+        "breachDays": { "type": "number" }
+      }
+    },
+    "scanProvenance": {
+      "type": "object",
+      "description": "per-finding scan honesty (M6). ran=false => lifecycleStatus MUST be unknown-not-scanned (never resolved/clean). EMITTED by lifecycle.mjs:assembleLifecycle from rollup.mjs's toolRuns table: `ran` is artifact presence (the same definition toolRan() uses — 'the tool produced its report file in THIS batch'), `scanner` is the producing tool, `at` is the checks-status.json timestamp for that tool's check when one exists. F.5.3 decision: KEPT in `required` and made real, rather than dropped as aspirational, because the data was already one variable away and the assembler's unknown-not-scanned floor depends on it. When provenance genuinely cannot be determined (unknown repo, or a tool absent from the artifacts table) the field is left ABSENT and validate-authored-judgment.mjs reports it — it is never stamped ran:false, because unknown and did-not-run are different states.",
+      "properties": {
+        "ran": { "type": "boolean" }, "scanner": { "type": "string" }, "at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ran"]
+    },
+
+    "evidence": { "type": "object", "properties": { "tier": { "type": "string", "enum": ["strong", "medium", "weak"] }, "detail": { "type": "string" } }, "description": "existing (ledger)" },
+    "fromVersion": { "type": "string" }, "toVersion": { "type": "string" }, "fixCommit": { "type": ["string", "null"] },
+    "bornSlice": { "type": "string", "description": "existing" }, "resolvedSlice": { "type": ["string", "null"], "description": "existing" }, "at": { "type": ["string", "null"], "format": "date-time", "description": "existing" },
+
+    "dwell": {
+      "type": "object", "x-new": true,
+      "description": "DERIVED (C04). blindExposureDays only when C24 introduction-date exists; else null. openAgeDays runs to now() for un-squashed. Parsed via 'generated' ISO, NOT the bumpable stamp (eval D-STAMP).",
+      "properties": {
+        "blindExposureDays": { "type": ["number", "null"] },
+        "knowableExposureDays": { "type": ["number", "null"] },
+        "openAgeDays": { "type": ["number", "null"] },
+        "computedFrom": { "type": "string", "enum": ["dates", "slices", "detection-bounded"] }
+      }
+    }
+  },
+  "x-required-invariants": [
+    "bugSquashedOn/resolvedSlice >= bugIntroducedDate/bornSlice (no negative dwell)",
+    "bugInitialReport >= bugIntroducedDate",
+    "bugInitialReport is immutable = min(OSV.published, first-observing-slice)",
+    "bugSquashedOn freezes on first resolution (never mutated by re-rollup)",
+    "bugIsFoundational is derived from primaryId, never stored-editable",
+    "residualVerdict recomputable from defenceVector (no hand-set verdict)",
+    "residualVerdict in {contained,inexploitable} => residualExpires + recheckTrigger present",
+    "residualVerdict == inexploitable => a DAST/BOLA probe covered the path (not prose)",
+    "defenceVector with no state and no evidence on ANY axis => residualVerdict == undetermined, never exploitable",
+    "defenceVector axis state 'n/a' carries a rationale",
+    "scanProvenance.ran=false => lifecycleStatus == unknown-not-scanned (never-imply-clean)",
+    "evidence.tier weak => never counted cleaned",
+    "embargoed findings are redacted from client-facing renders"
+  ]
+}

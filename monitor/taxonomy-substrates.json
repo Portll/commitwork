@@ -1,0 +1,1520 @@
+{
+  "version": 1,
+  "generatedFrom": "monitor/failure-taxonomy.json v6",
+  "note": "Which EVIDENCE decides each class, and how far the repo already is from being able to read it. `layer` in the taxonomy says where a defect LIVES (implementation vs controller); this file says where its evidence LIVES. They are not the same question, and treating CTRL as a synonym for undetectable is P11 with a denominator attached. Every entry names the predicate that would decide the class, because a substrate assignment with no predicate is a claim that cannot be wrong.",
+  "substrates": {
+    "SRC": "Source text / lexed structure of the tree under scan.",
+    "HIST": "Git history, refs, index state, and the session touch ledger.",
+    "ART": "Artifacts this repo already produces: findings stores, journals, ledgers, baselines, registries, docs and their stamps. Cross-artifact consistency.",
+    "RUN": "Execution evidence: exit codes, per-run manifests, fire rates, durations, throughput. Largely NOT recorded today.",
+    "SESS": "Session and turn records: what an agent did with a turn. Partially present (overwatch-layer/vscode-skills, touch ledger, verdict journal).",
+    "EXT": "An oracle outside the system: a canary/plant, a second independent instrument, an LLM judge, or the operator."
+  },
+  "tiers": {
+    "T1": "Decidable NOW. A deterministic predicate over source, git, or an artifact that already exists. No new recorder.",
+    "T2": "Needs a recorder. The predicate is deterministic; the evidence is simply not being written yet. One recorder lights up many classes at once.",
+    "T3": "Needs a differential. Requires a second instrument, a planted canary, or a re-run under changed conditions before any predicate can fire.",
+    "T4": "Needs judgement. Irreducibly requires an LLM or the operator on a sample. Can be ratcheted and sampled; never fully mechanised."
+  },
+  "map": {
+    "C1": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A renderer or reducer maps missing/undefined/ENOENT onto a success token (0, [], 'clean', 'ok') with no distinct absent state."
+    },
+    "C2": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A module calls process.exit(nonzero) or returns a failure status and no caller in the tree branches on it."
+    },
+    "C3": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T2",
+      "predicate": "A published number carries no scope token (tree/ref/moment), so it cannot be checked against the population it is quoted about."
+    },
+    "C4": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "An identity key (template literal or join feeding a Map/Set/dedupe) includes a line number."
+    },
+    "C5": {
+      "substrate": [
+        "RUN",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "Two independent instruments over the same input disagree, or a probe reads a field the source never emits."
+    },
+    "C6": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A decision is printed (console/log/return) on a path with no write to any durable store."
+    },
+    "C7": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A filter/dedupe/threshold drops items and the surviving record carries no withheld count."
+    },
+    "C8": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "Read-modify-write on a shared path with no lock, CAS or per-writer file; renameSync makes the write atomic and the cycle is not."
+    },
+    "C9": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "An alarm record has no author/session field, so it cannot be baselined per writer."
+    },
+    "C10": {
+      "substrate": [
+        "ART",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A durable doc asserts a property the tree does not have. Stamp staleness is T1 and is a proxy; the claim itself needs a reader."
+    },
+    "C11": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A catch body returns an empty collection or a success-shaped default without discriminating ENOENT from other errors."
+    },
+    "C12": {
+      "substrate": [
+        "SRC",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "Adjacent pipeline stages with no conservation assertion binding input count to output count."
+    },
+    "A1": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A turn-scoped message is computed from a baseline-scoped comparison — the accusation's scope and the comparison's scope differ."
+    },
+    "A2": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A remediation or --fix path writes the baseline it was measured against."
+    },
+    "A3": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A baseline file records no population identifier, so it cannot refuse being applied to a different one."
+    },
+    "A4": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "Per-turn fire rate above threshold with no named wait condition in the payload."
+    },
+    "A5": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A parse or read failure takes the same branch as a legitimately absent input."
+    },
+    "A6": {
+      "substrate": [
+        "RUN",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "An advisory-severity finding class with zero recorded actions across the corpus."
+    },
+    "A7": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T2",
+      "scope": "needs a run manifest",
+      "predicate": "A check fails on ~100% of the population it ran against. STATISTICAL, but the denominator IS the population, and no lane records what it ran against. Marked T1 in the first edition of this file and corrected on 2026-08-23 when the detector was written: a detector that cannot state its denominator is the class it detects."
+    },
+    "A8": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A finding class that no run in recorded history has ever cleared."
+    },
+    "A9": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "The finding reproduces and the stated cause does not. Requires re-derivation of the cause."
+    },
+    "A10": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "One detector or rule accounts for a disproportionate share of one severity bucket. STATISTICAL — the TruffleHog-Lob signature."
+    },
+    "A11": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "An accurate account that is not the cause. Only a competing account can establish it."
+    },
+    "A12": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "Confession density correlates with reduced scrutiny of the remainder. Needs a reader of the remainder."
+    },
+    "A13": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A README index entry's description contradicts the target doc's own first heading or stamp."
+    },
+    "A14": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A detector whose positive side is structural (lexer, AST, parse) and whose exclusion side is a literal enumeration, so precision is bounded by recall of the author rather than by the grammar."
+    },
+    "A15": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T3",
+      "predicate": "A control tuned against a cost measured on a freshly produced artefact, where a second mechanism has since reduced the subject; requires re-measuring the subject at the control's current position."
+    },
+    "A16": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A finding record whose evidence is a tool's could-not-execute state (absent binary, unscoped credential, a field the API never returned, a default emitted when the tool has no answer) published in the same channel as substantive findings."
+    },
+    "A17": {
+      "substrate": [
+        "RUN",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A red test whose stated failure reason is false; needs a second instrument or a re-run under a corrected premise to separate the stated cause from the real one."
+    },
+    "A18": {
+      "substrate": [
+        "HIST",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A gate bypass whose justification cites a previous bypass rather than a fresh reason, with no expiry on either."
+    },
+    "A19": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T3",
+      "predicate": "A remedy prescribed across a category enumerated by surface symptom, where at least one member's symptom is a declared deliberate state."
+    },
+    "A20": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "Two distinct failure conditions detected separately and funnelled into one handler, where the correct responses diverge (retry versus recorded skip)."
+    },
+    "A21": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "An error response that is byte-identical for two different caller mistakes; requires probing the endpoint with each mistake and comparing the bodies."
+    },
+    "A22": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "One literal or sentinel is consumed by two code paths as different concepts, and a value correct for one path satisfies the other path's trigger condition."
+    },
+    "R1": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A guard, cleanup or assertion sits on a branch reachable only when the failure it guards did not occur. Includes: a test body with zero assertions."
+    },
+    "R2": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A commit claiming a fix changes only the string a detector matched, not the behaviour producing it."
+    },
+    "R3": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A guard runs over a filtered subset and the result record states no denominator."
+    },
+    "R4": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A metric with zero variance across N recorded runs while its inputs changed."
+    },
+    "R5": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Remediation text that is constant across findings, or contains no repo-specific token."
+    },
+    "R6": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A route, flag or exported function with zero recorded invocations."
+    },
+    "R7": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "No pass in the suite exercises the headline threat. Needs a plant to demonstrate."
+    },
+    "R8": {
+      "substrate": [
+        "HIST",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A finding opens in a place within N commits of a fix commit touching that place."
+    },
+    "R9": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A commit that changes behaviour and adds or modifies no test."
+    },
+    "R10": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A function relies on a precondition satisfied by every current caller and asserted by none."
+    },
+    "R11": {
+      "substrate": [
+        "SESS",
+        "HIST"
+      ],
+      "tier": "T2",
+      "predicate": "A scripted edit that validates its RESULT (parses, schema holds, tests pass) and never asserts that any replacement matched."
+    },
+    "R12": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A guard exemption whose stated reason is temporary and whose entry carries no expiry predicate, so it survives the condition it was granted for."
+    },
+    "R13": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A test asserting a marker a guard sets, where enforcement of that marker belongs to a second system the test never exercises."
+    },
+    "R14": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A comment naming a defect mechanism in the present or present perfect, where that mechanism appears in no executable line anywhere in the repository."
+    },
+    "R15": {
+      "substrate": [
+        "RUN",
+        "EXT"
+      ],
+      "tier": "T2",
+      "predicate": "A fix merged and pinned whose running process still carries the prior code; needs a deployed-version reading beside the merged one."
+    },
+    "R16": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A stated rule (comment, ruling, advisory hook) with no mechanism able to refuse a violation of it."
+    },
+    "R17": {
+      "substrate": [
+        "HIST",
+        "ART"
+      ],
+      "tier": "T3",
+      "predicate": "A repair whose scope matches the observed witness rather than the class predicate; the tell is a later run reproducing the class at a different site."
+    },
+    "R18": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A remediation record remains open after executing its prescribed check against the current system proves the named defect is already fixed."
+    },
+    "P1": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "An attribution derived from working-tree state on a checkout with more than one active session in the touch ledger."
+    },
+    "P2": {
+      "substrate": [
+        "SRC",
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A bare `git commit` with no pathspec and no private GIT_INDEX_FILE."
+    },
+    "P3": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "Code reads the touch ledger and writes the result into an author or owner field."
+    },
+    "P4": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A claim appears in an agent's output whose only antecedent is another agent's output, with no interposed check."
+    },
+    "P5": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "The comparator deciding ownership is itself unverified against a known-attribution fixture."
+    },
+    "P6": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "An ownership field typed as a scalar rather than a set."
+    },
+    "P7": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "File-level attribution is correct and the semantic coupling crosses files. Needs a reader of intent."
+    },
+    "P8": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "Same predicate as C8. Two gates, one state file, read-modify-write."
+    },
+    "P9": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "An ownership assertion in a turn with no tool call against git or the ledger in the same turn."
+    },
+    "P10": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A tiered row is quoted in a second document without its warrant tier travelling with it."
+    },
+    "P11": {
+      "substrate": [
+        "ART",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A fix lands in the layer the defect is not in. Needs the layer judgement the taxonomy itself supplies."
+    },
+    "P12": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "An untracked path in the touch ledger with more than one session id against it."
+    },
+    "P13": {
+      "substrate": [
+        "ART",
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "An attribution computed from a ledger fed by one write path, where the same tree admits writes by paths the ledger cannot see; decidable by unioning the ledger against git authorship."
+    },
+    "P14": {
+      "substrate": [
+        "ART",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A blocked-on-operator claim relayed onward without being re-checked against the decision record, so a settled decision is re-presented as open."
+    },
+    "P15": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "An ownership record whose SCHEMA lacks a field the attribution question needs, so the query is answerable only by an undeclared join."
+    },
+    "P16": {
+      "substrate": [
+        "ART",
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "An attribution event names a subject absent from the event's writes while omitting at least one subject the same event demonstrably changed."
+    },
+    "M1": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Same as C3 at the number level: a figure quoted without the scope it was measured over."
+    },
+    "M2": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A record carrying a measurement timestamp consumed by a decision with no freshness bound."
+    },
+    "M3": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "The parser/probe under a metric disagrees with a reference implementation on a fixture."
+    },
+    "M4": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "The author of a metric's ledger entries and the author of the metric's implementation are the same session."
+    },
+    "M5": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A behaviour with no injection seam: no CW_* override, no parameter, only ambient tree state."
+    },
+    "M6": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A favourable result under conditions later invalidated. Only a later invalidation establishes it."
+    },
+    "M7": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A catalogue's class count is asserted in prose rather than computed from its own data. CLOSED by the registry."
+    },
+    "M8": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A run with no terminal record: neither findings nor a failure. Non-termination is invisible without a run manifest."
+    },
+    "M9": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "process.env, Date.now, Math.random, new Date, or locale-sensitive formatting read at module load or on a write path, unguarded by a declared override."
+    },
+    "M10": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A ratio whose numerator is measured on the source and denominator on the product of a stage that can truncate, with no conservation assertion across that stage."
+    },
+    "M11": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A coverage metric whose denominator is derived from the numerator's own source, so subjects the tool processed cleanly leave the denominator."
+    },
+    "M12": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A ruling that reclassifies part of a dataset and is published as a sibling structure, leaving the governed records unmarked."
+    },
+    "M13": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "Two or more producers declaring different shapes for one concept, so no consumer can aggregate, sort or count it once."
+    },
+    "M14": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A resource bound copied from a neighbouring code path where the causing mechanism does not transfer, disclosed honestly in the denominator and therefore reading as considered."
+    },
+    "M15": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A command whose subject is decided by implicit tool state set in an earlier unrelated call, so it answers correctly about the wrong object."
+    },
+    "M16": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A query result passed as a selector to a second command where an empty selector means \"no filter\" rather than \"no subjects\"."
+    },
+    "M17": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A result anchored to one of two or more mutable inputs, so pinning the recorded anchor does not reproduce the run."
+    },
+    "M18": {
+      "substrate": [
+        "ART",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A published ratio admitting several correct denominators spanning an order of magnitude, where the choice decides the conclusion and the population is not named."
+    },
+    "M19": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Two lanes documented as covering complementary halves of a class whose match sets intersect, so sites in the intersection are counted in both baselines."
+    },
+    "G1": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "The reasoning channel refutes the verdict filed beside it. Needs a reader of both."
+    },
+    "G2": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Schema validation applied to a content field that can be empty while the reasoning field is not."
+    },
+    "G3": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A salvage or recovery path whose correctness depends on property emission order."
+    },
+    "G4": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "Two distinct failure causes converge on one return value with no discriminator."
+    },
+    "G5": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A retry or token budget arithmetically smaller than the channel it must accommodate."
+    },
+    "G6": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "Emitted config or tool syntax that fails its own validator."
+    },
+    "G7": {
+      "substrate": [
+        "ART",
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A verdict is written to a store with no reader anywhere in the tree."
+    },
+    "G8": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A verdict record carries no version token for its subject."
+    },
+    "G9": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "The dimension set in a rubric differs from the dimension set in the brief that was dispatched."
+    },
+    "G10": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Score distribution pathology: leniency collapse, zero variance across dimensions, or self-scores above cross-scores. STATISTICAL."
+    },
+    "G11": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A capability conclusion drawn from n=1 with unpinned sampling parameters."
+    },
+    "G12": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "The identity running a gate and the identity the gate judges are the same."
+    },
+    "G13": {
+      "substrate": [
+        "ART",
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A catalogued class whose closure rose with no commit touching the code it describes."
+    },
+    "G14": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Two classes with no observation in the corpus that separates them. STATISTICAL over the observation store."
+    },
+    "G15": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A fixture whose shape is derived from the consumer's assumption rather than from a real artefact the producer emits."
+    },
+    "G16": {
+      "substrate": [
+        "SRC",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A normative document using a term whose referent it never fixes, resolved silently by the reader with no record that a choice was made."
+    },
+    "G17": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A second hand-written declaration of a concept an existing schema or registry already models, written at a new call site instead of extending the first."
+    },
+    "G18": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A summary of a fetched normative source that is wrong in specific checkable values; requires re-deriving the values from the source."
+    },
+    "G19": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A refusal (cannot-determine, needs-human, blocked) shipped where the capability was in fact reachable; a refusal asserts nothing, so nothing audits it."
+    },
+    "G20": {
+      "substrate": [
+        "SRC",
+        "HIST"
+      ],
+      "tier": "T2",
+      "predicate": "Generated code faithful to a convention the surrounding file still carries and the organisation has retired; local context is a lagging indicator of policy."
+    },
+    "G21": {
+      "substrate": [
+        "HIST",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "An artefact and the guard certifying it authored in one pass by one agent, so the guard's blind spot is the generator's by construction."
+    },
+    "G22": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A scope change verified against the instrument it modifies and not against the consumers of that instrument's output, silently retracting already-published findings."
+    },
+    "G23": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A local accumulator reproducing a shared helper's report shape while omitting one of its fields, invisible to tests that assert only the fields they expect."
+    },
+    "G24": {
+      "substrate": [
+        "RUN",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A classifier re-runs an unchanged subject to assign ownership, and differing nondeterministic outcomes move the same failure between ownership classes."
+    },
+    "D1": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A ref with no common ancestor with the mainline."
+    },
+    "D2": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A cited SHA that rev-parse resolves and `branch --contains` returns nothing for."
+    },
+    "D3": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A reader opens a fixed filename while a writer in the tree rotates that filename."
+    },
+    "D4": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "An orchestrator writes a file whose content originated in a subagent's output."
+    },
+    "D5": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "Content in a commit whose touch-ledger session differs from the commit's author session."
+    },
+    "D6": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A file under a durable-record path that `git ls-files --others` reports."
+    },
+    "D7": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "An append-only judgement store with no retraction or supersession field."
+    },
+    "D8": {
+      "substrate": [
+        "ART",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A store returning an explicit write success where no query the writer can construct returns the item; requires a readback probe against the live store."
+    },
+    "D9": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "One writer performing two operations that hold different views of the same object, so its own update is lost with no second party involved."
+    },
+    "D10": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A producer emitting structured data with no declared schema, so every consumer re-derives the shape by reading the producer."
+    },
+    "D11": {
+      "substrate": [
+        "HIST",
+        "EXT"
+      ],
+      "tier": "T1",
+      "predicate": "A citation whose target has moved outside the fixed root the resolver scans, unresolvable while fully intact at its new path."
+    },
+    "D12": {
+      "substrate": [
+        "ART",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A report retained only in volatile holders (a reaped temp path, a truncating transcript), with no write to a durable tier on receipt."
+    },
+    "D13": {
+      "substrate": [
+        "ART",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A store deriving queryable fields from submitted content at write time, re-emitting it into a namespace the writer did not choose; requires reading back the stored form."
+    },
+    "D14": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A recording instrument that drops the dimensions its schema promises, filling the store with rows that cannot answer the question it was built for."
+    },
+    "D15": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T2",
+      "predicate": "A correction applied in place to a store holding no revision history and no reader set, so the retraction reaches nobody who acted on the original."
+    },
+    "D16": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A committed reference validated against the author's working tree rather than against the repository, resolving for its author and for nobody else."
+    },
+    "D17": {
+      "substrate": [
+        "SRC",
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A write replaces uncommitted file content produced by a different actor without first preserving that content or confirming the shared target is unchanged."
+    },
+    "W1": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A stopping claim citing a budget with no instrument that reports it."
+    },
+    "W2": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A handoff artifact written while the plan holds pending tasks and capacity remains."
+    },
+    "W3": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "The same external failure re-diagnosed across N consecutive turns."
+    },
+    "W4": {
+      "substrate": [
+        "SESS",
+        "HIST"
+      ],
+      "tier": "T2",
+      "predicate": "A turn whose tool calls produce no state change: no write, no commit, no status transition."
+    },
+    "W5": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A confirmation request for work an earlier turn already authorised."
+    },
+    "W6": {
+      "substrate": [
+        "ART",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "N successive evaluation passes producing no observation the corpus does not already hold."
+    },
+    "W7": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A queue where item age correlates positively with priority. COMPUTABLE from vscode-skills task records today."
+    },
+    "K1": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A pass correct only after another, with no declared dependency and no check."
+    },
+    "K2": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T2",
+      "predicate": "A scheduler with no lane demonstrating sensitivity to its misbehaviour."
+    },
+    "K3": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "Oversight consumption as a share of total budget above threshold."
+    },
+    "K4": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A retry wrapping a side-effecting pass on a shared substrate."
+    },
+    "K5": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "N verifiers counted as N votes while sharing a model, a prompt lineage or a context."
+    },
+    "K6": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Every escalation path for a class terminates at the operator and no path pages them."
+    },
+    "K7": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A loop over N items collapsing to one exit status, with per-item failure representable only in unparsed text."
+    },
+    "K8": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "Set difference: the registry's declared set minus the scheduler's actual set, both directions."
+    },
+    "E1": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A longitudinal series whose points carry no instrument version."
+    },
+    "E2": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A suppression annotation whose identity tuple contains nothing repo-local, so it matches after a fork or vendor copy."
+    },
+    "E3": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A vendor's zero with no husk detector for the vendor's own pipeline. Needs a plant on their side."
+    },
+    "E4": {
+      "substrate": [
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "Classes adopted where the conditions producing them are absent. Needs a population judgement."
+    },
+    "E5": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A canary plant set readable from a path the tested agent can reach."
+    },
+    "C13": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A published finding count whose scan enumerated zero subjects — the record carries no subject count beside the finding count, so 'nothing vulnerable' and 'nothing looked at' are the same number. Extends to a RECONCILIATION input: an agreement or divergence figure published without the coverage count of each witness beside it, so \"the witnesses agree\" and \"one witness saw nothing\" are the same reading. The reconciliation clause takes the same correction as C30 at edition 17: a nonzero coverage count can be absurd, so the count beside the agreement figure has to be read against what the input demands, not merely checked for being greater than zero."
+    },
+    "C14": {
+      "substrate": [
+        "HIST",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A lane writes to the tree it scans: the working-tree hash at lane start differs from the batch anchor. Needs a per-lane anchor record, which no run manifest writes today."
+    },
+    "C15": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "An artifact that parses, and is the tool's preamble rather than its output — no result-bearing key, or an exit status affirming an artifact that stops mid-token."
+    },
+    "C16": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A published result carrying no instrument build identifier, so its zero cannot be tied to a rule set. Adjacent to E1, which needs the identifier to CHANGE; this needs it to be absent."
+    },
+    "C17": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "Coverage falls across two runs while every reported field holds its shape. Needs two comparable run records; today's artifacts carry no per-run toolchain identity to compare."
+    },
+    "C18": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A bulk call (a single query, `--batch`, one xargs invocation) replaces a per-item loop and nothing asserts that the output row count equals the input count, so a fatal member silently truncates the population."
+    },
+    "C19": {
+      "substrate": [
+        "SRC",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A backgrounded job whose completion is read from a marker file, a wrapper exit status or a log line rather than from the work's own output artifact."
+    },
+    "C20": {
+      "substrate": [
+        "SRC",
+        "HIST"
+      ],
+      "tier": "T3",
+      "predicate": "A batch skip or transform justified by a premise about a set, where the premise was checked on a sample and the set contains a member of a different kind."
+    },
+    "C21": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "An extractor filters a multi-kind record stream on one discriminator and has no branch, store or count for the other kinds."
+    },
+    "C22": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A call site captures both an exit status and parsed output and forms its verdict from one of them, with no comparison of the two."
+    },
+    "C23": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T3",
+      "predicate": "A test whose subject does not exist yet: the assertion loop iterates a set that is empty for want of the thing under test rather than for want of violations. Standard non-vacuity checks pass."
+    },
+    "C24": {
+      "substrate": [
+        "HIST"
+      ],
+      "tier": "T1",
+      "predicate": "A commit whose files reference a path, module or export that the same commit's tree does not contain, so HEAD loads only for the author."
+    },
+    "C25": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T2",
+      "predicate": "A coordination surface populated only by voluntary declaration, where the empty rendering is identical for \"nothing is happening\" and \"nothing was declared\"."
+    },
+    "C26": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A guard predicate keys on a field that the schema of its own input does not carry, so it evaluates every row, matches none, and emits a clean empty."
+    },
+    "C27": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A consumer selects its parser from the file NAME rather than the content, so a valid artefact under a non-canonical name is declined with a zero instead of an error."
+    },
+    "K9": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A record with a declared due time, past it, with no action bound to the breach — no claim, no attempt, no paged event. Decidable from the issue store alone."
+    },
+    "K10": {
+      "substrate": [
+        "SRC",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A full reconciliation leaves an installed artifact untouched because its identifier lies outside the namespace the reconciler can enumerate."
+    },
+    "K11": {
+      "substrate": [
+        "HIST",
+        "RUN"
+      ],
+      "tier": "T3",
+      "predicate": "A shared subject changes during another actor's measurement without an invalidation signal, leaving the completed measurement attached to the superseded subject."
+    },
+    "L1": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "An actor knowingly reduces its own objective or score to produce information or advantage for a correlated set of other actors."
+    },
+    "L2": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "An actor takes a costly action on another actor's unsupported claim of authority, and the resulting benefit accrues to the group rather than the acting actor."
+    },
+    "L3": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "Two or more actors act on a shared coordination convention that is absent from the observing layer's declared protocol and parsers."
+    },
+    "L4": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "The same unverified and false system model is relayed between actors, and multiple recipients take actions because they accepted it as fact."
+    },
+    "L5": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "An actor withholds a known finding because it expects disclosure to trigger a repair that would remove an advantage the actor currently holds."
+    },
+    "L6": {
+      "substrate": [
+        "SESS",
+        "RUN"
+      ],
+      "tier": "T3",
+      "predicate": "A measured actor deliberately probes the oversight mechanism, and the probe changes the state or evidence that the mechanism subsequently measures."
+    },
+    "L7": {
+      "substrate": [
+        "SESS",
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A recipient grants authority to a message from a claimed identity without verifying the claim against a trusted key or independent identity channel."
+    },
+    "C30": {
+      "substrate": [
+        "RUN",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A reconciler forming a verdict from the agreement or intersection of two witnesses, where one witness can return an empty observation set indistinguishable from \"observed and found nothing\"; decidable by running the corroborating witness against a subject known to contain what it looks for and asserting, before any comparison runs, a result PROPORTIONATE to a lower bound derived independently of both sides. Non-emptiness is not enough: a witness can return a handful of rows where the input demands thousands, and a liveness check that asks only whether it observed anything passes it."
+    },
+    "C31": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A branch whose guard depends on an ambient precondition (an installed binary, a credential scope, network reachability, an env var) that is unmet across the entire population of runs producing the green signal; decidable by counting, across real runs, how many entered each branch — never by reading coverage, which counts the fallback as coverage of the pair."
+    },
+    "M21": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A divergence, agreement or delta figure computed between two sources whose coverage sets differ, without restricting the comparison to the intersection and without reporting the uncovered complement as its own quantity."
+    },
+    "M22": {
+      "substrate": [
+        "SRC",
+        "RUN"
+      ],
+      "tier": "T3",
+      "predicate": "One field name carrying the same type on both sides of a producer/consumer contract with different derivations; decidable only by comparing the two derivations, never by a type check or schema validation, both of which pass."
+    },
+    "G25": {
+      "substrate": [
+        "SRC",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A file whose on-disk bytes differ from the author's supplied content by an escape-sequence transformation; decidable by writing a known escape through the tool and comparing bytes."
+    },
+    "L9": {
+      "substrate": [
+        "ART",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A shared gate whose breach notice reaches N concurrent actors, where the sanctioned response to \"not attributable to me\" is to disclaim and no step assigns the unattributed remainder to anyone; decidable by observing whether the breach set is ever EMPTY across a window with N > 1 active actors — NOT by whether the count rises."
+    },
+    "C32": {
+      "substrate": [
+        "SRC",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A published coverage, traceability or reconciliation claim over a relation R(a,b) where the implementation computes R but not its converse, and no artefact exists for the converse to be enumerated or counted. Decidable by writing the converse query as a sentence and searching the tree for any code path that answers it — a search returning nothing is the POSITIVE result, which is why it must be a named search rather than a scan."
+    },
+    "C33": {
+      "substrate": [
+        "SRC",
+        "RUN"
+      ],
+      "tier": "T3",
+      "predicate": "An identity assignment, merge or supersede decision derived from a content hash or a similarity score over record text, applied without confirmation from outside the matcher. Decidable by rewording one record between two runs and checking whether its identifier survives: if a reword produces a new identifier, or one removal plus one addition, the identity is content-keyed."
+    },
+    "K13": {
+      "substrate": [
+        "SRC",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A control installed at a conventional path whose lookup root is redirected by a configuration setting, so an existence check at the canonical path passes while the resolver never reads it. Decidable by planting a DELIBERATELY FAILING artifact at the canonical path and asserting it fires — never by checking that the file exists."
+    },
+    "A24": {
+      "substrate": [
+        "SRC",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "An emitted error message whose formatter has a detail-carrying sibling in the same artifact that the taken path does not use. Plantable by routing an error through the lossy variant; detectable by finding the sibling."
+    },
+    "M23": {
+      "substrate": [
+        "RUN",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "Before a negative result is evidence, the positive control must PRODUCE the failure. A control that returns the same clean answer as the test — on a version, platform or tree known to be defective — has demonstrated only that the apparatus cannot see it."
+    },
+    "M24": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A comparison whose assertion is equality between recorded observations rather than equality with a stated property. Detectable by asking what the check would say if BOTH sides were wrong; if the answer is \"pass\", there is no oracle."
+    },
+    "M25": {
+      "substrate": [
+        "SRC",
+        "RUN"
+      ],
+      "tier": "T3",
+      "predicate": "Make the fixture faithful and re-run. If tests that passed now fail before any fix is written, the suite was green on an input production never produces. The tell is that a mock which cannot reproduce the production format cannot guard the production path."
+    },
+    "M26": {
+      "substrate": [
+        "SRC",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "State what the check would still permit. If the answer includes the failure the claim excludes, the verification is narrower than the claim. Detectable by writing the passing result and the asserted conclusion as two sentences and asking whether the first entails the second."
+    },
+    "M27": {
+      "substrate": [
+        "HIST",
+        "RUN"
+      ],
+      "tier": "T3",
+      "predicate": "Before believing a green check on a change, establish that the artefact under test contains the change — a hash, a byte count, or an assertion keyed on a token only the new behaviour produces. A structural check passes either way, and a baseline-compatible assertion passes BECAUSE the change is absent."
+    },
+    "L10": {
+      "substrate": [
+        "RUN",
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "A failure that N actors each explain locally, where no notice of the shared condition reaches anyone. Decidable by asking what evidence would tell any single actor that the cause is not theirs — if the answer is \"an inspection nobody has reason to run\", the condition is masked rather than merely unowned."
+    },
+    "L11": {
+      "substrate": [
+        "SESS"
+      ],
+      "tier": "T2",
+      "predicate": "More than one pending peer thread in a single agent turn, with replies addressed from an ambient value rather than derived from the message being answered. The messaging surface does not bind a reply to its parent, so the transposition is representable."
+    },
+    "L12": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "After routing around a defect that is not yours alone, ask who else will meet it and what would now tell them it is known. If the answer is a note in your own commit message or an entry in a file only you read, the repair has been disarmed rather than deferred."
+    },
+    "C34": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "Ask where the count of subjects EXAMINED appears in the artefact the automation reads. If it appears only on stderr, in a human table, or in a log the consumer does not capture, coverage and cleanliness are indistinguishable downstream by construction."
+    },
+    "K14": {
+      "substrate": [
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "After cancelling a control, check whether any process it spawned still holds the resources the control uses — ports, locks, fixture directories. A termination status in hand is evidence about the supervisor, not about the tree beneath it."
+    },
+    "C35": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A compatibility, migration or round-trip test whose fixture is generated by the code under test. Decidable by one question asked of any such fixture: could this have been produced by the code under test? If yes, it proves self-consistency and nothing about the installed data. The remedy is a fixture the current code CANNOT regenerate, which means a pinned byte string of the old wire shape or the persisted layout committed as a golden, never a second test of the same shape."
+    },
+    "C36": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A detector whose trigger requires a condition that is ABSENT from the busiest instances of the class it stands for. Decidable by taking a known instance, surrounding it with unrelated activity that does not touch the defect, and checking whether the detector still fires."
+    },
+    "C37": {
+      "substrate": [
+        "ART",
+        "RUN"
+      ],
+      "tier": "T2",
+      "predicate": "A grouped or blocked result whose membership can change between readings and which states no delta, so a reader can reuse a prior classification instead of forming a new one. Decidable by asking whether the display computes what is new since the last run or asks the reader to remember it."
+    },
+    "G26": {
+      "substrate": [
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A detector whose pattern must contain, as a literal, a construct that is syntax in the language the detector is written in. Decidable by writing the literal into the detector and running it. The remedy is that the subject may appear only as an escape, which is a rule the file has to obey in order to be able to state it."
+    },
+    "G27": {
+      "substrate": [
+        "SRC",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "A content transform whose downstream checks are all structural, where the property at risk is meaning. Decidable by stating what the checks would still permit: if a clause cut mid-sentence satisfies every one of them, the property is unmeasured, and the count of checks is not evidence about it."
+    },
+    "M28": {
+      "substrate": [
+        "ART",
+        "SRC"
+      ],
+      "tier": "T1",
+      "predicate": "A Map, Set or grouping whose key is matched text, a display name or another value not PROVEN unique over the population being counted. Decidable by counting distinct keys and distinct subjects separately and requiring them to agree, which is a different query from the one that produced the number."
+    },
+    "M29": {
+      "substrate": [
+        "RUN",
+        "EXT"
+      ],
+      "tier": "T3",
+      "predicate": "A before/after or with/without measurement taken on a shared machine with no null arm of the same duration bracketing it. Decidable by running the identical window with the subject absent. A longer window makes an ambient confound worse rather than better, so duration is not a defence."
+    },
+    "P17": {
+      "substrate": [
+        "ART"
+      ],
+      "tier": "T1",
+      "predicate": "A citation or attribution notation whose slot is populated from more than one identifier space, told apart only by a property the notation does not declare, such as the width of the token. Decidable by counting the widths present in the slot across the corpus, which is a question about the notation and needs no access to either namespace."
+    }
+  },
+  "mapVerifiedAgainst": {
+    "at": "2026-09-18",
+    "registryVersion": 17,
+    "registryClasses": 207,
+    "mapped": 201,
+    "unmapped": 6,
+    "note": "Re-derived against the registry, never restated. The first edition covered 97 and said so; the registry grew to 103, to 159 at v8 (the expansion call), to 173 at v11 (family XI, collective action), and to 179 at v12. All 179 carry a substrate, a tier, and the predicate the REGISTRY declares — copied verbatim since the v8 move put the predicate in the class record, because a second wording here would be two declarations of one concept in the file whose subject is what decides a class. Family XI is the first that is mostly T4: actor-to-actor coordination is judged, not parsed, and no recorder closes it. Edition 12 added six and mapped all six. THIS BLOCK WENT STALE ONCE — it asserted unmapped:0 while the registry had reached 173 and the map still held 159, which is exactly the shape it exists to describe. bin/test/taxonomy-registry-coverage.test.mjs now re-derives these three counts and fails on a stale claim, so the figure cannot drift again without something saying so. bin/pattern-scan.mjs computes reach from the registry rather than from this number, so a gap here narrows the map, never the scan. Edition 13 added two and mapped both: C32 at T4 and C33 at T3. Edition 14 added K13 at T3. Edition 15 added and mapped all eleven new classes: one T1, four T2, four T3 and two T4. Tier distribution is now T1 105, T2 42, T3 25, T4 21. The 6 still unmapped (A23, C28, C29, K12, L8, M20) arrived at v11 and remain explicit rather than silently inferred. Edition 17 added 8 and mapped all of them: 4 T1 (C35, G26, M28, P17), 1 T2 (C37), 2 T3 (C36, M29), 1 T4 (G27). Tier distribution is now T1 109, T2 43, T3 27, T4 22. Three predicates were re-copied from the registry in the same pass because edition 17 rewrote them there (C30, C13); a copy that drifts from its source is the stale-count defect one field over, in prose instead of a number. The 6 still unmapped (A23, C28, C29, M20, K12, L8) arrived at v11 and remain explicit rather than silently inferred."
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Portll/commitwork/schema/projects.schema.json",
+  "title": "commitwork monitor project registry",
+  "description": "The registry read by monitor/registry.mjs. An AREA is the declared unit of report output, retention, freshness and picker identity; registry-entry to area is N:1 and DECLARED, never inferred from a sweep's contents. Enforced at runtime TWICE, at the same read boundary: validateRegistry() (wrong types die, unknown keys warn — except in `deploy`, where they die) and validateAgainstSchema(), which parses THIS FILE. Both are fatal in loadRegistry(); when the two disagree, the disagreement is the finding.",
+  "$comment": "This file HAS a code consumer: monitor/registry.mjs validateAgainstSchema(), called from loadRegistry(). It did not until R15 — `grep -rn projects.schema --include=*.mjs` returned zero hits, so every constraint below was unenforced prose. Two consequences to keep in mind when editing. (1) A constraint added here now blocks every sweep, panel boot and rollup, because loadRegistry() is the single read boundary for monitor/projects.json. (2) The checker implements a SUBSET of draft-07 — type, required, properties, additionalProperties, items, pattern, enum, minItems, minimum, maximum, exclusiveMinimum, oneOf — and treats any OTHER keyword as an error rather than ignoring it. Adding $ref, allOf, anyOf, dependencies, format or const here will fail loudly until registry.mjs implements them. That is deliberate: silently skipping an unimplemented keyword is how a schema goes back to being decorative.",
+  "type": "object",
+  "required": ["reportsRoot"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "semgrepPro": {
+      "type": "object",
+      "description": "Which repositories run the Semgrep Pro engine. Pro is licensed for a BOUNDED number of repos and this fleet resolves to 119, so the engine is allocated per repository (monitor/sweep.mjs sets $CW_SEMGREP_PRO per repo; the sast command in manifests/security-baseline.json expands the flag only when it is set) rather than fixed in the manifest. Repos outside the allocation run the OSS engine and publish REAL findings — the narrower engine is recorded as a coverage bound (scan-scope's `engine-per-repo` note), never as a reason to discount a number.",
+      "additionalProperties": false,
+      "required": ["repos"],
+      "properties": {
+        "repos": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Names of RESOLVED repositories (what resolveRepos returns and the sweep scans), not projects[] entries — measured 2026-08-29, 8 declared projects resolve to 119 repos and 112 of the scanned names appear in no projects[] entry. The CAP is not expressible here and lives in monitor/registry.mjs (SEMGREP_PRO_MAX), enforced by validateRegistry; the two checks are complementary, not redundant. Duplicates are likewise rejected there rather than by a `uniqueItems` keyword, because this validator treats any keyword it does not implement as an error — declaring one would make every registry unvalidatable instead of making duplicates illegal." },
+        "note": { "type": "string", "description": "Why this particular allocation — which repositories earn a scarce seat, and when that was last revisited." }
+      }
+    },
+    "reportsRoot": { "type": "string", "description": "Report tree root, relative to the commitwork checkout." },
+    "monitorOutput": { "type": "string", "description": "DEPRECATED legacy single-area output dir, and DELIBERATELY UNSET in this repo's registry since 2026-08-06 — declare `primary: true` on an area instead. Still accepted (a reverted pre-areas[] binary reads it, and monitor/area.mjs keeps it as precedence rung 3), but setting it makes one area the fleet-wide default output dir and OUTRANKS areas[].primary, which is the defect Tranche 1.1 removed: an unscoped run wrote every project's numbers into that one customer's report directory." },
+    "defaultManifest": { "type": "string", "description": "Manifest applied to root-discovered repos." },
+    "areas": {
+      "type": "array",
+      "description": "Declared output areas. At most one may be primary.",
+      "items": {
+        "type": "object",
+        "required": ["slug"],
+        "additionalProperties": false,
+        "properties": {
+          "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "Route/artifact identity: /map/<slug>, timeline-<slug>.html, map/data/<slug>/." },
+          "out": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$", "description": "Report directory (reports/<out>/). Defaults to slug. DISTINCT from slug on purpose: the fleet is slug 'client-a' but out 'client-a-monorepo', and both are load-bearing in existing paths." },
+          "label": { "type": "string", "description": "Human/picker name (e.g. ClientA)." },
+          "thirdParty": { "type": "boolean", "description": "This area holds code nobody here owns. It is a MACHINE-READABLE ownership fact, not a scoping one: tools that would MUTATE a repo refuse on it. monitor/preflight-build.mjs --apply refuses to run a third party's resolver (gradlew, setup.py, cargo, bundler) on the host, because that is arbitrary code execution as the operator against code we did not write. Absence of a deploy/renovate block does NOT imply this — a library the fleet owns declares neither." },
+          "members": { "type": "array", "items": { "type": "string" }, "description": "Repo/entry names belonging to this area." },
+          "prefixes": { "type": "array", "items": { "type": "string" }, "description": "Name prefixes that resolve to this area (e.g. svc-, web-)." },
+          "primary": { "type": "boolean", "description": "The default area for unscoped views. At most one." },
+          "races": { "type": "boolean", "description": "Run the races (concurrency) scan for this area." },
+          "cadenceMs": { "type": "number", "exclusiveMinimum": 0, "description": "Expected sweep interval; the freshness deadman's per-area staleness threshold." },
+          "deploy": {
+            "type": "object",
+            "description": "DEPLOYMENT DECLARATION — which hostnames this area answers on, backed by which local origin. Declaration only: bin/deploy.mjs generates a cloudflared ingress FRAGMENT from it; commitwork never holds Cloudflare credentials, never mutates DNS, never restarts a tunnel — applying stays a human step. A tunnel is per-BOX (one credentials file, one daemon, many projects) while this block is per-AREA, so the fragment is merged into a box-level config this repo does not own. A hostname may be claimed by ONE area only. UNKNOWN KEYS ARE FATAL here and only here (additionalProperties:false below, and validateRegistry() pushes an ERROR rather than a warning): the forward-compat warning that is right for areas/projects is wrong for the one block whose contents leave this tree as ingress applied to a launchd-managed tunnel with KeepAlive:true. A misspelled key is not a future feature, it is a key that does nothing — and `noTLSVerify`, `httpHostHeader` or a nested `originRequest` would be silently dropped from the fragment while the declaration still read as though they applied.",
+            "required": ["hostnames", "public", "requiresAuth"],
+            "additionalProperties": false,
+            "properties": {
+              "hostnames": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$" }, "description": "Public hostnames this area answers on. Lowercase DNS names, at least two labels — these reach the generated ingress YAML verbatim." },
+              "service": { "type": "string", "pattern": "^https?://", "description": "The local origin URL behind the hostname(s), e.g. https://127.0.0.1:8099. http(s) only — parseable host:port is what the not-listening probe needs. REQUIRED unless hosting:'pages', and FORBIDDEN with it — a pages-hosted area has no local origin. That conditional is enforced by validateRegistry(), not here: the runtime subset checker refuses schema keywords it does not implement, and if/then would be exactly such a keyword, so the hand validator carries the rule and this description declares it." },
+              "hosting": { "enum": ["pages"], "description": "Where the hostnames are served when NOT through the tunnel. 'pages' = Cloudflare Pages serves them: bin/deploy.mjs emits NO ingress rule (and says so by name — a tunnel rule would fight the DNS), the not-listening probe skips the area, and bin/probe-public.mjs still watches the hostnames from the same declaration. Tunnel-hosted areas simply omit this key." },
+              "public": { "type": "boolean", "description": "May this origin be routed through the tunnel at all? false = declared but never emitted: visible in the deploy table, absent from the fragment." },
+              "requiresAuth": { "type": "boolean", "description": "This origin must not be published naked. public:true + requiresAuth:true + NO authAt is REFUSED by bin/deploy.mjs (non-zero exit) — generated ingress carries no auth, so emitting it would publish an unauthenticated origin. The central safety property." },
+    "probePath": { "type": "string", "pattern": "^/", "description": "Path an availability probe asks for on these hostnames; defaults to \"/\". Declared because a hostname can serve a public front page and gate its app elsewhere — overwatch.example serves \"/\" anonymously by design and gates \"/app\", so probing \"/\" there reports a working gate as an absent one." },
+              "authAt": { "enum": ["origin", "edge"], "description": "WHERE the required auth layer actually lives, and the only way to declare a published origin that authenticates itself. 'origin' = the service checks its own requests (the admin panel's password+TOTP front door); 'edge' = a proxy or Access policy sits in front. Setting it satisfies requiresAuth for emission, so it is an ATTESTATION and `bin/deploy.mjs --verify` re-checks it against the live origin rather than believing it. FOUR verdicts, of which exactly one passes (lib/deploy-core.mjs classifyAttestation): `protected` — the origin refused an unauthenticated request and the refusal was about identity; `unprotected` — it answered 2xx, so the claim is false; `unusable` — it refused because NOBODY can authenticate (zero operators in the store), which must never count as protection, since it is the failure state the attestation exists to detect; `unverifiable` — the probe got no answer, or authAt:'edge', which a loopback probe bypasses by construction. Only `protected` is silence. Omit the key and requiresAuth:true still refuses — absence must never read as 'auth exists'." },
+              "originServerName": { "type": "string", "description": "Pin ONE TLS server name for every rule. Usually omitted: bin/deploy.mjs defaults it per hostname (the origin cert covers each public name), which is what per-hostname verification wants." },
+              "caPool": { "type": "string", "description": "Path to the CA bundle that signed the origin cert (e.g. an mkcert root). Referenced in the fragment, never read or written by this repo." },
+              "note": { "type": "string" }
+            }
+          },
+          "renovate": {
+            "type": "object",
+            "description": "Renovate DECLARATION for this area — which GitHub repository's Dependency Dashboard and PRs describe it. Declaration only: it names a repo, holds no token (gh supplies auth) and runs nothing on its own. Exists because monitor/renovate-status.mjs previously defaulted to a hardcoded 'Portll/client-a' with nothing setting the override, so EVERY area's Renovate row reported one customer's PRs. An area with no renovate block is a declared VOID — the snapshot records that nothing is declared and reports nothing, rather than substituting another area's repo (explicit uncertainty applies to WHICH repository a number came from, not only to whether one was scanned).",
+            "required": ["repo"],
+            "additionalProperties": false,
+            "properties": {
+              "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "GitHub owner/name whose Renovate state describes this area." },
+              "config": { "type": "string", "description": "Optional path to the repo's renovate.json, relative to a discovered checkout. Absent means the config is not read — the dashboard and PRs still are." },
+              "note": { "type": "string" }
+            }
+          },
+          "bola": {
+            "type": "object",
+            "description": "BOLA/authorization-testing DECLARATION for this area — which bundled bola manifest describes its accounts and object endpoints, and the LOCAL TESTBED base to probe. Declaration only, like deploy: it names the manifest and target; it holds no credentials (the manifest names env/keychain vars, resolved at run time by lib/secrets.mjs) and runs nothing on its own. The panel's BOLA tab reads this to decide which areas offer a run, and the check is READY only when every secret the manifest names resolves — else BLOCKED with the missing names (explicit uncertainty). base is a loopback/testbed URL on purpose: a probe never invents its target, and object-level testing seeds writes.",
+            "required": ["manifest", "base"],
+            "additionalProperties": false,
+            "properties": {
+              "manifest": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "Bundled manifest name under manifests/bola/<name>.json." },
+              "base": { "type": "string", "pattern": "^https?://", "description": "The running LOCAL TESTBED origin to probe (e.g. http://127.0.0.1:8080). Overridable per run by --base / CW_TARGET_URL." },
+              "note": { "type": "string" }
+            }
+          },
+          "minify": {
+            "type": "object",
+            "description": "Per-area overrides for the minifiedCode lane (bin/minify-detect.mjs), exported to it as CW_MINIFY_* env when this area is swept. Lets a deliberately-minified static-site area raise its thresholds without blanket-suppressing the lane fleet-wide; the scanner echoes the effective values into its report, so a narrowed threshold is disclosed rather than silent. An explicit CW_MINIFY_* in the operator's environment still overrides these.",
+            "additionalProperties": false,
+            "properties": {
+              "maxBytes": { "type": "integer", "minimum": 1, "description": "Head-read cap in bytes (CW_MINIFY_MAX_BYTES)." },
+              "semgrepCeiling": { "type": "integer", "minimum": 1, "description": "Byte ceiling for minified-oversize / unscannable-void (CW_MINIFY_SEMGREP_CEILING)." },
+              "entropyRule": { "type": "boolean", "description": "Enable the default-off entropy-blob rule for this area (CW_MINIFY_ENTROPY_RULE)." }
+            }
+          },
+          "retention": {
+            "type": "object",
+            "description": "Per-area retention, overriding the top-level `retention` for this area only (monitor/retention.mjs resolves it; monitor/compact-reports.mjs acts on it). The two axes UNION: a batch survives if it is among its area's newest keepFullSweeps OR younger than keepDays. Protection only ever adds, because the compactor deletes.",
+            "additionalProperties": false,
+            "properties": {
+              "keepFullSweeps": { "type": "integer", "minimum": 0, "description": "Newest batches of THIS area kept whole, replacing the global count. 0 is legal and means the area relies on keepDays alone." },
+              "keepDays": { "type": "number", "exclusiveMinimum": 0, "description": "Age floor in days, measured from the batch NAME's UTC stamp (never mtime — pruning rewrites mtime). A batch inside the floor keeps its CodeQL databases; the compactor never deletes a whole batch, so this is a database-retention window, not an evidence one." },
+              "note": { "type": "string" }
+            }
+          },
+          "rollupBatch": {
+            "type": "string",
+            "enum": ["newest", "newest-full"],
+            "description": "Which of this area's batches monitor/rollup.mjs rolls when none is named. 'newest' (default) is right for a one-repo area. 'newest-full' skips batches narrowed by --repo (manifest `only`) and takes the newest that swept the WHOLE area — for a multi-repo area, where a single-repo sweep landing last would otherwise publish one repo as the area's whole state. It REFUSES rather than falling back if no full batch exists."
+          },
+          "paused": {
+            "type": "object",
+            "description": "Area declared outside every AUTOMATIC sweep. Persistent, unlike --exclude, which is run-scoped on purpose. Both fields are required: an exclusion with no reason is indistinguishable from an oversight, and a pause that cannot say when it started cannot be reviewed. A paused area's freshness state is 'paused' — never fresh, and never the permanent expiry it would otherwise accrue.",
+            "additionalProperties": false,
+            "required": ["since", "reason"],
+            "properties": {
+              "since": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+              "reason": { "type": "string", "minLength": 1 }
+            }
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "areasNote": { "type": "string" },
+    "projects": {
+      "type": "array",
+      "description": "Explicitly declared registry entries. NOT required at the top level: a registry may declare only `roots[]` and let discovery populate it, and validateRegistry() has always treated this key as optional. This schema listed it under `required` until the wiring in R15 made the schema executable and the disagreement surfaced — eight fixture registries that load correctly would have been rejected. The hand-rolled validator was right; the schema was wrong and nothing could tell, because nothing read it.",
+      "items": {
+        "type": "object",
+        "required": ["name", "path", "manifest"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+          "area": { "type": "string", "description": "Declared owning area slug. REQUIRED when areas[] is present." },
+          "path": { "type": "string", "description": "~-relative or absolute path to the checkout." },
+          "manifest": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] },
+          "expand": { "type": "string", "enum": ["children"], "description": "Treat each child directory as its own scanned repo." },
+          "url": { "type": "string" },
+          "urls": { "type": "object", "additionalProperties": { "type": "string" } },
+          "urlsNote": { "type": "string" },
+          "note": { "type": "string" },
+          "hermeticTest": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "What the repository's tests need on a bare runner, declared by the operator and never by the repository (bin/hermetic-test.mjs). prepare runs in the empty HOME before cargo test.",
+            "properties": {
+              "prepare": { "type": "array", "items": { "type": "string" } },
+              "runnerDiskGb": { "type": "number", "exclusiveMinimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "roots": {
+      "type": "array",
+      "description": "Steam-library-style auto-discovery roots.",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string" },
+          "maxDepth": { "type": "integer", "minimum": 1 },
+          "manifest": { "type": "string" },
+          "exclude": { "type": "array", "items": { "type": "string" } },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "exclude": { "type": "array", "items": { "type": "string" } },
+    "excludeNote": { "type": "string" },
+    "excludeReasons": {
+      "type": "object",
+      "description": "Per-repo reason for an entry in `exclude`, keyed by repo name. A reason specific to some repos must not be stamped onto every exclusion; repos without an entry fall back to `excludeNote`.",
+      "additionalProperties": { "type": "string" }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["state", "effectiveFrom"],
+        "properties": {
+          "state": { "type": "string", "enum": ["superseded"] },
+          "supersededBy": { "type": "string" },
+          "effectiveFrom": { "type": "string", "pattern": "^[0-9]{14}$" },
+          "effectiveTo": { "type": "string", "pattern": "^[0-9]{14}$" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "lifecycleNote": { "type": "string" },
+    "retention": { "type": "object" },
+    "urls": { "type": "object", "additionalProperties": { "type": "string" } },
+    "urlsNote": { "type": "string" },
+    "historic": { "type": "array" },
+    "note": { "type": "string" }
+  }
+}

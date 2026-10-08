@@ -1,0 +1,27 @@
+# TruffleHog path exclusions for scanning commitwork ITSELF (bin/scan-config-suffix.mjs); never used
+# for another repository, where a path named here would let the scanned repo hide a secret. Passed as
+# --exclude-paths: one regex per line, matched against repository-relative paths in EVERY commit it
+# walks, so a path named here is skipped in history as well as in the tree.
+#
+# Everything below produced unverified detections only (0 verified), and each was read: the values
+# are placeholders on reserved or invalid hosts (example.test, host, h, *.invalid), or have no
+# credential at all. gitleaks and betterleaks still scan the working-tree copies of the files that
+# remain in the tree, with every provider-specific rule live.
+
+# Test inputs that hand a detector a connection string or URL with a made-up password.
+^bin/test/memory-query\.test\.mjs$
+^bin/test/secrets-sweep\.test\.mjs$
+^bin/test/tls-proxy\.test\.mjs$
+^monitor/test/detail-schema\.test\.mjs$
+^monitor/test/trufflehog-tri-verified\.test\.mjs$
+# Labelled detection-lane corpora: finding rows reproduced as data, secrets synthesised.
+^monitor/test/fixtures/detection-lanes/
+^monitor/test/fixtures/lane-capability/
+
+# A JDBC URL naming the CI database service. No credential: the password is a separate variable.
+^ci/run-ci\.sh$
+
+# Cycle documents that were tracked before 2026-08-26 and are history-only now (the directory is a
+# symlink into the private sidecar). They quote JDBC and URL shapes from the code they audited.
+^evaluations/
+^REMEDIATION-[a-z0-9-]+-2026-07-30\.md$

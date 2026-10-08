@@ -1,0 +1,101 @@
+name: GitHub Action
+
+# Runs action.yml from this checkout (`uses: ./`) over the dirty scan canary, on a hosted runner.
+# bin/test/github-action.test.mjs runs the same steps under bash on every suite run; this is the
+# run on GitHub's own runner, which that test cannot be.
+#
+# Two jobs. `bare` installs nothing, so the scanner lanes cannot measure and the SARIF must name
+# each of them. `with-tools` installs the fast group's scanners, so those lanes must measure and
+# the dirty canary must produce results. Upload is off in both: the canary's findings are not this
+# repository's.
+
+on:
+  push:
+    paths:
+      - action.yml
+      - bin/lib/github-action.mjs
+      - bin/lib/sarif-export.mjs
+      - .github/workflows/github-action.yml
+  pull_request:
+    paths:
+      - action.yml
+      - bin/lib/github-action.mjs
+      - bin/lib/sarif-export.mjs
+      - .github/workflows/github-action.yml
+  workflow_dispatch:
+
+concurrency:
+  group: github-action-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  bare:
+    name: The action with no scanner installed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: cw
+        uses: ./ # zizmor: ignore[self-repository] ./ is the documented local-action form; $/ is unverified on hosted runners here
+        with:
+          path: fixtures/scan-canary/dirty
+          upload-sarif: 'false'
+          fail-on: none
+      - name: The SARIF was written and names every lane that did not measure
+        env:
+          SARIF: ${{ steps.cw.outputs.sarif }}
+          REPORT_DIR: ${{ steps.cw.outputs.report-dir }}
+          FAILED: ${{ steps.cw.outputs.failed }}
+          UNMEASURED: ${{ steps.cw.outputs.unmeasured }}
+        run: |
+          test -s "$SARIF"
+          test "$FAILED" = false
+          # shellcheck disable=SC2016 # the ${} are JavaScript template literals
+          node -e '
+            const fs = require("fs");
+            const run = JSON.parse(fs.readFileSync(process.env.SARIF, "utf8")).runs[0];
+            const warned = new Set(run.invocations[0].toolExecutionNotifications.filter((n) => n.level === "warning").map((n) => n.descriptor.id));
+            const status = JSON.parse(fs.readFileSync(`${process.env.REPORT_DIR}/checks-status.json`, "utf8"));
+            const voided = status.filter((s) => s.status === "noscan").map((s) => s.check);
+            const missing = voided.filter((id) => !warned.has(id));
+            if (!voided.length) { console.error("no lane was voided on a bare runner; the scanners are installed after all"); process.exit(1); }
+            if (missing.length) { console.error(`did not measure and not named in the SARIF: ${missing.join(", ")}`); process.exit(1); }
+            if (String(warned.size) !== process.env.UNMEASURED) { console.error(`unmeasured output ${process.env.UNMEASURED}, SARIF ${warned.size}`); process.exit(1); }
+            console.log(`${run.results.length} result(s); not measured: ${[...warned].join(", ")}`);
+          '
+
+  with-tools:
+    name: The action with the fast group's scanners installed
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: cw
+        uses: ./ # zizmor: ignore[self-repository] ./ is the documented local-action form; $/ is unverified on hosted runners here
+        with:
+          path: fixtures/scan-canary/dirty
+          upload-sarif: 'false'
+          fail-on: none
+          install-tools: 'true'
+      - name: The scanner lanes measured and the canary produced results
+        env:
+          SARIF: ${{ steps.cw.outputs.sarif }}
+          RESULTS: ${{ steps.cw.outputs.results }}
+        run: |
+          test -s "$SARIF"
+          test "$RESULTS" -gt 0
+          # shellcheck disable=SC2016 # the ${} are JavaScript template literals
+          node -e '
+            const run = JSON.parse(require("fs").readFileSync(process.env.SARIF, "utf8")).runs[0];
+            const warned = run.invocations[0].toolExecutionNotifications.filter((n) => n.level === "warning").map((n) => n.descriptor.id);
+            const blind = ["secrets-gitleaks", "sast", "actions-zizmor"].filter((id) => warned.includes(id));
+            if (blind.length) { console.error(`installed and still not measured: ${blind.join(", ")}`); process.exit(1); }
+            console.log(`${run.results.length} result(s); not measured: ${warned.join(", ") || "none"}`);
+          '

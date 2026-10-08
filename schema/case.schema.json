@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.local/schema/case.schema.json",
+  "title": "CRA Art. 14 case log",
+  "description": "The shape of cra/cases.json — the append-only, hash-chained record of what was known when, for a legal reporting obligation. It had no schema at all until 2026-08-22: the chain proved the log had not been EDITED, and nothing proved it had been WRITTEN correctly. Clock key names, track values and the reporting shape were conventions held only by the code that emitted them. Validation is applied to cases that a run CREATES OR CHANGES; a pre-existing record that does not validate is reported and left alone, because failing closed on the whole document would make updateCases refuse every write and strand the ledger.",
+  "type": "object",
+  "required": ["events", "cases"],
+  "properties": {
+    "note": { "type": "string" },
+    "events": { "type": "array", "items": { "$ref": "#/$defs/event" } },
+    "cases": { "type": "object", "additionalProperties": { "$ref": "#/$defs/case" } }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "required": ["type", "caseId", "at", "hash"],
+      "properties": {
+        "type": { "type": "string", "enum": ["case-opened", "case-updated", "incident-declared", "acknowledged", "measure-recorded", "report-submitted", "case-closed", "paged", "write-deferred"] },
+        "caseId": { "type": "string" },
+        "at": { "type": "string" },
+        "data": {},
+        "prevHash": { "type": ["string", "null"] },
+        "hash": { "type": "string" }
+      }
+    },
+    "case": {
+      "type": "object",
+      "required": ["caseId", "kind", "productId", "trigger", "status", "clocks"],
+      "properties": {
+        "caseId": { "type": "string" },
+        "kind": { "type": "string", "enum": ["vulnerability", "incident"] },
+        "productId": { "type": "string" },
+        "vulnId": { "type": ["string", "null"] },
+        "title": { "type": ["string", "null"] },
+        "summary": { "type": ["string", "null"] },
+        "advisory": { "type": ["string", "null"] },
+        "severity": { "type": ["string", "null"] },
+        "cvss": { "type": ["number", "null"] },
+        "epss": { "type": ["number", "null"], "description": "null means UNKNOWN and never 0 — an unscored CVE is not a harmless one." },
+        "kev": { "type": "boolean" },
+        "trigger": {
+          "type": "string",
+          "enum": ["incident-declared", "kev", "epss", "crit"],
+          "description": "Which condition opened the case. The first three are reportable (ARTICLE14_TRIGGERS); `crit` is a critical finding with no evidence of exploitation and can only ever be internal."
+        },
+        "reporting": { "$ref": "#/$defs/reporting" },
+        "packages": { "type": "array", "items": { "type": "string" } },
+        "repos": { "type": "array", "items": { "type": "string" } },
+        "slices": { "type": "array", "items": { "type": "string" } },
+        "firstDetectedAt": { "type": "string" },
+        "awarenessAt": { "type": ["string", "null"] },
+        "measures": { "type": "array" },
+        "submitted": { "type": "object" },
+        "status": { "type": "string", "enum": ["open", "acknowledged", "closed"] },
+        "clocks": { "$ref": "#/$defs/clocks" }
+      }
+    },
+    "reporting": {
+      "type": ["object", "null"],
+      "description": "Resolved from cra/csirt-directory.json at trigger time and re-synced each sweep, so delegating an advisory body PROMOTES the cases already running.",
+      "properties": {
+        "locale": { "type": ["string", "null"] },
+        "regime": { "type": ["string", "null"], "enum": ["regulatory", "benchmark", "unrecognised", null] },
+        "bodies": { "type": "array", "items": { "type": "string" } },
+        "csirt": { "type": ["object", "null"] },
+        "why": { "type": "string", "description": "Required: the reason a case is on the track it is on must be readable without re-deriving it." }
+      }
+    },
+    "clocks": {
+      "type": "object",
+      "required": ["track", "basis", "basisAt"],
+      "description": "Which keys are present depends on `track`. The key NAMES are owned by CLOCK_SPEC in cra/lib.mjs and are asserted against computeClocks output by cra/test/clock-spec.test.mjs — this schema does not restate them as an authority, only as a shape.",
+      "properties": {
+        "track": { "type": "string", "enum": ["article14", "bestpractice", "internal"] },
+        "regime": { "type": "string" },
+        "basis": { "type": "string" },
+        "basisAt": { "type": "string" },
+        "earlyWarningDue": { "type": "string" },
+        "notificationDue": { "type": "string" },
+        "finalDue": { "type": "string" },
+        "finalBasis": { "type": "string" },
+        "triageDue": { "type": "string" },
+        "remediateDue": { "type": "string" },
+        "remediateBasis": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "track": { "const": "internal" } }, "required": ["track"] },
+          "then": {
+            "required": ["triageDue", "remediateDue"],
+            "not": { "anyOf": [{ "required": ["earlyWarningDue"] }, { "required": ["notificationDue"] }, { "required": ["finalDue"] }] },
+            "description": "An internal-policy clock must not carry an Art. 14 key: sharing the vocabulary is what makes a policy deadline readable as a regulatory one."
+          }
+        },
+        {
+          "if": { "properties": { "track": { "enum": ["article14", "bestpractice"] } }, "required": ["track"] },
+          "then": {
+            "required": ["earlyWarningDue", "notificationDue", "finalDue"],
+            "not": { "anyOf": [{ "required": ["triageDue"] }, { "required": ["remediateDue"] }] }
+          }
+        }
+      ]
+    }
+  }
+}

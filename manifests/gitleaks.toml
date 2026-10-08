@@ -1,0 +1,114 @@
+# gitleaks scan scope — what a filesystem secret scan must NOT walk.
+#
+# WHY THIS FILE EXISTS. `gitleaks detect --no-git --source .` walks the working tree and does NOT
+# respect .gitignore. On the clientD checkout that means a 76 GB tree, 65 GB of which is a single
+# Meilisearch LMDB file (.tools/search/data.ms/indexes/*/data.mdb) plus a 1.7 GB dump. Measured
+# 2026-08-01: one gitleaks run consumed 92 minutes of CPU and had still not finished, so the clientD
+# sweep never reached its rollup — and clientD is the ONLY project on this box serving the public
+# internet (three live hostnames). Its last successful rollup was 2026-07-26. The highest-exposure
+# asset in the fleet had silently stopped being scanned, and nothing said so, because a sweep that
+# never finishes produces no failure — it produces nothing.
+#
+# THE RULE APPLIED HERE. Skip what is not source: dependency trees, build output, and runtime data
+# a service wrote. Do NOT skip merely-untracked files — an uncommitted .env is exactly what this
+# scan exists to find, so `.gitignore` is deliberately not used as the filter. Each entry below is
+# a directory a tool or a runtime owns, not something a person edits.
+#
+# NOT A SILENT CAP: bin/commitwork.mjs prints the scope in the check's own report line, and
+# `--max-target-megabytes` is a backstop for a large file in a directory nobody thought to list —
+# it is set high enough that no plausible source file is affected.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "runtime data, dependency trees and build output — not source, and not where a human puts a secret"
+paths = [
+  # dependency trees (restored from a lockfile; a secret here is upstream's problem, not this repo's)
+  '''(^|/)node_modules/''',
+  '''(^|/)vendor/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)venv/''',
+  '''(^|/)\.bundle/''',
+  '''(^|/)Pods/''',
+
+  # build / tool output — regenerated, never authored
+  '''(^|/)dist/''',
+  '''(^|/)build/''',
+  '''(^|/)out/''',
+  '''(^|/)target/''',
+  '''(^|/)\.next/''',
+  '''(^|/)\.nuxt/''',
+  '''(^|/)\.gradle/''',
+  '''(^|/)\.turbo/''',
+  '''(^|/)coverage/''',
+
+  # RUNTIME DATA a service wrote. This is the class that broke the clientD sweep: a search index is
+  # not a document, and scanning 65 GB of B-tree pages for entropy finds nothing but costs hours.
+  '''(^|/)\.tools/''',
+  '''(^|/)data\.ms/''',
+  # overwatch-layer's JSON store — a service-written data directory. Its 104 MB sitemap export was only
+  # ever skipped by the 50 MB size backstop (measured 2026-08-02), and any generated artifact
+  # UNDER that size in the same directory was still scanned as source. Same class as pgdata/.
+  '''(^|/)server/data/''',
+  '''\.mdb$''',
+  '''(^|/)pgdata/''',
+  '''(^|/)mysql-data/''',
+  '''\.sqlite3?$''',
+  '''\.db$''',
+
+  # commitwork's own outputs — scanning our own reports would re-find every finding as a "secret"
+  '''(^|/)reports/''',
+  '''(^|/)reference/''',
+]
+
+# ── RULE-SCOPED SUPPRESSION, not a path exclusion ───────────────────────────────────────────────
+# One internal project reported 868 secrets. 859 are in `library/_meta_cache` — CrossRef DOI records
+# (`cr_10_1001_archinte_1993_00410180039004.json` and friends) — and every one is gitleaks'
+# `generic-api-key` firing on a JSON field literally named "key", which in CrossRef bibliographic
+# metadata is a REFERENCE KEY: the id of an entry in a paper's bibliography. Not a credential, and
+# 859 of them drowned whatever else that repo has to say.
+#
+# This is `targetRules`, NOT an entry in the `[allowlist] paths` block above, and the difference is
+# the whole point. That block excludes a directory from EVERY rule — right for node_modules and a
+# Meilisearch index, wrong here, because `library/_meta_cache` is TRACKED content (671 files, 19 MB
+# committed). Excluding it outright would bury a real credential committed there forever. Scoping to
+# the one catch-all entropy rule leaves every specific rule live on exactly the same files.
+#
+# VERIFIED by planting credentials in a copy of that directory and running it both ways:
+#   control (no allowlist):  28 findings — private-key 1, github-pat 1, generic-api-key 26
+#   with this block:          2 findings — private-key 1, github-pat 1
+# The FIRST attempt at that test planted AKIAIOSFODNN7EXAMPLE and "proved" the suppression was too
+# broad. That is AWS's documentation example key and gitleaks allowlists it by default, so the
+# control was catching nothing and the test was measuring its own noise. Check the control.
+[[allowlists]]
+description = "CrossRef/bibliographic metadata caches: `key` is a reference id, not a credential"
+targetRules = ["generic-api-key"]
+paths = ['''(^|/)_meta_cache/''']
+
+# Worktrees of this same repo, one per agent — already walked as the checkout, so each copy repeats
+# every finding. COST: a secret written into a worktree and never merged is not scanned.
+[[allowlists]]
+description = "per-agent git worktrees of this same repo — already scanned as the checkout, counted once per copy"
+paths = ['''(^|/)\.claude/worktrees/''']
+
+# Our own verdict journal: generic-api-key fires on the field NAME `outcomeKey`, an adjudication id.
+# Rule-scoped, not a path exclusion — the journal is kept evidence, so specific detectors stay live.
+[[allowlists]]
+description = "verdict journal: `outcomeKey` is an adjudication id this repo minted, not a credential"
+targetRules = ["generic-api-key"]
+paths = ['''(^|/)\.claude/verdicts/''']
+
+# ── sourcegraph-access-token: git object ids in URL paths ─────────────────────────────────────
+# The default rule also matches a bare 40-hex string once "sourcegraph" appears anywhere in the
+# fragment, and a history scan reads a whole patch as one fragment. A govulncheck report credits a
+# "Sourcegraph Code Intelligence Team" once, and every Go commit id in its go.googlesource.com URLs
+# then read as a token: 3 rows from one fixture on 2026-10-04. A 40-hex segment after /+/, /commit/,
+# /tree/ or /blob/ is a git object id. An sgp_ token, and bare hex anywhere else, still match.
+[[rules]]
+id = "sourcegraph-access-token"
+
+[[rules.allowlists]]
+description = "git object ids in repository URL paths"
+regexTarget = "line"
+regexes = ['''(?:/\+/|/commits?/|/tree/|/blob/)[0-9a-f]{40}\b''']

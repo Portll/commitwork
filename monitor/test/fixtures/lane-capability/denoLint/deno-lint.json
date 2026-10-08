@@ -1,0 +1,81 @@
+{
+ "version": 1,
+ "diagnostics": [
+  {
+   "filename": "file:///src/mod.ts",
+   "range": {
+    "start": {
+     "line": 1,
+     "col": 0,
+     "bytePos": 0
+    },
+    "end": {
+     "line": 1,
+     "col": 3,
+     "bytePos": 3
+    }
+   },
+   "message": "`var` keyword is not allowed.",
+   "code": "no-var",
+   "hint": null
+  },
+  {
+   "filename": "file:///src/mod.ts",
+   "range": {
+    "start": {
+     "line": 1,
+     "col": 4,
+     "bytePos": 4
+    },
+    "end": {
+     "line": 1,
+     "col": 10,
+     "bytePos": 10
+    }
+   },
+   "message": "`unused` is never used",
+   "code": "no-unused-vars",
+   "hint": "If this is intentional, prefix it with an underscore like `_unused`"
+  },
+  {
+   "filename": "file:///src/mod.ts",
+   "range": {
+    "start": {
+     "line": 2,
+     "col": 4,
+     "bytePos": 20
+    },
+    "end": {
+     "line": 2,
+     "col": 8,
+     "bytePos": 24
+    }
+   },
+   "message": "Use of a constant expressions as conditions is not allowed.",
+   "code": "no-constant-condition",
+   "hint": "Remove the constant expression"
+  },
+  {
+   "filename": "file:///src/mod.ts",
+   "range": {
+    "start": {
+     "line": 2,
+     "col": 10,
+     "bytePos": 26
+    },
+    "end": {
+     "line": 2,
+     "col": 12,
+     "bytePos": 28
+    }
+   },
+   "message": "Empty block statement",
+   "code": "no-empty",
+   "hint": "Add code or comment to the empty block"
+  }
+ ],
+ "errors": [],
+ "checked_files": [
+  "/private/tmp/claude-501/-Users-portll-External-Portll-commitwork/f7bd593e-e424-4244-8f4a-8fbe27c08673/scratchpad/deno-fx/mod.ts"
+ ]
+}

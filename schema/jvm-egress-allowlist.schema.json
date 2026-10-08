@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.portll.net/schema/jvm-egress-allowlist.schema.json",
+  "title": "JVM build egress allowlist",
+  "$comment": "MIRRORED, not applied. bin/lib/egress-conf.mjs is the gate that actually runs — it throws on an empty allow[], a non-string host, and a host that would swallow the list; bin/test/jvm-egress.test.mjs additionally fails an entry with no `why`. This schema documents the shape those checks enforce. Required fields are taken from the VALIDATOR, not from the current three entries, so it does not over-fit today's data.",
+  "type": "object",
+  "required": ["allow"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "note": { "type": "string" },
+    "denyLogIsEvidence": {
+      "type": "string",
+      "description": "How a refused connection is recorded. A denial nobody logs is indistinguishable from a request never made."
+    },
+    "tiers": {
+      "type": "object",
+      "description": "What each tier MEANS, written down beside the entries that claim one. Added 2026-08-27 when a non-registry host had to become reachable: services.gradle.org 307-redirects the gradle distribution to github.com and then to release-assets.githubusercontent.com, so the lane could not bootstrap at all without them. Two tiers rather than one because 'reachable' had stopped being a single idea — an artifact registry serving immutable versioned artifacts and a release CDN serving whatever the release contains are not the same permission, and collapsing them is how an allowlist widens without anybody deciding to widen it.",
+      "additionalProperties": false,
+      "properties": {
+        "green": { "type": "string", "minLength": 20 },
+        "amber": { "type": "string", "minLength": 20 },
+        "red": { "type": "string", "minLength": 20 }
+      }
+    },
+    "allow": {
+      "type": "array",
+      "minItems": 1,
+      "$comment": "Empty is refused: a proxy started from an empty allowlist permits nothing and is a control nobody can state the shape of.",
+      "items": {
+        "type": "object",
+        "required": ["host", "why"],
+        "properties": {
+          "host": {
+            "type": "string",
+            "minLength": 3,
+            "pattern": "^\\.?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$",
+            "description": "A hostname, optionally dot-prefixed for subdomain matching. Lowercase is enforced because the reader compares literally: an uppercase entry would never match, and a never-matching allow entry reads as permission granted while granting nothing."
+          },
+          "why": {
+            "type": "string",
+            "minLength": 20,
+            "description": "What needs this host and what it is. The length floor is deliberate — 'needed' is not a reason, and one-word justifications are how an allowlist stops being reviewable."
+          },
+          "tier": {
+            "enum": ["green", "amber"],
+            "description": "OMITTED means green: an artifact registry, reachable on its own terms. `amber` means the host is reachable ONLY because the specific artifacts fetched from it are pinned by hash elsewhere and that pin is enforced by the thing doing the fetching — today, manifests/gradle-distributions.json and the distributionSha256Sum bin/jvm-resolve.sh injects. `red` is not a value here: red is the default and lives in `deliberatelyAbsent` or in nothing at all. An amber entry whose reason names no enforcing pin is a green entry wearing a warning label, which is worse than either, and bin/test/egress-conf.test.mjs asserts against exactly that."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "deliberatelyAbsent": {
+      "type": "array",
+      "$comment": "Hosts considered and refused, kept so a later reader sees the decision rather than an absence.",
+      "items": {
+        "type": "object",
+        "required": ["host", "why"],
+        "properties": {
+          "host": { "type": "string", "minLength": 1 },
+          "why": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

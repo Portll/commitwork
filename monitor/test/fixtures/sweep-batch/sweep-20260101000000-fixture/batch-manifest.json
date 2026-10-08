@@ -1,0 +1,20 @@
+{
+  "sliceId": "sweep-20260101000000-fixture",
+  "kind": "sweep",
+  "group": "fixture",
+  "only": null,
+  "startedAt": "2026-01-01T00:00:00.000Z",
+  "scope": {
+    "repos": [{ "name": "example-fixture-repo", "manifests": ["security-baseline"] }],
+    "excluded": [],
+    "lifecycle": {}
+  },
+  "anchors": {
+    "example-fixture-repo": {
+      "path": "/nonexistent/example-fixture-repo",
+      "sha": "0000000000000000000000000000000000000000",
+      "branch": "main",
+      "dirty": 0
+    }
+  }
+}

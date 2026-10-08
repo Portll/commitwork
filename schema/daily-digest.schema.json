@@ -1,0 +1,497 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Daily digest",
+  "description": "What /daily reads: one monitor area's newest complete sweep compared with the previous complete one, built by bin/daily-digest.mjs from reports/<out>/rollup-<sliceId>.json, the batch directory and the area's daily config (monitor/private/daily.json). Code findings are items with the lines around them. Findings under the config's data paths are counted per rule; on a repo that is not at baseline, a new one is also listed as an item. Fixed and carried findings are listed by id for the code that reconciles todos, not for the model. Every string taken from a scanned repository (messages, paths, commit subjects, detail, code context) is untrusted data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "digestId",
+    "area",
+    "batch",
+    "previousBatch",
+    "gapDays",
+    "generatedAt",
+    "config",
+    "batchHealth",
+    "repos",
+    "guidance",
+    "limits"
+  ],
+  "properties": {
+    "schema": {
+      "const": "commitwork.daily-digest/1"
+    },
+    "digestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256 of this document serialised with digestId set to the empty string; bin/daily-validate.mjs recomputes it."
+    },
+    "area": {
+      "type": "string"
+    },
+    "batch": {
+      "type": "string",
+      "pattern": "^sweep-[0-9]{14}$"
+    },
+    "previousBatch": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^sweep-[0-9]{14}$"
+    },
+    "gapDays": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Days between the two batches; null at the area's first complete sweep."
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 of the area's daily config as read; a change makes each repo's comparison a baseline."
+        }
+      }
+    },
+    "batchHealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rollup",
+        "reposResolved",
+        "reposScanned",
+        "scansRan",
+        "scansTotal"
+      ],
+      "properties": {
+        "rollup": {
+          "type": "string"
+        },
+        "reposResolved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reposScanned": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scansRan": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scansTotal": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "repos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "head",
+          "headDirty",
+          "previousHead",
+          "baseline",
+          "dataPaths",
+          "commitsSince",
+          "commitsTruncated",
+          "lanes",
+          "items",
+          "omittedIds",
+          "fixed",
+          "carried",
+          "aggregates"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "head": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "headDirty": {
+            "type": "boolean",
+            "description": "The checkout had uncommitted changes when swept; context read at head may differ from what was scanned."
+          },
+          "previousHead": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "baseline": {
+            "enum": [
+              null,
+              "first-sweep",
+              "previous-missing",
+              "repo-added",
+              "config-changed"
+            ],
+            "description": "Why nothing in this repo can be called new since the last sweep; null when it can."
+          },
+          "dataPaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "/$"
+            }
+          },
+          "commitsSince": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sha",
+                "subject",
+                "files"
+              ],
+              "properties": {
+                "sha": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "subject": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "files": {
+                  "type": "array",
+                  "maxItems": 40,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "commitsTruncated": {
+            "type": "boolean"
+          },
+          "lanes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lane",
+                "state",
+                "findings",
+                "toolChanged"
+              ],
+              "properties": {
+                "lane": {
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "ran",
+                    "void",
+                    "failed",
+                    "skipped",
+                    "timed-out"
+                  ]
+                },
+                "findings": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "toolVersion": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "previousToolVersion": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "toolChanged": {
+                  "type": "boolean",
+                  "description": "The lane's tool version differs between the two batches; its new and fixed findings may be renames, not changes."
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "category",
+                "lane",
+                "kind",
+                "rule",
+                "severity",
+                "severitySource",
+                "file",
+                "pathClass",
+                "lines",
+                "occurrences",
+                "previousOccurrences",
+                "message",
+                "state",
+                "firstSeenBatch",
+                "context"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{16}$",
+                  "description": "First 16 hex of sha256(repo|category|rule|file), the rollup's own identity for a scanner finding (line numbers excluded); for a dependency, of repo|dependencies|<rollup key>. Stable across sweeps."
+                },
+                "category": {
+                  "type": "string"
+                },
+                "lane": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "security",
+                    "hygiene"
+                  ],
+                  "description": "hygiene: coverage, provenance, minified code, accessibility, lint."
+                },
+                "rule": {
+                  "type": "string"
+                },
+                "severity": {
+                  "enum": [
+                    "critical",
+                    "high",
+                    "medium",
+                    "low",
+                    "info"
+                  ]
+                },
+                "severitySource": {
+                  "enum": [
+                    "row",
+                    "category-default"
+                  ]
+                },
+                "file": {
+                  "type": "string"
+                },
+                "pathClass": {
+                  "enum": [
+                    "code",
+                    "data"
+                  ]
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "maxItems": 50
+                },
+                "occurrences": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "previousOccurrences": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "renamedFrom": {
+                  "type": "string",
+                  "description": "The file this item's identity was carried from, when git shows a rename since previousHead."
+                },
+                "message": {
+                  "type": "string",
+                  "maxLength": 600
+                },
+                "cwe": {
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "new",
+                    "persisting"
+                  ]
+                },
+                "firstSeenBatch": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "context": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "null for secret categories and redacted rows, always.",
+                  "additionalProperties": false,
+                  "required": [
+                    "startLine",
+                    "text"
+                  ],
+                  "properties": {
+                    "startLine": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 2000
+                    }
+                  }
+                },
+                "detail": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                }
+              }
+            }
+          },
+          "omittedIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{16}$"
+            },
+            "description": "Open items left out over the cap, lowest severity and oldest first. Still open: never reconciled as fixed."
+          },
+          "fixed": {
+            "type": "array",
+            "description": "Previously open, now absent, and the lane ran in both batches with the same tool version.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "rule",
+                "file"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string"
+                },
+                "file": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "carried": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Previously open, absent now, but the lane did not run or its tool changed: unmeasured, still treated as open."
+          },
+          "aggregates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "category",
+                "rule",
+                "count",
+                "new",
+                "fixed",
+                "paths"
+              ],
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "new": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fixed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "paths": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 3000
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxItemsPerRepo",
+        "contextLines",
+        "maxDigestBytes"
+      ],
+      "properties": {
+        "maxItemsPerRepo": {
+          "type": "integer"
+        },
+        "contextLines": {
+          "type": "integer"
+        },
+        "maxDigestBytes": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

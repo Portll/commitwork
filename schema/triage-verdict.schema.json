@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "commitwork/triage-verdict.v1",
+  "title": "Local triage verdict (v1)",
+  "description": "The structured output every local-model triage run must produce (operator decision, 2026-08-03: free-form prose replies scored 5.9-6.8/10 on remediation-format fidelity — both engines invented .gitleaksignore syntax. A machine-readable verdict against a saved schema is enforced engine-side: ollama `format`, LM Studio `response_format.json_schema`). Consumed by admin/serve.mjs runLocalModel(), written beside the .md evidence as <check>-<engine>-<ts>.verdict.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings"],
+  "properties": {
+    "verdict": {
+      "description": "The one-word answer an operator sorts by. all-false-positives ≠ clean: clean means nothing was flagged, all-false-positives means everything flagged was dismissed WITH reasons.",
+      "enum": ["clean", "all-false-positives", "action-required", "mixed", "cannot-determine"]
+    },
+    "summary": { "type": "string", "maxLength": 1500 },
+    "findings": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "classification", "reason"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 300, "description": "file:line, rule id, or package@version — whatever identifies the finding in ITS artifact" },
+          "classification": { "enum": ["real", "false-positive", "intentional", "needs-human"] },
+          "reason": { "type": "string", "maxLength": 400 },
+          "action": { "type": "string", "maxLength": 400, "description": "the concrete next step, when one exists — rotate X, add ignore with reason Y, upgrade to Z" }
+        }
+      }
+    },
+    "caveats": {
+      "description": "What bounds this verdict: truncated artifact, redacted values, could not read source, model unsure. An empty array is the affirmative 'no caveats', distinct from absent.",
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string", "maxLength": 300 }
+    }
+  }
+}

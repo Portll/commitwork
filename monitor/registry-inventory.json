@@ -1,0 +1,537 @@
+{
+  "note": "Classification and schema binding for every tracked JSON data file. The schema-required gate rejects unclassified files.",
+  "kinds": {
+    "declaration": "Hand-authored. Code reads it as truth. A schema is required.",
+    "store": "Machine-written state this repo reads back. A schema is required: we control both ends.",
+    "feed": "Downloaded from upstream. A schema is optional — the shape is the publisher's."
+  },
+  "entries": [
+    {
+      "path": "bin/bare-catch-baseline.json",
+      "kind": "store",
+      "schema": "schema/bare-catch-baseline.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "bin/comment-baseline.json",
+      "kind": "store",
+      "schema": "schema/comment-baseline.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "cra/controls.json",
+      "kind": "declaration",
+      "schema": "schema/cra-controls.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "cra/csirt-directory.json",
+      "kind": "declaration",
+      "schema": "schema/csirt-directory.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "cra/cwe-catalogue.json",
+      "kind": "feed",
+      "schema": null,
+      "reason": "Vendored MITRE CWE 4.20 feed; its published content is upstream-owned. Wrapper metadata remains local schema debt; see evaluations/handoff-2026-08-26/08-schema-coverage.md."
+    },
+    {
+      "path": "cra/products.example.json",
+      "kind": "declaration",
+      "schema": "schema/product.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private product registry; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "lib/claude-mcp-none.json",
+      "kind": "declaration",
+      "schema": "schema/claude-mcp-none.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "lib/memory-layer-contract.json",
+      "kind": "declaration",
+      "schema": "schema/memory-layer-contract.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "manifests/agent-surface.json",
+      "kind": "declaration",
+      "schema": "schema/agent-surface.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "manifests/feature-charter.json",
+      "kind": "declaration",
+      "schema": "schema/feature-charter.schema.json",
+      "binding": "none",
+      "note": "bin/feature-census.mjs reads it and checks only that groups is an array and that no (surface, key) is claimed twice; the schema is not applied at runtime yet."
+    },
+    {
+      "path": "manifests/formats.json",
+      "kind": "declaration",
+      "schema": "schema/formats.schema.json",
+      "binding": "none",
+      "note": "Read only by bin/test/format-freeze.test.mjs, which validates it and holds each format's writer and schema to it."
+    },
+    {
+      "path": "manifests/bola/example.json",
+      "kind": "declaration",
+      "schema": "schema/bola-manifest.schema.json",
+      "binding": "mirrored",
+      "note": "Synthetic example; operator manifests are private records in monitor/private/bola/ (CW_BOLA_MANIFEST_DIR)."
+    },
+    {
+      "path": "manifests/branch-protection.json",
+      "kind": "declaration",
+      "schema": "schema/manifest.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/build-health.json",
+      "kind": "declaration",
+      "schema": "schema/manifest.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/gradle-distributions.json",
+      "kind": "declaration",
+      "schema": "schema/gradle-distributions.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/install-catalog.json",
+      "kind": "declaration",
+      "schema": "schema/manifest.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/jvm-egress-allowlist.json",
+      "kind": "declaration",
+      "schema": "schema/jvm-egress-allowlist.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "manifests/launchlist.json",
+      "kind": "declaration",
+      "schema": "schema/launchlist.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "manifests/llm-hosts.json",
+      "kind": "declaration",
+      "schema": "schema/llm-hosts.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "manifests/quality-gates.json",
+      "kind": "declaration",
+      "schema": "schema/manifest.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/runtime.json",
+      "kind": "declaration",
+      "schema": "schema/manifest.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/scanner-quirks.json",
+      "kind": "declaration",
+      "schema": "schema/scanner-quirks.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "manifests/security-baseline.json",
+      "kind": "declaration",
+      "schema": "schema/manifest.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/security-baseline.map.json",
+      "kind": "store",
+      "schema": "schema/manifest-map.schema.json",
+      "binding": "mirrored",
+      "note": "Generated by bin/manifest-map.mjs; --check compares it byte-for-byte against a regeneration, which subsumes shape validation. Landed unclassified in 61b8bc7."
+    },
+    {
+      "path": "manifests/security-tools.json",
+      "kind": "declaration",
+      "schema": "schema/manifest.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/tool-pins.json",
+      "kind": "declaration",
+      "schema": "schema/tool-pins.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "manifests/upstream-sources.json",
+      "kind": "declaration",
+      "schema": "schema/upstream-sources.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "manifests/wire-layer.json",
+      "kind": "declaration",
+      "schema": "schema/wire-layer.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/annotations.example.json",
+      "kind": "store",
+      "schema": "schema/annotation.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/approach-taxonomy-baseline.json",
+      "kind": "store",
+      "binding": "mirrored",
+      "schema": "schema/approach-taxonomy-baseline.schema.json"
+    },
+    {
+      "path": "monitor/approach-taxonomy.json",
+      "kind": "declaration",
+      "schema": "schema/approach-taxonomy.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "monitor/bind-declarations.json",
+      "kind": "declaration",
+      "schema": "schema/bind-declarations.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/config-correctness-ledger.example.json",
+      "kind": "store",
+      "schema": "schema/config-correctness-ledger.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/credential-scope.example.json",
+      "kind": "declaration",
+      "schema": "schema/credential-scope.schema.json",
+      "binding": "none",
+      "note": "Commitwork's own integration credentials as the example; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/data/advisory-cvss.json",
+      "kind": "feed",
+      "schema": null,
+      "reason": "Upstream feed. The shape is the publisher's, not ours; a schema here would assert control we do not have. Extractors fail closed on a shape they cannot read."
+    },
+    {
+      "path": "monitor/data/attack-graph.json",
+      "kind": "store",
+      "schema": "schema/attack-graph.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/data/capec-graph.json",
+      "kind": "feed",
+      "schema": null,
+      "reason": "Upstream feed. The shape is the publisher's, not ours; a schema here would assert control we do not have. Extractors fail closed on a shape they cannot read."
+    },
+    {
+      "path": "monitor/data/cwe-graph.json",
+      "kind": "feed",
+      "schema": null,
+      "reason": "Upstream feed. The shape is the publisher's, not ours; a schema here would assert control we do not have. Extractors fail closed on a shape they cannot read."
+    },
+    {
+      "path": "monitor/data/epss.json",
+      "kind": "feed",
+      "schema": null,
+      "reason": "Upstream feed. The shape is the publisher's, not ours; a schema here would assert control we do not have. Extractors fail closed on a shape they cannot read."
+    },
+    {
+      "path": "monitor/data/kev.json",
+      "kind": "feed",
+      "schema": null,
+      "reason": "Upstream feed. The shape is the publisher's, not ours; a schema here would assert control we do not have. Extractors fail closed on a shape they cannot read."
+    },
+    {
+      "path": "monitor/data/learning.json.sample",
+      "kind": "declaration",
+      "schema": "schema/learning.schema.json",
+      "binding": "none",
+      "note": "Tracked empty template only; the live learning.json is generated, ignored, and validated by monitor/learning.mjs."
+    },
+    {
+      "path": "monitor/detector-bindings.json",
+      "kind": "declaration",
+      "schema": "schema/detector-bindings.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "monitor/disk-encryption.json",
+      "kind": "declaration",
+      "schema": "schema/disk-encryption.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/disregarded-warnings.example.json",
+      "kind": "store",
+      "schema": "schema/disregarded-warnings.schema.json",
+      "binding": "mirrored",
+      "note": "Synthetic example of the private record; validateDisregard in monitor/disregarded-warnings.mjs mirrors the schema and bin/test/schema-required.test.mjs validates the example."
+    },
+    {
+      "path": "monitor/explainers.json",
+      "kind": "declaration",
+      "schema": "schema/explainers.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/failure-taxonomy.json",
+      "kind": "declaration",
+      "schema": "schema/failure-taxonomy.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/gate-exemptions.example.json",
+      "kind": "declaration",
+      "schema": "schema/gate-exemptions.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/image-acceptance.example.json",
+      "kind": "store",
+      "schema": "schema/image-acceptance.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/ingest-quarantine.json",
+      "kind": "store",
+      "schema": "schema/ingest-quarantine.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "monitor/minify-allowlist.json",
+      "kind": "declaration",
+      "schema": "schema/minify-allowlist.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/minify-baseline.json",
+      "kind": "store",
+      "schema": "schema/minify-baseline.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/owner-map.example.json",
+      "kind": "store",
+      "schema": "schema/owner-map.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/pattern-baseline.json",
+      "kind": "store",
+      "schema": "schema/pattern-baseline.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/perf-profiles.json",
+      "kind": "declaration",
+      "schema": "schema/perf-profiles.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "monitor/private/annotations.json",
+      "kind": "store",
+      "schema": "schema/annotation.schema.json",
+      "binding": "none",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/config-correctness-ledger.json",
+      "kind": "store",
+      "schema": "schema/config-correctness-ledger.schema.json",
+      "binding": "none",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/cra-products.json",
+      "kind": "declaration",
+      "schema": "schema/product.schema.json",
+      "binding": "validator",
+      "note": "Private record (monitor/store-paths.mjs craProductsPathFor), moved from cra/products.json 2026-09-30; cra/products.example.json is the public shape."
+    },
+    {
+      "path": "monitor/private/credential-scope.json",
+      "kind": "declaration",
+      "schema": "schema/credential-scope.schema.json",
+      "binding": "validator",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/epss-detail.json",
+      "kind": "store",
+      "schema": "schema/epss-detail.schema.json",
+      "binding": "none",
+      "note": "Private record (monitor/store-paths.mjs epssDetailPathFor): its keys are the fleet CVE set. Moved from monitor/data/ 2026-09-30."
+    },
+    {
+      "path": "monitor/private/gate-exemptions.json",
+      "kind": "declaration",
+      "schema": "schema/gate-exemptions.schema.json",
+      "binding": "mirrored",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/image-acceptance.json",
+      "kind": "store",
+      "schema": "schema/image-acceptance.schema.json",
+      "binding": "mirrored",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/issues.json",
+      "kind": "store",
+      "schema": "schema/issue.schema.json",
+      "binding": "validator",
+      "note": "Repointed outside the tracked tree 2026-08-27: persistent private lifecycle state retains this schema binding."
+    },
+    {
+      "path": "monitor/private/owner-map.json",
+      "kind": "store",
+      "schema": "schema/owner-map.schema.json",
+      "binding": "mirrored",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/program-worklist.json",
+      "kind": "store",
+      "schema": "schema/program-worklist.schema.json",
+      "binding": "mirrored",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/projects.json",
+      "kind": "declaration",
+      "schema": "schema/projects.schema.json",
+      "binding": "validator",
+      "note": "Repointed outside the tracked tree 2026-08-27. Resolve the private fleet registry through registryPathFor()."
+    },
+    {
+      "path": "monitor/private/stub-allowlist.json",
+      "kind": "declaration",
+      "schema": "schema/stub-allowlist.schema.json",
+      "binding": "validator",
+      "note": "Private record (monitor/store-paths.mjs), moved out of the tracked tree 2026-09-30; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/program-worklist.example.json",
+      "kind": "store",
+      "schema": "schema/program-worklist.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/projects.example.json",
+      "kind": "declaration",
+      "schema": "schema/projects.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/projects.json",
+      "kind": "declaration",
+      "schema": "schema/projects.schema.json",
+      "binding": "validator",
+      "note": "Tracked release projection; runtime prefers monitor/private/projects.json when the sidecar is present."
+    },
+    {
+      "path": "monitor/publish-scanner-redactions.json",
+      "kind": "declaration",
+      "schema": "schema/publish-scanner-redactions.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/registry-inventory.json",
+      "kind": "declaration",
+      "schema": "schema/registry-inventory.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/remediation-policy.json",
+      "kind": "declaration",
+      "schema": "schema/remediation-policy.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/ruleId-cwe.json",
+      "kind": "declaration",
+      "schema": "schema/rule-id-cwe.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "monitor/scanner-binaries.json",
+      "kind": "declaration",
+      "schema": "schema/scanner-binaries.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/scanner-subject-taxonomy.json",
+      "kind": "declaration",
+      "schema": "schema/scanner-subject-taxonomy.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/schema/status-enum.json",
+      "kind": "declaration",
+      "schema": "schema/status-enum.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "monitor/security-annotations.json",
+      "kind": "store",
+      "schema": "schema/annotation.schema.json",
+      "binding": "none"
+    },
+    {
+      "path": "monitor/stub-allowlist.example.json",
+      "kind": "declaration",
+      "schema": "schema/stub-allowlist.schema.json",
+      "binding": "none",
+      "note": "Commitwork's own-tree entries, shipped as the example of the private allowlist; bin/test/schema-required.test.mjs validates it."
+    },
+    {
+      "path": "monitor/taxonomy-editions.json",
+      "kind": "declaration",
+      "schema": "schema/taxonomy-editions.schema.json",
+      "binding": "validator"
+    },
+    {
+      "path": "monitor/taxonomy-substrates.json",
+      "kind": "declaration",
+      "schema": "schema/taxonomy-substrates.schema.json",
+      "binding": "mirrored"
+    },
+    {
+      "path": "monitor/velocity-allowlist.json",
+      "kind": "declaration",
+      "schema": "schema/velocity-allowlist.schema.json",
+      "binding": "validator"
+    }
+  ],
+  "bindings": {
+    "validator": "monitor/registry.mjs validateAgainstSchema applies this schema at runtime. The schema IS the check.",
+    "mirrored": "A hand-written consumer validator duplicates the schema; migrate it to validateAgainstSchema.",
+    "none": "Nothing applies it. The file is a description."
+  },
+  "findings": [
+    {
+      "path": "monitor/private/cra-products.json",
+      "finding": "Fixed: product.schema.json now permits establishedInEU and validateProducts applies the schema. See evaluations/handoff-2026-08-26/03-cra-products-schema.md.",
+      "found": "2026-08-25 by schema-required.test.mjs",
+      "owner": "cra/"
+    }
+  ]
+}

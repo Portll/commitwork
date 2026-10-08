@@ -1,0 +1,45 @@
+{
+  "_comment": "SYNTHETIC EXAMPLE of the infra-image acceptance ledger. The live ledger is a private record at monitor/private/image-acceptance.json (CW_IMAGE_ACCEPTANCE overrides; absent means monitor/image-acceptance.mjs states that it did not run). For every residual CRIT/HIGH in a deployed infra image with no available fix, it records the digest pin, why it cannot be fixed, the reachability verdict, the containment controls and a re-check trigger. Anything not fixed-by-a-track and not accepted-with-containment here is a FAIL.",
+  "controls": {
+    "C1": "no-new-privileges:true — blocks setuid privilege escalation inside the container",
+    "C2": "cap_drop:[ALL] — removes the capabilities an OS-level CVE would need"
+  },
+  "images": {
+    "example-db": {
+      "runningTag": "example/db:1.2.3",
+      "targetTag": "example/db:1.2.3",
+      "disposition": "stable",
+      "targetScan": null,
+      "pin": "example/db@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "note": "Synthetic example image."
+    }
+  },
+  "accepted": [
+    {
+      "image": "example-db",
+      "cve": "CVE-2026-0002",
+      "package": "example-base-tool",
+      "severity": "high",
+      "fixStatus": "no-fix-exists",
+      "reachability": "unreachable-in-role: the database server never invokes this base-image tool",
+      "containment": ["C1", "C2"],
+      "recheckTrigger": "a base-image security update for example-base-tool",
+      "who": "operator@example.test",
+      "at": "2026-01-15T00:00:00.000Z",
+      "expires": "2026-04-15T00:00:00.000Z"
+    }
+  ],
+  "fixableViaRebuild": [
+    {
+      "image": "example-db",
+      "cve": "CVE-2026-0003",
+      "package": "example-runtime stdlib",
+      "severity": "high",
+      "fix": "fixed upstream; needs an image rebuild",
+      "track": "next upstream release"
+    }
+  ],
+  "fixed": [
+    { "image": "example-db", "cve": "CVE-2026-0004", "fix": "rebuilt on the patched base image", "wasAccepted": true }
+  ]
+}

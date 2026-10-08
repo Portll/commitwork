@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/config-correctness-ledger.schema.json",
+  "title": "Configuration correctness ledger",
+  "type": "object",
+  "required": ["note", "sourceOfRecord", "totals", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string" }, "sourceOfRecord": { "type": "string", "minLength": 1 },
+    "totals": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "entries": { "type": "array", "items": { "type": "object", "required": ["id", "class", "count", "severity", "phase", "status", "detectedBy", "evidence"], "properties": { "id": { "type": "string" }, "class": { "type": "string" }, "count": { "type": "integer", "minimum": 0 }, "severity": { "type": "string" }, "phase": { "type": "string" }, "status": { "type": "string" }, "detectedBy": { "type": "string" }, "evidence": { "type": "string" }, "note": { "type": "string" } }, "additionalProperties": false } }
+  }
+}

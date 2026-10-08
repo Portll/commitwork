@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portll/commitwork/manifest.schema.json",
+  "title": "commitwork manifest",
+  "description": "Maps a repo's GitHub Actions workflows to local-equivalent commands so CI can be run on a developer machine without spending GitHub Actions minutes.",
+  "type": "object",
+  "required": [
+    "repo",
+    "checks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "repo": {
+      "type": "string",
+      "description": "Human label for the repo this manifest drives."
+    },
+    "repoPath": {
+      "type": "string",
+      "description": "Absolute path to the target repo. If omitted, the runner uses --repo, $COMMITWORK_REPO, or the current working directory."
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Container images the sweep pulls ONCE before the first repo (monitor/images.mjs), bounded, recording presence + digest in batch-manifest.json. Lanes never `--pull=always` per repo: that cost a registry round-trip per repo and hung a sweep 8.9 h on one stalled pull."
+    },
+    "groups": {
+      "type": "object",
+      "description": "Named ordered lists of check ids, e.g. quick / standard / all. `commitwork run <group>` runs the listed checks in order.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "local"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "Stable check id, conventionally matching the workflow filename stem."
+          },
+          "description": {
+            "type": "string"
+          },
+          "remediationPrompt": {
+            "type": "string",
+            "description": "A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text."
+          },
+          "formatNotes": {
+            "type": "string",
+            "description": "Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint field, verbatim). Exists because models invent plausible-but-wrong syntax when the mechanics are not supplied."
+          },
+          "workflow": {
+            "type": "string",
+            "description": "Path (relative to repoPath) to the GitHub workflow this check mirrors. Used by --act."
+          },
+          "timeoutSec": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Wall-clock bound in seconds for this check. The runner kills the command group AND removes the containers it named (cw-<slice>-<repo>-<check>*), records status noscan with the reason, sets the report aside as <file>.killed and writes <file>.exit=124. Omitted ⇒ CW_CHECK_TIMEOUT_SEC, else 1800 — above every lane's measured maximum on the 100-repo corpus except the two that declare their own."
+          },
+          "local": {
+            "type": "array",
+            "description": "Shell commands run in sequence (fail-fast) in repoPath. This is the local equivalent of the workflow's actual checks.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "act": {
+            "type": "object",
+            "description": "Faithful execution via nektos/act. Present only for checks where running the real YAML adds value (e.g. SARIF-producing scans).",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "job": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Optional specific job id to run (act -j)."
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "requires": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Gating conditions. A check whose requirements are unmet is skipped (or fails under --strict).",
+            "properties": {
+              "tools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Executables that must be on PATH."
+              },
+              "secrets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Env vars that must be set (checked in process env and repoPath/.env)."
+              },
+              "services": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Free-text service prerequisites surfaced to the user (e.g. 'docker daemon', 'live Supabase'). Informational."
+              },
+              "docker": {
+                "type": "boolean",
+                "description": "Requires a running Docker daemon."
+              }
+            }
+          },
+          "report": {
+            "type": "object",
+            "description": "Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts.",
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "Filename written under $CW_REPORT_DIR."
+              },
+              "log": {
+                "type": "string",
+                "description": "Filename (under $CW_REPORT_DIR) of the tool's own log. Declared so coverageSignals has something to read: a tool that loses a capability usually announces it on stderr and still exits 0, so the exit sidecar alone cannot detect it. A declared log that is absent or unreadable makes coverage 'unknown', never 'full'."
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "a11y",
+                  "actionlint",
+                  "authz-bola",
+                  "bearer",
+                  "betterleaks",
+                  "cobol-inventory",
+                  "config",
+                  "cspm-github",
+                  "depscan",
+                  "generic",
+                  "gitleaks",
+                  "gradle-wrapper",
+                  "hadolint",
+                  "jackson-guard",
+                  "json",
+                  "minify",
+                  "npm-audit",
+                  "nuclei",
+                  "retire",
+                  "rule-counts",
+                  "sarif",
+                  "sbom",
+                  "schemathesis",
+                  "scorecard",
+                  "shellcheck",
+                  "socket",
+                  "text",
+                  "tls-headers",
+                  "trivy",
+                  "trufflehog",
+                  "weak-random"
+                ],
+                "description": "Report format. THIS LIST IS THE CODE'S, not a hand-kept copy: it is PARSED_FORMATS union PASSTHROUGH_FORMATS from bin/commitwork.mjs, and bin/test/manifest-schema-drift.test.mjs fails if the two diverge. It had drifted 11 formats behind (a11y, actionlint, authz-bola, cspm-github, depscan, gradle-wrapper, minify, schemathesis, scorecard, shellcheck, tls-headers) because nothing validated any manifest against this schema — the drift was invisible, not tolerated."
+              }
+            }
+          },
+          "executesRepoCode": {
+            "type": "boolean",
+            "description": "This lane runs the scanned repository's own build, test or install code. Unsandboxed, its row carries isolation 'none' and coverage 'reduced'."
+          },
+          "requiresRepoTrust": {
+            "type": "boolean",
+            "description": "The lane's command runs a script the scanned repository supplies, not a bundled scanner. It executes only when the run was given --trust-repo-manifest (or COMMITWORK_TRUST_REPO_MANIFEST=1); otherwise the lane reports noscan with the reason 'repo-supplied script; pass --trust-repo-manifest to run it', never a pass and never a finding."
+          },
+          "egress": {
+            "type": "string",
+            "enum": [
+              "none",
+              "registry",
+              "verifiers",
+              "github",
+              "target"
+            ],
+            "description": "What this lane reaches over the network, declared so the host sandbox can deny everything else. THIS LIST IS THE CODE'S: EGRESS_CLASSES in bin/lib/sandbox.mjs, and bin/test/manifest-egress.test.mjs fails if the two diverge. `none` runs with the network denied (isolation 'full'); every other class runs with the filesystem confined and the network open (isolation 'fs-only'). A check without this key is never wrapped with a guessed class: it runs unsandboxed with the reason recorded on its row, and bin/test/manifest-egress.test.mjs fails on any bundled check that omits it."
+          },
+          "sandboxExtraReads": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(/|~/|\\./|@usercache/)"
+            },
+            "description": "Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). `~/` is the operator home, `./` is the scanned tree, anything else is absolute. Declared per lane so a credential read (posture-scorecard's ~/.config/gh) is visible where the lane is, not buried in a profile."
+          },
+          "sandboxExtraWrites": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(/|~/|\\./|@usercache/)"
+            },
+            "description": "Paths this lane must write beyond $CW_REPORT_DIR and TMPDIR: a tool's own cache (~/.semgrep, ~/Library/Caches/trivy, ~/.codeql). A write path is readable too, because a cache is read back. Same prefixes as sandboxExtraReads. Per lane on purpose: a lane that executes repository code and also writes a cache another lane later executes from is a supply-chain path, and the declaration is what makes it reviewable."
+          },
+          "coverageSignals": {
+            "type": "array",
+            "description": "Patterns in this check's log that mean a LANE OF THE CHECK DID NOT RUN, even though the tool exited 0. Coverage is orthogonal to severity: a check can find real findings while half-blind, and these two facts must never be reported as one number. Declared per check rather than guessed centrally because only the check's author knows which of its chatter means a capability died. A pattern that matches sets coverage 'reduced' and names the lane; a pattern that fails to compile sets 'unknown', never 'full'.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "pattern",
+                "lane"
+              ],
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "JavaScript regular expression source, tested against the declared report.log."
+                },
+                "lane": {
+                  "type": "string",
+                  "description": "The capability that was lost, in a reader's words — this is what gets reported, not the regex. e.g. 'Go call analysis'."
+                },
+                "denominatorPattern": {
+                  "type": "string",
+                  "description": "Optional. A regex counting the units the tool DID process, so the reason can state k of n instead of a bare 'reduced'. Without it the gap's SIZE is unknown and the reason says so. Only claimed when the denominator matches at least once: 'k of 0' is a broken declaration, not a coverage statement."
+                },
+                "capture": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Capture group index in `pattern` naming the unit that failed (default 1). Those names are listed in the reason, capped at 8."
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "What is being counted, singular, for the reason text. e.g. 'yarn.lock'. Defaults to 'file'."
+                }
+              }
+            }
+          },
+          "appliesIfExists": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json)."
+          },
+          "appliesIfGit": {
+            "type": "boolean",
+            "description": "During `scan`, only run this check if the target is a git repo."
+          },
+          "appliesIfSourceExt": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). The signal is the sources themselves — use this instead of appliesIfExists when a build manifest is the wrong proxy (CodeQL's JS extractor needs .js/.ts sources, not a package.json)."
+          },
+          "requiresUrl": {
+            "type": "boolean",
+            "description": "Runtime scanner: needs a live base URL (--url/--urls/commitwork.url/$CW_TARGET_URL). Without one the check records a visible coverage void, never a silent pass."
+          },
+          "producesIfExists": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Artifact globs (e.g. *.jar) that must exist somewhere in the repo for an empty-clean result to be trustworthy; otherwise the check is recorded as a void ('no scannable artifact — build first')."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Membership tags; lets `run <group>` select this check in addition to the top-level groups map."
+          },
+          "skipsOnGitHub": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Workflow steps deliberately NOT reproduced locally (SARIF upload, PR comments, artifact retention, cloud uploads). Documentation only."
+          },
+          "notes": {
+            "type": "string"
+          },
+          "scopeNotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Named limits on what this check can see (e.g. 'language', 'codeql-extractor-baseline'). In use on 17 checks and unknown to this schema until 2026-08-25."
+          },
+          "aliasOf": {
+            "type": "string",
+            "description": "This check reports into another check's category. In use on 2 checks and unknown to this schema until 2026-08-25."
+          },
+          "containment": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "excludedFrom",
+              "reason",
+              "reviewBy"
+            ],
+            "properties": {
+              "excludedFrom": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                },
+                "description": "Groups this check is deliberately held OUT of. Cross-checked against the real selector (bin/commitwork.mjs groupMembers, the union of the top-level groups map and each check's own groups tag) by bin/test/build-mode-containment.test.mjs, in both directions."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 60,
+                "description": "Why the exclusion exists, in terms a reader can check. Length-floored on purpose: a containment without a substantive reason is a coverage gap wearing a label."
+              },
+              "reviewBy": {
+                "type": "string",
+                "description": "When this exclusion must be revisited, as an ISO-8601 UTC instant. Pinned with `pattern` and not `format`: monitor/registry.mjs implements type/enum/required/pattern/minLength/minItems/additionalProperties and NOT format, and it refuses a schema using an unimplemented keyword rather than passing everything against it — an unenforced constraint is worse than none, because it reads as enforced. A containment nobody returns to is class E2, a suppression outliving its judgement, applied to coverage.",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+              }
+            },
+            "description": "A lane's exclusion from a group, declared as DATA rather than argued in prose. It exists because sast-codeql-swift carried a formatNotes sentence claiming it sat in `deep` only while its groups were [\"all\",\"deep\"]: the claim and the enforcement were two different objects and only one of them ran. Three sweeps under group \"all\" then executed third-party build tooling from repositories this fleet does not own."
+          }
+        }
+      }
+    },
+    "groupsNote": {
+      "type": "string",
+      "description": "Prose beside `groups`, carrying WHY a check is or is not in a group. Recognised because manifests/build-health.json and quality-gates.json have carried it since they were written, and additionalProperties:false was silently refusing both — nothing validated this file, so the disagreement was invisible. Matches the repo-wide *Note convention (areasNote, excludeNote, lifecycleNote in projects.json): rationale lives beside the thing it explains, not in a separate doc that rots apart from it."
+    },
+    "ghaSafety": {
+      "type": "string",
+      "description": "Prose stating why this manifest's checks are safe with respect to GitHub Actions invocation — typically that no project declares them, so a sweep or GHA `all` never reaches them. Recognised for the same reason as groupsNote: manifests/runtime.json has carried it, unread by any source and unvalidated by anything."
+    }
+  }
+}

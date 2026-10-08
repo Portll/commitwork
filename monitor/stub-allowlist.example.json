@@ -1,0 +1,29 @@
+{
+  "_comment": "EXAMPLE of the intentional-stub allowlist for bin/stub-detect.mjs, holding the entries for commitwork's own tree. The operator's allowlist is a private record at monitor/private/stub-allowlist.json (CW_STUB_ALLOWLIST overrides); it also names customer repositories, which is why it is private. Absent means nothing is allowed and every marker is reported. Shape: {allow:[{pathGlob, marker?, repo?, reason}]}. pathGlob is matched against the repo-relative, forward-slashed path; supports * (non-slash run) and ** (any run incl. slashes). marker is optional, and when ABSENT every marker on that path is suppressed, which is almost never what an entry means. repo scopes an entry to one scanned tree. The key is _comment, not $comment: the panel's config page reads _comment/note.",
+  "allow": [
+    {
+      "pathGlob": "bin/minify-detect.mjs",
+      "marker": "stub",
+      "repo": "commitwork",
+      "reason": "Three occurrences, all the substring 'stub' inside the sibling tool name 'stub-detect' in header/inline comments that document minify-detect's deliberate divergences from it (content-quoting, SKIP_DIRS inversion, fail-toward-alarm). References to a real sibling scanner, not unfinished code. \\bstub\\b matches inside the hyphenated name. Measured 3 occurrences 2026-08-11."
+    },
+    {
+      "pathGlob": "cra/*.mjs",
+      "marker": "TODO",
+      "repo": "commitwork",
+      "reason": "CRA notification-template scaffolding — the EU CRA Art.11/14 incident/vulnerability report generators deliberately emit TODO tokens into the generated .md reports as [HUMAN] fill-in prompts; these are intentional template markers, not unfinished code (per backlog). 27 occurrences measured 2026-08-03."
+    },
+    {
+      "pathGlob": "cra/*.mjs",
+      "marker": "placeholder",
+      "repo": "commitwork",
+      "reason": "The same CRA template scaffolding as the TODO entry — placeholder tokens are emitted into the generated reports as [HUMAN] fill-in prompts. 6 occurrences measured 2026-08-03."
+    },
+    {
+      "pathGlob": "cra/pack.mjs",
+      "marker": "stub",
+      "repo": "commitwork",
+      "reason": "One occurrence, in the file-header comment documenting what the pack writes: `advisories.md  fixed-vulnerability disclosure log (stub to maintain)` (cra/pack.mjs:13). The word describes a generated artifact, not unfinished code in this file. It surfaced when the blanket entry was split by marker on 2026-08-03, and is dispositioned explicitly here rather than being re-hidden under a wildcard."
+    }
+  ]
+}

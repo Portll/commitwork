@@ -1,0 +1,84 @@
+{
+  "$schema": "../schema/manifest.schema.json",
+  "repo": "build-health (portable, multi-language)",
+  "groups": {
+    "all": ["deadcode", "provenance", "toolchain", "format", "lint"],
+    "hygiene": ["deadcode", "provenance", "format", "lint"],
+    "ci": ["toolchain", "boottest"],
+    "boot": ["boottest"],
+    "full": ["deadcode", "toolchain", "provenance"]
+  },
+  "groupsNote": "`toolchain` was PROMOTED into the default `all` group (2026-07-07). It needs Docker and downloads the declared JDK image per service; `green` keys on COMPILATION (deterministic, infra-free) while test execution needs the compose-CI (ci/run-ci.sh) to avoid environmental false-RED. Use `hygiene` for the fast infra-free subset (deadcode+provenance only). `boottest` (2026-07-20, plan A1) lives in `ci` (run-ci stage 2 executes it against real backing services) and its own `boot` group for targeted runs — NEVER in all/hygiene/full: outside the compose-CI env it false-REDs on Testcontainers.",
+  "checks": [
+    {
+      "id": "deadcode",
+      "egress": "registry",
+      "description": "Unused/undeclared dependencies + dead documentation links — the hygiene surface a CVE scanner can't see (a dep can be CVE-clean AND dead weight). js/ts: depcheck (unused+missing npm) · java: source import-reachability of non-starter libs (catches e.g. a declared-but-never-imported Testcontainers) · go: `go mod tidy -diff` · python: deptry · rust: cargo-machete · docs (.md/.pdf/.html): dead local links.",
+      "local": ["node $CW_ROOT/bin/build-health.mjs deadcode . > \"$CW_REPORT_DIR/build-health-deadcode.json\" 2>\"$CW_REPORT_DIR/build-health-deadcode.log\" || true"],
+      "report": { "file": "build-health-deadcode.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["package.json", "build.gradle", "build.gradle.kts", "pom.xml", "go.mod", "pyproject.toml", "requirements.txt", "Gemfile", "Cargo.toml", "CMakeLists.txt", "Makefile", "README.md"],
+      "groups": ["all", "hygiene"],
+      "notes": "Per-language dead-dep tools are optional; a missing tool degrades to {ran:false,note}. The java check is a labelled source-grep heuristic (excludes starters/BOM/annotation-processors). Documentation is .md/.pdf/.html — dead-link + inventory only, never build/test."
+    },
+    {
+      "id": "format",
+      "egress": "registry",
+      "executesRepoCode": true,
+      "description": "Does the tree conform to the formatter the repo ITSELF declares? rust: cargo fmt --check (rustfmt.toml or a fmt step in its own CI) · js/ts: prettier --check (.prettierrc*, a `prettier` key, or a format script) · go: gofmt -l (CI step or build target — gofmt has no config file by design) · python: ruff format --check or black --check ([tool.ruff]/[tool.black] in pyproject) · scala: scalafmt --test (.scalafmt.conf, which also pins the formatter version scalafmt then fetches). Infra-free and fast: no Docker, no container, read-only.",
+      "local": ["node $CW_ROOT/bin/build-health.mjs format . > \"$CW_REPORT_DIR/build-health-format.json\" 2>\"$CW_REPORT_DIR/build-health-format.log\" || true"],
+      "report": { "file": "build-health-format.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["package.json", "go.mod", "Cargo.toml", "pyproject.toml", "build.gradle", "build.gradle.kts", "pom.xml", "build.sbt", "build.sc"],
+      "groups": ["all", "hygiene"],
+      "notes": "DECLARED, never defaulted — that is the whole design. Running a formatter's default over a repo that never adopted it flags ~100% of files, which is the false-FINDING signature (GuardDog capability-* at 602/675 rows, prowler's 1,067 security_and_analysis FAILs), not a fleet with a style problem. No declaration ⇒ n/a. Declared but the binary is absent on this runner ⇒ skipped, never clean. A non-zero exit with zero parsed deviations ⇒ unreadable, never clean: that guard exists because the first run of this lane reported memory-layer clean while rustfmt was exiting 1 over 193 files, the pattern having been written for rustfmt's older output format. Statuses: clean | findings:N | unreadable | skipped | n/a."
+    },
+    {
+      "id": "lint",
+      "egress": "registry",
+      "executesRepoCode": true,
+      "description": "Does the tree meet the lint bar the repo ITSELF declares, at the severity IT declared? rust: cargo clippy (clippy.toml, a Cargo.toml [lints] table, or a clippy step in its own CI) · js/ts: eslint (eslint.config.*/.eslintrc*) · go: golangci-lint (.golangci.yml) · python: ruff check ([tool.ruff] in pyproject). Infra-free: no Docker, read-only.",
+      "local": ["node $CW_ROOT/bin/build-health.mjs lint . > \"$CW_REPORT_DIR/build-health-lint.json\" 2>\"$CW_REPORT_DIR/build-health-lint.log\" || true"],
+      "report": { "file": "build-health-lint.json", "format": "json" },
+      "requires": { "tools": ["node"] },
+      "appliesIfExists": ["package.json", "go.mod", "Cargo.toml", "pyproject.toml"],
+      "groups": ["all", "hygiene"],
+      "notes": "SEVERITY IS THE REPO'S, NOT THE TOOL'S — the format lane's declared-not-defaulted rule one level in. memory-layer's CI runs `cargo clippy --all-targets -- -W clippy::all`, counts warnings and prints 'Status | Passed' unconditionally: it declares clippy as an advisory count, never a gate. A repo that declares -W can therefore NEVER produce `findings:` here; it reports `advisory` with the count in the payload. Only a repo that itself denies (-D warnings, -D clippy::, --max-warnings 0, a deny= lints table) gets a findings verdict. AN ABORTED RUN IS A FLOOR, NOT A COUNT: a linter that dies on one target still prints findings for the targets it reached, so a repo whose lint CRASHES would look cleaner than one whose lint finishes. Measured on memory-layer 2026-08-23 — two runs of the same command on the same tree floored at 105 and 212 diagnostics before `error: could not compile`, so either number published as a count would not reproduce. Incomplete runs report `unreadable` with `findingsFloor` and keep the diagnostics, which are real. Statuses: clean | advisory | findings:N | unreadable | skipped | n/a."
+    },
+    {
+      "id": "toolchain",
+      "egress": "registry",
+      "executesRepoCode": true,
+      "description": "Does build+test pass on the toolchain version the repo DECLARES (never hardcoded)? Reads the declared version and runs it in a matching container — java: eclipse-temurin:<JavaLanguageVersion>-jdk ./gradlew clean build (or mvn verify) · js/ts: node:<engines.node> npm ci+build+test · go: golang:<go.mod> · python: python:<requires-python> pytest · ruby: ruby:<.ruby-version> · rust: rust:<toolchain> cargo test · c/c++: gcc cmake/make.",
+      "local": ["node $CW_ROOT/bin/build-health.mjs toolchain . > \"$CW_REPORT_DIR/build-health-toolchain.json\" 2>\"$CW_REPORT_DIR/build-health-toolchain.log\" || true"],
+      "report": { "file": "build-health-toolchain.json", "format": "json" },
+      "requires": { "tools": ["node", "docker"], "docker": true },
+      "appliesIfExists": ["package.json", "build.gradle", "build.gradle.kts", "pom.xml", "go.mod", "pyproject.toml", "requirements.txt", "Gemfile", "Cargo.toml", "CMakeLists.txt", "Makefile"],
+      "groups": ["all", "ci"],
+      "notes": "This is the check that catches a framework/toolchain bump which compiles main code but breaks tests (e.g. Spring Boot 3->4 @MockBean removal) — invisible to OSV/Semgrep because they never run a compiler. Documentation is excluded (no runtime)."
+    },
+    {
+      "id": "boottest",
+      "egress": "registry",
+      "executesRepoCode": true,
+      "description": "EXECUTES ./gradlew bootTest — the @Tag('boot') full-context @SpringBootTest suite the default test task excludes (fleet conventions script). The executing half of the boot gate: quality-gates qg-boot-test stays grep-only (presence), qg-boot-test-pass READS this check's report. Requires the compose-CI environment (ci/run-ci.sh wires BH_DOCKER_ARGS: CI network, docker.sock for Testcontainers, Spring env). Mounts the monorepo ROOT with the service subdir as workdir (services apply ../../buildout/gradle/verification-conventions.gradle). green = exit 0 ONLY — no compiles-vs-environmental split: an executing boot gate that cannot run to a passing exit is RED, never green. Report stamps executedAt + serviceTreeSha + treeDirtyAtRun: the staleness anchors qg-boot-test-pass reads.",
+      "local": ["node $CW_ROOT/bin/build-health.mjs boottest . > \"$CW_REPORT_DIR/build-health-boottest.json\" 2>\"$CW_REPORT_DIR/build-health-boottest.log\" || true"],
+      "report": { "file": "build-health-boottest.json", "format": "json" },
+      "requires": { "tools": ["node", "docker"], "docker": true },
+      "appliesIfExists": ["build.gradle", "build.gradle.kts"],
+      "groups": ["ci", "boot"],
+      "notes": "status n/a (not RED) when no bootTest task is registered (libraries, SPI jars, non-conventions trees) — the executing gate only applies where the convention wires it. Long-running: ephemeral container resolves the full dependency graph per service."
+    },
+    {
+      "id": "provenance",
+      "egress": "none",
+      "description": "Does the shipped artifact's target match the DECLARED toolchain? java: build/libs/*.jar bytecode major (61=17,65=21,69=25) == declared JavaLanguageVersion — proves a toolchain flip was actually built, not just declared in config. js/ts: tsconfig target / engines.node (advisory). Native/interpreted langs: advisory.",
+      "local": ["node $CW_ROOT/bin/build-health.mjs provenance . > \"$CW_REPORT_DIR/build-health-provenance.json\" 2>\"$CW_REPORT_DIR/build-health-provenance.log\" || true"],
+      "report": { "file": "build-health-provenance.json", "format": "json" },
+      "requires": { "tools": ["node", "unzip"] },
+      "appliesIfExists": ["build.gradle", "build.gradle.kts", "pom.xml", "package.json"],
+      "groups": ["all", "hygiene"],
+      "notes": "Java requires the artifact to exist (build first). Only java is a hard check; other languages report advisory target info."
+    }
+  ]
+}
