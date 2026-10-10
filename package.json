@@ -1,6 +1,6 @@
 {
   "name": "commitwork",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Repository security scanner, local CI runner and scheduled monitor, with remediation and compliance-evidence tooling. Manifest-driven; runs against any git repository.",
   "type": "module",
   "bin": {

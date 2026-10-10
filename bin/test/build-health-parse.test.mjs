@@ -6,6 +6,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   PHASE_MARKER, TOOLCHAIN_STATUSES, buildPhaseScript, parsePhases, countTests, foldPhases,
   workspaceStep, shQuote, WORKSPACE_PHASE, WORKSPACE_EXCLUDES,
@@ -209,6 +212,15 @@ test('every status foldPhases can return is a declared member of the closed voca
 
 // ---- the sh -c boundary, which is where the whole thing was broken --------
 
+// The script runs inside a Linux container, where timeout always exists. A host without one (GitHub's
+// macOS image) gets a pass-through shim, so these tests still cross the real sh -c boundary there.
+const SH_ENV = (() => {
+  try { execSync('command -v timeout', { stdio: 'ignore' }); return process.env; } catch { /* no timeout on this host */ }
+  const dir = mkdtempSync(join(tmpdir(), 'cw-timeout-shim-'));
+  writeFileSync(join(dir, 'timeout'), '#!/bin/sh\nshift\nexec "$@"\n', { mode: 0o755 });
+  return { ...process.env, PATH: `${dir}:${process.env.PATH}` };
+})();
+
 test('the script survives a REAL sh -c round trip — the shell variables reach the shell, not the host', () => {
   // the host shell once expanded $cw_rc to empty BEFORE docker ran; every unit test passed
   // because they all stopped at this boundary, so this one crosses it with /bin/sh
@@ -217,7 +229,7 @@ test('the script survives a REAL sh -c round trip — the shell variables reach 
     { name: 'build', cmd: 'exit 3' },
     { name: 'test', cmd: 'true' },
   ]);
-  const out = execSync(`sh -c ${shQuote(script)}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const out = execSync(`sh -c ${shQuote(script)}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: SH_ENV });
   const parsed = parsePhases(out);
   assert.equal(parsed.complete, true, 'the terminator must arrive');
   assert.deepEqual(parsed.phases, [
@@ -231,7 +243,7 @@ test('the script survives a REAL sh -c round trip — the shell variables reach 
 
 test('a phase that PASSES is reported as attempted with exit 0 — not as skipped', () => {
   // the old failure's shape: everything "not attempted", folding to no-tests
-  const out = execSync(`sh -c ${shQuote(buildPhaseScript([{ name: 'test', cmd: 'true' }]))}`, { encoding: 'utf8' });
+  const out = execSync(`sh -c ${shQuote(buildPhaseScript([{ name: 'test', cmd: 'true' }]))}`, { encoding: 'utf8', env: SH_ENV });
   const { phases } = parsePhases(out);
   assert.equal(phases.length, 1);
   assert.deepEqual(phases[0], { name: 'test', attempted: true, exit: 0, green: true });
