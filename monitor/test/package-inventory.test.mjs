@@ -77,7 +77,7 @@ test('brew: an empty result is CURRENT only because it parsed — and it still c
 // `brew outdated` compares against the last fetched catalogue, not the internet — the age must travel
 test('brew: an unlocatable catalogue is UNKNOWN age, never assumed fresh', () => {
   const p = fixture('brew-empty2.json', JSON.stringify({ formulae: [], casks: [] }));
-  const r = withEnv({ CW_BREW_OUTDATED_JSON: p, CW_BREW_CATALOGUE: '/nonexistent/catalogue', HOME: '/nonexistent-home' }, () => brewState());
+  const r = withEnv({ CW_BREW_OUTDATED_JSON: p, CW_BREW_CATALOGUE: '/nonexistent/catalogue', CW_BREW_PREFIX: '/nonexistent-prefix', HOME: '/nonexistent-home' }, () => brewState());
   assert.equal(r.catalogueAgeDays, null);
   assert.match(r.note, /UNKNOWN/, 'an unknown catalogue age must say so, not print "0 days"');
 });

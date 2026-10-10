@@ -118,7 +118,7 @@ export function brewState({ timeoutMs = 45_000 } = {}) {
     join(apiDir, 'cask_names.txt'),
     join(apiDir, 'formula.jws.json'),
     join(apiDir, 'cask.jws.json'),
-    '/opt/homebrew/Library/Taps/homebrew/homebrew-core',
+    join(env('CW_BREW_PREFIX') || env('HOMEBREW_PREFIX') || '/opt/homebrew', 'Library/Taps/homebrew/homebrew-core'),
   ];
   let newestMs = null;
   for (const p of candidates) {

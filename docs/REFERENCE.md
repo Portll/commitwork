@@ -2457,7 +2457,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_BREW_BIN` | indirect | `monitor/package-inventory.mjs` | undocumented |
 | `CW_BREW_CATALOGUE` | indirect | `monitor/package-inventory.mjs` | undocumented |
 | `CW_BREW_OUTDATED_JSON` | indirect | `monitor/package-inventory.mjs` | undocumented |
-| `CW_BREW_PREFIX` | indirect | `monitor/update-vulns.mjs` | undocumented |
+| `CW_BREW_PREFIX` | indirect | `monitor/package-inventory.mjs`, `monitor/update-vulns.mjs` | undocumented |
 | `CW_CALIBRATE_BASELINE` | direct | `bin/lib/verdict-journal-core.mjs` | undocumented |
 | `CW_CANARY_DIR` | direct | `monitor/lane-capability.mjs`, `monitor/lane-trust.mjs` | undocumented |
 | `CW_CANARY_NO_WRITE` | direct | `monitor/sweep.mjs` | undocumented |
