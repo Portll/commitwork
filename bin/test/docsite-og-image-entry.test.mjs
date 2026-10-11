@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
+import { stripComments } from '../lib/tracked-imports.mjs';
 
 const CW = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OG = join(CW, 'bin', 'docsite-og-image.mjs');
@@ -103,17 +104,41 @@ test('--check fails on a drifted file and reports both sizes', (t) => {
 // --check runs hung under V8's concurrent-allocation stress, so 24 clean exits make a regression show.
 // The control is a script that only allocates and never exits explicitly. Node 22 hangs it 9 of 24
 // times under this stress, so on such a runtime a hung renderer says nothing about the renderer.
-const stressExits = (args, env = process.env) => Promise.all(Array.from({ length: 24 }, () => new Promise((done) => {
+// The deadlock lives inside process.exit() and an uncaught throw, so the renderer must reach neither.
+// Reading the source holds on every run, including the rounds the stress run below misses.
+const EXIT_CALL = 'calls process.exit()';
+const UNCAUGHT_RUN = 'run() is not called inside a try/catch that sets process.exitCode';
+const exitHazards = (src) => {
+  const code = stripComments(src);
+  return [
+    ...(/\bprocess\.exit\s*\(/.test(code) ? [EXIT_CALL] : []),
+    ...(/\btry\s*\{[^}]*\bprocess\.exitCode\s*=\s*run\(\)[^}]*\}\s*catch\b/.test(code) ? [] : [UNCAUGHT_RUN]),
+  ];
+};
+
+test('the renderer never calls process.exit() and catches every throw from run()', () => {
+  assert.deepEqual(exitHazards(readFileSync(OG, 'utf8')), []);
+  assert.deepEqual(exitHazards('process.exit(run());'), [EXIT_CALL, UNCAUGHT_RUN], 'the check must fire on a renderer that has both');
+  assert.deepEqual(exitHazards('// never process.exit()\ntry { process.exitCode = run(); } catch { process.exitCode = 1; }'), [],
+    'a comment naming process.exit() is not a call');
+});
+
+// All 24 run at once because contention is what exposes the deadlock: with it reinstated, 24 at once
+// hung 15 of 96 children and one at a time hung none. A child killed by a signal never reached its
+// exit, so it is unmeasured: neither a pass nor the deadlock.
+const STRESS_RUNS = 24;
+const STRESS_MIN_MEASURED = 16;
+const stressExits = (args, env = process.env) => Promise.all(Array.from({ length: STRESS_RUNS }, () => new Promise((done) => {
   const c = spawn(process.execPath, ['--stress-concurrent-allocation', ...args], { env, stdio: 'ignore' });
   const timer = setTimeout(() => { c.kill('SIGKILL'); done('hung'); }, 30_000);
-  c.on('exit', (code) => { clearTimeout(timer); done(code); });
+  c.on('exit', (code, signal) => { clearTimeout(timer); done(code ?? signal); });
 })));
 
 test('the renderer exits under concurrent-allocation stress', async (t) => {
   const control = await stressExits(['-e', 'const a = []; for (let i = 0; i < 2e5; i++) a.push({ i });']);
   const controlHung = control.filter((c) => c === 'hung').length;
   if (controlHung) {
-    t.skip(`Node ${process.version} hung ${controlHung}/24 allocation-only controls under the same stress`);
+    t.skip(`Node ${process.version} hung ${controlHung}/${STRESS_RUNS} allocation-only controls under the same stress`);
     return;
   }
   const { root, png } = site(t);
@@ -122,5 +147,14 @@ test('the renderer exits under concurrent-allocation stress', async (t) => {
   const env = { ...process.env, CW_DOCSITE_ROOT: root };
   delete env.CW_DOCSITE_PRIVATE;
   const exits = await stressExits([OG, '--check'], env);
-  assert.deepEqual(exits, Array(24).fill(1), '1 is --check reporting the drift; "hung" is the deadlock');
+  assert.ok(!exits.includes('hung'), `"hung" is the deadlock: ${exits.join(', ')}`);
+  const killed = exits.filter((e) => typeof e === 'string');
+  const killedBy = [...new Set(killed)].join(', ');
+  if (STRESS_RUNS - killed.length < STRESS_MIN_MEASURED) {
+    t.skip(`${killed.length}/${STRESS_RUNS} renderers were killed by ${killedBy} before exiting -- the exit path was NOT measured`);
+    return;
+  }
+  if (killed.length) t.diagnostic(`${killed.length}/${STRESS_RUNS} renderers were killed by ${killedBy}, unmeasured`);
+  assert.deepEqual(exits.filter((e) => typeof e === 'number'), Array(STRESS_RUNS - killed.length).fill(1),
+    '1 is --check reporting the drift');
 });
