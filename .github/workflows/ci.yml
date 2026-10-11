@@ -34,14 +34,9 @@ on:
       - '!**/*.md'
       - '!docs/**'
       - '**/test/fixtures/**'
+  # Every pull request runs in full, prose-only ones included: the docs job lives in this file, and a
+  # required check that never reports blocks the merge.
   pull_request:
-    # Skip pushes that change only prose. Test fixtures are markdown too, so they are re-included last
-    # (later patterns win). Measured 2026-09-18: 287 CI runs in 35 days, most pushes to main.
-    paths:
-      - '**'
-      - '!**/*.md'
-      - '!docs/**'
-      - '**/test/fixtures/**'
 
 # A newer push to the same ref cancels the run it supersedes; only the latest commit's result is read,
 # and every superseded minute is billed on a private repository.
@@ -66,9 +61,6 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         node: ['22', '24']
     runs-on: ${{ matrix.os }}
-    # macOS has never run this suite on a hosted runner. It reports without blocking until its first
-    # measured green runs; then this line goes. Linux stays required.
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     timeout-minutes: 30
     steps:
       # Actions pinned to commit SHAs, not tags: a tag can be silently repointed by the action
