@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 
 import { emptyIssuesDoc, mintIssue, verifyChain, loadIssues, saveIssues, withIssuesLock } from '../../monitor/issue-store.mjs';
@@ -149,7 +149,7 @@ test('a re-key waits out a writer that holds the lock longer than a request hand
     // writeSync, not stdout.write: a pipe write on macOS is async and would not flush before the wait blocks
     const holder = spawn(process.execPath, ['--input-type=module', '-e', `
       import { writeSync } from 'node:fs';
-      import { withIssuesLock } from './monitor/issue-store.mjs';
+      import { withIssuesLock } from ${JSON.stringify(pathToFileURL(join(CW, 'monitor', 'issue-store.mjs')).href)};
       withIssuesLock(() => {
         writeSync(1, 'held\\n');
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
