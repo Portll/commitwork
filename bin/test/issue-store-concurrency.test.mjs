@@ -137,6 +137,40 @@ test('a re-key running beside live mints loses none of them', async () => {
   }
 });
 
+// The re-key is a CLI and waits on a busy store as long as bin/issue.mjs does: a request handler's
+// ~1s budget is shorter than eight mints can hold the lock on a loaded machine.
+test('a re-key waits out a writer that holds the lock longer than a request handler would', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cw-issues-rekey-wait-'));
+  try {
+    const store = join(dir, 'issues.json');
+    legacyFixture(store, 20);
+    const env = { ...process.env, CW_ISSUES: store, CW_ISSUE_ORG: 'PROBE', CW_VERDICT_DIR: dir };
+
+    // writeSync, not stdout.write: a pipe write on macOS is async and would not flush before the wait blocks
+    const holder = spawn(process.execPath, ['--input-type=module', '-e', `
+      import { writeSync } from 'node:fs';
+      import { withIssuesLock } from './monitor/issue-store.mjs';
+      withIssuesLock(() => {
+        writeSync(1, 'held\\n');
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
+      }, { path: process.env.CW_ISSUES });
+    `], { cwd: CW, env, stdio: ['ignore', 'pipe', 'inherit'] });
+    const holderDone = new Promise((ok) => holder.on('close', ok));
+    await new Promise((ok, fail) => {
+      holder.stdout.on('data', (d) => { if (String(d).includes('held')) ok(); });
+      holder.on('close', (code) => fail(new Error(`the lock holder exited (${code}) before taking the lock`)));
+    });
+
+    const rekey = await run([join(CW, 'bin', 'issue-rekey.mjs'), '--org', 'PROBE', '--write'], env);
+    await holderDone;
+    assert.equal(rekey.code, 0, `the re-key must outwait a 2s holder: ${rekey.err.trim()}`);
+    assert.match(rekey.out, /wrote /);
+    assert.deepEqual(Object.keys(readStore(store).issues).filter((k) => /^ISS-[0-9A-Z]{6}$/.test(k)), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+  }
+});
+
 // A lock a caller has to remember is a lock a caller will forget — so the store refuses an
 // unlocked save, turning a silent lost update into a loud refusal at the call site.
 test('saveIssues refuses to write when the caller does not hold the issue lock', () => {

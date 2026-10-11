@@ -136,7 +136,7 @@ function rekey() {
 let code;
 if (write) {
   try {
-    code = withIssuesLock(rekey, { path: STORE() });
+    code = withIssuesLock(rekey, { path: STORE(), attempts: 250 });
   } catch (e) {
     // Contention: "busy, nothing written" must never read as "ran and failed".
     console.error(`${e.message}\nnothing was written; the store is unchanged. Re-run when the other writer finishes.`);
