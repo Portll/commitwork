@@ -31,6 +31,7 @@ import { dockerConfigDir } from '../lib/docker-config.mjs';
 import { flagFor, offMessage } from '../lib/feature-flags.mjs';
 import { getSetting } from './settings.mjs';
 import { launchdPriorityKeys } from './host-role.mjs';
+import { DAILY_JOB_LABEL } from './daily-job.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const CW = resolve(HERE, '..');
@@ -336,7 +337,7 @@ export const AGENTS = [
     stdout: '/tmp/commitwork-liveness.log', stderr: '/tmp/commitwork-liveness.err',
   },
   {
-    label: 'com.portll.commitwork-daily',
+    label: DAILY_JOB_LABEL,
     // fact: one /daily report per new complete sweep of each area in monitor/private/daily.json; a run with nothing new exits at once
     argv: [NODE, join(CW, 'bin', 'daily-run.mjs'), '--all'],
     schedule: '  <key>StartInterval</key><integer>1800</integer>',

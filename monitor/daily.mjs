@@ -9,6 +9,8 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { checkForScanner } from './scanner-checks.mjs';
 
+export { DAILY_JOB_LABEL } from './daily-job.mjs';
+
 export const DIGEST_SCHEMA = 'commitwork.daily-digest/1';
 export const SECRET_CATEGORIES = new Set(['secrets', 'secretsHistory', 'mainframeSecrets']);
 const HYGIENE_CATEGORIES = new Set(['cobolCoverage', 'commitProvenance', 'minifiedCode', 'accessibility', 'shellLint', 'actionsLint', 'agentConfig']);
@@ -64,15 +66,26 @@ export function groupFindings(rollup, repo) {
  * lanes, so comparing across groups would read every lane it skipped as unmeasured) that reached its
  * end, published its rollup, scanned every repo, and covers the members.
  */
-export function batchIsComplete({ manifest, verdict }, members, group = 'all') {
-  if (!manifest || !verdict) return false;
-  if (manifest.only || manifest.group !== group) return false;
-  if (verdict.rollup !== 'published') return false;
+export function batchIsComplete(batch, members, group = 'all') {
+  return batchIncompleteReasons(batch, members, group).length === 0;
+}
+
+/** Why a batch is not one the digest may read, one reason per condition batchIsComplete checks; empty when it is. */
+export function batchIncompleteReasons({ manifest, verdict }, members, group = 'all') {
+  if (!verdict) return ['no batch verdict yet: in flight, deferred or never finished'];
+  if (!manifest) return ['no batch manifest'];
+  const reasons = [];
+  if (manifest.only || manifest.group !== group) reasons.push(`group ${manifest.group ?? 'unknown'}${manifest.only ? ' (narrowed)' : ''}, not a full ${group} sweep`);
+  if (verdict.rollup !== 'published') reasons.push(`rollup ${verdict.rollup ?? 'not published'}`);
   const repos = verdict.repos ?? {};
-  if (!(repos.resolved > 0) || repos.scanned !== repos.resolved) return false;
-  if (!(repos.scans ?? []).every((s) => s.ran)) return false;
+  if (!(repos.resolved > 0)) reasons.push('no repos resolved');
+  else if (repos.scanned !== repos.resolved) reasons.push(`scanned ${repos.scanned ?? 0} of ${repos.resolved} repos`);
+  const unran = (repos.scans ?? []).filter((s) => !s.ran);
+  if (unran.length) reasons.push(`${unran.length} scan(s) did not run: ${unran.slice(0, 5).map((s) => `${s.name ?? '?'}${s.manifest ? `:${s.manifest}` : ''}${s.why ? ` (${s.why})` : ''}`).join(', ')}`);
   const scoped = new Set((manifest.scope?.repos ?? []).map((r) => r.name));
-  return members.every((m) => scoped.has(m));
+  const outside = members.filter((m) => !scoped.has(m));
+  if (outside.length) reasons.push(`members outside the sweep's scope: ${outside.slice(0, 5).join(', ')}`);
+  return reasons;
 }
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
