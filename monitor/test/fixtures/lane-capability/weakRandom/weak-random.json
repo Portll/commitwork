@@ -1,0 +1,51 @@
+{
+  "tool": "weak-random-detect",
+  "summary": {
+    "findings": 3,
+    "byRule": {
+      "js-math-random": 2,
+      "js-date-now": 1
+    },
+    "filesScanned": 2,
+    "testContext": 0,
+    "note": "A finding needs BOTH a non-cryptographic source (RNG or clock) AND evidence on the same line or the two before it that the value becomes a credential. Neither half alone is published — `Math.random()` is correct for jitter and wrong only for a value an attacker benefits from guessing. Matches in test/bench/fixture paths are counted under testContext, never as findings: a deterministic seed in a benchmark is the correct implementation of a benchmark."
+  },
+  "findings": [
+    {
+      "type": "weak-random",
+      "rule": "js-math-random",
+      "severity": "high",
+      "path": "src/auth.js",
+      "line": 4,
+      "context": "source",
+      "langs": "js/ts",
+      "fn": "generate_api_key",
+      "detail": "const token = Math.random().toString(36).slice(2);",
+      "why": "Math.random() is not cryptographically secure — V8 seeds it from a fast PRNG and its output is predictable from a handful of samples"
+    },
+    {
+      "type": "weak-random",
+      "rule": "js-date-now",
+      "severity": "high",
+      "path": "src/auth.js",
+      "line": 9,
+      "context": "source",
+      "langs": "js/ts",
+      "fn": "create_session",
+      "detail": "const sessionId = Date.now().toString(16);",
+      "why": "a clock reading is guessable to within the window in which it was taken"
+    },
+    {
+      "type": "weak-random",
+      "rule": "js-math-random",
+      "severity": "high",
+      "path": "src/auth.js",
+      "line": 14,
+      "context": "source",
+      "langs": "js/ts",
+      "fn": "make_password",
+      "detail": "const password = Math.random().toString(36).slice(2, 10);",
+      "why": "Math.random() is not cryptographically secure — V8 seeds it from a fast PRNG and its output is predictable from a handful of samples"
+    }
+  ]
+}

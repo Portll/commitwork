@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/comment-baseline.schema.json",
+  "title": "Comment narrative ratchet baseline",
+  "type": "object",
+  "required": ["seededAt", "basis", "maxRun", "counts"],
+  "additionalProperties": false,
+  "properties": {
+    "seededAt": { "type": "string", "minLength": 1 },
+    "basis": { "type": "string", "minLength": 1 },
+    "maxRun": { "type": "integer", "minimum": 1 },
+    "counts": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } }
+  }
+}

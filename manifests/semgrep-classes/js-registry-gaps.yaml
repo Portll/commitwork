@@ -1,0 +1,132 @@
+# Free-engine rules for three registry checks the free engine cannot run.
+#
+# javascript.crypto-js.cryptojs-weak-algorithm, javascript.express.web.cors-default-config-express and
+# javascript.koa.web.cors-default-config-koa ship in p/default but use `metavariable-name: module(s)`,
+# which only the Pro engine supports. Under the free engine each one raises "Internal matching error"
+# on every JavaScript file and checks nothing: 87,890 of the 87,901 such notices across 424 stored
+# Semgrep reports (2026-10-08). These rules make the same claims, binding the module through its
+# import instead, at the same severity.
+
+rules:
+  - id: cw-cryptojs-weak-hash
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      crypto-js computes an MD5 or SHA-1 digest. Both admit practical collisions, so neither may protect
+      integrity, sign anything or store a password. Use SHA-256 or stronger, or a password hash
+      (scrypt, Argon2) for credentials.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ['CWE-327: Use of a Broken or Risky Cryptographic Algorithm']
+      confidence: HIGH
+      class: weak-hash
+      replaces: javascript.crypto-js.cryptojs-weak-algorithm.cryptojs-weak-algorithm
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  import $C from 'crypto-js';
+                  ...
+              - pattern-inside: |
+                  import * as $C from 'crypto-js';
+                  ...
+              - pattern-inside: |
+                  const $C = require('crypto-js');
+                  ...
+              - pattern-inside: |
+                  var $C = require('crypto-js');
+                  ...
+              - pattern-inside: |
+                  let $C = require('crypto-js');
+                  ...
+          - pattern: $C.$ALG(...)
+          - metavariable-regex:
+              metavariable: $ALG
+              regex: '^(MD5|SHA1|HmacMD5|HmacSHA1)$'
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  import $F from '$MOD';
+                  ...
+              - pattern-inside: |
+                  const $F = require('$MOD');
+                  ...
+              - pattern-inside: |
+                  var $F = require('$MOD');
+                  ...
+          - metavariable-regex:
+              metavariable: $MOD
+              regex: '^crypto-js/(md5|sha1|hmac-md5|hmac-sha1)$'
+          - pattern: $F(...)
+      - patterns:
+          - pattern: require('$MOD')(...)
+          - metavariable-regex:
+              metavariable: $MOD
+              regex: '^crypto-js/(md5|sha1|hmac-md5|hmac-sha1)$'
+
+  - id: cw-cors-default-config-express
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      The cors middleware runs with its defaults, which answer every origin with
+      Access-Control-Allow-Origin: *. Pass an explicit origin allow-list.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ['CWE-346: Origin Validation Error']
+      confidence: HIGH
+      class: cors-permissive
+      replaces: javascript.express.web.cors-default-config-express.cors-default-config-express
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  import $CORS from 'cors';
+                  ...
+              - pattern-inside: |
+                  const $CORS = require('cors');
+                  ...
+              - pattern-inside: |
+                  var $CORS = require('cors');
+                  ...
+              - pattern-inside: |
+                  let $CORS = require('cors');
+                  ...
+          - pattern: $CORS()
+      - pattern: require('cors')()
+
+  - id: cw-cors-default-config-koa
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      The Koa cors middleware runs with its defaults, which reflect any request Origin back as
+      allowed. Pass an origin function or value that checks an allow-list.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ['CWE-346: Origin Validation Error']
+      confidence: HIGH
+      class: cors-permissive
+      replaces: javascript.koa.web.cors-default-config-koa.cors-default-config-koa
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  import $CORS from '$MOD';
+                  ...
+              - pattern-inside: |
+                  const $CORS = require('$MOD');
+                  ...
+              - pattern-inside: |
+                  var $CORS = require('$MOD');
+                  ...
+          - metavariable-regex:
+              metavariable: $MOD
+              regex: '^(@koa/cors|koa-cors|kcors|koa2-cors)$'
+          - pattern: $CORS()
+      - patterns:
+          - pattern: require('$MOD')()
+          - metavariable-regex:
+              metavariable: $MOD
+              regex: '^(@koa/cors|koa-cors|kcors|koa2-cors)$'

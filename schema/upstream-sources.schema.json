@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/upstream-sources.schema.json",
+  "title": "Upstream sources allowlist",
+  "description": "The declared, hash-pinned set of third-party binaries bin/upstream-fetch.mjs may fetch. Anything not declared here is refused; adding one is a tracked edit reviewed as a commit, which is the only human-in-the-loop step.",
+  "type": "object",
+  "required": ["note", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "note": { "type": "string", "minLength": 1 },
+    "supersededSources": {
+      "type": "object",
+      "description": "Sources deliberately NOT to be re-adopted. An archived repo still serves release assets, so a successful download is not evidence that a source is current.",
+      "required": ["note", "repos"],
+      "additionalProperties": false,
+      "properties": {
+        "note": { "type": "string", "minLength": 1 },
+        "repos": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[\\w.-]+/[\\w.-]+$" } }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "purpose", "origin", "repo", "tag", "asset", "sha256", "publisherChecksums", "firstParty"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "purpose": { "type": "string", "minLength": 1 },
+          "origin": { "type": "string", "enum": ["github-release"] },
+          "repo": { "type": "string", "pattern": "^[\\w.-]+/[\\w.-]+$" },
+          "tag": { "type": "string", "minLength": 1 },
+          "asset": { "type": "string", "minLength": 1 },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Required. A declaration with no hash is refused rather than fetched — 'no hash' must not be the easy path."
+          },
+          "publisherChecksums": {
+            "type": "boolean",
+            "description": "Whether the RELEASE itself publishes checksums. false means our sha256 is a first-observation pin, not a confirmation against the publisher — a materially weaker claim that must not be flattened into 'verified'."
+          },
+          "firstParty": {
+            "type": "object",
+            "required": ["org", "sameOrgAsTool", "fork", "archived", "verifiedAt"],
+            "additionalProperties": false,
+            "properties": {
+              "org": { "type": "string", "minLength": 1 },
+              "sameOrgAsTool": { "type": "string", "minLength": 1 },
+              "fork": { "type": "boolean" },
+              "archived": { "type": "boolean" },
+              "verifiedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+            }
+          },
+          "frontend": { "type": "string", "minLength": 1 },
+          "note": { "type": "string", "minLength": 1 },
+          "kind": {
+            "type": "string",
+            "enum": ["binary", "rulepack"],
+            "default": "binary",
+            "description": "binary (default, may be omitted): the asset is used as-is. rulepack: the asset is a rule-pack archive; after its sha256 is verified, bin/upstream-fetch.mjs extracts it and hash-adjacent-records which rules it contains (see ruleFormat) — the same hash-pinned-source discipline applied to a third-party ruleset instead of a binary, so a 'ruleset-dependent' coverage entry in cwe-map.json can eventually cite exact rule ids."
+          },
+          "ruleFormat": {
+            "type": "string",
+            "enum": ["semgrep-yaml"],
+            "description": "Required when kind is 'rulepack' — enforced at RUNTIME in bin/upstream-fetch.mjs's extractRulepack() (an unrecognised or absent ruleFormat throws before extraction runs), not in this schema. monitor/registry.mjs's schema checker is a deliberately small draft-07 subset (SCHEMA_KEYWORDS) that does not implement allOf/if/then, and an unimplemented keyword is a hard ERROR there ('quietly ignoring the unevaluable is how a schema goes decorative') rather than something to add speculatively to a load-bearing, shared validator for one new field."
+          }
+        }
+      }
+    }
+  }
+}

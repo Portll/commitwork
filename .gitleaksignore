@@ -1,0 +1,5 @@
+# Human-reviewed false positives. One fingerprint per line; see monitor/annotations.json for reasons.
+# ATTEST_KEY constant, filename literal not a secret
+cra/lib.mjs:generic-api-key:361
+# test fixture literal, not a secret
+cra/test/cra.test.mjs:generic-api-key:920

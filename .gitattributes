@@ -1,0 +1,10 @@
+# Kept out of `git archive`, which builds the published snapshot.
+/ci export-ignore
+/ci/** export-ignore
+/CLAUDE.md export-ignore
+/docs/TRAPS.md export-ignore
+/monitor/data/advisory-cvss.json export-ignore
+
+# The scan canary's installed packages are byte-exact: RECORD holds their sha256, and a CRLF checkout
+# would turn the clean twin into a tampered one.
+/fixtures/scan-canary/*/site-packages/** -text

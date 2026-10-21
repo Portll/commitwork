@@ -1,0 +1,48 @@
+# Annotated fixture for the CI rules in manifests/semgrep-classes/container-privilege.yaml.
+name: fixture
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: example/build:1
+      # ruleid: cw-ci-privileged-container
+      options: --privileged --user 1001
+      volumes:
+        # ruleid: cw-ci-docker-socket-mount
+        - /var/run/docker.sock:/var/run/docker.sock
+        # ok: cw-ci-docker-socket-mount
+        - /tmp/cache:/cache
+    services:
+      db:
+        image: example/db:1
+        # ok: cw-ci-privileged-container, cw-ci-docker-socket-mount
+        options: --health-cmd "pg_isready" --health-interval 10s
+      dind:
+        image: example/dind:1
+        # ruleid: cw-ci-privileged-container
+        options: --cap-add=SYS_ADMIN
+      agent:
+        image: example/agent:1
+        # ruleid: cw-ci-docker-socket-mount
+        options: -v /var/run/docker.sock:/var/run/docker.sock
+    steps:
+      - run: echo build
+  net:
+    runs-on: ubuntu-latest
+    container:
+      image: example/net:1
+      # ruleid: cw-ci-privileged-container
+      options: >-
+        --cpus 2
+        --network host
+    steps:
+      - run: echo net
+  narrow:
+    runs-on: ubuntu-latest
+    container:
+      image: example/narrow:1
+      # ok: cw-ci-privileged-container
+      options: --privileged=false --cap-add NET_ADMIN
+    steps:
+      - run: echo narrow

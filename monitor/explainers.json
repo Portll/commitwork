@@ -1,0 +1,56 @@
+{
+  "note": "Plain-English explanations of terms the panel uses without defining them. Rendered only when Learning mode is on and the id has not been dismissed. Every explainer is DECLARED here and referenced by id from the markup — never written inline at a call site, because a dismissal remembers an id and an inline string has none, so rewording the text at the call site would silently un-dismiss it for everyone.",
+  "audience": "Someone who is accountable for what this panel reports and does not write software. Assume they know their own business and nothing about our vocabulary. No analogies to other software, no reassurance, and never an explanation that makes a number sound better than it is.",
+  "explainers": [
+    {
+      "id": "finding",
+      "term": "Finding",
+      "plain": "One thing a scanner reported about your code. A finding is a claim, not a verdict: it may be real and urgent, real and irrelevant to how you actually run the software, or simply wrong. Nothing here has been triaged unless it says so."
+    },
+    {
+      "id": "lane",
+      "term": "Lane",
+      "plain": "One scanner doing one job — reading your code, checking your dependencies, testing a running server. Lanes are separate because they fail separately: one can be broken for weeks while the others work, and a single overall number would hide that."
+    },
+    {
+      "id": "severity",
+      "term": "Critical, High, Medium, Low",
+      "plain": "The scanner's own guess at how bad each finding is, not ours and not reviewed. Vendors disagree, and the same flaw is often rated differently by two tools. Treat the split as a rough sort, never as a queue to work top-down."
+    },
+    {
+      "id": "scan-coverage",
+      "term": "Scan coverage",
+      "plain": "Grey means we do not know — the scan did not run, could not read the file, or was never pointed at this repository. It is deliberately not shown as a pass. A tool that reports 'nothing wrong' when it looked at nothing is a reporting error."
+    },
+    {
+      "id": "finding-evidence",
+      "term": "Evidence for findings",
+      "plain": "An unknown is not published as a problem, for the same reason it is not published as a pass. Unsupported severity claims and missed findings both require investigation. Unknowns get their own state and their own column."
+    },
+    {
+      "id": "cve",
+      "term": "CVE",
+      "plain": "A public catalogue number for a specific known flaw in a specific piece of software, like CVE-2026-12345. It means someone published the flaw. It does not tell you whether your code reaches the broken part."
+    },
+    {
+      "id": "sbom",
+      "term": "SBOM",
+      "plain": "A list of every third-party component your software includes, with versions. Regulators increasingly require one. It is an inventory, not a safety claim — knowing what is in the tin says nothing about whether it has gone off."
+    },
+    {
+      "id": "false-positive",
+      "term": "False positive",
+      "plain": "A finding that is not a real problem. Marking one as such is a judgement that gets recorded with your name against it, so someone auditing later can see who decided and why. It does not delete the finding."
+    },
+    {
+      "id": "sweep",
+      "term": "Sweep",
+      "plain": "One full pass of the scanners across the repositories being watched. Everything on this page is from the last sweep that finished, so a figure can be hours old — the freshness stamp beside it says how old."
+    },
+    {
+      "id": "suppression",
+      "term": "Suppressed",
+      "plain": "A finding someone decided not to act on, with a reason and an expiry date. It stays in the record and comes back when the expiry passes. Suppressed is not the same as fixed, and the two are counted separately on purpose."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="commitwork">
+  <title>commitwork</title>
+  <!-- THE KEY. Geometry COPIED verbatim from the seal, never redrawn — the same instruction the
+       previous file carried, and it is kept because it was earned: this glyph was once destroyed
+       by redrawing it when the task was to recolour it. A key in a keyhole: the filled dot is the
+       keyhole, the open ring is the bow, the diagonal is the shaft. The dark disc travels with it
+       so it reads on any ground, light or dark.
+       These are the dark-ground seal's colours (SEAL_SVG in lib/brand-tokens.mjs). No route serves
+       this file: every tab icon is the default mark, cw-favicon.svg. -->
+  <circle cx="16" cy="16" r="16" fill="#14161A"/>
+  <circle cx="16" cy="16" r="14.5" fill="none" stroke="#C9A227" stroke-width="1"/>
+  <circle cx="12" cy="20" r="2.4" fill="#C9A227"/>
+  <circle cx="21" cy="11" r="2.4" fill="none" stroke="#C9A227" stroke-width="1.3"/>
+  <path d="M13.7 18.3 L19.3 12.7" stroke="#C9A227" stroke-width="1.3" fill="none"/>
+</svg>

@@ -1,0 +1,38 @@
+{
+  "note": "test",
+  "entries": [
+    {
+      "key": "repo-a|osv|CVE-2026-55555|old-dep|",
+      "vulnId": "CVE-2026-55555",
+      "package": "old-dep",
+      "repo": "repo-a",
+      "severity": "high",
+      "fromVersion": "1.0.0",
+      "toVersion": "1.2.0",
+      "fixCommit": "abc1234",
+      "evidence": {
+        "tier": "strong",
+        "detail": "lockfile diff between anchors"
+      },
+      "bornSlice": "sweep-20260701000000",
+      "resolvedSlice": "sweep-20260710000000",
+      "at": "2026-07-10T02:00:00Z"
+    },
+    {
+      "key": "repo-a|osv|CVE-2026-66666|ghost|",
+      "vulnId": "CVE-2026-66666",
+      "package": "ghost",
+      "repo": "repo-a",
+      "severity": "med",
+      "fromVersion": "2.0.0",
+      "toVersion": "",
+      "evidence": {
+        "tier": "weak",
+        "detail": "finding absent, version unchanged \u2014 NOT counted"
+      },
+      "bornSlice": "sweep-20260701000000",
+      "resolvedSlice": "sweep-20260712000000",
+      "at": "2026-07-12T02:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,1311 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "GuardDog-npm",
+          "informationUri": "https://github.com/DataDog/guarddog",
+          "rules": [
+            {
+              "id": "unclaimed_maintainer_email_domain",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: unclaimed_maintainer_email_domain"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-environment-read",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-environment-read"
+              },
+              "fullDescription": {
+                "text": "Detects reading of environment variables (credential access, often contains secrets)"
+              },
+              "help": {
+                "text": "Detects reading of environment variables (credential access, often contains secrets)",
+                "markdown": "Detects reading of environment variables (credential access, often contains secrets)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-dynamic-eval",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-dynamic-eval"
+              },
+              "fullDescription": {
+                "text": "Detects JavaScript payloads executed through eval/Function over a self-decoding wrapper or character-code/base64 decoded data"
+              },
+              "help": {
+                "text": "Detects JavaScript payloads executed through eval/Function over a self-decoding wrapper or character-code/base64 decoded data",
+                "markdown": "Detects JavaScript payloads executed through eval/Function over a self-decoding wrapper or character-code/base64 decoded data"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-cryptomining",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-cryptomining"
+              },
+              "fullDescription": {
+                "text": "Detects cryptocurrency mining activity"
+              },
+              "help": {
+                "text": "Detects cryptocurrency mining activity",
+                "markdown": "Detects cryptocurrency mining activity"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-screencapture",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-screencapture"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "provenance_regression",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: provenance_regression"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-network-exfil-messenger",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-network-exfil-messenger"
+              },
+              "fullDescription": {
+                "text": "Detects hardcoded messaging platform tokens/webhooks used for data exfiltration"
+              },
+              "help": {
+                "text": "Detects hardcoded messaging platform tokens/webhooks used for data exfiltration",
+                "markdown": "Detects hardcoded messaging platform tokens/webhooks used for data exfiltration"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-injection-dll",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-injection-dll"
+              },
+              "fullDescription": {
+                "text": "Detects DLL injection and process injection techniques"
+              },
+              "help": {
+                "text": "Detects DLL injection and process injection techniques",
+                "markdown": "Detects DLL injection and process injection techniques"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-network-exfil-sysinfo",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-network-exfil-sysinfo"
+              },
+              "fullDescription": {
+                "text": "Detects system info collection combined with network exfiltration (hostname/user in HTTP requests)"
+              },
+              "help": {
+                "text": "Detects system info collection combined with network exfiltration (hostname/user in HTTP requests)",
+                "markdown": "Detects system info collection combined with network exfiltration (hostname/user in HTTP requests)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "metadata_mismatch",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: metadata_mismatch"
+              },
+              "fullDescription": {
+                "text": "Detects mismatches between a package's registry metadata and its actual manifest file.\n\n    This catches supply chain attacks where the registry metadata (dependencies, scripts,\n    entry points) differs from what's declared inside the package itself.\n    "
+              },
+              "help": {
+                "text": "Detects mismatches between a package's registry metadata and its actual manifest file.\n\n    This catches supply chain attacks where the registry metadata (dependencies, scripts,\n    entry points) differs from what's declared inside the package itself.\n    ",
+                "markdown": "Detects mismatches between a package's registry metadata and its actual manifest file.\n\n    This catches supply chain attacks where the registry metadata (dependencies, scripts,\n    entry points) differs from what's declared inside the package itself.\n    "
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-base64exec",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-base64exec"
+              },
+              "fullDescription": {
+                "text": "Detects base64 decoding followed by code execution"
+              },
+              "help": {
+                "text": "Detects base64 decoding followed by code execution",
+                "markdown": "Detects base64 decoding followed by code execution"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-keylogging",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-keylogging"
+              },
+              "fullDescription": {
+                "text": "Detects keylogging and input capture patterns"
+              },
+              "help": {
+                "text": "Detects keylogging and input capture patterns",
+                "markdown": "Detects keylogging and input capture patterns"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-spawn-silent",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-spawn-silent"
+              },
+              "fullDescription": {
+                "text": "Detects fully silent process execution (suppressing all output channels)"
+              },
+              "help": {
+                "text": "Detects fully silent process execution (suppressing all output channels)",
+                "markdown": "Detects fully silent process execution (suppressing all output channels)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-filesystem-read",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-filesystem-read"
+              },
+              "fullDescription": {
+                "text": "Detects filesystem read capabilities"
+              },
+              "help": {
+                "text": "Detects filesystem read capabilities",
+                "markdown": "Detects filesystem read capabilities"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-import-exec",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-import-exec"
+              },
+              "fullDescription": {
+                "text": "Detects dynamic import chains used to obfuscate code execution"
+              },
+              "help": {
+                "text": "Detects dynamic import chains used to obfuscate code execution",
+                "markdown": "Detects dynamic import chains used to obfuscate code execution"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-filesystem-write-executable",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-filesystem-write-executable"
+              },
+              "fullDescription": {
+                "text": "Detects writing executable files or changing file permissions to executable"
+              },
+              "help": {
+                "text": "Detects writing executable files or changing file permissions to executable",
+                "markdown": "Detects writing executable files or changing file permissions to executable"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-npm-preinstall-script",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-npm-preinstall-script"
+              },
+              "fullDescription": {
+                "text": "Detects npm preinstall scripts, which are almost exclusively used for malware delivery"
+              },
+              "help": {
+                "text": "Detects npm preinstall scripts, which are almost exclusively used for malware delivery",
+                "markdown": "Detects npm preinstall scripts, which are almost exclusively used for malware delivery"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-dynamic-loader",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-dynamic-loader"
+              },
+              "fullDescription": {
+                "text": "Detects dynamic code loading: downloading and importing/executing code at runtime"
+              },
+              "help": {
+                "text": "Detects dynamic code loading: downloading and importing/executing code at runtime",
+                "markdown": "Detects dynamic code loading: downloading and importing/executing code at runtime"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-setup-network-in-install",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-setup-network-in-install"
+              },
+              "fullDescription": {
+                "text": "Detects network operations or hostname/system info collection in setup.py, which is suspicious at install time"
+              },
+              "help": {
+                "text": "Detects network operations or hostname/system info collection in setup.py, which is suspicious at install time",
+                "markdown": "Detects network operations or hostname/system info collection in setup.py, which is suspicious at install time"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-network-lolbas",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-network-lolbas"
+              },
+              "fullDescription": {
+                "text": "Detects usage of LOLBAS network tools (curl, wget, nc, etc.)"
+              },
+              "help": {
+                "text": "Detects usage of LOLBAS network tools (curl, wget, nc, etc.)",
+                "markdown": "Detects usage of LOLBAS network tools (curl, wget, nc, etc.)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-general",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-general"
+              },
+              "fullDescription": {
+                "text": "Detects heavy code obfuscation techniques"
+              },
+              "help": {
+                "text": "Detects heavy code obfuscation techniques",
+                "markdown": "Detects heavy code obfuscation techniques"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-network-outbound-shady-links",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-network-outbound-shady-links"
+              },
+              "fullDescription": {
+                "text": "Detects URLs to URL shorteners, file sharing, and suspicious services"
+              },
+              "help": {
+                "text": "Detects URLs to URL shorteners, file sharing, and suspicious services",
+                "markdown": "Detects URLs to URL shorteners, file sharing, and suspicious services"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-pyarmor",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-pyarmor"
+              },
+              "fullDescription": {
+                "text": "Detects PyArmor obfuscation, a commercial tool commonly used to hide malicious code in Python packages"
+              },
+              "help": {
+                "text": "Detects PyArmor obfuscation, a commercial tool commonly used to hide malicious code in Python packages",
+                "markdown": "Detects PyArmor obfuscation, a commercial tool commonly used to hide malicious code in Python packages"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-enumeration",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-enumeration"
+              },
+              "fullDescription": {
+                "text": "Detects extensive system/network enumeration activities"
+              },
+              "help": {
+                "text": "Detects extensive system/network enumeration activities",
+                "markdown": "Detects extensive system/network enumeration activities"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-network-dns-exfil",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-network-dns-exfil"
+              },
+              "fullDescription": {
+                "text": "Detects DNS-based data exfiltration: encoding data in DNS queries"
+              },
+              "help": {
+                "text": "Detects DNS-based data exfiltration: encoding data in DNS queries",
+                "markdown": "Detects DNS-based data exfiltration: encoding data in DNS queries"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-setup-import-aliasing",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-setup-import-aliasing"
+              },
+              "fullDescription": {
+                "text": "Detects suspicious import aliasing of dangerous functions in setup.py"
+              },
+              "help": {
+                "text": "Detects suspicious import aliasing of dangerous functions in setup.py",
+                "markdown": "Detects suspicious import aliasing of dangerous functions in setup.py"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-powershell-encoded",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-powershell-encoded"
+              },
+              "fullDescription": {
+                "text": "Detects PowerShell encoded commands, hidden windows, and download cradles"
+              },
+              "help": {
+                "text": "Detects PowerShell encoded commands, hidden windows, and download cradles",
+                "markdown": "Detects PowerShell encoded commands, hidden windows, and download cradles"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-memory",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-memory"
+              },
+              "fullDescription": {
+                "text": "Detects memory scraping and credential dumping from process memory"
+              },
+              "help": {
+                "text": "Detects memory scraping and credential dumping from process memory",
+                "markdown": "Detects memory scraping and credential dumping from process memory"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-filesystem-browser",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-filesystem-browser"
+              },
+              "fullDescription": {
+                "text": "Detects browser credential and cookie access capabilities"
+              },
+              "help": {
+                "text": "Detects browser credential and cookie access capabilities",
+                "markdown": "Detects browser credential and cookie access capabilities"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-system-info",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-system-info"
+              },
+              "fullDescription": {
+                "text": "Detects active collection of system information (hostname, platform, architecture, user)"
+              },
+              "help": {
+                "text": "Detects active collection of system information (hostname, platform, architecture, user)",
+                "markdown": "Detects active collection of system information (hostname, platform, architecture, user)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-steganography",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-steganography"
+              },
+              "fullDescription": {
+                "text": "Detects steganography decode followed by code execution"
+              },
+              "help": {
+                "text": "Detects steganography decode followed by code execution",
+                "markdown": "Detects steganography decode followed by code execution"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-filesystem-destruction",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-filesystem-destruction"
+              },
+              "fullDescription": {
+                "text": "Detects destructive operations (recursive deletion, wiping)"
+              },
+              "help": {
+                "text": "Detects destructive operations (recursive deletion, wiping)",
+                "markdown": "Detects destructive operations (recursive deletion, wiping)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-self-propagation",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-self-propagation"
+              },
+              "fullDescription": {
+                "text": "Detects worm/self-propagating behavior: package code that rewrites its own manifest and programmatically publishes copies to a package registry to spread"
+              },
+              "help": {
+                "text": "Detects worm/self-propagating behavior: package code that rewrites its own manifest and programmatically publishes copies to a package registry to spread",
+                "markdown": "Detects worm/self-propagating behavior: package code that rewrites its own manifest and programmatically publishes copies to a package registry to spread"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-filesystem-autostart",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-filesystem-autostart"
+              },
+              "fullDescription": {
+                "text": "Detects suspicious autostart persistence mechanisms"
+              },
+              "help": {
+                "text": "Detects suspicious autostart persistence mechanisms",
+                "markdown": "Detects suspicious autostart persistence mechanisms"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-js-mangling",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-js-mangling"
+              },
+              "fullDescription": {
+                "text": "Detects JavaScript variable name mangling (_0x pattern) used by obfuscation tools"
+              },
+              "help": {
+                "text": "Detects JavaScript variable name mangling (_0x pattern) used by obfuscation tools",
+                "markdown": "Detects JavaScript variable name mangling (_0x pattern) used by obfuscation tools"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-process-spawn",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-process-spawn"
+              },
+              "fullDescription": {
+                "text": "Detects process execution and spawning"
+              },
+              "help": {
+                "text": "Detects process execution and spawning",
+                "markdown": "Detects process execution and spawning"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "typosquatting",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: typosquatting"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-setup-suspicious-imports",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-setup-suspicious-imports"
+              },
+              "fullDescription": {
+                "text": "Detects suspicious imports in setup.py: network, system, or crypto libraries that have no place in a build script"
+              },
+              "help": {
+                "text": "Detects suspicious imports in setup.py: network, system, or crypto libraries that have no place in a build script",
+                "markdown": "Detects suspicious imports in setup.py: network, system, or crypto libraries that have no place in a build script"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-network-download",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-network-download"
+              },
+              "fullDescription": {
+                "text": "Detects downloading files from network"
+              },
+              "help": {
+                "text": "Detects downloading files from network",
+                "markdown": "Detects downloading files from network"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-hooks",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-hooks"
+              },
+              "fullDescription": {
+                "text": "Detects LOLBAS usage in install hooks (execution and network tools)"
+              },
+              "help": {
+                "text": "Detects LOLBAS usage in install hooks (execution and network tools)",
+                "markdown": "Detects LOLBAS usage in install hooks (execution and network tools)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-npm-dependency-confusion",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-npm-dependency-confusion"
+              },
+              "fullDescription": {
+                "text": "Detects dependency confusion indicators: self-referencing dependencies or DNS exfil in scripts"
+              },
+              "help": {
+                "text": "Detects dependency confusion indicators: self-referencing dependencies or DNS exfil in scripts",
+                "markdown": "Detects dependency confusion indicators: self-referencing dependencies or DNS exfil in scripts"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-download-exec",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-download-exec"
+              },
+              "fullDescription": {
+                "text": "Detects download-and-execute patterns: fetching a remote file then executing it"
+              },
+              "help": {
+                "text": "Detects download-and-execute patterns: fetching a remote file then executing it",
+                "markdown": "Detects download-and-execute patterns: fetching a remote file then executing it"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-process-schedule",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-process-schedule"
+              },
+              "fullDescription": {
+                "text": "Detects ability to create scheduled tasks (cron, at, schtasks)"
+              },
+              "help": {
+                "text": "Detects ability to create scheduled tasks (cron, at, schtasks)",
+                "markdown": "Detects ability to create scheduled tasks (cron, at, schtasks)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-process-hooks",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-process-hooks"
+              },
+              "fullDescription": {
+                "text": "Detects install hooks that can execute code during package installation"
+              },
+              "help": {
+                "text": "Detects install hooks that can execute code during package installation",
+                "markdown": "Detects install hooks that can execute code during package installation"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-filesystem-read",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-filesystem-read"
+              },
+              "fullDescription": {
+                "text": "Detects access to sensitive files (credentials, configs, keys)"
+              },
+              "help": {
+                "text": "Detects access to sensitive files (credentials, configs, keys)",
+                "markdown": "Detects access to sensitive files (credentials, configs, keys)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-network-reverse-shell",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-network-reverse-shell"
+              },
+              "fullDescription": {
+                "text": "Detects reverse shell patterns and remote access tools"
+              },
+              "help": {
+                "text": "Detects reverse shell patterns and remote access tools",
+                "markdown": "Detects reverse shell patterns and remote access tools"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "direct_url_dependency",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: direct_url_dependency"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "deceptive_author",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: deceptive_author"
+              },
+              "fullDescription": {
+                "text": "This heuristic detects when an author is using a disposable email."
+              },
+              "help": {
+                "text": "This heuristic detects when an author is using a disposable email.",
+                "markdown": "This heuristic detects when an author is using a disposable email."
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-network-exfiltration",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-network-exfiltration"
+              },
+              "fullDescription": {
+                "text": "Detects URLs to suspicious domains often used for exfiltration or C2"
+              },
+              "help": {
+                "text": "Detects URLs to suspicious domains often used for exfiltration or C2",
+                "markdown": "Detects URLs to suspicious domains often used for exfiltration or C2"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-api",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-api"
+              },
+              "fullDescription": {
+                "text": "Detects advanced API call obfuscation using introspection and reflection techniques"
+              },
+              "help": {
+                "text": "Detects advanced API call obfuscation using introspection and reflection techniques",
+                "markdown": "Detects advanced API call obfuscation using introspection and reflection techniques"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-network-outbound",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-network-outbound"
+              },
+              "fullDescription": {
+                "text": "Detects network request capabilities (HTTP, sockets, etc.)"
+              },
+              "help": {
+                "text": "Detects network request capabilities (HTTP, sockets, etc.)",
+                "markdown": "Detects network request capabilities (HTTP, sockets, etc.)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-process-sysinfo",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-process-sysinfo"
+              },
+              "fullDescription": {
+                "text": "Detects LOLBAS usage in process spawning"
+              },
+              "help": {
+                "text": "Detects LOLBAS usage in process spawning",
+                "markdown": "Detects LOLBAS usage in process spawning"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-hidden-code",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-hidden-code"
+              },
+              "fullDescription": {
+                "text": "Detects a payload hidden by excessive whitespace or require aliased through a global to evade static analysis"
+              },
+              "help": {
+                "text": "Detects a payload hidden by excessive whitespace or require aliased through a global to evade static analysis",
+                "markdown": "Detects a payload hidden by excessive whitespace or require aliased through a global to evade static analysis"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "potentially_compromised_email_domain",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: potentially_compromised_email_domain"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-npm-http-dependency",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-npm-http-dependency"
+              },
+              "fullDescription": {
+                "text": "Detects HTTP/HTTPS URL dependencies in package.json (dependency confusion, untrusted sources)"
+              },
+              "help": {
+                "text": "Detects HTTP/HTTPS URL dependencies in package.json (dependency confusion, untrusted sources)",
+                "markdown": "Detects HTTP/HTTPS URL dependencies in package.json (dependency confusion, untrusted sources)"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-log-suppress",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-log-suppress"
+              },
+              "fullDescription": {
+                "text": "Detects log/console suppression combined with obfuscated code, a common malware evasion pattern"
+              },
+              "help": {
+                "text": "Detects log/console suppression combined with obfuscated code, a common malware evasion pattern",
+                "markdown": "Detects log/console suppression combined with obfuscated code, a common malware evasion pattern"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-runtime-clipboard",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-runtime-clipboard"
+              },
+              "fullDescription": {
+                "text": "Detects clipboard access operations"
+              },
+              "help": {
+                "text": "Detects clipboard access operations",
+                "markdown": "Detects clipboard access operations"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "capability-filesystem-delete",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: capability-filesystem-delete"
+              },
+              "fullDescription": {
+                "text": "Detects file/directory deletion capabilities"
+              },
+              "help": {
+                "text": "Detects file/directory deletion capabilities",
+                "markdown": "Detects file/directory deletion capabilities"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-unicode",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-unicode"
+              },
+              "fullDescription": {
+                "text": "Detects unicode homoglyphs and uncommon characters used for obfuscation"
+              },
+              "help": {
+                "text": "Detects unicode homoglyphs and uncommon characters used for obfuscation",
+                "markdown": "Detects unicode homoglyphs and uncommon characters used for obfuscation"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation"
+              },
+              "fullDescription": {
+                "text": "Detects heavy obfuscation techniques commonly used by malware"
+              },
+              "help": {
+                "text": "Detects heavy obfuscation techniques commonly used by malware",
+                "markdown": "Detects heavy obfuscation techniques commonly used by malware"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "bundled_binary",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: bundled_binary"
+              },
+              "fullDescription": {
+                "text": "This heuristic detects if the package includes bundles binary file."
+              },
+              "help": {
+                "text": "This heuristic detects if the package includes bundles binary file.",
+                "markdown": "This heuristic detects if the package includes bundles binary file."
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "threat-runtime-obfuscation-chr",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: threat-runtime-obfuscation-chr"
+              },
+              "fullDescription": {
+                "text": "Detects chr-based code obfuscation: exec/eval of chr() sequences"
+              },
+              "help": {
+                "text": "Detects chr-based code obfuscation: exec/eval of chr() sequences",
+                "markdown": "Detects chr-based code obfuscation: exec/eval of chr() sequences"
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            },
+            {
+              "id": "risky_new_dependency",
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "shortDescription": {
+                "text": "GuardDog rule: risky_new_dependency"
+              },
+              "fullDescription": {
+                "text": ""
+              },
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "properties": {
+                "precision": "medium"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "capability-network-outbound",
+          "message": {
+            "text": "On package: lodash version: 4.18.1\nDetects network request capabilities (HTTP, sockets, etc.) in file package/_getTag.js:37"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/package.json"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 8,
+                  "startColumn": 1,
+                  "endColumn": 6
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "guarddog/v1/capability-network-outbound": "35504be576f2ca3547f49b280a2f5c485a09e0a6dacbed95571c53b7d680c907"
+          }
+        },
+        {
+          "ruleId": "capability-process-spawn",
+          "message": {
+            "text": "On package: lodash version: 4.18.1\nDetects process execution and spawning in file package/_cloneRegExp.js:12"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/package.json"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 8,
+                  "startColumn": 1,
+                  "endColumn": 6
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "guarddog/v1/capability-process-spawn": "5b56dbf037fecba5ea4f869c54e2f53755c40172c2bdb739107dd4a7498d1f1f"
+          }
+        },
+        {
+          "ruleId": "capability-network-outbound",
+          "message": {
+            "text": "On package: express version: 4.22.3\nDetects network request capabilities (HTTP, sockets, etc.) in file package/lib/application.js:23"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/package.json"
+                },
+                "region": {
+                  "startLine": 7,
+                  "endLine": 7,
+                  "startColumn": 1,
+                  "endColumn": 7
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "guarddog/v1/capability-network-outbound": "43fec09a608805827e10082250a3f088491e363c4d40fd8c03dd656aa4fa8340"
+          }
+        },
+        {
+          "ruleId": "capability-process-spawn",
+          "message": {
+            "text": "On package: express version: 4.22.3\nDetects process execution and spawning in file package/lib/router/layer.js:129"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/src/package.json"
+                },
+                "region": {
+                  "startLine": 7,
+                  "endLine": 7,
+                  "startColumn": 1,
+                  "endColumn": 7
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "guarddog/v1/capability-process-spawn": "7f15e19a562f87e830696a6a0f8e2059caf44395d0df9fb3f7453f811817383a"
+          }
+        }
+      ]
+    }
+  ]
+}

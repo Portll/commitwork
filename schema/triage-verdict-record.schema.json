@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Local triage verdict record",
+  "description": "reports/<area>/handoff/<check>-<engine>-<stamp>.verdict.json: the machine-readable file a local-model triage run writes beside its markdown evidence (runLocalModel in admin/routes/remediation.mjs). It is written only when a verdict was read from the reply. This schema fixes the envelope. The verdict inside is the one the engine was told to produce against schema/triage-verdict.schema.json; the server checks only that it has a verdict string and a findings array before writing it, and a verdict salvaged from the reasoning channel was never under the engine's enforcement, so the rest of its shape is not frozen here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "check", "engine", "model", "project", "generated", "artifact", "artifactTruncated", "verdict"],
+  "properties": {
+    "schema": { "const": "commitwork/triage-verdict.v1" },
+    "check": { "type": "string", "minLength": 1, "description": "The manifest check whose artifact was triaged." },
+    "engine": { "type": "string", "minLength": 1, "description": "The declared local host id that answered." },
+    "model": { "type": "string", "minLength": 1 },
+    "answeredBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "engine", "model", "host"],
+      "description": "Which server answered, as lib/model-provider.mjs records it. Absent from files written before it was recorded.",
+      "properties": { "provider": { "type": "string" }, "engine": { "type": "string" }, "model": { "type": ["string", "null"] }, "host": { "type": "string" } }
+    },
+    "project": { "type": ["string", "null"], "description": "The area the run was scoped to." },
+    "generated": { "type": "string", "minLength": 1, "description": "ISO 8601." },
+    "artifact": { "type": ["string", "null"], "description": "Path of the scanner artifact sent to the model; null when none was found and the model reasoned from counts only." },
+    "artifactTruncated": { "type": "boolean", "description": "Only the first part of the artifact was sent, so the verdict is a floor." },
+    "verdictSalvaged": { "type": "boolean", "description": "The verdict was recovered from the model's reasoning channel, not from its reply. Absent means the verdict was not salvaged." },
+    "verdict": {
+      "type": "object",
+      "required": ["verdict", "findings"],
+      "properties": {
+        "verdict": { "type": "string" },
+        "findings": { "type": "array" }
+      }
+    }
+  }
+}

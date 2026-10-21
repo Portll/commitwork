@@ -1,0 +1,97 @@
+{
+  "tool": "minify-detect",
+  "summary": {
+    "findings": 3,
+    "byRule": {
+      "dynamic-exec-nonliteral": 2,
+      "minified-source": 1
+    },
+    "filesScanned": 2,
+    "filesSkipped": [],
+    "config": {
+      "rulesetVersion": 4,
+      "maxBytes": 5000000,
+      "semgrepCeiling": 1000000,
+      "entropyRule": false,
+      "xfileRule": false,
+      "depsRule": false
+    }
+  },
+  "findings": [
+    {
+      "rule": "dynamic-exec-nonliteral",
+      "path": "dist/bundle.min.js",
+      "sev": "low",
+      "capped": false,
+      "metrics": {
+        "bytes": 19711,
+        "lines": 1,
+        "bytesPerLineMax": 19711,
+        "wsRatio": 0,
+        "entropy": 5.755,
+        "alphabet": 70,
+        "execOpen": 1,
+        "decode": 0,
+        "execDecodePair": 0,
+        "dynExecNonlit": 1,
+        "computedDanger": 0,
+        "bidi": 0,
+        "mixedScript": 0,
+        "escapes": 0,
+        "deanEdwards": 0,
+        "joiner": 0
+      },
+      "detail": "count=1"
+    },
+    {
+      "rule": "minified-source",
+      "path": "dist/bundle.min.js",
+      "sev": "med",
+      "capped": false,
+      "metrics": {
+        "bytes": 19711,
+        "lines": 1,
+        "bytesPerLineMax": 19711,
+        "wsRatio": 0,
+        "entropy": 5.755,
+        "alphabet": 70,
+        "execOpen": 1,
+        "decode": 0,
+        "execDecodePair": 0,
+        "dynExecNonlit": 1,
+        "computedDanger": 0,
+        "bidi": 0,
+        "mixedScript": 0,
+        "escapes": 0,
+        "deanEdwards": 0,
+        "joiner": 0
+      },
+      "detail": "wsRatio=0 maxLine=19711"
+    },
+    {
+      "rule": "dynamic-exec-nonliteral",
+      "path": "src/loader.js",
+      "sev": "low",
+      "capped": false,
+      "metrics": {
+        "bytes": 121,
+        "lines": 5,
+        "bytesPerLineMax": 54,
+        "wsRatio": 0.103,
+        "entropy": 4.65,
+        "alphabet": 30,
+        "execOpen": 1,
+        "decode": 0,
+        "execDecodePair": 0,
+        "dynExecNonlit": 1,
+        "computedDanger": 0,
+        "bidi": 0,
+        "mixedScript": 0,
+        "escapes": 0,
+        "deanEdwards": 0,
+        "joiner": 0
+      },
+      "detail": "count=1"
+    }
+  ]
+}

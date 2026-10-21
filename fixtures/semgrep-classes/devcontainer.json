@@ -1,0 +1,43 @@
+// Annotated fixture for the dev container rules in manifests/semgrep-classes/container-privilege.yaml.
+{
+  "name": "fixture",
+  "image": "example/dev:1",
+  // ruleid: cw-devcontainer-privileged
+  "privileged": true,
+  "runArgs": [
+    // ruleid: cw-devcontainer-privileged
+    "--privileged",
+    // ruleid: cw-devcontainer-privileged
+    "--cap-add=SYS_ADMIN",
+    "--network",
+    // ruleid: cw-devcontainer-privileged
+    "host",
+    // ok: cw-devcontainer-privileged
+    "--cap-add=SYS_PTRACE",
+    // ruleid: cw-devcontainer-docker-socket-mount
+    "--volume=/var/run/docker.sock:/var/run/docker.sock",
+    "-v",
+    // ruleid: cw-devcontainer-docker-socket-mount
+    "/var/run/docker.sock:/var/run/docker-host.sock",
+  ],
+  "capAdd": [
+    // ok: cw-devcontainer-privileged
+    "SYS_PTRACE",
+    // ruleid: cw-devcontainer-privileged
+    "ALL"
+  ],
+  "mounts": [
+    // ruleid: cw-devcontainer-docker-socket-mount
+    "source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind",
+    // ok: cw-devcontainer-docker-socket-mount
+    "source=${localWorkspaceFolder}/.cache,target=/cache,type=bind",
+    {
+      "type": "bind",
+      // ruleid: cw-devcontainer-docker-socket-mount
+      "source": "/var/run/docker.sock",
+      "target": "/var/run/docker.sock"
+    }
+  ],
+  // ok: cw-devcontainer-privileged
+  "remoteUser": "root"
+}

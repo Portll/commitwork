@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/detector-bindings.schema.json",
+  "title": "Detector bindings",
+  "type": "object",
+  "required": ["version", "note", "coverageStates", "detectors", "withheld"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 }, "note": { "type": "string" }, "coverageStates": { "type": "object" },
+    "detectors": { "type": "array", "items": { "type": "object", "required": ["id", "version", "substrate", "classId", "covers"], "properties": { "id": { "type": "string" }, "version": { "type": "integer", "minimum": 1 }, "substrate": { "type": "string" }, "classId": { "type": "string" }, "covers": { "type": "string" }, "complete": { "type": "boolean" }, "siblingPredicates": { "type": "array", "items": { "type": "string" } }, "note": { "type": "string" }, "reportOnly": { "type": "boolean" }, "params": { "type": "object" } }, "additionalProperties": false } },
+    "withheld": { "type": "array", "items": { "type": "object", "required": ["id", "classId", "reason"], "properties": { "id": { "type": "string" }, "classId": { "type": "string" }, "reason": { "type": "string", "minLength": 1 }, "unblockedBy": { "type": "string" } }, "additionalProperties": false } }
+  }
+}

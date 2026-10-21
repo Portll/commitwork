@@ -1,0 +1,1447 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "organization": "GitHub",
+     "semanticVersion": "2.27.1",
+     "notifications": [
+      {
+       "id": "cs/compilation-message",
+       "name": "cs/compilation-message",
+       "shortDescription": {
+        "text": "Compilation message"
+       },
+       "fullDescription": {
+        "text": "A message emitted by the compiler, including warnings and errors."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "internal",
+         "non-attributable"
+        ],
+        "description": "A message emitted by the compiler, including warnings and errors.",
+        "id": "cs/compilation-message",
+        "kind": "diagnostic",
+        "name": "Compilation message"
+       }
+      },
+      {
+       "id": "cs/diagnostics/extraction-errors",
+       "name": "cs/diagnostics/extraction-errors",
+       "shortDescription": {
+        "text": "Extraction errors"
+       },
+       "fullDescription": {
+        "text": "List all errors reported by the extractor or the compiler. Extractor errors are limited to those files where there are no compilation errors."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all errors reported by the extractor or the compiler. Extractor errors are\n              limited to those files where there are no compilation errors.",
+        "id": "cs/diagnostics/extraction-errors",
+        "kind": "diagnostic",
+        "name": "Extraction errors"
+       }
+      },
+      {
+       "id": "cs/compilation-error",
+       "name": "cs/compilation-error",
+       "shortDescription": {
+        "text": "Compilation error"
+       },
+       "fullDescription": {
+        "text": "A compilation error can cause extraction problems, and could lead to inaccurate results."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "internal",
+         "non-attributable"
+        ],
+        "description": "A compilation error can cause extraction problems, and could lead to inaccurate results.",
+        "id": "cs/compilation-error",
+        "kind": "diagnostic",
+        "name": "Compilation error"
+       }
+      },
+      {
+       "id": "cs/diagnostics/successfully-extracted-files",
+       "name": "cs/diagnostics/successfully-extracted-files",
+       "shortDescription": {
+        "text": "Extracted files"
+       },
+       "fullDescription": {
+        "text": "A list of all files in the source code directory that were extracted without encountering an extraction or compiler error in the file."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "successfully-extracted-files"
+        ],
+        "description": "A list of all files in the source code directory that were extracted\n              without encountering an extraction or compiler error in the file.",
+        "id": "cs/diagnostics/successfully-extracted-files",
+        "kind": "diagnostic",
+        "name": "Extracted files"
+       }
+      },
+      {
+       "id": "cs/extraction-message",
+       "name": "cs/extraction-message",
+       "shortDescription": {
+        "text": "Extraction message"
+       },
+       "fullDescription": {
+        "text": "An error message reported by the extractor. This could lead to inaccurate results."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "internal",
+         "non-attributable"
+        ],
+        "description": "An error message reported by the extractor. This could lead to inaccurate results.",
+        "id": "cs/extraction-message",
+        "kind": "diagnostic",
+        "name": "Extraction message"
+       }
+      },
+      {
+       "id": "cs/extraction-error",
+       "name": "cs/extraction-error",
+       "shortDescription": {
+        "text": "Extraction error"
+       },
+       "fullDescription": {
+        "text": "An error message reported by the extractor, limited to those files where there are no compilation errors. This indicates a bug or limitation in the extractor, and could lead to inaccurate results."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "internal",
+         "non-attributable"
+        ],
+        "description": "An error message reported by the extractor, limited to those files where there are no\n              compilation errors. This indicates a bug or limitation in the extractor, and could lead\n              to inaccurate results.",
+        "id": "cs/extraction-error",
+        "kind": "diagnostic",
+        "name": "Extraction error"
+       }
+      },
+      {
+       "id": "csharp/diagnostic/database-quality",
+       "name": "csharp/diagnostic/database-quality",
+       "shortDescription": {
+        "text": "Low C# analysis quality"
+       },
+       "fullDescription": {
+        "text": "Low C# analysis quality"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "Low C# analysis quality",
+        "id": "csharp/diagnostic/database-quality",
+        "kind": "diagnostic",
+        "name": "Low C# analysis quality"
+       }
+      },
+      {
+       "id": "cs/baseline/expected-extracted-files",
+       "name": "cs/baseline/expected-extracted-files",
+       "shortDescription": {
+        "text": "Expected extracted files"
+       },
+       "fullDescription": {
+        "text": "Files appearing in the source archive that are expected to be extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "expected-extracted-files",
+         "telemetry"
+        ]
+       }
+      },
+      {
+       "id": "cli/file-coverage-baseline",
+       "name": "cli/file-coverage-baseline",
+       "shortDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "fullDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/platform",
+       "name": "cli/platform",
+       "shortDescription": {
+        "text": "Platform"
+       },
+       "fullDescription": {
+        "text": "Platform"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/build-mode",
+       "name": "cli/build-mode",
+       "shortDescription": {
+        "text": "Database build mode"
+       },
+       "fullDescription": {
+        "text": "Database build mode"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/sip-enablement",
+       "name": "cli/sip-enablement",
+       "shortDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "fullDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "csharp/autobuilder/buildless/mode-active",
+       "name": "csharp/autobuilder/buildless/mode-active",
+       "shortDescription": {
+        "text": "C# was extracted with build-mode set to 'none'"
+       },
+       "fullDescription": {
+        "text": "C# was extracted with build-mode set to 'none'"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "csharp/autobuilder/buildless/complete",
+       "name": "csharp/autobuilder/buildless/complete",
+       "shortDescription": {
+        "text": "C# analysis with build-mode 'none' completed"
+       },
+       "fullDescription": {
+        "text": "C# analysis with build-mode 'none' completed"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      }
+     ],
+     "rules": [
+      {
+       "id": "cs/insufficient-key-size",
+       "name": "cs/insufficient-key-size",
+       "shortDescription": {
+        "text": "Weak encryption: Insufficient key size"
+       },
+       "fullDescription": {
+        "text": "Finds uses of encryption algorithms with too small a key size"
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "warning"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-326"
+        ],
+        "description": "Finds uses of encryption algorithms with too small a key size",
+        "id": "cs/insufficient-key-size",
+        "kind": "problem",
+        "name": "Weak encryption: Insufficient key size",
+        "precision": "high",
+        "problem.severity": "warning",
+        "security-severity": "7.5"
+       }
+      },
+      {
+       "id": "cs/weak-encryption",
+       "name": "cs/weak-encryption",
+       "shortDescription": {
+        "text": "Weak encryption"
+       },
+       "fullDescription": {
+        "text": "Finds uses of encryption algorithms that are weak and obsolete"
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "warning"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-327"
+        ],
+        "description": "Finds uses of encryption algorithms that are weak and obsolete",
+        "id": "cs/weak-encryption",
+        "kind": "problem",
+        "name": "Weak encryption",
+        "precision": "high",
+        "problem.severity": "warning",
+        "security-severity": "7.5"
+       }
+      },
+      {
+       "id": "cs/ecb-encryption",
+       "name": "cs/ecb-encryption",
+       "shortDescription": {
+        "text": "Encryption using ECB"
+       },
+       "fullDescription": {
+        "text": "Highlights uses of the encryption mode 'CipherMode.ECB'. This mode should normally not be used because it is vulnerable to replay attacks."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "warning"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-327"
+        ],
+        "description": "Highlights uses of the encryption mode 'CipherMode.ECB'. This mode should normally not be used because it is vulnerable to replay attacks.",
+        "id": "cs/ecb-encryption",
+        "kind": "problem",
+        "name": "Encryption using ECB",
+        "precision": "high",
+        "problem.severity": "warning",
+        "security-severity": "7.5"
+       }
+      }
+     ]
+    },
+    "extensions": [
+     {
+      "name": "codeql/csharp-queries",
+      "semanticVersion": "1.10.0+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/csharp-queries/1.10.0/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/csharp-queries/1.10.0/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/csharp-all",
+      "semanticVersion": "7.3.1+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/csharp-queries/1.10.0/.codeql/libraries/codeql/csharp-all/7.3.1/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/csharp-queries/1.10.0/.codeql/libraries/codeql/csharp-all/7.3.1/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/threat-models",
+      "semanticVersion": "1.0.58+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/csharp-queries/1.10.0/.codeql/libraries/codeql/threat-models/1.0.58/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/csharp-queries/1.10.0/.codeql/libraries/codeql/threat-models/1.0.58/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "invocations": [
+    {
+     "toolExecutionNotifications": [
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "Program.cs",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          },
+          "region": {
+           "startLine": 8,
+           "startColumn": 29,
+           "endColumn": 53
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": "Warning SYSLIB0021 'DESCryptoServiceProvider' is obsolete: 'Derived cryptographic types are obsolete. Use the Create method on the base type instead.'"
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "cs/compilation-message",
+        "index": 0
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": "Warning SYSLIB0021 'DESCryptoServiceProvider' is obsolete: 'Derived cryptographic types are obsolete. Use the Create method on the base type instead.'"
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "Program.cs",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "cs/diagnostics/successfully-extracted-files",
+        "index": 3
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "Program.cs",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "cs/baseline/expected-extracted-files",
+        "index": 7
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:43:14.409153Z",
+       "descriptor": {
+        "id": "cli/file-coverage-baseline",
+        "index": 8
+       },
+       "properties": {
+        "attributes": {
+         "durationMilliseconds": 400
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:43:16.251998Z",
+       "descriptor": {
+        "id": "cli/platform",
+        "index": 9
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "name": "Mac OS X",
+         "version": "26.4"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:43:16.261125Z",
+       "descriptor": {
+        "id": "cli/build-mode",
+        "index": 10
+       },
+       "properties": {
+        "attributes": {
+         "buildMode": "none"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:43:16.278080Z",
+       "descriptor": {
+        "id": "cli/sip-enablement",
+        "index": 11
+       },
+       "properties": {
+        "attributes": {
+         "isEnabled": true
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "C# was extracted with build-mode set to 'none'. This means that all C# source in the working directory will be scanned, with build tools, such as NuGet and dotnet CLIs, only contributing information about external dependencies.",
+        "markdown": "C# was extracted with build-mode set to 'none'. This means that all C# source in the working directory will be scanned, with build tools, such as NuGet and dotnet CLIs, only contributing information about external dependencies."
+       },
+       "level": "note",
+       "timeUtc": "2026-10-04T11:43:19.327033Z",
+       "descriptor": {
+        "id": "csharp/autobuilder/buildless/mode-active",
+        "index": 12
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": true,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": "C# analysis with build-mode 'none' completed.",
+        "markdown": "C# analysis with build-mode 'none' completed."
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T11:43:54.075102Z",
+       "descriptor": {
+        "id": "csharp/autobuilder/buildless/complete",
+        "index": 13
+       },
+       "properties": {
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      }
+     ],
+     "executionSuccessful": true
+    }
+   ],
+   "artifacts": [
+    {
+     "location": {
+      "uri": "Program.cs",
+      "uriBaseId": "%SRCROOT%",
+      "index": 0
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "cs/insufficient-key-size",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "cs/insufficient-key-size",
+      "index": 15
+     },
+     "message": {
+      "text": "Key size should be at least 2048 bits for RSA encryption."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Program.cs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 9,
+         "startColumn": 25,
+         "endColumn": 58
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "2b86cf620dfffd91:1",
+      "primaryLocationStartColumnFingerprint": "16"
+     }
+    },
+    {
+     "ruleId": "cs/weak-encryption",
+     "ruleIndex": 1,
+     "rule": {
+      "id": "cs/weak-encryption",
+      "index": 21
+     },
+     "message": {
+      "text": "DES encryption uses keys of 56 bits only. Switch to AesCryptoServiceProvider or RijndaelManaged instead."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Program.cs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 8,
+         "startColumn": 25,
+         "endColumn": 55
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "52d71bd3daf2991e:1",
+      "primaryLocationStartColumnFingerprint": "16"
+     }
+    },
+    {
+     "ruleId": "cs/ecb-encryption",
+     "ruleIndex": 2,
+     "rule": {
+      "id": "cs/ecb-encryption",
+      "index": 27
+     },
+     "message": {
+      "text": "The ECB (Electronic Code Book) encryption mode is vulnerable to replay attacks."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Program.cs",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 11,
+         "startColumn": 20,
+         "endColumn": 34
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "bd5dfdde90f01a2c:1",
+      "primaryLocationStartColumnFingerprint": "11"
+     }
+    }
+   ],
+   "columnKind": "utf16CodeUnits",
+   "properties": {
+    "semmle.formatSpecifier": "sarif-latest",
+    "metricResults": [
+     {
+      "rule": {
+       "id": "cs/summary/lines-of-code",
+       "index": 44
+      },
+      "ruleId": "cs/summary/lines-of-code",
+      "ruleIndex": 44,
+      "value": 13,
+      "baseline": 13
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/external-libs",
+       "index": 48
+      },
+      "ruleId": "cs/telemetry/external-libs",
+      "ruleIndex": 48,
+      "value": 2,
+      "message": {
+       "text": "System.Security.Cryptography"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/external-libs",
+       "index": 48
+      },
+      "ruleId": "cs/telemetry/external-libs",
+      "ruleIndex": 48,
+      "value": 1,
+      "message": {
+       "text": "System"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Compiler diagnostic count for SYSLIB0021"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "NuGet feed responsiveness checked"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "All NuGet feeds reachable"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Successfully restored solution files"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Failed solution restore with package source error"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Failed solution restore with missing package error"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Restored projects through solution files"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Successfully restored project files"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Failed project restore with package source error"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Failed project restore with missing package error"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Reachable fallback NuGet feed count"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "WebView extraction enabled"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Resource extraction enabled"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "UseWPF set"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "UseWindowsForms set"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Source files on filesystem"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Source files generated"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Solution files on filesystem"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Project files on filesystem"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 167,
+      "message": {
+       "text": "Resolved references"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Unresolved references"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Resolved assembly conflicts"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Restored .NET framework variants"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 100,
+      "message": {
+       "text": "Percentage of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 100,
+      "message": {
+       "text": "Percentage of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Number of diagnostics with severity 2"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Number of files with extension cs"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 168,
+      "message": {
+       "text": "Number of files with extension dll"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Number of files with extension csproj"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 13,
+      "message": {
+       "text": "Number of lines of code with extension cs"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 6,
+      "message": {
+       "text": "Number of lines of code with extension csproj"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 15,
+      "message": {
+       "text": "Total number of lines with extension cs"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 6,
+      "message": {
+       "text": "Total number of lines with extension csproj"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 171,
+      "message": {
+       "text": "Number of files"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 21,
+      "message": {
+       "text": "Total number of lines"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 19,
+      "message": {
+       "text": "Number of lines of code"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 100,
+      "message": {
+       "text": "Percentage of access with target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 2450,
+      "message": {
+       "text": "Number of access with target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 10,
+      "message": {
+       "text": "Number of calls with call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 100,
+      "message": {
+       "text": "Percentage of expressions with known kind"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Number of access with missing target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 64077,
+      "message": {
+       "text": "Number of expressions with known kind"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 29,
+      "message": {
+       "text": "Number of expressions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 100,
+      "message": {
+       "text": "Percentage of type mentions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Number of expressions with unknown kind"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Number of expressions with unknown type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 11,
+      "message": {
+       "text": "Number of type mentions with known type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Number of calls with missing call target"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Number of type mentions with unknown type"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 1,
+      "message": {
+       "text": "Is extracted with build-mode set to 'none'"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Number of compiler reported ambiguity errors"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/extraction-information",
+       "index": 50
+      },
+      "ruleId": "cs/telemetry/extraction-information",
+      "ruleIndex": 50,
+      "value": 0,
+      "message": {
+       "text": "Number of compiler reported ambiguity error messages"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/supported-external-api",
+       "index": 51
+      },
+      "ruleId": "cs/telemetry/supported-external-api",
+      "ruleIndex": 51,
+      "value": 1,
+      "message": {
+       "text": "System.Security.Cryptography#Aes.Create()"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/supported-external-api",
+       "index": 51
+      },
+      "ruleId": "cs/telemetry/supported-external-api",
+      "ruleIndex": 51,
+      "value": 1,
+      "message": {
+       "text": "System.Security.Cryptography#RSACryptoServiceProvider.RSACryptoServiceProvider(System.Int32)"
+      }
+     },
+     {
+      "rule": {
+       "id": "cs/telemetry/supported-external-api",
+       "index": 51
+      },
+      "ruleId": "cs/telemetry/supported-external-api",
+      "ruleIndex": 51,
+      "value": 1,
+      "message": {
+       "text": "System#Console.WriteLine(System.Int32)"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

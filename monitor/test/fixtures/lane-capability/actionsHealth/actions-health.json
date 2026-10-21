@@ -1,0 +1,47 @@
+{
+  "tool": "actions-health",
+  "summary": {
+    "findings": 2,
+    "byRule": {
+      "ci-red-streak": 1,
+      "ci-never-started": 1
+    },
+    "filesScanned": 2,
+    "runsSampled": 10,
+    "jobsSampled": 24,
+    "jobsNeverStarted": 12,
+    "weightedMinutesSampled": 150,
+    "weightedMinutesOnFailures": 70,
+    "private": true,
+    "defaultBranch": "main",
+    "workflows": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "name": "CI",
+        "runs": 5,
+        "redStreak": 4
+      },
+      {
+        "path": ".github/workflows/deploy.yml",
+        "name": "Deploy",
+        "runs": 5,
+        "redStreak": 0
+      }
+    ],
+    "void": false
+  },
+  "findings": [
+    {
+      "rule": "ci-red-streak",
+      "path": ".github/workflows/ci.yml",
+      "sev": "med",
+      "detail": "4 consecutive failed runs on main (threshold 3)"
+    },
+    {
+      "rule": "ci-never-started",
+      "path": ".github/workflows/deploy.yml",
+      "sev": "high",
+      "detail": "12 of 24 jobs (50%) never started a runner in the newest 10 runs"
+    }
+  ]
+}

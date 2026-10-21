@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork-slice.schema.json",
+  "title": "commitwork monitor slice (v1)",
+  "description": "One historically-accurate slice of insight through the fleet: what was scanned (scope), at what code state (anchors), with what tooling (toolRuns), what was found (findings), what could not be known (carried), and what verifiably changed (delta/counts + remediation-ledger.json). v1 slices are evolved history/ snapshots; v0 snapshots (no sliceVersion) predate scope+provenance gating and are known-ambiguous.",
+  "type": "object",
+  "required": ["sliceVersion", "sliceId", "kind", "stamp", "generated", "source", "scope", "toolRuns", "totals", "findings"],
+  "properties": {
+    "sliceVersion": { "const": 1 },
+    "sliceId": { "type": "string", "description": "canonical id, e.g. sweep-<stamp> or adhoc-<stamp>; no trailing dots" },
+    "capabilities": {
+      "type": "object",
+      "description": "What the box could DO when this slice was swept — a legitimacy fact, not a result. docker 'down' means container lanes (deps-osv among them) are structurally void and this slice's zeros are voids; liveness degrades a fresh slice on it. 'absent' is a deliberate reduced deployment; 'unrecorded' is the pre-field vintage and must never be read as up or down.",
+      "properties": {
+        "docker": { "enum": ["ok", "down", "absent", "unrecorded"] },
+        "dockerReason": { "type": ["string", "null"] }
+      }
+    },
+    "kind": { "enum": ["sweep", "audit", "rescan", "backfill", "adhoc"] },
+    "stamp": { "type": "string", "pattern": "^\\d{14}$" },
+    "generated": { "type": "string", "format": "date-time", "description": "when the rollup ran — NOT the code state; see anchors" },
+    "source": { "type": "string", "description": "batch report dir this slice was rolled from" },
+    "scope": {
+      "type": "object",
+      "description": "INTENDED scan population; toolRuns records what ACTUALLY ran. Resolution requires both.",
+      "properties": { "repos": { "type": "array", "items": { "type": "string" } }, "excluded": { "type": "array", "items": { "type": "string" } } }
+    },
+    "scopeDelta": { "type": "object", "properties": { "added": { "type": "array" }, "removed": { "type": "array" } } },
+    "anchors": {
+      "type": "object",
+      "description": "code-state anchors per repo: {path, sha, branch, dirty}; sha null = not a git checkout",
+      "additionalProperties": { "type": "object", "properties": { "path": { "type": "string" }, "sha": { "type": ["string", "null"] }, "branch": { "type": ["string", "null"] }, "dirty": { "type": ["integer", "null"] } } }
+    },
+    "toolRuns": {
+      "type": "object",
+      "description": "per-repo provenance: checks-status.json contents (enum pass|fail|skip|noscan; noscan = the check ran but produced no trustworthy output — a void, distinct from a clean pass) + artifact presence for the CVE parsers. Absence of a finding only means something if its tool provably ran. THE AUTHORITY FOR THIS ENUM IS monitor/check-vocabulary.mjs (CHECK_STATUS) — this description is prose no validator enforces, so if the two ever disagree the module is right and monitor/test/check-vocabulary.test.mjs will say so.",
+      "additionalProperties": { "type": "object", "properties": { "checks": { "type": "array" }, "artifacts": { "type": "object" } } }
+    },
+    "enrichmentRefs": { "type": "object", "description": "frozen per-slice KEV/EPSS subsets (this slice's CVE ids only); epss null = no score known, distinct from 0.0" },
+    "totals": { "type": "object", "description": "RAW scan counts (consumer contract — unchanged semantics from pre-v1 rollups)" },
+    "openTotals": { "type": "object", "description": "accepted-aware counts: findings without an active annotation" },
+    "scanned": { "type": "object", "description": "denominators: repos scanned / intended, per-tool coverage — a count is only meaningful next to these" },
+    "counts": { "type": "object", "properties": { "born": {}, "cleaned": { "description": "VERIFIED remediation only (ledger tiers strong+medium)" }, "unconfirmed": {}, "accepted": {}, "carried": {} } },
+    "delta": { "type": "object", "description": "'fixed' = verified cleaned (one vocabulary with the ledger); pre-v1 snapshots' delta.fixed was ungated and unreliable" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["repo", "tool", "id", "severity", "key", "legacyKey", "state"],
+        "properties": {
+          "key": { "type": "string", "description": "repo|tool|id|package|path — stable across version bumps that don't fix" },
+          "legacyKey": { "type": "string", "description": "repo|id|package — joins v0 history (dual-key bridge)" },
+          "state": { "enum": ["born", "persisting"] },
+          "bornSlice": { "type": ["string", "null"] },
+          "path": { "type": "string", "description": "owning lockfile/module path (folder-level drill-down)" },
+          "annotation": { "type": "object", "description": "active human judgment as-of this slice's time" }
+        }
+      }
+    },
+    "carried": { "type": "array", "description": "prior findings whose repo/tool was NOT scanned this slice — state unknown-not-scanned, excluded from totals, rendered grey (never counted fixed)" },
+    "resolved": { "type": "array", "description": "prior findings gone this slice: resolved-fixed (evidence-backed) | resolved-unconfirmed (weak) | resolved-accepted | resolved-scope" },
+    "checks": { "type": "object", "description": "non-CVE check outcomes per repo (lint/test/build-health/... from checks-status.json)" }
+  }
+}

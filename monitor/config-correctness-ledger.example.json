@@ -1,0 +1,8 @@
+{
+  "note": "SYNTHETIC EXAMPLE of the config-correctness ledger: configuration and wiring defects found and fixed during a migration, recorded with the same evidence discipline as the CVE remediation ledger but kept out of remediation-ledger.json because config defects are not CVEs. Id-keyed (CC-nn) so re-recording is idempotent. The operator's ledger is a private record at monitor/private/config-correctness-ledger.json (CW_CONFIG_CORRECTNESS_LEDGER); no runtime code reads it.",
+  "sourceOfRecord": "synthetic example: the migration's remediation notes",
+  "totals": { "defects": 1, "classes": 1 },
+  "entries": [
+    { "id": "CC-01", "class": "startup/schema-qualification", "count": 1, "severity": "high", "phase": "first boot after consolidation", "status": "fixed", "detectedBy": "full-context boot test against a real database", "evidence": "synthetic example" }
+  ]
+}

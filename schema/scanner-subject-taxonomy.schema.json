@@ -1,0 +1,581 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Scanner-as-subject taxonomy registry",
+  "description": "What can go wrong when the SUBJECT under scan is a run of an instrument (a scanner lane, a gate, an agent session, a rater) rather than a repository. APPLIED: bin/scanner-taxonomy-render.mjs validate() runs this schema on every render and every --check, so it gates rather than describes. Shape only, and additive — validate() holds the cross-field truths a JSON Schema cannot express: id/prefix agreement, machine-name uniqueness, numbering gaps, edition/class accounting, lens vocabulary closure, origin/inherits agreement, RESOLUTION OF EVERY CITED PARENT ID against the parent registry, and instrument paths existing on disk. It also owns the closure/gain range, read from the registry's own scaleBounds and NOT restated here. NOTE: definitions/$ref are deliberately NOT used — monitor/registry.mjs refuses any schema keyword it cannot evaluate rather than skipping it, on the rule that a partial pass is the false green, so every shape here is inlined. minProperties is likewise absent: non-emptiness of lenses/lensBands is asserted in validate(), where an unsupported keyword cannot silently disable the whole schema.",
+  "type": "object",
+  "required": [
+    "version",
+    "subjectClass",
+    "parentRegistry",
+    "families",
+    "classes",
+    "scales",
+    "scaleBounds",
+    "fullClosureAbsent",
+    "origins",
+    "instrumentStates",
+    "lenses",
+    "lensBands",
+    "editions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "generatedFrom": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "parentRegistry": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verifiedAgainst": {
+      "type": "string",
+      "minLength": 1
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analogyStyle": {
+      "type": "string"
+    },
+    "scoreProvenance": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fullClosureAbsent": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lensNote": {
+      "type": "string"
+    },
+    "subjectClass": {
+      "type": "object",
+      "required": [
+        "key",
+        "name",
+        "definition",
+        "contrast",
+        "whatChanges",
+        "boundary"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z_]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "definition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contrast": {
+          "type": "string",
+          "minLength": 1
+        },
+        "whatChanges": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "boundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "referenceSets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "path",
+          "pick"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z-]+$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pick": {
+            "enum": [
+              "classes",
+              "array"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "scales": {
+      "type": "object",
+      "required": [
+        "closure",
+        "gain"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "closure": {
+          "type": "string"
+        },
+        "gain": {
+          "type": "string"
+        }
+      }
+    },
+    "scaleBounds": {
+      "type": "object",
+      "required": [
+        "closureMin",
+        "closureMax",
+        "gainMin",
+        "gainMax",
+        "fullyClosed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "closureMin": {
+          "type": "integer"
+        },
+        "closureMax": {
+          "type": "integer"
+        },
+        "gainMin": {
+          "type": "integer"
+        },
+        "gainMax": {
+          "type": "integer"
+        },
+        "fullyClosed": {
+          "type": "integer"
+        }
+      }
+    },
+    "origins": {
+      "type": "object",
+      "required": [
+        "inherited",
+        "transposed",
+        "novel"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "inherited": {
+          "type": "object",
+          "required": [
+            "test",
+            "requiresInherits"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1
+            },
+            "requiresInherits": {
+              "type": "boolean"
+            }
+          }
+        },
+        "transposed": {
+          "type": "object",
+          "required": [
+            "test",
+            "requiresInherits"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1
+            },
+            "requiresInherits": {
+              "type": "boolean"
+            }
+          }
+        },
+        "novel": {
+          "type": "object",
+          "required": [
+            "test",
+            "requiresInherits"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1
+            },
+            "requiresInherits": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "instrumentStates": {
+      "type": "object",
+      "required": [
+        "wired",
+        "partial",
+        "orphaned",
+        "absent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "wired": {
+          "type": "object",
+          "required": [
+            "test"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "partial": {
+          "type": "object",
+          "required": [
+            "test"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "orphaned": {
+          "type": "object",
+          "required": [
+            "test"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "absent": {
+          "type": "object",
+          "required": [
+            "test"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "test": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "lensBands": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "lenses": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "band",
+          "test",
+          "instruments",
+          "state"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "band": {
+            "type": "string",
+            "minLength": 1
+          },
+          "named": {
+            "type": "boolean"
+          },
+          "found": {
+            "type": "boolean"
+          },
+          "test": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instruments": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "state": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "editions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "version",
+          "date",
+          "label",
+          "note",
+          "ids"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[UTSJNQBV][0-9]{1,2}$"
+            }
+          }
+        }
+      }
+    },
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "roman",
+          "key",
+          "prefix",
+          "name",
+          "proposition"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "roman": {
+            "type": "string",
+            "pattern": "^[IVX]+$"
+          },
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z_]+$"
+          },
+          "prefix": {
+            "type": "string",
+            "pattern": "^[UTSJNQBV]$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "proposition": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "classes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "machine",
+          "layer",
+          "description",
+          "example",
+          "analogy",
+          "origin",
+          "inherits",
+          "originNote",
+          "lens",
+          "instrument",
+          "instrumentState",
+          "edition",
+          "status",
+          "closure",
+          "gain",
+          "stpa"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[UTSJNQBV][0-9]{1,2}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "machine": {
+            "type": "string",
+            "pattern": "^[a-z_]+\\.[a-z_]+$"
+          },
+          "layer": {
+            "enum": [
+              "IMPL",
+              "CTRL",
+              "BOTH"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "example": {
+            "type": "string",
+            "minLength": 1
+          },
+          "analogy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "origin": {
+            "enum": [
+              "inherited",
+              "transposed",
+              "novel"
+            ]
+          },
+          "inherits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[CARPMGDWKEL][0-9]{1,2}$"
+            }
+          },
+          "originNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lens": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "instrument": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instrumentState": {
+            "enum": [
+              "wired",
+              "partial",
+              "orphaned",
+              "absent"
+            ]
+          },
+          "edition": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "enum": [
+              "held",
+              "proposed"
+            ]
+          },
+          "closure": {
+            "type": "integer",
+            "$comment": "RANGE DELIBERATELY UNCONSTRAINED HERE. The bound lives in the registry's own scaleBounds and validate() reads it from there. A minimum/maximum here would be a second copy that cannot notice the bound moving."
+          },
+          "gain": {
+            "type": "integer",
+            "$comment": "Range enforced by validate() from scaleBounds; see closure."
+          },
+          "stpa": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "loop",
+                "uca",
+                "cause"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "loop": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uca": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cause": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

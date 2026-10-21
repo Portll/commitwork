@@ -1,0 +1,17 @@
+{
+  "ran": true,
+  "target": "https://fake.example",
+  "headers": {
+    "missing": ["Strict-Transport-Security", "X-Frame-Options"]
+  },
+  "tls": {
+    "findings": [
+      {
+        "issue": "weak-tls-version",
+        "target": "https://fake.example",
+        "severity": "high",
+        "detail": "TLS 1.0 is enabled on the listener"
+      }
+    ]
+  }
+}

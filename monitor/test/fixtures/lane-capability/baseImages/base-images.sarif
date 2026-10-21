@@ -1,0 +1,1854 @@
+{
+ "version": "2.1.0",
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "commitwork-base-images",
+     "rules": [
+      {
+       "id": "CVE-2024-12797",
+       "name": "CVE-2024-12797",
+       "shortDescription": {
+        "text": "openssl: RFC7250 handshakes with unauthenticated servers don't abort as expected"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2024-13176",
+       "name": "CVE-2024-13176",
+       "shortDescription": {
+        "text": "openssl: Timing side-channel in ECDSA signature computation"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2024-58251",
+       "name": "CVE-2024-58251",
+       "shortDescription": {
+        "text": "In netstat in BusyBox through 1.37.0, local users can launch of networ ..."
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2025-15467",
+       "name": "CVE-2025-15467",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Remote code execution or Denial of Service via oversized Initialization Vector in CMS parsing"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2025-15468",
+       "name": "CVE-2025-15468",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service via NULL pointer dereference in QUIC protocol handling"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2025-26519",
+       "name": "CVE-2025-26519",
+       "shortDescription": {
+        "text": "musl libc 0.9.13 through 1.2.5 before 1.2.6 has an out-of-bounds write ..."
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2025-46394",
+       "name": "CVE-2025-46394",
+       "shortDescription": {
+        "text": "In tar in BusyBox through 1.37.0, a TAR archive can have filenames hid ..."
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2025-66199",
+       "name": "CVE-2025-66199",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service due to excessive memory allocation in TLS 1.3 certificate compression"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2025-68160",
+       "name": "CVE-2025-68160",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service due to out-of-bounds write in BIO filter"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2025-69418",
+       "name": "CVE-2025-69418",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Information disclosure and data tampering via specific low-level OCB encryption/decryption calls"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2025-69419",
+       "name": "CVE-2025-69419",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Arbitrary code execution due to out-of-bounds write in PKCS#12 processing"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2025-69420",
+       "name": "CVE-2025-69420",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service via malformed TimeStamp Response"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2025-69421",
+       "name": "CVE-2025-69421",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service via malformed PKCS#12 file processing"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2025-9230",
+       "name": "CVE-2025-9230",
+       "shortDescription": {
+        "text": "openssl: Out-of-bounds read & write in RFC 3211 KEK Unwrap"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2025-9231",
+       "name": "CVE-2025-9231",
+       "shortDescription": {
+        "text": "openssl: Timing side-channel in SM2 algorithm on 64 bit ARM"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2025-9232",
+       "name": "CVE-2025-9232",
+       "shortDescription": {
+        "text": "openssl: Out-of-bounds read in HTTP client no_proxy handling"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-22184",
+       "name": "CVE-2026-22184",
+       "shortDescription": {
+        "text": "zlib: zlib: Arbitrary code execution via buffer overflow in untgz utility"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-22795",
+       "name": "CVE-2026-22795",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service due to type confusion in PKCS#12 file processing"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-22796",
+       "name": "CVE-2026-22796",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service via type confusion in PKCS#7 signature verification"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-27171",
+       "name": "CVE-2026-27171",
+       "shortDescription": {
+        "text": "zlib: zlib: Denial of Service via infinite loop in CRC32 combine functions"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-28387",
+       "name": "CVE-2026-28387",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Arbitrary code execution due to use-after-free in DANE TLSA authentication"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-28388",
+       "name": "CVE-2026-28388",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service due to NULL pointer dereference in delta CRL processing"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-28389",
+       "name": "CVE-2026-28389",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service vulnerability in CMS processing"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-28390",
+       "name": "CVE-2026-28390",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service due to NULL pointer dereference in CMS EnvelopedData processing"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-31789",
+       "name": "CVE-2026-31789",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Heap buffer overflow on 32-bit systems from large X.509 certificate processing"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "9.5"
+       }
+      },
+      {
+       "id": "CVE-2026-31790",
+       "name": "CVE-2026-31790",
+       "shortDescription": {
+        "text": "openssl: openssl: Information Disclosure from Uninitialized Memory via Invalid RSA Public Key"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-34182",
+       "name": "CVE-2026-34182",
+       "shortDescription": {
+        "text": "openssl: CMS AuthEnvelopedData Processing May Accept Forged Messages"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-34183",
+       "name": "CVE-2026-34183",
+       "shortDescription": {
+        "text": "openssl: Unbounded Memory Growth in the QUIC PATH_CHALLENGE Handler"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-35189",
+       "name": "CVE-2026-35189",
+       "shortDescription": {
+        "text": "openssl: openssl: Denial of Service via excessive memory allocation in CRL distribution point processing"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-40200",
+       "name": "CVE-2026-40200",
+       "shortDescription": {
+        "text": "musl: musl libc: Arbitrary code execution and denial of service via stack-based memory corruption in qsort"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-42766",
+       "name": "CVE-2026-42766",
+       "shortDescription": {
+        "text": "openssl: Possible NULL Dereference in Password-Based CMS Decryption"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-42768",
+       "name": "CVE-2026-42768",
+       "shortDescription": {
+        "text": "openssl: Multi-RecipientInfo Bleichenbacher Oracle in CMS_decrypt() and PKCS7_decrypt()"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-42770",
+       "name": "CVE-2026-42770",
+       "shortDescription": {
+        "text": "openssl: FFC-DH Peer Validation Uses Attacker-Supplied q"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-45445",
+       "name": "CVE-2026-45445",
+       "shortDescription": {
+        "text": "openssl: AES-OCB IV Ignored on EVP_Cipher() Path"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-45446",
+       "name": "CVE-2026-45446",
+       "shortDescription": {
+        "text": "openssl: Incorrect Tag Processing for Empty Messages in AES-GCM-SIV and AES-SIV modes"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-45447",
+       "name": "CVE-2026-45447",
+       "shortDescription": {
+        "text": "openssl: Heap Use-After-Free in OpenSSL PKCS7_verify()"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-54872",
+       "name": "CVE-2026-54872",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Private key recovery via timing side-channel in generic elliptic curve operations"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-54875",
+       "name": "CVE-2026-54875",
+       "shortDescription": {
+        "text": "openssl: openssl: information disclosure via non-constant-time SM2 scalar multiplication on ARM64 and RISC-V"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-6042",
+       "name": "CVE-2026-6042",
+       "shortDescription": {
+        "text": "musl libc: GB18030 4-byte Decoder: musl libc: Denial of Service via inefficient algorithmic complexity in iconv"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-63072",
+       "name": "CVE-2026-63072",
+       "shortDescription": {
+        "text": "openssl: heap buffer overflow in CMS key unwrapping"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-63073",
+       "name": "CVE-2026-63073",
+       "shortDescription": {
+        "text": "openssl: untrusted sender DN used as format string in CMP response validation"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-63076",
+       "name": "CVE-2026-63076",
+       "shortDescription": {
+        "text": "openssl: invalid pointer dereference in CMP server via crafted protectionAlg"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-72897",
+       "name": "CVE-2026-72897",
+       "shortDescription": {
+        "text": "openssl: openssl: Denial of Service via out-of-bounds write during TLS context switch"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-75803",
+       "name": "CVE-2026-75803",
+       "shortDescription": {
+        "text": "openssl: openssl: AEAD forgeries possible with empty ciphertext in EVP_Cipher()"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      },
+      {
+       "id": "CVE-2026-75804",
+       "name": "CVE-2026-75804",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service via unenforced QUIC connection flow control"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-75805",
+       "name": "CVE-2026-75805",
+       "shortDescription": {
+        "text": "openssl: openssl: Denial of Service via crafted CMP certificate revocation response"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-75806",
+       "name": "CVE-2026-75806",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service via undersized DTLS record"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-77696",
+       "name": "CVE-2026-77696",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Private key recovery via SM2 timing side-channel"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-84782",
+       "name": "CVE-2026-84782",
+       "shortDescription": {
+        "text": "openssl: compat-openssl: openssl: Information disclosure via DTLS handshake retransmission"
+       },
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "properties": {
+        "security-severity": "8.0"
+       }
+      },
+      {
+       "id": "CVE-2026-84784",
+       "name": "CVE-2026-84784",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service via unbounded QUIC connection identifier backlog"
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-85091",
+       "name": "CVE-2026-85091",
+       "shortDescription": {
+        "text": "zlib versions 1.3.1.2 through 1.3.2 contain a heap buffer overflow vul ..."
+       },
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "properties": {
+        "security-severity": "5.5"
+       }
+      },
+      {
+       "id": "CVE-2026-9076",
+       "name": "CVE-2026-9076",
+       "shortDescription": {
+        "text": "openssl: OpenSSL: Denial of Service due to heap out-of-bounds read in CMS password-based decryption"
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "properties": {
+        "security-severity": "2.0"
+       }
+      }
+     ]
+    }
+   },
+   "invocations": [
+    {
+     "executionSuccessful": true,
+     "toolExecutionNotifications": []
+    }
+   ],
+   "properties": {
+    "images": [
+     {
+      "ref": "alpine:3.21.0",
+      "scanned": true,
+      "vulnerabilities": 103,
+      "fixable": 103,
+      "unfixed": {}
+     }
+    ]
+   },
+   "results": [
+    {
+     "ruleId": "CVE-2024-12797",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2024-12797 is fixed in 3.3.3-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2024-13176",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2024-13176 is fixed in 3.3.2-r5. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2024-58251",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships busybox 1.37.0-r8; CVE-2024-58251 is fixed in 1.37.0-r14. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-15467",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-15467 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-15468",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-15468 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-26519",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships musl 1.2.5-r8; CVE-2025-26519 is fixed in 1.2.5-r9. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-46394",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships busybox 1.37.0-r8; CVE-2025-46394 is fixed in 1.37.0-r14. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-66199",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-66199 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-68160",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-68160 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-69418",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-69418 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-69419",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-69419 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-69420",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-69420 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-69421",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-69421 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-9230",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-9230 is fixed in 3.3.5-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-9231",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-9231 is fixed in 3.3.5-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2025-9232",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2025-9232 is fixed in 3.3.5-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-22184",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships zlib 1.3.1-r2; CVE-2026-22184 is fixed in 1.3.2-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-22795",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-22795 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-22796",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-22796 is fixed in 3.3.6-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-27171",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships zlib 1.3.1-r2; CVE-2026-27171 is fixed in 1.3.2-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-28387",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-28387 is fixed in 3.3.7-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-28388",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-28388 is fixed in 3.3.7-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-28389",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-28389 is fixed in 3.3.7-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-28390",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-28390 is fixed in 3.3.7-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-31789",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-31789 is fixed in 3.3.7-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "9.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-31790",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-31790 is fixed in 3.3.7-r0. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-34182",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-34182 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-34183",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-34183 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-35189",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-35189 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-40200",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships musl 1.2.5-r8; CVE-2026-40200 is fixed in 1.2.5-r11. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-42766",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-42766 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-42768",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-42768 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-42770",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-42770 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-45445",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-45445 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-45446",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-45446 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-45447",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-45447 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-54872",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-54872 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-54875",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-54875 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-6042",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships musl 1.2.5-r8; CVE-2026-6042 is fixed in 1.2.5-r10. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-63072",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-63072 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-63073",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-63073 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-63076",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-63076 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-72897",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-72897 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-75803",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-75803 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-75804",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-75804 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-75805",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-75805 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-75806",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-75806 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-77696",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-77696 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-84782",
+     "level": "error",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-84782 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "8.0"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-84784",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-84784 is fixed in 3.3.7-r2. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-85091",
+     "level": "warning",
+     "message": {
+      "text": "alpine:3.21.0 ships zlib 1.3.1-r2; CVE-2026-85091 is fixed in 1.3.2-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "5.5"
+     }
+    },
+    {
+     "ruleId": "CVE-2026-9076",
+     "level": "note",
+     "message": {
+      "text": "alpine:3.21.0 ships libcrypto3 3.3.2-r4; CVE-2026-9076 is fixed in 3.3.7-r1. Move to a tag of the image that includes the fix."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "Dockerfile"
+        },
+        "region": {
+         "startLine": 1
+        }
+       }
+      }
+     ],
+     "properties": {
+      "security-severity": "2.0"
+     }
+    }
+   ]
+  }
+ ]
+}

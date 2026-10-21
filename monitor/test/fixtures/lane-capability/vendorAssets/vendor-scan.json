@@ -1,0 +1,102 @@
+{
+  "tool": "vendor-scan",
+  "generated": "2026-09-30T13:58:40.177Z",
+  "ran": true,
+  "skipped": false,
+  "reason": null,
+  "summary": {
+    "scanned": 2,
+    "identified": 2,
+    "unidentified": 0,
+    "findings": 3,
+    "verdict": "3 known vulnerabilities in vendored code"
+  },
+  "findings": [
+    {
+      "file": "vendor/lodash.min.js",
+      "package": "lodash",
+      "version": "4.17.21",
+      "ecosystem": "npm",
+      "id": "GHSA-f23m-r3pf-42rh",
+      "summary": "lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`",
+      "severity": "med",
+      "severitySource": "agree",
+      "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+      "cvssScore": 6.5,
+      "cvssVia": "osv",
+      "label": "MODERATE",
+      "severityReason": "",
+      "cwe": "CWE-1321",
+      "cwePillar": "CWE-664",
+      "capec": "CAPEC-1 CAPEC-77 CAPEC-180",
+      "capecVia": "direct",
+      "attack": "T1574.010",
+      "attackTactic": "execution stealth",
+      "capecReason": "",
+      "advisory": "https://osv.dev/vulnerability/GHSA-f23m-r3pf-42rh"
+    },
+    {
+      "file": "vendor/lodash.min.js",
+      "package": "lodash",
+      "version": "4.17.21",
+      "ecosystem": "npm",
+      "id": "GHSA-r5fr-rjxr-66jc",
+      "summary": "lodash vulnerable to Code Injection via `_.template` imports key names",
+      "severity": "high",
+      "severitySource": "agree",
+      "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "cvssScore": 8.1,
+      "cvssVia": "osv",
+      "label": "HIGH",
+      "severityReason": "",
+      "cwe": "CWE-94",
+      "cwePillar": "CWE-707",
+      "capec": "CAPEC-35 CAPEC-77 CAPEC-242",
+      "capecVia": "direct",
+      "attack": "T1027.006 T1027.009 T1564.009",
+      "attackTactic": "stealth",
+      "capecReason": "",
+      "advisory": "https://osv.dev/vulnerability/GHSA-r5fr-rjxr-66jc"
+    },
+    {
+      "file": "vendor/lodash.min.js",
+      "package": "lodash",
+      "version": "4.17.21",
+      "ecosystem": "npm",
+      "id": "GHSA-xxjr-mmjv-4gpg",
+      "summary": "Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions",
+      "severity": "med",
+      "severitySource": "agree",
+      "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+      "cvssScore": 6.5,
+      "cvssVia": "osv",
+      "label": "MODERATE",
+      "severityReason": "",
+      "cwe": "CWE-1321",
+      "cwePillar": "CWE-664",
+      "capec": "CAPEC-1 CAPEC-77 CAPEC-180",
+      "capecVia": "direct",
+      "attack": "T1574.010",
+      "attackTactic": "execution stealth",
+      "capecReason": "",
+      "advisory": "https://osv.dev/vulnerability/GHSA-xxjr-mmjv-4gpg"
+    }
+  ],
+  "identified": [
+    {
+      "file": "vendor/lodash.min.js",
+      "package": "lodash",
+      "version": "4.17.21",
+      "ecosystem": "npm",
+      "via": "banner"
+    },
+    {
+      "file": "vendor/three.min.js",
+      "package": "three",
+      "version": "0.128.0",
+      "ecosystem": "npm",
+      "via": "banner"
+    }
+  ],
+  "unidentified": []
+}

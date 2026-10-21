@@ -1,0 +1,17 @@
+{
+  "completed": true,
+  "issues": [
+    {
+      "package": "lodash",
+      "version": "4.17.21",
+      "type": "install-scripts",
+      "reason": "Package contains a postinstall script that downloads and executes remote code."
+    },
+    {
+      "package": "express",
+      "version": "4.18.2",
+      "type": "obfuscated",
+      "reason": "Package source contains obfuscated code patterns that may hide malicious behavior."
+    }
+  ]
+}

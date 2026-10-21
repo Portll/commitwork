@@ -1,0 +1,45 @@
+{
+ "error": 0,
+ "message": null,
+ "data": {
+  "core": "0.0.1",
+  "link": null,
+  "vulnerability": [
+   {
+    "uuid": "fd50a88c5b937b5dfc9d9bc3932cca4f",
+    "name": "0.0.1",
+    "description": null,
+    "source": [
+     {
+      "id": "CW-CANARY-CORE-0001",
+      "name": "CW-CANARY-CORE-0001",
+      "link": "https://example.invalid/commitwork-scan-canary",
+      "description": "commitwork scan canary: a synthetic core advisory.",
+      "date": "2026-01-01"
+     }
+    ],
+    "impact": {
+     "cvss3": {
+      "version": "3.1",
+      "score": "9.8",
+      "severity": "critical"
+     },
+     "cwe": [
+      {
+       "cwe": "CWE-89",
+       "name": "SQL Injection"
+      }
+     ],
+     "ssvc": {
+      "exploitation": "active",
+      "automatable": "yes",
+      "technical_impact": "total",
+      "kev": true,
+      "kev_date": "2026-01-01"
+     }
+    }
+   }
+  ]
+ },
+ "updated": 1767225600
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/branch-protection.schema.json",
+  "title": "Branch protection",
+  "description": "The branch-protection record (monitor/private/branch-protection.json, CW_BRANCH_PROTECTION; public shape manifests/branch-protection.example.json). bin/verify-branch-protection.mjs asserts each repo's live required-status-checks are a superset of requiredChecks; bin/commit-provenance.mjs applies unsigned-on-protected-branch only where requireSigned is true.",
+  "type": "object",
+  "required": ["repos"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string" },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["repo", "branch", "requiredChecks", "requireSigned"],
+        "additionalProperties": false,
+        "properties": {
+          "repo": { "type": "string", "minLength": 1, "description": "owner/name" },
+          "branch": { "type": "string", "minLength": 1 },
+          "requiredChecks": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "requireSigned": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

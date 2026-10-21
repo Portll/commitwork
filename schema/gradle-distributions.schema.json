@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/gradle-distributions.schema.json",
+  "title": "Listed Gradle distributions and their pinned bytes",
+  "description": "The LISTED RELEASES half of the JVM egress decision. github.com and release-assets.githubusercontent.com are reachable from the resolution container for one reason — services.gradle.org 307-redirects distribution downloads there and no gradle wrapper can bootstrap otherwise — and the proxy cannot narrow that to a path, because for HTTPS squid sees only CONNECT host:443 and seeing more would mean terminating TLS. So the host is allowed and the BYTES are pinned here. bin/jvm-resolve.sh injects `distributionSha256Sum` into the SCRATCH COPY's wrapper properties and the Gradle wrapper verifies the zip itself; a version absent from this file does not run. That refusal is the entire value of the arrangement: unlisted means nobody recorded what bytes to expect, and downloading anyway through a host permitted only because of the pin is exactly the trust this removes.",
+  "type": "object",
+  "required": ["distributions"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": { "type": "string" },
+    "howItIsEnforced": { "type": "string", "minLength": 20 },
+    "unlistedIsRefused": { "type": "string", "minLength": 20 },
+    "provenanceOfTheseHashes": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Where the hashes came from and how far that goes. Required prose rather than an optional note, because a pin list whose own provenance is unstated invites being read as stronger than it is."
+    },
+    "derivedFrom": { "type": "string", "minLength": 20 },
+    "distributions": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One entry per distribution any repo in scope may download. Derived from what the fleet's gradle-wrapper.properties files actually declare, never invented — a speculative entry is a widening nobody asked for.",
+      "items": {
+        "type": "object",
+        "required": ["version", "kind", "sha256", "confirmedBy"],
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+(\\.[0-9]+)*$",
+            "description": "Gradle version exactly as it appears in the distributionUrl. Matched literally against what the wrapper asks for, so `8.9` and `8.9.0` are different entries and only one of them is what the file says."
+          },
+          "kind": {
+            "enum": ["bin", "all"],
+            "description": "Which distribution. `bin` and `all` are DIFFERENT ZIPS with different hashes, and a lookup that ignored this would pin the wrong bytes and fail confusingly at the wrapper rather than clearly here."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Lowercase hex, 64 characters. The wrapper compares literally; an uppercase or truncated value would not merely mismatch, it would mismatch for a reason unrelated to the bytes."
+          },
+          "repos": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many repos in scope declare this distribution. Informational — it says whether an entry is still earning its place, and an entry that reaches zero is a candidate for removal rather than a permanent widening."
+          },
+          "confirmedBy": {
+            "type": ["string", "null"],
+            "description": "Who independently checked this hash against a source other than the one it was fetched from, or null. REQUIRED so it cannot be quietly omitted: null is a statement that nobody has, and an absent field would read the same while committing to nothing. Every entry is null as of 2026-08-27 — the hashes came from Gradle's own published sums over TLS, which is a reasonable anchor and not a second opinion."
+          }
+        }
+      }
+    }
+  }
+}

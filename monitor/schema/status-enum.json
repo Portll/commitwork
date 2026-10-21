@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork/monitor/schema/status-enum.json",
+  "title": "Vuln-lifecycle central vocabulary (C02) — the single source for status/verdict/id-format enums",
+  "description": "Fixes gap M7: today the lifecycle vocabulary is inlined at rollup.mjs:302-405 + ledger.mjs:3-5 with no central enum. This file is that canon; rollup.mjs/ledger.mjs should import from it (self-scan S8 asserts no drift). Extend HERE, not at the assignment sites.",
+  "definitions": {
+    "lifecycleStatus": {
+      "description": "Per-finding presence + resolution state. Presence (born/persisting) and resolution states as assigned in rollup.mjs:302-405.",
+      "enum": [
+        "born", "persisting",
+        "resolved-fixed", "resolved-accepted", "resolved-superseded",
+        "resolved-scope", "resolved-fixed-candidate", "resolved-unconfirmed",
+        "unknown-not-scanned"
+      ]
+    },
+    "evidenceTier": {
+      "description": "Verified-cleaned tier from ledger.mjs:3-5. 'weak' is NEVER counted cleaned (recorded as unconfirmed).",
+      "enum": ["strong", "medium", "weak"]
+    },
+    "residualVerdict": {
+      "description": "Defence-in-depth outcome. NOTE (eval D-EXPIRE/D-PROBE): 'inexploitable' requires a live DAST/BOLA probe (not static prose) and, like 'contained', MUST carry expires+recheckTrigger. Client renders never emit the literal word 'inexploitable' — use 'accepted+contained (recheck YYYY-MM)'. 'undetermined' (D-UNMEASURED) means NO axis was read — it is the absence of an assessment, not a weak one, and is never counted as a defence outcome; client renders say 'defences not assessed'.",
+      "enum": ["exploitable", "contained", "inexploitable", "fixed", "undetermined"]
+    },
+    "axisState": {
+      "description": "Per-defence-axis state. Only 'blocks' counts toward the containment quorum. 'n/a' MUST carry a rationale (skill-lint NA discipline).",
+      "enum": ["blocks", "partial", "open", "n/a"]
+    },
+    "bugPlatform": {
+      "description": "Surface the finding lives on. Extends SURFACE_OF_TOOL (build-security-data.mjs:61-66) with image-os/runtime/config.",
+      "enum": ["jvm", "npm", "image-os", "runtime-dast", "source-sast", "config"]
+    },
+    "bugVisibleTo": {
+      "description": "Disclosure visibility. 'embargoed' findings are REDACTED from client-facing renders (eval D-EMBARGO).",
+      "enum": ["public", "internal", "embargoed"]
+    },
+    "primaryIdFormat": {
+      "description": "The identity rule. A finding's primaryId is EITHER a public advisory OR an internal CWX id. The id space encodes provenance (bugIsFoundational is DERIVED from it, not stored — removes the gaming lever).",
+      "publicAdvisory": {
+        "cve": "^CVE-[0-9]{4}-[0-9]{4,}$",
+        "ghsa": "^GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}$"
+      },
+      "internalCwx": {
+        "pattern": "^CWX-([0-9]{6}|[0-9A-F]{6}|[0-9A-Z]{6})$",
+        "note": "CWX = CommitWork eXploit (NOT MITRE CWE, which is name-blocked — 1564 CWE- occurrences already flow as weaknessClass). Zero-padded 6-wide; overflow ladder digits->hex->base36. MATCHER MUST BE CASE-SENSITIVE AND ANCHORED: a case-insensitive 'cwx' match false-positives on 228 lowercase 'cwx-xxxx' fragments inside GHSA advisory codes (e.g. GHSA-cwx-xvwj-...)."
+      }
+    },
+    "weaknessClass": {
+      "description": "MITRE CWE class(es) the finding is an instance of — the RETAINED, separate field. Public findings get it from NVD/trivy CweIDs[]/retire cwe[]; CWX findings get it from the ruleId->CWE map (C23). Format ^CWE-[0-9]{1,5}$. Used under the MITRE CWE Terms of Use (attribution required — see licensingAndAttribution).",
+      "pattern": "^CWE-[0-9]{1,5}$"
+    },
+    "foundationalDerivation": {
+      "description": "bugIsFoundational is DERIVED, never stored: primaryId ^CWX- => true (self-found); ^CVE-|^GHSA- => false (inherited). A CWX that later maps to a CVE flips to false but cwxRef preserves 'we found it first'.",
+      "rule": "startsWith('CWX-') ? true : false"
+    }
+  }
+}

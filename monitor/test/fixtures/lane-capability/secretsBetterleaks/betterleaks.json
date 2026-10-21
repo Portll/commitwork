@@ -1,0 +1,59 @@
+[
+ {
+  "RuleID": "generic-credential-uri",
+  "Description": "Detected a password embedded in a service connection URI, which may expose direct access to the referenced service.",
+  "StartLine": 3,
+  "EndLine": 3,
+  "StartColumn": 15,
+  "EndColumn": 78,
+  "Match": "amqp://worker:REDACTED@broker.example.invalid:5672/jobs\"",
+  "Secret": "REDACTED",
+  "CaptureGroups": {
+   "host": "broker.example.invalid",
+   "password": "REDACTED",
+   "scheme": "amqp",
+   "uri": "amqp://worker:REDACTED@broker.example.invalid:5672/jobs",
+   "username": "worker"
+  },
+  "Attributes": {
+   "confidence": "low",
+   "path": "config/settings.py",
+   "resource": "fs.content"
+  },
+  "Tags": [],
+  "Fingerprint": "config/settings.py:generic-credential-uri:3",
+  "File": "config/settings.py",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 4,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": ""
+ },
+ {
+  "RuleID": "generic-password",
+  "Description": "Detected a potential hardcoded password literal, which may expose account credentials.",
+  "StartLine": 2,
+  "EndLine": 2,
+  "StartColumn": 4,
+  "EndColumn": 32,
+  "Match": "PASSWORD = \"REDACTED\"",
+  "Secret": "REDACTED",
+  "Attributes": {
+   "confidence": "low",
+   "path": "config/settings.py",
+   "resource": "fs.content"
+  },
+  "Tags": [],
+  "Fingerprint": "config/settings.py:generic-password:2",
+  "File": "config/settings.py",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 4,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": ""
+ }
+]

@@ -1,0 +1,143 @@
+{
+  "tool": "wp-advisories",
+  "summary": {
+    "findings": 3,
+    "byRule": {
+      "wp-core-vulnerable": 1,
+      "wp-plugin-vulnerable": 1,
+      "wp-theme-vulnerable": 1
+    },
+    "filesScanned": 4,
+    "components": {
+      "core": 1,
+      "plugins": 2,
+      "themes": 1,
+      "checked": 3,
+      "unknownToSource": 1,
+      "versionUnknown": 0,
+      "unavailable": 0
+    },
+    "installs": [
+      {
+        "path": ".",
+        "layout": "site-root",
+        "core": {
+          "state": "present",
+          "version": "0.0.1",
+          "releaseStatus": "insecure"
+        }
+      }
+    ],
+    "checked": [
+      {
+        "kind": "plugin",
+        "slug": "cw-canary-plugin",
+        "version": "1.0.0",
+        "path": "wp-content/plugins/cw-canary-plugin/cw-canary-plugin.php",
+        "records": 1
+      },
+      {
+        "kind": "theme",
+        "slug": "cw-canary-theme",
+        "version": "1.0.0",
+        "path": "wp-content/themes/cw-canary-theme/style.css",
+        "records": 1
+      },
+      {
+        "kind": "core",
+        "slug": "WordPress",
+        "version": "0.0.1",
+        "path": "wp-includes/version.php",
+        "records": 1,
+        "releaseStatus": "insecure"
+      }
+    ],
+    "unknownToSource": [
+      {
+        "kind": "plugin",
+        "slug": "cw-canary-premium",
+        "version": "2.0.0",
+        "path": "wp-content/plugins/cw-canary-premium/cw-canary-premium.php"
+      }
+    ],
+    "notMeasured": [],
+    "unavailable": [],
+    "sources": {
+      "advisories": "file (CW_WPVULN_URL)",
+      "releaseStatus": "file (CW_WP_API_URL)",
+      "cache": "off"
+    },
+    "advisoryData": {
+      "oldest": "2026-01-01",
+      "newest": "2026-01-01"
+    },
+    "requests": {
+      "network": 0,
+      "cache": 0,
+      "staleCache": 0,
+      "file": 5,
+      "failed": 0,
+      "cacheWriteFailures": 0
+    },
+    "rangesNotEvaluated": 0,
+    "skipDirs": [
+      ".git",
+      "node_modules",
+      ".claude/worktrees",
+      "fixtures/scan-canary/dirty"
+    ],
+    "skippedPaths": [],
+    "unreadable": 0,
+    "unreadableFiles": []
+  },
+  "findings": [
+    {
+      "rule": "wp-plugin-vulnerable",
+      "path": "wp-content/plugins/cw-canary-plugin/cw-canary-plugin.php",
+      "sev": "high",
+      "cwe": "CWE-1395",
+      "component": "cw-canary-plugin",
+      "version": "1.0.0",
+      "advisories": 1,
+      "ids": [
+        "CW-CANARY-PLUGIN-0001"
+      ],
+      "kev": false,
+      "exploited": false,
+      "fixedIn": "1.0.1",
+      "detail": "1 advisory record(s) apply to cw-canary-plugin 1.0.0; ids CW-CANARY-PLUGIN-0001; including: CW Canary Plugin < 1.0.1 - Synthetic canary advisory; worst CVSS 7.5; CWE-79; fixed in 1.0.1"
+    },
+    {
+      "rule": "wp-theme-vulnerable",
+      "path": "wp-content/themes/cw-canary-theme/style.css",
+      "sev": "med",
+      "cwe": "CWE-1395",
+      "component": "cw-canary-theme",
+      "version": "1.0.0",
+      "advisories": 1,
+      "ids": [
+        "CW-CANARY-THEME-0001"
+      ],
+      "kev": false,
+      "exploited": false,
+      "fixedIn": "1.0.1",
+      "detail": "1 advisory record(s) apply to cw-canary-theme 1.0.0; ids CW-CANARY-THEME-0001; including: CW Canary Theme < 1.0.1 - Synthetic canary advisory; worst CVSS 5.4; CWE-79; fixed in 1.0.1"
+    },
+    {
+      "rule": "wp-core-vulnerable",
+      "path": "wp-includes/version.php",
+      "sev": "crit",
+      "cwe": "CWE-1395",
+      "component": "WordPress",
+      "version": "0.0.1",
+      "advisories": 1,
+      "ids": [
+        "CW-CANARY-CORE-0001"
+      ],
+      "kev": true,
+      "exploited": true,
+      "fixedIn": null,
+      "detail": "1 advisory record(s) apply to WordPress 0.0.1; ids CW-CANARY-CORE-0001; worst CVSS 9.8; 1 marked actively exploited, 1 on CISA KEV; CWE-89; api.wordpress.org lists WordPress 0.0.1 as insecure: a later release in its branch fixes a security issue"
+    }
+  ]
+}

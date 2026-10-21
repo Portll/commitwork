@@ -1,0 +1,27 @@
+{
+  "tool": "commit-velocity",
+  "summary": {
+    "findings": 1,
+    "byRule": {
+      "machine-speed-commits": 0,
+      "workflow-edit-burst": 1,
+      "sensitive-file-burst": 0
+    },
+    "filesScanned": 9,
+    "commitsScanned": 9,
+    "windowMin": 60,
+    "authors": 2,
+    "depth": 500,
+    "allowlisted": 0,
+    "allowlistExpired": 0
+  },
+  "findings": [
+    {
+      "rule": "workflow-edit-burst",
+      "path": "Dev One <dev.one@example.com>",
+      "sev": "high",
+      "cwe": "CWE-799",
+      "detail": "8 commits touching .github/workflows or actions in a 60m window (threshold 6); author=human"
+    }
+  ]
+}

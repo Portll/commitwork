@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "properties": {
+        "suppressedCount": 0
+      },
+      "tool": {
+        "driver": {
+          "name": "commitwork-node-hazards",
+          "informationUri": "https://commitwork.portll.net",
+          "rules": [
+            {
+              "id": "node/tls-verification-disabled"
+            },
+            {
+              "id": "node/xss-protection-disabled"
+            },
+            {
+              "id": "template/pug-unescaped"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "node/tls-verification-disabled",
+          "level": "error",
+          "message": {
+            "text": "NODE_TLS_REJECT_UNAUTHORIZED is set to 0, disabling TLS certificate verification process-wide"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/server.js"
+                },
+                "region": {
+                  "startLine": 4
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "node/xss-protection-disabled",
+          "level": "note",
+          "message": {
+            "text": "X-XSS-Protection explicitly disabled (note: the header is deprecated and ignored by current browsers)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/server.js"
+                },
+                "region": {
+                  "startLine": 11
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "template/pug-unescaped",
+          "level": "warning",
+          "message": {
+            "text": "Pug emits an unescaped variable (!{ } or !=) — #{ } and = are the escaped forms (XSS)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/views/index.pug"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

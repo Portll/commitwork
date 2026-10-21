@@ -1,0 +1,57 @@
+{
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "golangci-lint"
+    }
+   },
+   "results": [
+    {
+     "ruleId": "errcheck",
+     "level": "error",
+     "message": {
+      "text": "Error return value of `f.Close` is not checked"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "index": 0
+        },
+        "region": {
+         "startLine": 10,
+         "startColumn": 15
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "staticcheck",
+     "level": "error",
+     "message": {
+      "text": "ST1023: should omit type int from declaration; it will be inferred from the right-hand side"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "index": 0
+        },
+        "region": {
+         "startLine": 12,
+         "startColumn": 8
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json"
+}

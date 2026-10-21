@@ -1,0 +1,34 @@
+{
+  "manufacturer": {
+    "name": "Portll Test GmbH",
+    "contact": "security@test.example",
+    "csirtMemberState": "DE"
+  },
+  "products": [
+    {
+      "id": "prod-eu",
+      "name": "Product EU",
+      "version": "1.4.0",
+      "description": "EU-marketed product",
+      "repos": [
+        "repo-a"
+      ],
+      "market": {
+        "eu": true,
+        "category": "default"
+      },
+      "supportEndsAt": "2030-01-01"
+    },
+    {
+      "id": "prod-noneu",
+      "name": "Internal Tool",
+      "version": "0.9.0",
+      "repos": [
+        "repo-b"
+      ],
+      "market": {
+        "eu": false
+      }
+    }
+  ]
+}

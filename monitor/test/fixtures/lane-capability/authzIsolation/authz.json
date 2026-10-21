@@ -1,0 +1,14 @@
+{
+ "ran": true,
+ "findings": [
+  {
+   "type": "cross-tenant-read",
+   "severity": "high",
+   "path": "/api/orders/{id}",
+   "detail": "tenant B read an object owned by tenant A by sending tenant A's id in the tenant header",
+   "noAuth": 401,
+   "tenantA": 200,
+   "tenantB": 200
+  }
+ ]
+}

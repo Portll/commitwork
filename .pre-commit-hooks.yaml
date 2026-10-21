@@ -1,0 +1,10 @@
+# pre-commit.com hook definitions. Same check as `commitwork hook install`; see bin/hook.mjs.
+- id: commitwork-secrets
+  name: commitwork staged-content secrets check
+  description: Scans the staged content (the index) for credentials before the commit lands.
+  entry: commitwork hook run
+  language: node
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
+  minimum_pre_commit_version: '3.2.0'

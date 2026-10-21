@@ -1,0 +1,11 @@
+The JSON schemas in this directory are licensed under the Apache License, Version 2.0.
+Full text: ../LICENSE-APACHE-2.0. SPDX-License-Identifier: Apache-2.0
+
+Excluded: schema/upstream/ holds third-party schemas under their own authors' licences; nothing
+in this file changes those terms.
+
+The schemas are the wire layer — the contracts commitwork's files, reports and inputs are
+validated against — and carry a different licence from the rest of the repository so that a reader
+who validates against them or generates them owes no copyleft obligation. Which files are the wire
+layer is declared in ../manifests/wire-layer.json; everything not listed there is AGPL-3.0-or-later
+(../LICENSING.md).

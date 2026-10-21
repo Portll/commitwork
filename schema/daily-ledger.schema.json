@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.daily-ledger/1",
+  "title": "Daily todo ledger",
+  "description": "reports/<out>/daily/ledger.json: the record of which findings the daily run has filed on the todo list, kept by planTodos() in monitor/daily-todos.mjs and written by bin/daily-run.mjs. It, not the todo list, decides whether a finding is filed again: a todo the operator closed is not refiled while its finding persists. Finding ids are place-keyed and never include a line number.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "configSha256", "findings"],
+  "properties": {
+    "schema": { "const": "commitwork.daily-ledger/1" },
+    "configSha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256 of the area's daily config the last run read; null before any run. A change makes the next comparison a baseline."
+    },
+    "findings": {
+      "type": "object",
+      "description": "Keyed by the daily digest's finding id: the first 16 hex characters of sha256(repo|category|rule|file).",
+      "propertyNames": { "pattern": "^[0-9a-f]{16}$" },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo", "state", "todoId", "closedByUser", "firstSeenBatch", "lastSeenBatch"],
+            "properties": {
+              "repo": { "type": "string" },
+              "state": { "enum": ["open", "fixed"] },
+              "todoId": { "type": ["string", "null"], "description": "The todo filed for the finding; null until one is." },
+              "closedByUser": { "type": "boolean", "description": "The filed todo was closed or deleted while the finding persisted." },
+              "firstSeenBatch": { "type": "string", "pattern": "^sweep-[0-9]{14}$" },
+              "lastSeenBatch": { "type": "string", "pattern": "^sweep-[0-9]{14}$" },
+              "fixedBatch": { "type": "string", "pattern": "^sweep-[0-9]{14}$", "description": "The batch in which the finding was last reported fixed." }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo", "state", "renamedTo"],
+            "properties": {
+              "repo": { "type": "string" },
+              "state": { "const": "renamed" },
+              "renamedTo": { "type": "string", "pattern": "^[0-9a-f]{16}$", "description": "The finding's id after its file was renamed; its todo moved with it." }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

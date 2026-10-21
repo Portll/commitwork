@@ -1,0 +1,449 @@
+{
+ "tool": "cobolwork-advice",
+ "schemaVersion": 1,
+ "generatedBy": {
+  "toolVersion": "0.9.10",
+  "toolRevision": {
+   "commit": "53da74e24315a3b5b1fb079c691f219e91625ab6",
+   "dirty": false,
+   "from": "checkout"
+  },
+  "identity": "cobolwork/v1",
+  "flowModel": "byte-range"
+ },
+ "repository": {
+  "name": "001-argv-reaches-os-command",
+  "revision": "53da74e24315a3b5b1fb079c691f219e91625ab6"
+ },
+ "estate": {
+  "files": {
+   "programs": 2,
+   "copybooks": 0,
+   "jcl": 0,
+   "bms": 0,
+   "hlasm": 0,
+   "ims": 0,
+   "db2": 0,
+   "pli": 0,
+   "other": 0
+  },
+  "compiler": null,
+  "programs": null,
+  "dialect": null,
+  "options": {
+   "observed": {
+    "TRUNC": {},
+    "ARITH": {},
+    "NUMPROC": {},
+    "NUMCHECK": {},
+    "SSRANGE": {},
+    "CODEPAGE": {},
+    "INTDATE": {}
+   },
+   "programsWithCards": 0,
+   "policy": {
+    "checks": [
+     "subscript",
+     "reference-modification"
+    ],
+    "options": "warn",
+    "forbid": {
+     "enterprise": [],
+     "gnucobol": [],
+     "gcobol": []
+    }
+   }
+  }
+ },
+ "catalogue": {
+  "rules": [
+   {
+    "id": "argv-or-env-to-os-command",
+    "set": "flow",
+    "sev": "crit",
+    "evidence": "path",
+    "cwe": "CWE-78",
+    "text": "Command-line or environment input reaches an operating-system command routine",
+    "impact": "Whoever sets the program's command line or environment runs an arbitrary operating-system command with the program's authority",
+    "remedy": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+    "steps": [
+     "Find the CALL 'SYSTEM' (or C$SYSTEM, CBL_EXEC_RUN_UNIT) the finding names and the field or environment variable its command is built from.",
+     "Replace the command with a literal, or with an entry chosen from a fixed table of known commands by a key the program validates.",
+     "Reject the request when the key matches no entry; never STRING or MOVE input into the command text."
+    ],
+    "references": [],
+    "compliance": {
+     "dora": [
+      {
+       "clause": "Article 9(3)(b)",
+       "title": "Protection and prevention"
+      }
+     ],
+     "nist-800-53r5": [
+      {
+       "clause": "SI-10",
+       "title": "Information Input Validation"
+      }
+     ],
+     "ffiec": [
+      {
+       "clause": "DA&M V",
+       "title": "Development"
+      }
+     ],
+     "cobit-2019": [
+      {
+       "clause": "DSS06.02"
+      }
+     ]
+    },
+    "measured": null
+   }
+  ],
+  "practices": [
+   {
+    "id": "options-check-off",
+    "class": "options",
+    "sev": "low",
+    "text": "A run-time check the policy requires is not turned on for a program",
+    "why": "No CBL or PROCESS card, compile step or declared site default turns the compiler option on, so an out-of-range subscript, a bad numeric value or a short argument is not caught where it happens and the program carries on with whatever storage it reached",
+    "how": "Turn the option on for the program: SSRANGE for subscripts and reference modification, NUMCHECK(ABD) for numeric data, PARMCHECK(ABD) for argument lengths",
+    "steps": [
+     "Add the option to the estate's compile procedure, or to a CBL card at the top of the program",
+     "Record the estate's defaults as compilerOptions in cobolwork.site.json so the check can see them",
+     "Run the program's tests: a check that now abends shows where the program used storage it did not own"
+    ],
+    "references": [
+     {
+      "title": "IBM Enterprise COBOL for z/OS 6.4 Programming Guide: SSRANGE"
+     },
+     {
+      "title": "IBM Enterprise COBOL for z/OS 6.4 Programming Guide: NUMCHECK"
+     },
+     {
+      "title": "IBM Enterprise COBOL for z/OS 6.4 Programming Guide: PARMCHECK"
+     }
+    ],
+    "compliance": {},
+    "measured": false
+   },
+   {
+    "id": "options-undeclared",
+    "class": "options",
+    "sev": "info",
+    "text": "A program compiles on defaults nobody declared",
+    "why": "It has no CBL or PROCESS card, no compile step the tree holds names it, and the site declares no compiler defaults, so how it is compiled is the installation default, which an installation can change from IBM's and the source cannot show",
+    "how": "Declare the estate's compiler defaults as compilerOptions in cobolwork.site.json, or put the options the program depends on on a CBL card",
+    "steps": [
+     "Take the options from the compile procedure the estate uses, or from a compile listing's options section",
+     "Write them as compilerOptions in cobolwork.site.json"
+    ],
+    "references": [
+     {
+      "title": "IBM Enterprise COBOL for z/OS 6.4 Programming Guide: SSRANGE"
+     },
+     {
+      "title": "IBM Enterprise COBOL for z/OS 6.4 Programming Guide: NUMCHECK"
+     },
+     {
+      "title": "IBM Enterprise COBOL for z/OS 6.4 Programming Guide: PARMCHECK"
+     }
+    ],
+    "compliance": {},
+    "measured": false
+   }
+  ],
+  "compiler": []
+ },
+ "items": [
+  {
+   "id": "finding:argv-or-env-to-os-command:45e55b502c397a499cc29212c0c28329",
+   "kind": "finding",
+   "ref": "argv-or-env-to-os-command",
+   "where": {
+    "path": "P2.cbl",
+    "line": 10,
+    "program": "P2",
+    "item": "WS-LOCAL"
+   },
+   "detail": "Command-line or environment input reaches an operating-system command routine: ACCEPT ... FROM COMMAND-LINE at P1.cbl:8 reaches CALL 'SYSTEM' USING WS-LOCAL",
+   "fingerprint": "45e55b502c397a499cc29212c0c28329",
+   "sev": "crit",
+   "evidence": "path",
+   "cwe": "CWE-78",
+   "verdict": "attacker-driven",
+   "exploitability": {
+    "verdict": "attacker-driven",
+    "drivenBy": "Whoever sets the program's command line or environment",
+    "because": [
+     "Whoever sets the program's command line or environment supplies it: ACCEPT ... FROM COMMAND-LINE at P1.cbl:8",
+     "no check is shown to run on every route before the operation at P2.cbl:10",
+     "nothing in this tree starts P2, so who can run it is not shown here"
+    ],
+    "unknown": "what starts P2: no transaction or job in this tree does",
+    "fixAt": {
+     "program": "P2",
+     "path": "P2.cbl",
+     "line": 10,
+     "item": "WS-LOCAL",
+     "test": "before the operation at P2.cbl:10, on every route to it, test WS-LOCAL against a list of the values allowed (an EVALUATE with a WHEN for each literal and WHEN OTHER turning the rest away, or a condition name), and let only a value that passes reach it; a command built only from literals needs no test"
+    }
+   },
+   "remediation": {
+    "text": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+    "steps": [
+     "Find the CALL 'SYSTEM' (or C$SYSTEM, CBL_EXEC_RUN_UNIT) the finding names and the field or environment variable its command is built from.",
+     "Replace the command with a literal, or with an entry chosen from a fixed table of known commands by a key the program validates.",
+     "Reject the request when the key matches no entry; never STRING or MOVE input into the command text."
+    ],
+    "fixAt": {
+     "program": "P2",
+     "path": "P2.cbl",
+     "line": 10,
+     "item": "WS-LOCAL",
+     "test": "before the operation at P2.cbl:10, on every route to it, test WS-LOCAL against a list of the values allowed (an EVALUATE with a WHEN for each literal and WHEN OTHER turning the rest away, or a condition name), and let only a value that passes reach it; a command built only from literals needs no test"
+    },
+    "gate": {
+     "target": "45e55b502c397a499cc29212c0c28329",
+     "checks": [
+      "target",
+      "added",
+      "layout",
+      "calls",
+      "configuration",
+      "coverage",
+      "compile"
+     ]
+    }
+   },
+   "compliance": [
+    {
+     "framework": "dora",
+     "clause": "Article 9(3)(b)",
+     "title": "Protection and prevention"
+    },
+    {
+     "framework": "nist-800-53r5",
+     "clause": "SI-10",
+     "title": "Information Input Validation"
+    },
+    {
+     "framework": "ffiec",
+     "clause": "DA&M V",
+     "title": "Development"
+    },
+    {
+     "framework": "cobit-2019",
+     "clause": "DSS06.02"
+    }
+   ],
+   "source": "cobolwork",
+   "witnessed": null
+  },
+  {
+   "id": "practice:options-check-off:52da018e3c0b5c2f",
+   "kind": "practice",
+   "ref": "options-check-off",
+   "where": {
+    "path": "P1.cbl",
+    "line": 1,
+    "program": "P1",
+    "item": "subscript"
+   },
+   "detail": "P1: the subscript check is off: subscript needs SSRANGE, and no level this gate can read sets it: declare the estate's defaults as compilerOptions in cobolwork.site.json",
+   "sev": "low",
+   "evidence": "context",
+   "verdict": null,
+   "remediation": {
+    "text": "Turn the option on for the program: SSRANGE for subscripts and reference modification, NUMCHECK(ABD) for numeric data, PARMCHECK(ABD) for argument lengths",
+    "steps": [
+     "Add the option to the estate's compile procedure, or to a CBL card at the top of the program",
+     "Record the estate's defaults as compilerOptions in cobolwork.site.json so the check can see them",
+     "Run the program's tests: a check that now abends shows where the program used storage it did not own"
+    ],
+    "fixAt": null,
+    "gate": null
+   },
+   "compliance": [],
+   "source": "cobolwork",
+   "witnessed": null
+  },
+  {
+   "id": "practice:options-check-off:e2d1ccb2e1eb1d91",
+   "kind": "practice",
+   "ref": "options-check-off",
+   "where": {
+    "path": "P1.cbl",
+    "line": 1,
+    "program": "P1",
+    "item": "reference-modification"
+   },
+   "detail": "P1: the reference-modification check is off: reference-modification needs SSRANGE, and no level this gate can read sets it: declare the estate's defaults as compilerOptions in cobolwork.site.json",
+   "sev": "low",
+   "evidence": "context",
+   "verdict": null,
+   "remediation": {
+    "text": "Turn the option on for the program: SSRANGE for subscripts and reference modification, NUMCHECK(ABD) for numeric data, PARMCHECK(ABD) for argument lengths",
+    "steps": [
+     "Add the option to the estate's compile procedure, or to a CBL card at the top of the program",
+     "Record the estate's defaults as compilerOptions in cobolwork.site.json so the check can see them",
+     "Run the program's tests: a check that now abends shows where the program used storage it did not own"
+    ],
+    "fixAt": null,
+    "gate": null
+   },
+   "compliance": [],
+   "source": "cobolwork",
+   "witnessed": null
+  },
+  {
+   "id": "practice:options-check-off:051225712ce456dc",
+   "kind": "practice",
+   "ref": "options-check-off",
+   "where": {
+    "path": "P2.cbl",
+    "line": 1,
+    "program": "P2",
+    "item": "reference-modification"
+   },
+   "detail": "P2: the reference-modification check is off: reference-modification needs SSRANGE, and no level this gate can read sets it: declare the estate's defaults as compilerOptions in cobolwork.site.json",
+   "sev": "low",
+   "evidence": "context",
+   "verdict": null,
+   "remediation": {
+    "text": "Turn the option on for the program: SSRANGE for subscripts and reference modification, NUMCHECK(ABD) for numeric data, PARMCHECK(ABD) for argument lengths",
+    "steps": [
+     "Add the option to the estate's compile procedure, or to a CBL card at the top of the program",
+     "Record the estate's defaults as compilerOptions in cobolwork.site.json so the check can see them",
+     "Run the program's tests: a check that now abends shows where the program used storage it did not own"
+    ],
+    "fixAt": null,
+    "gate": null
+   },
+   "compliance": [],
+   "source": "cobolwork",
+   "witnessed": null
+  },
+  {
+   "id": "practice:options-check-off:e556496c56f5a602",
+   "kind": "practice",
+   "ref": "options-check-off",
+   "where": {
+    "path": "P2.cbl",
+    "line": 1,
+    "program": "P2",
+    "item": "subscript"
+   },
+   "detail": "P2: the subscript check is off: subscript needs SSRANGE, and no level this gate can read sets it: declare the estate's defaults as compilerOptions in cobolwork.site.json",
+   "sev": "low",
+   "evidence": "context",
+   "verdict": null,
+   "remediation": {
+    "text": "Turn the option on for the program: SSRANGE for subscripts and reference modification, NUMCHECK(ABD) for numeric data, PARMCHECK(ABD) for argument lengths",
+    "steps": [
+     "Add the option to the estate's compile procedure, or to a CBL card at the top of the program",
+     "Record the estate's defaults as compilerOptions in cobolwork.site.json so the check can see them",
+     "Run the program's tests: a check that now abends shows where the program used storage it did not own"
+    ],
+    "fixAt": null,
+    "gate": null
+   },
+   "compliance": [],
+   "source": "cobolwork",
+   "witnessed": null
+  },
+  {
+   "id": "practice:options-undeclared:32cd522fc0ca5265",
+   "kind": "practice",
+   "ref": "options-undeclared",
+   "where": {
+    "path": "P1.cbl",
+    "line": 1,
+    "program": "P1",
+    "item": null
+   },
+   "detail": "P1 has no CBL or PROCESS card, no compile step in the tree names it, and cobolwork.site.json declares no compilerOptions, so it compiles on whatever the installation's defaults are",
+   "sev": "info",
+   "evidence": "context",
+   "verdict": null,
+   "remediation": {
+    "text": "Declare the estate's compiler defaults as compilerOptions in cobolwork.site.json, or put the options the program depends on on a CBL card",
+    "steps": [
+     "Take the options from the compile procedure the estate uses, or from a compile listing's options section",
+     "Write them as compilerOptions in cobolwork.site.json"
+    ],
+    "fixAt": null,
+    "gate": null
+   },
+   "compliance": [],
+   "source": "cobolwork",
+   "witnessed": null
+  },
+  {
+   "id": "practice:options-undeclared:840c4c088e1f64f4",
+   "kind": "practice",
+   "ref": "options-undeclared",
+   "where": {
+    "path": "P2.cbl",
+    "line": 1,
+    "program": "P2",
+    "item": null
+   },
+   "detail": "P2 has no CBL or PROCESS card, no compile step in the tree names it, and cobolwork.site.json declares no compilerOptions, so it compiles on whatever the installation's defaults are",
+   "sev": "info",
+   "evidence": "context",
+   "verdict": null,
+   "remediation": {
+    "text": "Declare the estate's compiler defaults as compilerOptions in cobolwork.site.json, or put the options the program depends on on a CBL card",
+    "steps": [
+     "Take the options from the compile procedure the estate uses, or from a compile listing's options section",
+     "Write them as compilerOptions in cobolwork.site.json"
+    ],
+    "fixAt": null,
+    "gate": null
+   },
+   "compliance": [],
+   "source": "cobolwork",
+   "witnessed": null
+  }
+ ],
+ "summary": {
+  "items": 7,
+  "byKind": {
+   "finding": 1,
+   "practice": 6
+  },
+  "bySev": {
+   "crit": 1,
+   "info": 2,
+   "low": 4
+  },
+  "byVerdict": {
+   "attacker-driven": 1
+  },
+  "byProgram": {
+   "P1": 3,
+   "P2": 4
+  },
+  "byFramework": {
+   "cobit-2019": 1,
+   "dora": 1,
+   "ffiec": 1,
+   "nist-800-53r5": 1
+  },
+  "suppressed": 0,
+  "coverageIncomplete": false,
+  "ordered": [
+   "finding:argv-or-env-to-os-command:45e55b502c397a499cc29212c0c28329",
+   "practice:options-check-off:52da018e3c0b5c2f",
+   "practice:options-check-off:e2d1ccb2e1eb1d91",
+   "practice:options-check-off:051225712ce456dc",
+   "practice:options-check-off:e556496c56f5a602",
+   "practice:options-undeclared:32cd522fc0ca5265",
+   "practice:options-undeclared:840c4c088e1f64f4"
+  ]
+ },
+ "unmeasured": [
+  "no compiler ran: pass --ironwork <path> to compile every program with ironwork check"
+ ]
+}

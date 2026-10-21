@@ -1,0 +1,121 @@
+<?php
+// commitwork's WordPress taint stub for the sast-php-psalm lane's degraded mode (a tree with no
+// composer autoloader, which is every WordPress plugin, theme or wp-content backup).
+//
+// Public WordPress stubs (php-stubs/wordpress-stubs) declare types and nothing else, so psalm sees
+// $wpdb->query() as an ordinary method and traces no SQL injection through it: measured 2026-10-08
+// on a synthetic plugin, the stubs found exactly what no stubs found. This file adds only what taint
+// analysis needs: the database sinks, the one pass-through every request read goes through, and the
+// escapes. It declares nothing else and is never executed.
+
+class wpdb
+{
+    /** @var string */
+    public $prefix = '';
+
+    /**
+     * @psalm-taint-sink sql $query
+     * @return int|bool
+     */
+    public function query($query) {}
+
+    /**
+     * @psalm-taint-sink sql $query
+     * @return array|object|null
+     */
+    public function get_results($query = null, $output = 'OBJECT') {}
+
+    /**
+     * @psalm-taint-sink sql $query
+     * @return string|null
+     */
+    public function get_var($query = null, $x = 0, $y = 0) {}
+
+    /**
+     * @psalm-taint-sink sql $query
+     * @return array|object|null
+     */
+    public function get_row($query = null, $output = 'OBJECT', $y = 0) {}
+
+    /**
+     * @psalm-taint-sink sql $query
+     * @return array
+     */
+    public function get_col($query = null, $x = 0) {}
+
+    /**
+     * Placeholders are bound by prepare(); a query string built from request input BEFORE prepare()
+     * is still injectable, and psalm cannot tell the two apart, so this escape over-trusts that case.
+     *
+     * @psalm-taint-escape sql
+     * @return string
+     */
+    public function prepare($query, ...$args) {}
+
+    /**
+     * @psalm-taint-escape sql
+     * @return string
+     */
+    public function esc_like($text) {}
+}
+
+/**
+ * @psalm-flow ($value) -> return
+ * @return mixed
+ */
+function wp_unslash($value) {}
+
+/**
+ * @psalm-taint-escape sql
+ * @return mixed
+ */
+function esc_sql($data) {}
+
+/**
+ * @psalm-taint-escape html
+ * @return string
+ */
+function esc_html($text) {}
+
+/**
+ * @psalm-taint-escape html
+ * @return string
+ */
+function esc_attr($text) {}
+
+/**
+ * @psalm-taint-escape html
+ * @return string
+ */
+function esc_url($url, $protocols = null, $_context = 'display') {}
+
+/**
+ * @psalm-taint-escape html
+ * @return string
+ */
+function esc_textarea($text) {}
+
+/**
+ * @psalm-taint-escape html
+ * @return string
+ */
+function sanitize_text_field($str) {}
+
+/**
+ * @psalm-taint-escape html
+ * @return string
+ */
+function wp_kses_post($data) {}
+
+/**
+ * @psalm-taint-escape html
+ * @return string
+ */
+function wp_kses($content, $allowed_html, $allowed_protocols = array()) {}
+
+/**
+ * @psalm-taint-escape sql
+ * @psalm-taint-escape html
+ * @return int
+ */
+function absint($maybeint) {}

@@ -1,0 +1,98 @@
+{
+  "tool": "agent-config",
+  "summary": {
+    "findings": 8,
+    "byRule": {
+      "command-file-shell": 1,
+      "hook-shell-out": 1,
+      "hook-script-content": 1,
+      "permissions-allow-broad": 1,
+      "permissions-deny-missing": 1,
+      "mcp-command-shell": 1,
+      "mcp-remote-server": 2
+    },
+    "filesScanned": 4,
+    "filesExamined": 4,
+    "filesPresent": [
+      ".claude/commands/deploy.md",
+      ".claude/hooks/pre.sh",
+      ".claude/settings.json",
+      ".mcp.json"
+    ],
+    "unparseable": 0,
+    "unparseableFiles": [],
+    "unreadable": 0,
+    "unreadableFiles": [],
+    "skipped": 0,
+    "skippedFiles": [],
+    "unreadableHookScripts": 0,
+    "unreadableHookScriptFiles": [],
+    "void": false
+  },
+  "findings": [
+    {
+      "rule": "command-file-shell",
+      "path": ".claude/commands/deploy.md",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "key": "",
+      "detail": "1 fenced shell block(s), 1 line(s): network fetch to api.example.com; output is piped into a shell"
+    },
+    {
+      "rule": "hook-shell-out",
+      "path": ".claude/hooks/pre.sh",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "key": "",
+      "detail": "script: network fetch to api.example.com; output is piped into a shell"
+    },
+    {
+      "rule": "hook-script-content",
+      "path": ".claude/settings.json",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "key": "PreToolUse:*",
+      "detail": "hook PreToolUse:* runs .claude/hooks/pre.sh: network fetch to api.example.com; output is piped into a shell"
+    },
+    {
+      "rule": "permissions-allow-broad",
+      "path": ".claude/settings.json",
+      "sev": "med",
+      "cwe": "CWE-250",
+      "key": "Bash(*)",
+      "detail": "allow Bash(*): Bash(*) is unbounded"
+    },
+    {
+      "rule": "permissions-deny-missing",
+      "path": ".claude/settings.json",
+      "sev": "low",
+      "cwe": "CWE-250",
+      "key": "permissions.deny",
+      "detail": "1 Bash grant(s) with no permissions.deny entry covering a credential read"
+    },
+    {
+      "rule": "mcp-command-shell",
+      "path": ".mcp.json",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "key": "shelly",
+      "detail": "server shelly: command is bash"
+    },
+    {
+      "rule": "mcp-remote-server",
+      "path": ".mcp.json",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "key": "remote",
+      "detail": "server remote reaches non-loopback host api.example.com"
+    },
+    {
+      "rule": "mcp-remote-server",
+      "path": ".mcp.json",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "key": "shelly",
+      "detail": "server shelly reaches non-loopback host api.example.com"
+    }
+  ]
+}

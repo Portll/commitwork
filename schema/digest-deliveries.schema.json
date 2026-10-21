@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.digest-deliveries/1",
+  "title": "Digest delivery ledger",
+  "description": "reports/digest/deliveries.json, written by bin/digest-deliver.mjs: one row per digest and destination, rewritten atomically after each attempt so a pair already delivered is not posted again. A destination is named by its kind and a hash of its URL; the URL itself is a credential and never appears, and target carries only its scheme and host.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "deliveries"],
+  "properties": {
+    "schema": { "const": "commitwork.digest-deliveries/1" },
+    "deliveries": {
+      "type": "object",
+      "description": "Keyed by '<digestId>|<destination>'.",
+      "propertyNames": { "pattern": "^[0-9a-f]{64}\\|(slack|webhook):[0-9a-f]{16}$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["digestId", "kind", "destination", "target", "state", "status", "reason", "at", "attempts"],
+        "properties": {
+          "digestId": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "kind": { "enum": ["slack", "webhook"] },
+          "destination": { "type": "string", "pattern": "^(slack|webhook):[0-9a-f]{16}$", "description": "The kind and the first 16 hex characters of the sha256 of the URL." },
+          "target": { "type": "string", "description": "scheme://host/… of the URL, or '(unparseable URL)'." },
+          "state": { "enum": ["delivered", "failed"] },
+          "status": { "type": ["integer", "null"], "description": "The HTTP status; null when no response arrived or the URL was refused before sending." },
+          "reason": { "type": ["string", "null"], "description": "Why the attempt failed, with the URL scrubbed; null when delivered." },
+          "at": { "type": "string", "description": "When this attempt ended, ISO 8601 (CW_NOW honoured)." },
+          "attempts": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

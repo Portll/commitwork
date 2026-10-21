@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.pattern-scan/1",
+  "title": "Pattern-scan run record",
+  "description": "The record bin/pattern-scan.mjs --json prints: which failure-taxonomy classes its detectors could reach, what each detector ran over, and each observation with its adjudication. buildRunRecord() in bin/lib/pattern-core.mjs builds it, and the CLI adds reach.withheld and baselineProvenance, so a record built by buildRunRecord() alone lacks those two. This schema fixes the record, each detector entry and each observation. An observation's extra and a denominator's further fields (ofWalked, basis) are per-detector detail and are not frozen here. An observation's identity excludes its line; lines are advisory.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generatedAt", "tree", "taxonomy", "bindings", "reach", "detectors", "counts", "observations"],
+  "properties": {
+    "schema": { "const": "commitwork.pattern-scan/1" },
+    "generatedAt": { "type": "string", "minLength": 1, "description": "ISO 8601; CW_NOW when set." },
+    "tree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "head", "dirty"],
+      "properties": {
+        "root": { "type": "string", "description": "The scanned root, relative to the commitwork checkout ('.' for itself)." },
+        "head": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "dirty": { "type": "boolean" }
+      }
+    },
+    "taxonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "sourceSha256"],
+      "properties": {
+        "version": { "type": ["integer", "string"] },
+        "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "detectors"],
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Digest of the detector-bindings file the run read." },
+        "detectors": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "reach": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classesTotal", "scanned", "coverage", "statement", "notInThisVersion"],
+      "properties": {
+        "classesTotal": { "type": "integer", "minimum": 0 },
+        "scanned": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Class ids at least one detector ran for." },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["complete", "partial", "unspecified", "unscanned"],
+          "properties": {
+            "complete": { "type": "integer", "minimum": 0 },
+            "partial": { "type": "integer", "minimum": 0 },
+            "unspecified": { "type": "integer", "minimum": 0 },
+            "unscanned": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "statement": { "type": "string", "minLength": 1, "description": "How many classes were not scanned, stated so a short result list is not read as clean." },
+        "notInThisVersion": { "type": "array", "items": { "type": "string" } },
+        "withheld": { "type": "array", "items": { "type": "object" }, "description": "Detectors the bindings file withholds, with why." }
+      }
+    },
+    "detectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "classId", "substrate", "status", "covers", "denominator"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "version": { "type": "integer", "minimum": 1 },
+          "classId": { "type": "string", "minLength": 1 },
+          "substrate": { "enum": ["SRC", "HIST", "ART"] },
+          "status": { "enum": ["ran", "failed", "not-applicable"] },
+          "error": { "type": "string", "description": "Why a failed detector failed; its class is undetermined, not clean." },
+          "reason": { "type": "string", "description": "Why a detector was not applicable." },
+          "covers": { "type": "string" },
+          "complete": { "type": "boolean", "description": "From the bindings file; absent where the binding does not state it." },
+          "denominator": {
+            "type": ["object", "null"],
+            "required": ["unit", "scanned", "skipped"],
+            "description": "What the detector ran over; null when it did not run.",
+            "properties": {
+              "unit": { "type": "string" },
+              "scanned": { "type": "integer", "minimum": 0 },
+              "skipped": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": { "path": { "type": "string" }, "reason": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finding", "undetermined", "accepted", "baseline"],
+      "properties": {
+        "finding": { "type": "integer", "minimum": 0 },
+        "undetermined": { "type": "integer", "minimum": 0 },
+        "accepted": { "type": "integer", "minimum": 0 },
+        "baseline": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["identity", "detector", "classId", "place", "evidence", "confidence", "occurrences", "lines", "adjudication", "adjudicatedBy", "basis"],
+        "properties": {
+          "identity": { "type": "string", "pattern": "^.+::.+::.+$", "description": "path::scope::classId. Never the line." },
+          "detector": { "type": "string", "pattern": "^[a-z0-9-]+@[0-9]+$" },
+          "classId": { "type": "string", "minLength": 1 },
+          "place": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "scope", "line", "lineIsAdvisory"],
+            "properties": {
+              "path": { "type": "string" },
+              "scope": { "type": "string" },
+              "line": { "type": ["integer", "null"] },
+              "lineIsAdvisory": { "const": true }
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["predicate", "snippet", "redacted", "redactor"],
+            "properties": {
+              "predicate": { "type": "string" },
+              "snippet": { "type": "string", "description": "Redacted at construction: high-entropy runs are replaced." },
+              "redacted": { "type": "integer", "minimum": 0, "description": "How many runs were redacted; 0 means none needed it, not that redaction was skipped." },
+              "redactor": { "type": ["string", "null"] }
+            }
+          },
+          "confidence": { "enum": ["structural", "heuristic", "inferred"] },
+          "extra": { "type": "object" },
+          "occurrences": { "type": "integer", "minimum": 1 },
+          "lines": { "type": "array", "items": { "type": "integer" } },
+          "adjudication": { "enum": ["finding", "undetermined", "accepted", "baseline"] },
+          "adjudicatedBy": { "type": ["string", "null"] },
+          "basis": { "type": ["string", "null"] },
+          "class": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["name", "layer", "gain", "closure"],
+            "properties": {
+              "name": { "type": "string" },
+              "layer": { "type": "string" },
+              "gain": { "type": "integer" },
+              "closure": { "type": "integer" }
+            }
+          },
+          "priority": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "baselineProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seededAgainst", "current", "stale", "identities"],
+      "description": "Whether the baseline was seeded against the detector bindings this run read.",
+      "properties": {
+        "seededAgainst": { "type": ["string", "null"] },
+        "current": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "stale": { "type": "boolean" },
+        "identities": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

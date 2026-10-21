@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/detector-basis.schema.json",
+  "title": "Detector basis",
+  "description": "monitor/detector-basis.json: the failure-mode class of each analyst, keyed on the id the corroboration joins use. loadBasisMap in monitor/detector-basis.mjs also refuses a detector naming a class `classes` does not declare and a class named `unclassified`, which this schema cannot express.",
+  "type": "object",
+  "required": ["version", "note", "classes", "detectors"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "note": { "type": "string" },
+    "classes": {
+      "type": "object",
+      "description": "Class id to the method and data source it names; a closed vocabulary.",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "detectors": {
+      "type": "object",
+      "description": "Analyst id (a rollup finding's tool, or a scannerFindings category) to the class it belongs to.",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    }
+  }
+}

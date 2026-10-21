@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scan run table",
+  "description": "scan.json in a commitwork scan run directory: one row per scanned repository and one cell per check, exactly as cmdScan in bin/commitwork.mjs classified them, so a brief can be rebuilt from the directory later (commitwork brief --from). This schema fixes the envelope, the row and the fields a cell shares. A cell carries further detail depending on how its lane ended (blocked, timedOut and so on); those fields are not frozen here, so further properties are allowed on a cell. Each lane's threat model is stored once under boundaries and referenced from its cells; the model is bin/lib/isolation.mjs's and only its version and state are fixed here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "baseline", "repos"],
+  "properties": {
+    "version": { "const": 1 },
+    "baseline": { "type": "string", "minLength": 1, "description": "The manifest's repo field: which check set ran." },
+    "boundaries": {
+      "type": "object",
+      "description": "Present when any cell carries a threat model. Keyed by the sha256 of the model's JSON.",
+      "propertyNames": { "pattern": "^sha256:[0-9a-f]{64}$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["schemaVersion", "state"],
+        "properties": {
+          "schemaVersion": { "type": "integer", "minimum": 1 },
+          "state": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "slug", "cells"],
+        "properties": {
+          "repo": { "type": "string", "minLength": 1, "description": "The scanned repository's path." },
+          "slug": { "type": "string", "minLength": 1, "description": "Its directory name in the run, unique within the run." },
+          "cells": {
+            "type": "object",
+            "description": "Keyed by check id.",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["sev"],
+              "properties": {
+                "sev": {
+                  "enum": ["high", "med", "low", "warn", "ok", "noscan", "skip"],
+                  "description": "ok is the only clean value. noscan is a lane that did not produce a usable result, which is neither a pass nor a finding; skip is a lane that did not apply."
+                },
+                "summary": { "type": "string" },
+                "blocked": { "type": "boolean" },
+                "blockedReason": { "type": "string" },
+                "coverage": { "enum": ["full", "reduced", "unknown"] },
+                "coverageReason": { "type": ["string", "null"] },
+                "isolation": { "type": "string" },
+                "isolationReason": { "type": "string" },
+                "timedOut": { "type": "boolean" },
+                "boundary": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["ref", "state", "findingSource"],
+                  "properties": {
+                    "ref": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "A key of boundaries." },
+                    "state": { "type": "string", "minLength": 1 },
+                    "findingSource": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

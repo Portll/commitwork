@@ -1,0 +1,4485 @@
+{
+ "tool": "cobolwork",
+ "schemaVersion": 3,
+ "summary": {
+  "findings": 3,
+  "byRule": {
+   "jcl-instream-credential": 1,
+   "jcl-parm-is-an-entry-point": 1,
+   "program-without-entry": 1
+  },
+  "bySeverity": {
+   "crit": 1,
+   "info": 2
+  },
+  "byEvidence": {
+   "construct": 1,
+   "context": 2
+  },
+  "filesScanned": 3,
+  "bySet": {
+   "inventory": {
+    "filesScanned": 2,
+    "filesUnreadable": 0
+   },
+   "flow": {
+    "filesScanned": 2,
+    "filesUnreadable": 0
+   },
+   "cics": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "hidden": {
+    "filesScanned": 3,
+    "filesUnreadable": 0
+   },
+   "copybook": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "jcl": {
+    "filesScanned": 1,
+    "filesUnreadable": 0
+   },
+   "build": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "recon": {
+    "filesScanned": 3,
+    "filesUnreadable": 0
+   },
+   "vendor": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "opaque": {
+    "filesScanned": 2,
+    "filesUnreadable": 0
+   },
+   "web": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "compile": {
+    "filesScanned": 2,
+    "filesUnreadable": 0
+   },
+   "priv": {
+    "filesScanned": 1,
+    "filesUnreadable": 0
+   },
+   "log": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "semantics": {
+    "filesScanned": 2,
+    "filesUnreadable": 0
+   },
+   "zowe": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   }
+  },
+  "programs": 2,
+  "programFiles": 2,
+  "copybookFiles": 0,
+  "jclFiles": 1,
+  "copiesMissing": 0,
+  "filesUnreadable": 0,
+  "cicsPrograms": 0,
+  "advisoryCoverage": {
+   "gnucobol": "complete at the retrieval date: 6 of 6 results NVD returned for the keyword",
+   "ibm-enterprise-cobol": "none found. No CVE in NVD and no IBM security bulletin names the compiler itself as of 2026-09-20. An absence of published advisories is not an absence of defects",
+   "opentext-cobol": "searched 2026-09-20 via NVD CPE microfocus:visual_cobol. 2 advisories, both against the Enterprise Server family (Visual COBOL, COBOL Server, Enterprise Developer, Enterprise Server, Enterprise Test Server) which share a version line. Vendor advisories behind an OpenText support account were not read, so this is NVD's view rather than OpenText's",
+   "cics-ts": "searched 2026-09-20 via NVD CPE ibm:cics_transaction_server. 1 advisory, from 2014. A single result for a product this size is more likely to mean IBM reports through its own bulletins than that the product has one defect",
+   "db2-zos": "searched 2026-09-20. No CVE names the Db2 for z/OS engine itself. The five results mentioning z/OS name adjacent products - DB2 Content Manager, Guardium S-TAP, DB2 Tools - and one names Db2 for Linux, UNIX and Windows. Absence of a published advisory is not absence of a defect",
+   "cics-transaction-gateway": "searched 2026-09-23 via NVD CPE ibm:cics_transaction_gateway. 4 advisories, all loaded. The gateway runs off the mainframe, so unlike CICS TS its defects are published",
+   "zowe": "searched 2026-09-23 via OSV for @zowe/cli, @zowe/imperative and @zowe/zos-files-for-zowe-sdk, because Zowe CVEs carry no CPE data and an NVD CPE sweep finds none of them. 2 advisories, both loaded from their NVD records; source.foundVia names the package that found each. An OSV row with no CVE identifier cannot be loaded, because the gate resolves every row against NVD",
+   "db2-connect": "searched 2026-09-23 via NVD CPE ibm:db2_connect. 17 advisories found and none loaded: they are matched to the Db2 Connect product family, and NVD does not say whether one reaches the JDBC driver a repository actually pins. diag/sweep-advisories.mjs prints them for an estate that knows what it runs",
+   "ibm-mq": "searched 2026-09-23 via NVD CPE ibm:mq. 48 advisories found and none loaded, for the same reason as db2-connect: the client jar carries the queue manager version, and the record does not separate them",
+   "che4z": "searched 2026-09-23 via OSV for @broadcom/cobol-language-support. None found"
+  },
+  "crossProgram": 0,
+  "byTransaction": {},
+  "byJob": {},
+  "ruleSets": [
+   "flow",
+   "cics",
+   "hidden",
+   "copybook",
+   "jcl",
+   "build",
+   "recon",
+   "vendor",
+   "opaque",
+   "web",
+   "compile",
+   "priv",
+   "log",
+   "semantics",
+   "zowe"
+  ],
+  "flowModel": "byte-range",
+  "toolVersion": "0.2.140",
+  "identity": {
+   "version": "cobolwork/v1",
+   "shared": 0
+  },
+  "filesEbcdic": 0,
+  "nosrc": false,
+  "filesOverBudget": 0,
+  "coverageIncomplete": false,
+  "setsIncomplete": [
+   {
+    "set": "recon",
+    "kind": "configuration",
+    "why": "no cobolwork.site.json: the production-name and production-dataset rules did not run, because nothing declares what production means in this estate"
+   },
+   {
+    "set": "priv",
+    "kind": "configuration",
+    "why": "1 STEPLIB or JOBLIB statement(s) load programs and no apfLibraries are declared, so that check was not judged: name them in cobolwork.site.json"
+   }
+  ],
+  "toolRevision": {
+   "commit": "54c9654b8c13bc22c8d5683b02551362d95f0d0a",
+   "dirty": false,
+   "tag": "v0.2.140",
+   "from": "release"
+  },
+  "revision": {
+   "commit": "ed36f8eab5a66ef0a4718bb11e7cf593fe100e08",
+   "dirty": false
+  }
+ },
+ "inventory": {
+  "formats": {
+   "free": 1,
+   "fixed": 1
+  },
+  "missingCopybooks": {},
+  "unreadable": [],
+  "refusedCopies": [],
+  "ebcdic": [],
+  "symlinks": {
+   "followed": 0,
+   "outside": 0,
+   "broken": 0
+  },
+  "dirsUnreadable": 0
+ },
+ "findings": [
+  {
+   "rule": "jcl-instream-credential",
+   "path": "jcl/MAINJOB.jcl",
+   "line": 5,
+   "step": "STEP1",
+   "detail": "in-stream data sets PASSWORD in SYSIN, in a file anyone who can read the repository can read",
+   "sev": "crit",
+   "cwe": "CWE-798",
+   "evidence": "construct",
+   "fingerprint": "7fa7be81ca2791f4a56bcbb59059e6c8"
+  },
+  {
+   "rule": "jcl-parm-is-an-entry-point",
+   "path": "jcl/MAINJOB.jcl",
+   "line": 2,
+   "step": "STEP1",
+   "detail": "step STEP1 passes PARM= to MAINPROG, whose source is in this tree, so the flow rules treat that parameter as untrusted",
+   "sev": "info",
+   "cwe": "CWE-20",
+   "evidence": "context",
+   "fingerprint": "061c46cb16867d40317aa2ea07a68f87"
+  },
+  {
+   "rule": "program-without-entry",
+   "path": "src/DBACCESS.cbl",
+   "line": 1,
+   "program": "DBACCESS",
+   "detail": "nothing in this tree starts DBACCESS: no transaction the CSD defines runs it, no job step runs it, and no program calls, links or transfers to it or spells its name",
+   "sev": "info",
+   "cwe": null,
+   "evidence": "context",
+   "fingerprint": "494d558dd866544f4ec652f5aae7b13e"
+  }
+ ],
+ "ruleText": {
+  "argv-or-env-to-os-command": "Command-line or environment input reaches an operating-system command routine",
+  "cics-terminal-to-os-command": "Terminal input reaches an operating-system command routine",
+  "cics-web-to-os-command": "Web input reaches an operating-system command routine",
+  "file-record-to-os-command": "A file record reaches an operating-system command routine",
+  "database-to-os-command": "A database value reaches an operating-system command routine",
+  "argv-or-env-to-dynamic-sql": "Command-line or environment input reaches dynamic SQL",
+  "cics-terminal-to-dynamic-sql": "Terminal input reaches dynamic SQL",
+  "cics-web-to-dynamic-sql": "Web input reaches dynamic SQL",
+  "file-record-to-dynamic-sql": "A file record reaches dynamic SQL",
+  "database-to-dynamic-sql": "A database value reaches dynamic SQL",
+  "argv-or-env-to-cics-dynamic-transfer": "Command-line or environment input decides which program CICS transfers to",
+  "cics-terminal-to-cics-dynamic-transfer": "Terminal input decides which program CICS transfers to",
+  "cics-web-to-cics-dynamic-transfer": "Web input decides which program CICS transfers to",
+  "file-record-to-cics-dynamic-transfer": "A file record decides which program CICS transfers to",
+  "database-to-cics-dynamic-transfer": "A database value decides which program CICS transfers to",
+  "argv-or-env-to-dynamic-program-load": "Command-line or environment input decides which program is called",
+  "cics-terminal-to-dynamic-program-load": "Terminal input decides which program is called",
+  "cics-web-to-dynamic-program-load": "Web input decides which program is called",
+  "file-record-to-dynamic-program-load": "A file record decides which program is called",
+  "database-to-dynamic-program-load": "A database value decides which program is called",
+  "argv-or-env-to-dynamic-file-path": "Command-line or environment input decides which file is opened",
+  "cics-terminal-to-dynamic-file-path": "Terminal input decides which file is opened",
+  "cics-web-to-dynamic-file-path": "Web input decides which file is opened",
+  "file-record-to-dynamic-file-path": "A file record decides which file is opened",
+  "database-to-dynamic-file-path": "A database value decides which file is opened",
+  "jcl-parm-to-os-command": "A JCL PARM reaches an operating-system command routine",
+  "jcl-parm-to-dynamic-sql": "A JCL PARM reaches dynamic SQL",
+  "jcl-parm-to-cics-dynamic-transfer": "A JCL PARM decides which program CICS transfers to",
+  "jcl-parm-to-dynamic-program-load": "A JCL PARM decides which program is called",
+  "jcl-parm-to-dynamic-file-path": "A JCL PARM decides which file is opened",
+  "jcl-instream-to-os-command": "In-stream job data reaches an operating-system command routine",
+  "jcl-instream-to-dynamic-sql": "In-stream job data reaches dynamic SQL",
+  "jcl-instream-to-cics-dynamic-transfer": "In-stream job data decides which program CICS transfers to",
+  "jcl-instream-to-dynamic-program-load": "In-stream job data decides which program is called",
+  "jcl-instream-to-dynamic-file-path": "In-stream job data decides which file is opened",
+  "argv-or-env-to-internal-reader": "Command-line or environment input is written into a job the internal reader submits",
+  "cics-terminal-to-internal-reader": "Terminal input is written into a job the internal reader submits",
+  "cics-web-to-internal-reader": "Web input is written into a job the internal reader submits",
+  "file-record-to-internal-reader": "A file record is written into a job the internal reader submits",
+  "database-to-internal-reader": "A database value is written into a job the internal reader submits",
+  "jcl-parm-to-internal-reader": "A JCL PARM is written into a job the internal reader submits",
+  "jcl-instream-to-internal-reader": "In-stream job data is written into a job the internal reader submits",
+  "cics-web-to-web-response": "Web input is written into the response this program returns",
+  "cics-terminal-to-web-response": "Terminal input is written into the response this program returns",
+  "file-record-to-web-response": "A file record is written into the response this program returns",
+  "database-to-web-response": "A database value is written into the response this program returns",
+  "cics-web-to-http-header": "Web input is written into a header of the response",
+  "cics-terminal-to-http-header": "Terminal input is written into a header of the response",
+  "file-record-to-http-header": "A file record is written into a header of the response",
+  "database-to-http-header": "A database value is written into a header of the response",
+  "cics-web-to-outbound-host": "Web input decides the host or path this program sends a request to",
+  "cics-terminal-to-outbound-host": "Terminal input decides the host or path this program sends a request to",
+  "file-record-to-outbound-host": "A file record decides the host or path this program sends a request to",
+  "database-to-outbound-host": "A database value decides the host or path this program sends a request to",
+  "cics-web-to-queue-name": "Web input names the queue a command reads, writes or deletes",
+  "cics-terminal-to-queue-name": "Terminal input names the queue a command reads, writes or deletes",
+  "file-record-to-queue-name": "A file record names the queue a command reads, writes or deletes",
+  "database-to-queue-name": "A database value names the queue a command reads, writes or deletes",
+  "argv-or-env-to-subscript": "Command-line or environment input is used as a subscript",
+  "cics-terminal-to-subscript": "Terminal input is used as a subscript",
+  "cics-web-to-subscript": "Web input is used as a subscript",
+  "jcl-parm-to-subscript": "A JCL PARM is used as a subscript",
+  "jcl-instream-to-subscript": "In-stream job data is used as a subscript",
+  "argv-or-env-to-reference-modification": "Command-line or environment input decides where a reference modification starts or how long it is",
+  "cics-terminal-to-reference-modification": "Terminal input decides where a reference modification starts or how long it is",
+  "cics-web-to-reference-modification": "Web input decides where a reference modification starts or how long it is",
+  "jcl-parm-to-reference-modification": "A JCL PARM decides where a reference modification starts or how long it is",
+  "jcl-instream-to-reference-modification": "In-stream job data decides where a reference modification starts or how long it is",
+  "argv-or-env-to-occurs-depending-count": "Command-line or environment input decides how many entries an OCCURS DEPENDING ON table holds",
+  "cics-terminal-to-occurs-depending-count": "Terminal input decides how many entries an OCCURS DEPENDING ON table holds",
+  "cics-web-to-occurs-depending-count": "Web input decides how many entries an OCCURS DEPENDING ON table holds",
+  "jcl-parm-to-occurs-depending-count": "A JCL PARM decides how many entries an OCCURS DEPENDING ON table holds",
+  "jcl-instream-to-occurs-depending-count": "In-stream job data decides how many entries an OCCURS DEPENDING ON table holds",
+  "argv-or-env-to-loop-bound": "Command-line or environment input decides how far a loop that subscripts a table runs",
+  "cics-terminal-to-loop-bound": "Terminal input decides how far a loop that subscripts a table runs",
+  "cics-web-to-loop-bound": "Web input decides how far a loop that subscripts a table runs",
+  "jcl-parm-to-loop-bound": "A JCL PARM decides how far a loop that subscripts a table runs",
+  "jcl-instream-to-loop-bound": "In-stream job data decides how far a loop that subscripts a table runs",
+  "cics-terminal-to-arithmetic": "Terminal input reaches arithmetic on a decimal field, where bytes that are not digits abend the program",
+  "cics-terminal-to-log": "Terminal input is written to a log unchecked, where control characters in it can start a line the program did not write",
+  "cics-web-to-log": "Web request data is written to a log unchecked, where control characters in it can start a line the program did not write",
+  "cics-terminal-to-storage-length": "Terminal input decides how much storage the program acquires",
+  "cics-web-to-storage-length": "Web input decides how much storage the program acquires",
+  "argv-or-env-to-storage-length": "Command-line or environment input decides how much storage the program acquires",
+  "jcl-parm-to-storage-length": "A JCL PARM decides how much storage the program acquires",
+  "jcl-instream-to-storage-length": "In-stream job data decides how much storage the program acquires",
+  "cics-terminal-to-connection-target": "Terminal input names the database or queue manager the program connects to",
+  "cics-web-to-connection-target": "Web input names the database or queue manager the program connects to",
+  "argv-or-env-to-connection-target": "Command-line or environment input names the database or queue manager the program connects to",
+  "jcl-parm-to-connection-target": "A JCL PARM names the database or queue manager the program connects to",
+  "jcl-instream-to-connection-target": "In-stream job data names the database or queue manager the program connects to",
+  "cics-terminal-to-cics-sysid": "Terminal input decides which region a CICS command is shipped to",
+  "cics-web-to-cics-sysid": "Web input decides which region a CICS command is shipped to",
+  "file-record-to-cics-sysid": "A file record decides which region a CICS command is shipped to",
+  "database-to-cics-sysid": "A database value decides which region a CICS command is shipped to",
+  "cics-terminal-to-cics-system-resource": "Terminal input names the resource an EXEC CICS SET changes",
+  "cics-web-to-cics-system-resource": "Web input names the resource an EXEC CICS SET changes",
+  "file-record-to-cics-system-resource": "A file record names the resource an EXEC CICS SET changes",
+  "database-to-cics-system-resource": "A database value names the resource an EXEC CICS SET changes",
+  "cics-web-to-xml-document": "Web input is parsed as an XML document",
+  "cics-terminal-to-xml-document": "Terminal input is parsed as an XML document",
+  "system-response-to-web-response": "A response code or SQL error the system set is sent in a web response",
+  "system-response-to-http-header": "A response code or SQL error the system set is sent in a response header",
+  "system-response-to-screen": "Db2's error message text is shown on the terminal",
+  "cics-protected-field-to-record-key": "A field the map protects, which a modified 3270 client can change, decides which record the program reads or browses from",
+  "cics-protected-field-to-record-update": "A field the map protects, which a modified 3270 client can change, decides which record the program changes or deletes",
+  "cics-web-to-arithmetic": "Web input reaches arithmetic on a decimal field, where bytes that are not digits abend the program",
+  "argv-or-env-to-arithmetic": "Command-line or environment input reaches arithmetic on a decimal field, where bytes that are not digits abend the program",
+  "jcl-parm-to-arithmetic": "A JCL PARM reaches arithmetic on a decimal field, where bytes that are not digits abend the program",
+  "jcl-instream-to-arithmetic": "In-stream job data reaches arithmetic on a decimal field, where bytes that are not digits abend the program",
+  "database-to-outbound-http": "A database value is sent to a remote server over HTTP",
+  "file-record-to-outbound-http": "A file record is sent to a remote server over HTTP",
+  "database-to-socket-send": "A database value is written to a network socket",
+  "file-record-to-socket-send": "A file record is written to a network socket",
+  "database-to-message-queue": "A database value is put on a message queue",
+  "database-to-extrapartition-queue": "A database value is written to a transient-data queue that leaves the region",
+  "file-record-to-extrapartition-queue": "A file record is written to a transient-data queue that leaves the region",
+  "file-record-to-message-queue": "A file record is put on a message queue",
+  "call-parameter-exceeds-caller-record": "A called program declares a parameter longer than the whole record its caller passes",
+  "call-parameter-exceeds-argument": "A called program declares a parameter longer than the field its caller passes, reaching into the fields beside it",
+  "program-without-entry": "Nothing in this tree starts this program: no transaction, job step or program reaches it",
+  "program-checks-stored-password": "A program compares a password it reads back from its own file or table",
+  "password-case-folded-before-compare": "A sign-on folds a password's case before comparing it",
+  "cics-condition-ignored": "A program issues CICS commands whose failure it cannot see: NOHANDLE with no RESP, or IGNORE CONDITION",
+  "cics-commarea-without-length-check": "A program reads its communication area without checking EIBCALEN",
+  "cics-transfer-to-variable-program": "CICS transfers control to a program named by a variable",
+  "cics-commarea-length-exceeds-area": "A CICS call passes a length longer than the area it passes",
+  "cics-commarea-length-exceeds-callee": "A CICS call passes a length longer than the callee declares",
+  "cics-signon-says-which-half-failed": "A sign-on answers a bad user and a bad password differently",
+  "cics-signon-bypassed": "A route reaches the program a sign-on grants without passing the password check",
+  "hidden-payload-in-identification-area": "Columns 73 to 80, which the compiler ignores, carry a payload rather than a change tag",
+  "hidden-payload-in-sequence-area": "The sequence area carries varying text rather than line numbers or a change tag",
+  "agent-directive-in-comment": "A comment tells its reader to ignore instructions, or to fetch and run something",
+  "encoded-blob": "A long encoded run sits in a comment or literal",
+  "bidi-or-invisible-characters": "Characters that reorder or hide text appear in the source",
+  "copybook-shadows-system": "A copybook in the repository has the name of a system copybook, and is found before it",
+  "copybook-shadowed": "Two copybooks with different contents answer to the same name, and programs resolve it to different files",
+  "jcl-instream-credential": "A password or pass phrase is set in in-stream job data",
+  "jcl-instream-security-command": "In-stream job data issues security product commands that grant or alter authority",
+  "jcl-instream-destructive": "In-stream job data deletes or overwrites a catalogued dataset",
+  "jcl-dlm-hides-instream": "In-stream data uses a non-default delimiter, so it does not end where a line-by-line reader expects",
+  "jcl-parm-is-an-entry-point": "A step passes PARM= to a program in this tree, which the flow rules follow as an untrusted source",
+  "jcl-exec-pgm-unresolved": "A step runs a program that is neither a system utility nor defined by any source in this tree",
+  "jcl-ftp-cleartext": "A step runs FTP with no TLS option on its PARM or in its in-stream configuration, so its logon and data cross the network in cleartext",
+  "jcl-ftp-sends-production-dataset": "A step sends a dataset the estate calls production off the system by FTP",
+  "control-cards-from-dataset": "A utility step reads the commands it runs from a cataloged data set, so what it runs is not in the reviewed JCL",
+  "sort-exit-named": "A DFSORT or ICETOOL step names an exit routine on a MODS statement, a load module the sort loads and runs",
+  "tso-batch-runs-program": "A TSO batch step runs another program, CLIST, REXX exec or job from its in-stream commands",
+  "build-pins-vulnerable-compiler": "The build pins a compiler version with a published advisory against it",
+  "build-pins-exploited-compiler": "The build pins a compiler version with a vulnerability CISA lists as known to be exploited",
+  "site-declares-vulnerable-runtime": "The estate declares a runtime version with a published advisory against it",
+  "build-pins-vulnerable-component": "The build pins a component version with a published advisory against it",
+  "build-pins-exploited-component": "The build pins a component version with a vulnerability CISA lists as known to be exploited",
+  "recon-production-name-outside-production": "A name this estate calls production appears in a file that is not a production job",
+  "recon-routable-address-committed": "A routable network address is written into source",
+  "recon-nonproduction-job-writes-production-dataset": "A job the estate calls non-production creates, extends, overwrites or deletes a production dataset",
+  "recon-nonproduction-job-reads-production-dataset": "A job the estate calls non-production reads a production dataset",
+  "vendor-privileged-command": "A job issues a vendor product command that creates, grants or alters authority",
+  "opaque-pointer-addressing": "A program addresses storage through a pointer, so data flow through it is not followed",
+  "opaque-altered-control-flow": "A program changes where a GO TO goes at run time, so its control flow is not followed",
+  "opaque-procedure-pointer": "A program calls through a procedure pointer, so the callee is not known statically",
+  "opaque-alternate-entry": "A program declares an alternate entry point, which the flow rules do not start from",
+  "web-cookie-without-secure-attributes": "A program sets a cookie without the attributes that keep it off a cleartext hop",
+  "web-response-without-protective-headers": "A program sends HTML without the headers that say who may frame or reinterpret it",
+  "web-response-tells-the-caller-what-it-runs": "A program writes a header naming the software behind it",
+  "web-uri-carries-a-credential": "A program puts a credential in a URI rather than in the request body",
+  "web-request-changes-state-without-a-token": "A program changes state on a web request without comparing anything the browser could not forge",
+  "cics-listener-accepts-cleartext": "A CICS listener accepts connections without TLS",
+  "web-link-opens-without-noopener": "A program writes a link that opens a new window with a handle back to this one",
+  "compile-undefined-name": "A program uses names that nothing it declares or copies defines, so it cannot compile",
+  "csd-defines-diagnostic-transaction": "A definition in this repository installs one of the CICS diagnostic transactions",
+  "csd-transaction-without-command-security": "A transaction whose program issues system commands runs without command security",
+  "job-writes-diagnostic-output-unrestricted": "A job writes a dump, trace, log or unload to a dataset the estate has not called restricted",
+  "job-reaches-unix-system-services": "A job runs a shell through UNIX System Services",
+  "job-runs-under-another-user": "A job names the user it runs as",
+  "job-unloads-the-security-database": "A job unloads the security database",
+  "job-loads-from-an-authorised-library": "A job loads from a library the estate calls authorised",
+  "log-writes-a-credential": "A program writes a field named as a credential into a log",
+  "log-writes-personal-data": "A program writes a field named as personal data into a log",
+  "display-echoes-a-credential": "A program displays a credential back to the terminal or HTTP request that supplied it",
+  "binary-store-exceeds-picture-under-trunc-opt": "Under TRUNC(OPT) a binary field receives a value that can have more digits than its PICTURE",
+  "intermediate-result-loses-high-order-digits": "A COMPUTE has an intermediate result wider than the compiler carries, so high-order digits can be lost",
+  "character-range-reverses-in-ascii": "A range of characters is in order in EBCDIC and reversed in ASCII, or the other way round, so it holds values in one and none in the other",
+  "zowe-config-secret-in-clear": "A Zowe team configuration holds a password or token in the file rather than in the credential vault",
+  "zowe-config-tls-verify-off": "A Zowe profile turns off TLS certificate verification",
+  "zowe-config-cleartext": "A Zowe profile for z/OSMF, API ML or RSE connects over plain HTTP",
+  "zowe-mcp-password-in-config": "An MCP client configuration sets a Zowe MCP password, credential map or key passphrase to a literal value",
+  "zowe-mcp-tier-writes": "A Zowe MCP server runs at a capability tier that lets the agent change or delete mainframe data",
+  "zowe-mcp-tier-full": "A Zowe MCP server runs at the full capability tier",
+  "zowe-mcp-data-marking-off": "A Zowe MCP server has its untrusted-data marking turned off",
+  "zowe-mcp-unpinned": "A Zowe MCP server is launched from the registry with no pinned version",
+  "zowe-mock-credentials": "A Zowe MCP mock systems.json holds a password"
+ },
+ "ruleCwe": {
+  "argv-or-env-to-os-command": "CWE-78",
+  "cics-terminal-to-os-command": "CWE-78",
+  "cics-web-to-os-command": "CWE-78",
+  "file-record-to-os-command": "CWE-78",
+  "database-to-os-command": "CWE-78",
+  "argv-or-env-to-dynamic-sql": "CWE-89",
+  "cics-terminal-to-dynamic-sql": "CWE-89",
+  "cics-web-to-dynamic-sql": "CWE-89",
+  "file-record-to-dynamic-sql": "CWE-89",
+  "database-to-dynamic-sql": "CWE-89",
+  "argv-or-env-to-cics-dynamic-transfer": "CWE-470",
+  "cics-terminal-to-cics-dynamic-transfer": "CWE-470",
+  "cics-web-to-cics-dynamic-transfer": "CWE-470",
+  "file-record-to-cics-dynamic-transfer": "CWE-470",
+  "database-to-cics-dynamic-transfer": "CWE-470",
+  "argv-or-env-to-dynamic-program-load": "CWE-470",
+  "cics-terminal-to-dynamic-program-load": "CWE-470",
+  "cics-web-to-dynamic-program-load": "CWE-470",
+  "file-record-to-dynamic-program-load": "CWE-470",
+  "database-to-dynamic-program-load": "CWE-470",
+  "argv-or-env-to-dynamic-file-path": "CWE-73",
+  "cics-terminal-to-dynamic-file-path": "CWE-73",
+  "cics-web-to-dynamic-file-path": "CWE-73",
+  "file-record-to-dynamic-file-path": "CWE-73",
+  "database-to-dynamic-file-path": "CWE-73",
+  "jcl-parm-to-os-command": "CWE-78",
+  "jcl-parm-to-dynamic-sql": "CWE-89",
+  "jcl-parm-to-cics-dynamic-transfer": "CWE-470",
+  "jcl-parm-to-dynamic-program-load": "CWE-470",
+  "jcl-parm-to-dynamic-file-path": "CWE-73",
+  "jcl-instream-to-os-command": "CWE-78",
+  "jcl-instream-to-dynamic-sql": "CWE-89",
+  "jcl-instream-to-cics-dynamic-transfer": "CWE-470",
+  "jcl-instream-to-dynamic-program-load": "CWE-470",
+  "jcl-instream-to-dynamic-file-path": "CWE-73",
+  "argv-or-env-to-internal-reader": "CWE-77",
+  "cics-terminal-to-internal-reader": "CWE-77",
+  "cics-web-to-internal-reader": "CWE-77",
+  "file-record-to-internal-reader": "CWE-77",
+  "database-to-internal-reader": "CWE-77",
+  "jcl-parm-to-internal-reader": "CWE-77",
+  "jcl-instream-to-internal-reader": "CWE-77",
+  "cics-web-to-web-response": "CWE-79",
+  "cics-terminal-to-web-response": "CWE-79",
+  "file-record-to-web-response": "CWE-79",
+  "database-to-web-response": "CWE-79",
+  "cics-web-to-http-header": "CWE-113",
+  "cics-terminal-to-http-header": "CWE-113",
+  "file-record-to-http-header": "CWE-113",
+  "database-to-http-header": "CWE-113",
+  "cics-web-to-outbound-host": "CWE-918",
+  "cics-terminal-to-outbound-host": "CWE-918",
+  "file-record-to-outbound-host": "CWE-918",
+  "database-to-outbound-host": "CWE-918",
+  "cics-web-to-queue-name": "CWE-99",
+  "cics-terminal-to-queue-name": "CWE-99",
+  "file-record-to-queue-name": "CWE-99",
+  "database-to-queue-name": "CWE-99",
+  "argv-or-env-to-subscript": "CWE-129",
+  "cics-terminal-to-subscript": "CWE-129",
+  "cics-web-to-subscript": "CWE-129",
+  "jcl-parm-to-subscript": "CWE-129",
+  "jcl-instream-to-subscript": "CWE-129",
+  "argv-or-env-to-reference-modification": "CWE-1285",
+  "cics-terminal-to-reference-modification": "CWE-1285",
+  "cics-web-to-reference-modification": "CWE-1285",
+  "jcl-parm-to-reference-modification": "CWE-1285",
+  "jcl-instream-to-reference-modification": "CWE-1285",
+  "argv-or-env-to-occurs-depending-count": "CWE-1284",
+  "cics-terminal-to-occurs-depending-count": "CWE-1284",
+  "cics-web-to-occurs-depending-count": "CWE-1284",
+  "jcl-parm-to-occurs-depending-count": "CWE-1284",
+  "jcl-instream-to-occurs-depending-count": "CWE-1284",
+  "argv-or-env-to-loop-bound": "CWE-129",
+  "cics-terminal-to-loop-bound": "CWE-129",
+  "cics-web-to-loop-bound": "CWE-129",
+  "jcl-parm-to-loop-bound": "CWE-129",
+  "jcl-instream-to-loop-bound": "CWE-129",
+  "cics-terminal-to-arithmetic": "CWE-1287",
+  "cics-terminal-to-log": "CWE-117",
+  "cics-web-to-log": "CWE-117",
+  "cics-terminal-to-storage-length": "CWE-770",
+  "cics-web-to-storage-length": "CWE-770",
+  "argv-or-env-to-storage-length": "CWE-770",
+  "jcl-parm-to-storage-length": "CWE-770",
+  "jcl-instream-to-storage-length": "CWE-770",
+  "cics-terminal-to-connection-target": "CWE-99",
+  "cics-web-to-connection-target": "CWE-99",
+  "argv-or-env-to-connection-target": "CWE-99",
+  "jcl-parm-to-connection-target": "CWE-99",
+  "jcl-instream-to-connection-target": "CWE-99",
+  "cics-terminal-to-cics-sysid": "CWE-15",
+  "cics-web-to-cics-sysid": "CWE-15",
+  "file-record-to-cics-sysid": "CWE-15",
+  "database-to-cics-sysid": "CWE-15",
+  "cics-terminal-to-cics-system-resource": "CWE-15",
+  "cics-web-to-cics-system-resource": "CWE-15",
+  "file-record-to-cics-system-resource": "CWE-15",
+  "database-to-cics-system-resource": "CWE-15",
+  "cics-web-to-xml-document": "CWE-611",
+  "cics-terminal-to-xml-document": "CWE-611",
+  "system-response-to-web-response": "CWE-209",
+  "system-response-to-http-header": "CWE-209",
+  "system-response-to-screen": "CWE-209",
+  "cics-protected-field-to-record-key": "CWE-639",
+  "cics-protected-field-to-record-update": "CWE-639",
+  "cics-web-to-arithmetic": "CWE-1287",
+  "argv-or-env-to-arithmetic": "CWE-1287",
+  "jcl-parm-to-arithmetic": "CWE-1287",
+  "jcl-instream-to-arithmetic": "CWE-1287",
+  "database-to-outbound-http": "CWE-201",
+  "file-record-to-outbound-http": "CWE-201",
+  "database-to-socket-send": "CWE-201",
+  "file-record-to-socket-send": "CWE-201",
+  "database-to-message-queue": "CWE-201",
+  "database-to-extrapartition-queue": "CWE-201",
+  "file-record-to-extrapartition-queue": "CWE-201",
+  "file-record-to-message-queue": "CWE-201",
+  "call-parameter-exceeds-caller-record": "CWE-805",
+  "call-parameter-exceeds-argument": "CWE-628",
+  "program-checks-stored-password": "CWE-256",
+  "password-case-folded-before-compare": "CWE-178",
+  "cics-condition-ignored": "CWE-252",
+  "cics-commarea-without-length-check": "CWE-1284",
+  "cics-transfer-to-variable-program": "CWE-470",
+  "cics-commarea-length-exceeds-area": "CWE-805",
+  "cics-commarea-length-exceeds-callee": "CWE-805",
+  "cics-signon-says-which-half-failed": "CWE-204",
+  "cics-signon-bypassed": "CWE-288",
+  "hidden-payload-in-identification-area": "CWE-1427",
+  "hidden-payload-in-sequence-area": "CWE-1427",
+  "agent-directive-in-comment": "CWE-1427",
+  "encoded-blob": "CWE-506",
+  "bidi-or-invisible-characters": "CWE-94",
+  "copybook-shadows-system": "CWE-427",
+  "copybook-shadowed": "CWE-427",
+  "jcl-instream-credential": "CWE-798",
+  "jcl-instream-security-command": "CWE-284",
+  "jcl-instream-destructive": "CWE-284",
+  "jcl-dlm-hides-instream": "CWE-1427",
+  "jcl-parm-is-an-entry-point": "CWE-20",
+  "jcl-ftp-cleartext": "CWE-319",
+  "jcl-ftp-sends-production-dataset": "CWE-201",
+  "control-cards-from-dataset": "CWE-829",
+  "sort-exit-named": "CWE-829",
+  "tso-batch-runs-program": "CWE-78",
+  "build-pins-vulnerable-compiler": "CWE-1395",
+  "build-pins-exploited-compiler": "CWE-1395",
+  "site-declares-vulnerable-runtime": "CWE-1395",
+  "build-pins-vulnerable-component": "CWE-1395",
+  "build-pins-exploited-component": "CWE-1395",
+  "recon-production-name-outside-production": "CWE-497",
+  "recon-routable-address-committed": "CWE-497",
+  "recon-nonproduction-job-writes-production-dataset": "CWE-653",
+  "recon-nonproduction-job-reads-production-dataset": "CWE-653",
+  "vendor-privileged-command": "CWE-284",
+  "opaque-pointer-addressing": "CWE-119",
+  "opaque-altered-control-flow": "CWE-691",
+  "opaque-procedure-pointer": "CWE-470",
+  "opaque-alternate-entry": "CWE-1419",
+  "web-cookie-without-secure-attributes": "CWE-1004",
+  "web-response-without-protective-headers": "CWE-1021",
+  "web-response-tells-the-caller-what-it-runs": "CWE-200",
+  "web-uri-carries-a-credential": "CWE-598",
+  "web-request-changes-state-without-a-token": "CWE-352",
+  "cics-listener-accepts-cleartext": "CWE-319",
+  "web-link-opens-without-noopener": "CWE-1022",
+  "compile-undefined-name": "CWE-1127",
+  "csd-defines-diagnostic-transaction": "CWE-250",
+  "csd-transaction-without-command-security": "CWE-862",
+  "job-writes-diagnostic-output-unrestricted": "CWE-532",
+  "job-reaches-unix-system-services": "CWE-250",
+  "job-runs-under-another-user": "CWE-269",
+  "job-unloads-the-security-database": "CWE-522",
+  "job-loads-from-an-authorised-library": "CWE-250",
+  "log-writes-a-credential": "CWE-532",
+  "log-writes-personal-data": "CWE-532",
+  "display-echoes-a-credential": "CWE-200",
+  "binary-store-exceeds-picture-under-trunc-opt": "CWE-758",
+  "intermediate-result-loses-high-order-digits": "CWE-197",
+  "character-range-reverses-in-ascii": "CWE-474",
+  "zowe-config-secret-in-clear": "CWE-256",
+  "zowe-config-tls-verify-off": "CWE-295",
+  "zowe-config-cleartext": "CWE-319",
+  "zowe-mcp-password-in-config": "CWE-798",
+  "zowe-mcp-tier-writes": "CWE-250",
+  "zowe-mcp-tier-full": "CWE-250",
+  "zowe-mcp-data-marking-off": "CWE-1427",
+  "zowe-mcp-unpinned": "CWE-829",
+  "zowe-mock-credentials": "CWE-798"
+ },
+ "ruleEvidence": {
+  "argv-or-env-to-os-command": "path",
+  "cics-terminal-to-os-command": "path",
+  "cics-web-to-os-command": "path",
+  "file-record-to-os-command": "path",
+  "database-to-os-command": "path",
+  "argv-or-env-to-dynamic-sql": "path",
+  "cics-terminal-to-dynamic-sql": "path",
+  "cics-web-to-dynamic-sql": "path",
+  "file-record-to-dynamic-sql": "path",
+  "database-to-dynamic-sql": "path",
+  "argv-or-env-to-cics-dynamic-transfer": "path",
+  "cics-terminal-to-cics-dynamic-transfer": "path",
+  "cics-web-to-cics-dynamic-transfer": "path",
+  "file-record-to-cics-dynamic-transfer": "path",
+  "database-to-cics-dynamic-transfer": "path",
+  "argv-or-env-to-dynamic-program-load": "path",
+  "cics-terminal-to-dynamic-program-load": "path",
+  "cics-web-to-dynamic-program-load": "path",
+  "file-record-to-dynamic-program-load": "path",
+  "database-to-dynamic-program-load": "path",
+  "argv-or-env-to-dynamic-file-path": "path",
+  "cics-terminal-to-dynamic-file-path": "path",
+  "cics-web-to-dynamic-file-path": "path",
+  "file-record-to-dynamic-file-path": "path",
+  "database-to-dynamic-file-path": "path",
+  "jcl-parm-to-os-command": "path",
+  "jcl-parm-to-dynamic-sql": "path",
+  "jcl-parm-to-cics-dynamic-transfer": "path",
+  "jcl-parm-to-dynamic-program-load": "path",
+  "jcl-parm-to-dynamic-file-path": "path",
+  "jcl-instream-to-os-command": "path",
+  "jcl-instream-to-dynamic-sql": "path",
+  "jcl-instream-to-cics-dynamic-transfer": "path",
+  "jcl-instream-to-dynamic-program-load": "path",
+  "jcl-instream-to-dynamic-file-path": "path",
+  "argv-or-env-to-internal-reader": "path",
+  "cics-terminal-to-internal-reader": "path",
+  "cics-web-to-internal-reader": "path",
+  "file-record-to-internal-reader": "path",
+  "database-to-internal-reader": "path",
+  "jcl-parm-to-internal-reader": "path",
+  "jcl-instream-to-internal-reader": "path",
+  "cics-web-to-web-response": "path",
+  "cics-terminal-to-web-response": "path",
+  "file-record-to-web-response": "path",
+  "database-to-web-response": "path",
+  "cics-web-to-http-header": "path",
+  "cics-terminal-to-http-header": "path",
+  "file-record-to-http-header": "path",
+  "database-to-http-header": "path",
+  "cics-web-to-outbound-host": "path",
+  "cics-terminal-to-outbound-host": "path",
+  "file-record-to-outbound-host": "path",
+  "database-to-outbound-host": "path",
+  "cics-web-to-queue-name": "path",
+  "cics-terminal-to-queue-name": "path",
+  "file-record-to-queue-name": "path",
+  "database-to-queue-name": "path",
+  "argv-or-env-to-subscript": "path",
+  "cics-terminal-to-subscript": "path",
+  "cics-web-to-subscript": "path",
+  "jcl-parm-to-subscript": "path",
+  "jcl-instream-to-subscript": "path",
+  "argv-or-env-to-reference-modification": "path",
+  "cics-terminal-to-reference-modification": "path",
+  "cics-web-to-reference-modification": "path",
+  "jcl-parm-to-reference-modification": "path",
+  "jcl-instream-to-reference-modification": "path",
+  "argv-or-env-to-occurs-depending-count": "path",
+  "cics-terminal-to-occurs-depending-count": "path",
+  "cics-web-to-occurs-depending-count": "path",
+  "jcl-parm-to-occurs-depending-count": "path",
+  "jcl-instream-to-occurs-depending-count": "path",
+  "argv-or-env-to-loop-bound": "path",
+  "cics-terminal-to-loop-bound": "path",
+  "cics-web-to-loop-bound": "path",
+  "jcl-parm-to-loop-bound": "path",
+  "jcl-instream-to-loop-bound": "path",
+  "cics-terminal-to-arithmetic": "path",
+  "cics-terminal-to-log": "path",
+  "cics-web-to-log": "path",
+  "cics-terminal-to-storage-length": "path",
+  "cics-web-to-storage-length": "path",
+  "argv-or-env-to-storage-length": "path",
+  "jcl-parm-to-storage-length": "path",
+  "jcl-instream-to-storage-length": "path",
+  "cics-terminal-to-connection-target": "path",
+  "cics-web-to-connection-target": "path",
+  "argv-or-env-to-connection-target": "path",
+  "jcl-parm-to-connection-target": "path",
+  "jcl-instream-to-connection-target": "path",
+  "cics-terminal-to-cics-sysid": "path",
+  "cics-web-to-cics-sysid": "path",
+  "file-record-to-cics-sysid": "path",
+  "database-to-cics-sysid": "path",
+  "cics-terminal-to-cics-system-resource": "path",
+  "cics-web-to-cics-system-resource": "path",
+  "file-record-to-cics-system-resource": "path",
+  "database-to-cics-system-resource": "path",
+  "cics-web-to-xml-document": "path",
+  "cics-terminal-to-xml-document": "path",
+  "system-response-to-web-response": "path",
+  "system-response-to-http-header": "path",
+  "system-response-to-screen": "path",
+  "cics-protected-field-to-record-key": "path",
+  "cics-protected-field-to-record-update": "path",
+  "cics-web-to-arithmetic": "path",
+  "argv-or-env-to-arithmetic": "path",
+  "jcl-parm-to-arithmetic": "path",
+  "jcl-instream-to-arithmetic": "path",
+  "database-to-outbound-http": "path",
+  "file-record-to-outbound-http": "path",
+  "database-to-socket-send": "path",
+  "file-record-to-socket-send": "path",
+  "database-to-message-queue": "path",
+  "database-to-extrapartition-queue": "path",
+  "file-record-to-extrapartition-queue": "path",
+  "file-record-to-message-queue": "path",
+  "call-parameter-exceeds-caller-record": "construct",
+  "call-parameter-exceeds-argument": "construct",
+  "program-without-entry": "context",
+  "program-checks-stored-password": "construct",
+  "password-case-folded-before-compare": "construct",
+  "cics-condition-ignored": "construct",
+  "cics-commarea-without-length-check": "construct",
+  "cics-transfer-to-variable-program": "construct",
+  "cics-commarea-length-exceeds-area": "construct",
+  "cics-commarea-length-exceeds-callee": "construct",
+  "cics-signon-says-which-half-failed": "construct",
+  "cics-signon-bypassed": "construct",
+  "hidden-payload-in-identification-area": "tampering",
+  "hidden-payload-in-sequence-area": "tampering",
+  "agent-directive-in-comment": "tampering",
+  "encoded-blob": "tampering",
+  "bidi-or-invisible-characters": "tampering",
+  "copybook-shadows-system": "tampering",
+  "copybook-shadowed": "tampering",
+  "jcl-instream-credential": "construct",
+  "jcl-instream-security-command": "construct",
+  "jcl-instream-destructive": "construct",
+  "jcl-dlm-hides-instream": "tampering",
+  "jcl-parm-is-an-entry-point": "context",
+  "jcl-exec-pgm-unresolved": "coverage",
+  "jcl-ftp-cleartext": "construct",
+  "jcl-ftp-sends-production-dataset": "construct",
+  "control-cards-from-dataset": "construct",
+  "sort-exit-named": "construct",
+  "tso-batch-runs-program": "construct",
+  "build-pins-vulnerable-compiler": "advisory",
+  "build-pins-exploited-compiler": "advisory",
+  "site-declares-vulnerable-runtime": "advisory",
+  "build-pins-vulnerable-component": "advisory",
+  "build-pins-exploited-component": "advisory",
+  "recon-production-name-outside-production": "exposure",
+  "recon-routable-address-committed": "exposure",
+  "recon-nonproduction-job-writes-production-dataset": "construct",
+  "recon-nonproduction-job-reads-production-dataset": "construct",
+  "vendor-privileged-command": "construct",
+  "opaque-pointer-addressing": "coverage",
+  "opaque-altered-control-flow": "coverage",
+  "opaque-procedure-pointer": "coverage",
+  "opaque-alternate-entry": "coverage",
+  "web-cookie-without-secure-attributes": "construct",
+  "web-response-without-protective-headers": "construct",
+  "web-response-tells-the-caller-what-it-runs": "construct",
+  "web-uri-carries-a-credential": "construct",
+  "web-request-changes-state-without-a-token": "advisory",
+  "cics-listener-accepts-cleartext": "construct",
+  "web-link-opens-without-noopener": "construct",
+  "compile-undefined-name": "construct",
+  "csd-defines-diagnostic-transaction": "construct",
+  "csd-transaction-without-command-security": "construct",
+  "job-writes-diagnostic-output-unrestricted": "context",
+  "job-reaches-unix-system-services": "context",
+  "job-runs-under-another-user": "context",
+  "job-unloads-the-security-database": "context",
+  "job-loads-from-an-authorised-library": "construct",
+  "log-writes-a-credential": "construct",
+  "log-writes-personal-data": "construct",
+  "display-echoes-a-credential": "construct",
+  "binary-store-exceeds-picture-under-trunc-opt": "construct",
+  "intermediate-result-loses-high-order-digits": "construct",
+  "character-range-reverses-in-ascii": "construct",
+  "zowe-config-secret-in-clear": "construct",
+  "zowe-config-tls-verify-off": "construct",
+  "zowe-config-cleartext": "construct",
+  "zowe-mcp-password-in-config": "construct",
+  "zowe-mcp-tier-writes": "construct",
+  "zowe-mcp-tier-full": "construct",
+  "zowe-mcp-data-marking-off": "construct",
+  "zowe-mcp-unpinned": "construct",
+  "zowe-mock-credentials": "construct"
+ },
+ "ruleImpact": {
+  "argv-or-env-to-os-command": "Whoever sets the program's command line or environment runs an arbitrary operating-system command with the program's authority",
+  "cics-terminal-to-os-command": "A terminal user runs an arbitrary operating-system command with the program's authority",
+  "cics-web-to-os-command": "A web caller runs an arbitrary operating-system command with the program's authority",
+  "file-record-to-os-command": "Whoever can write the file record runs an arbitrary operating-system command with the program's authority",
+  "database-to-os-command": "Whoever can write the database row runs an arbitrary operating-system command with the program's authority",
+  "argv-or-env-to-dynamic-sql": "Whoever sets the program's command line or environment changes the meaning of the SQL statement",
+  "cics-terminal-to-dynamic-sql": "A terminal user changes the meaning of the SQL statement",
+  "cics-web-to-dynamic-sql": "A web caller changes the meaning of the SQL statement",
+  "file-record-to-dynamic-sql": "Whoever can write the file record changes the meaning of the SQL statement",
+  "database-to-dynamic-sql": "Whoever can write the database row changes the meaning of the SQL statement",
+  "argv-or-env-to-cics-dynamic-transfer": "Whoever sets the program's command line or environment chooses which program the region transfers to",
+  "cics-terminal-to-cics-dynamic-transfer": "A terminal user chooses which program the region transfers to",
+  "cics-web-to-cics-dynamic-transfer": "A web caller chooses which program the region transfers to",
+  "file-record-to-cics-dynamic-transfer": "Whoever can write the file record chooses which program the region transfers to",
+  "database-to-cics-dynamic-transfer": "Whoever can write the database row chooses which program the region transfers to",
+  "argv-or-env-to-dynamic-program-load": "Whoever sets the program's command line or environment chooses which program is called",
+  "cics-terminal-to-dynamic-program-load": "A terminal user chooses which program is called",
+  "cics-web-to-dynamic-program-load": "A web caller chooses which program is called",
+  "file-record-to-dynamic-program-load": "Whoever can write the file record chooses which program is called",
+  "database-to-dynamic-program-load": "Whoever can write the database row chooses which program is called",
+  "argv-or-env-to-dynamic-file-path": "Whoever sets the program's command line or environment chooses which dataset the program opens",
+  "cics-terminal-to-dynamic-file-path": "A terminal user chooses which dataset the program opens",
+  "cics-web-to-dynamic-file-path": "A web caller chooses which dataset the program opens",
+  "file-record-to-dynamic-file-path": "Whoever can write the file record chooses which dataset the program opens",
+  "database-to-dynamic-file-path": "Whoever can write the database row chooses which dataset the program opens",
+  "jcl-parm-to-os-command": "Whoever can edit the job's PARM runs an arbitrary operating-system command with the program's authority",
+  "jcl-parm-to-dynamic-sql": "Whoever can edit the job's PARM changes the meaning of the SQL statement",
+  "jcl-parm-to-cics-dynamic-transfer": "Whoever can edit the job's PARM chooses which program the region transfers to",
+  "jcl-parm-to-dynamic-program-load": "Whoever can edit the job's PARM chooses which program is called",
+  "jcl-parm-to-dynamic-file-path": "Whoever can edit the job's PARM chooses which dataset the program opens",
+  "jcl-instream-to-os-command": "Whoever can edit the job's in-stream data runs an arbitrary operating-system command with the program's authority",
+  "jcl-instream-to-dynamic-sql": "Whoever can edit the job's in-stream data changes the meaning of the SQL statement",
+  "jcl-instream-to-cics-dynamic-transfer": "Whoever can edit the job's in-stream data chooses which program the region transfers to",
+  "jcl-instream-to-dynamic-program-load": "Whoever can edit the job's in-stream data chooses which program is called",
+  "jcl-instream-to-dynamic-file-path": "Whoever can edit the job's in-stream data chooses which dataset the program opens",
+  "argv-or-env-to-internal-reader": "Whoever sets the program's command line or environment submits an arbitrary job, for a CICS program under the region's authority",
+  "cics-terminal-to-internal-reader": "A terminal user submits an arbitrary job, for a CICS program under the region's authority",
+  "cics-web-to-internal-reader": "A web caller submits an arbitrary job, for a CICS program under the region's authority",
+  "file-record-to-internal-reader": "Whoever can write the file record submits an arbitrary job, for a CICS program under the region's authority",
+  "database-to-internal-reader": "Whoever can write the database row submits an arbitrary job, for a CICS program under the region's authority",
+  "jcl-parm-to-internal-reader": "Whoever can edit the job's PARM submits an arbitrary job, for a CICS program under the region's authority",
+  "jcl-instream-to-internal-reader": "Whoever can edit the job's in-stream data submits an arbitrary job, for a CICS program under the region's authority",
+  "cics-web-to-web-response": "A web caller places chosen markup or script in the response this program returns",
+  "cics-terminal-to-web-response": "A terminal user places chosen markup or script in the response this program returns",
+  "file-record-to-web-response": "Whoever can write the file record places chosen markup or script in the response this program returns",
+  "database-to-web-response": "Whoever can write the database row places chosen markup or script in the response this program returns",
+  "cics-web-to-http-header": "A web caller injects header content, splitting or forging the response header",
+  "cics-terminal-to-http-header": "A terminal user injects header content, splitting or forging the response header",
+  "file-record-to-http-header": "Whoever can write the file record injects header content, splitting or forging the response header",
+  "database-to-http-header": "Whoever can write the database row injects header content, splitting or forging the response header",
+  "cics-web-to-outbound-host": "A web caller sends data at rest to a host the program connects to",
+  "cics-terminal-to-outbound-host": "A terminal user sends data at rest to a host the program connects to",
+  "file-record-to-outbound-host": "Whoever can write the file record sends data at rest to a host the program connects to",
+  "database-to-outbound-host": "Whoever can write the database row sends data at rest to a host the program connects to",
+  "cics-web-to-queue-name": "A web caller chooses the queue the message is sent to",
+  "cics-terminal-to-queue-name": "A terminal user chooses the queue the message is sent to",
+  "file-record-to-queue-name": "Whoever can write the file record chooses the queue the message is sent to",
+  "database-to-queue-name": "Whoever can write the database row chooses the queue the message is sent to",
+  "argv-or-env-to-subscript": "Whoever sets the program's command line or environment indexes a table past its bound into adjacent storage, or abends with SSRANGE",
+  "cics-terminal-to-subscript": "A terminal user indexes a table past its bound into adjacent storage, or abends with SSRANGE",
+  "cics-web-to-subscript": "A web caller indexes a table past its bound into adjacent storage, or abends with SSRANGE",
+  "jcl-parm-to-subscript": "Whoever can edit the job's PARM indexes a table past its bound into adjacent storage, or abends with SSRANGE",
+  "jcl-instream-to-subscript": "Whoever can edit the job's in-stream data indexes a table past its bound into adjacent storage, or abends with SSRANGE",
+  "argv-or-env-to-reference-modification": "Whoever sets the program's command line or environment sets a reference-modification start or length past the field into adjacent storage",
+  "cics-terminal-to-reference-modification": "A terminal user sets a reference-modification start or length past the field into adjacent storage",
+  "cics-web-to-reference-modification": "A web caller sets a reference-modification start or length past the field into adjacent storage",
+  "jcl-parm-to-reference-modification": "Whoever can edit the job's PARM sets a reference-modification start or length past the field into adjacent storage",
+  "jcl-instream-to-reference-modification": "Whoever can edit the job's in-stream data sets a reference-modification start or length past the field into adjacent storage",
+  "argv-or-env-to-occurs-depending-count": "Whoever sets the program's command line or environment sets an OCCURS DEPENDING ON count outside its declared range",
+  "cics-terminal-to-occurs-depending-count": "A terminal user sets an OCCURS DEPENDING ON count outside its declared range",
+  "cics-web-to-occurs-depending-count": "A web caller sets an OCCURS DEPENDING ON count outside its declared range",
+  "jcl-parm-to-occurs-depending-count": "Whoever can edit the job's PARM sets an OCCURS DEPENDING ON count outside its declared range",
+  "jcl-instream-to-occurs-depending-count": "Whoever can edit the job's in-stream data sets an OCCURS DEPENDING ON count outside its declared range",
+  "argv-or-env-to-loop-bound": "Whoever sets the program's command line or environment drives a loop past the table it subscripts",
+  "cics-terminal-to-loop-bound": "A terminal user drives a loop past the table it subscripts",
+  "cics-web-to-loop-bound": "A web caller drives a loop past the table it subscripts",
+  "jcl-parm-to-loop-bound": "Whoever can edit the job's PARM drives a loop past the table it subscripts",
+  "jcl-instream-to-loop-bound": "Whoever can edit the job's in-stream data drives a loop past the table it subscripts",
+  "cics-terminal-to-arithmetic": "A terminal user puts non-numeric data into a numeric field, abending the transaction (S0C7, ASRA in CICS)",
+  "cics-terminal-to-log": "A terminal user forges log lines with CR/LF, or writes a credential-shaped value to a log",
+  "cics-web-to-log": "A web caller forges log lines with CR/LF, or writes a credential-shaped value to a log",
+  "cics-terminal-to-storage-length": "A terminal user chooses how much storage the program acquires, so a large enough value fails the request or uses up storage it shares",
+  "cics-web-to-storage-length": "A web caller chooses how much storage the program acquires, so a large enough value fails the request or uses up storage it shares",
+  "argv-or-env-to-storage-length": "Whoever sets the program's command line or environment chooses how much storage the program acquires, so a large enough value fails the request or uses up storage it shares",
+  "jcl-parm-to-storage-length": "Whoever can edit the job's PARM chooses how much storage the program acquires, so a large enough value fails the request or uses up storage it shares",
+  "jcl-instream-to-storage-length": "Whoever can edit the job's in-stream data chooses how much storage the program acquires, so a large enough value fails the request or uses up storage it shares",
+  "cics-terminal-to-connection-target": "A terminal user chooses the database or queue manager the program connects to, with the program's own credentials",
+  "cics-web-to-connection-target": "A web caller chooses the database or queue manager the program connects to, with the program's own credentials",
+  "argv-or-env-to-connection-target": "Whoever sets the program's command line or environment chooses the database or queue manager the program connects to, with the program's own credentials",
+  "jcl-parm-to-connection-target": "Whoever can edit the job's PARM chooses the database or queue manager the program connects to, with the program's own credentials",
+  "jcl-instream-to-connection-target": "Whoever can edit the job's in-stream data chooses the database or queue manager the program connects to, with the program's own credentials",
+  "cics-terminal-to-cics-sysid": "A terminal user chooses the region a CICS command is shipped to",
+  "cics-web-to-cics-sysid": "A web caller chooses the region a CICS command is shipped to",
+  "file-record-to-cics-sysid": "Whoever can write the file record chooses the region a CICS command is shipped to",
+  "database-to-cics-sysid": "Whoever can write the database row chooses the region a CICS command is shipped to",
+  "cics-terminal-to-cics-system-resource": "A terminal user chooses the program, transaction, file or queue a system-programming command enables, disables or changes",
+  "cics-web-to-cics-system-resource": "A web caller chooses the program, transaction, file or queue a system-programming command enables, disables or changes",
+  "file-record-to-cics-system-resource": "Whoever can write the file record chooses the program, transaction, file or queue a system-programming command enables, disables or changes",
+  "database-to-cics-system-resource": "Whoever can write the database row chooses the program, transaction, file or queue a system-programming command enables, disables or changes",
+  "cics-web-to-xml-document": "A web caller supplies the document XML PARSE reads, where a DTD it carries can name entities for the parser to fetch or expand, if the parser the program is compiled with honours them",
+  "cics-terminal-to-xml-document": "A terminal user supplies the document XML PARSE reads, where a DTD it carries can name entities for the parser to fetch or expand, if the parser the program is compiled with honours them",
+  "system-response-to-web-response": "A system diagnostic (SQLCODE, RESP) reaches the response, revealing internals to the caller",
+  "system-response-to-http-header": "A system diagnostic (SQLCODE, RESP) reaches the response, revealing internals to the caller",
+  "system-response-to-screen": "A system diagnostic (SQLCODE, RESP) reaches the response, revealing internals to the caller",
+  "cics-protected-field-to-record-key": "A terminal user reads a record chosen by a value a modified 3270 client controls",
+  "cics-protected-field-to-record-update": "A terminal user updates or deletes a record chosen by a value a modified 3270 client controls",
+  "cics-web-to-arithmetic": "A web caller puts non-numeric data into a numeric field, abending the transaction (S0C7, ASRA in CICS)",
+  "argv-or-env-to-arithmetic": "Whoever sets the program's command line or environment puts non-numeric data into a numeric field, abending the transaction (S0C7, ASRA in CICS)",
+  "jcl-parm-to-arithmetic": "Whoever can edit the job's PARM puts non-numeric data into a numeric field, abending the transaction (S0C7, ASRA in CICS)",
+  "jcl-instream-to-arithmetic": "Whoever can edit the job's in-stream data puts non-numeric data into a numeric field, abending the transaction (S0C7, ASRA in CICS)",
+  "database-to-outbound-http": "Whoever can write the database row sends data at rest to a host the program connects to",
+  "file-record-to-outbound-http": "Whoever can write the file record sends data at rest to a host the program connects to",
+  "database-to-socket-send": "Whoever can write the database row sends data at rest over a socket the program opened",
+  "file-record-to-socket-send": "Whoever can write the file record sends data at rest over a socket the program opened",
+  "database-to-message-queue": "Whoever can write the database row sends data at rest onto a message queue",
+  "database-to-extrapartition-queue": "Whoever can write the database row sends data at rest to an extrapartition queue that leaves the region",
+  "file-record-to-extrapartition-queue": "Whoever can write the file record sends data at rest to an extrapartition queue that leaves the region",
+  "file-record-to-message-queue": "Whoever can write the file record sends data at rest onto a message queue",
+  "call-parameter-exceeds-caller-record": "The callee's LINKAGE item is longer than the caller's whole argument, so the callee reads past it into unrelated storage on every call",
+  "call-parameter-exceeds-argument": "The callee's LINKAGE item reaches past the argument into the fields beside it on every call, which is sometimes deliberate",
+  "program-checks-stored-password": "The password is kept where the application reads it, so whoever can read that file or table - a developer, a backup, an unload - holds every user's password, and the program, not the security manager, decides who signs on",
+  "password-case-folded-before-compare": "A password that matches in either case has fewer values to guess, and the program accepts a password its user never typed",
+  "cics-condition-ignored": "A command that fails - a record not found, a queue full, storage not available - returns to the next statement as if it had worked, so the program acts on an area the command never filled",
+  "cics-commarea-without-length-check": "A caller that passes no communication area, or a shorter one than the program reads, makes it read the storage past the area - and a transaction a terminal starts carries none",
+  "cics-transfer-to-variable-program": "Whoever controls the value the program name is read from chooses which program the region runs next",
+  "cics-commarea-length-exceeds-area": "The call reads past the passed area into the storage beside it on every invocation",
+  "cics-commarea-length-exceeds-callee": "The callee reads past what the caller passed, into unrelated storage, on every call",
+  "cics-signon-says-which-half-failed": "The two failures carry different messages, so anyone can try a name and learn from the reply whether it exists - which turns guessing a password on one account into collecting the list of accounts first",
+  "cics-signon-bypassed": "An entry the sign-on screen does not expect - an AID key it does not handle, a missing communication area - reaches the guarded program without the comparison, so it runs without a password",
+  "hidden-payload-in-identification-area": "Text in the columns the compiler ignores is invisible to a casual reader but read by an agent or tool processing the source",
+  "hidden-payload-in-sequence-area": "Text in the sequence-number columns the compiler ignores is invisible to a casual reader but read by an agent or tool",
+  "agent-directive-in-comment": "A comment instructs the agent or tool reading the code to ignore instructions or fetch and run something",
+  "encoded-blob": "A long encoded run hides content from a reader that a tool or agent will decode",
+  "bidi-or-invisible-characters": "Bidirectional or invisible characters make the source read differently to a person than it runs, or than a tool parses",
+  "copybook-shadows-system": "A repository copybook answers to the name of a system copybook (SQLCA, DFHAID, ...), so the search path finds it before the system's own and a program compiles against the wrong layout",
+  "copybook-shadowed": "Two copybooks answer to one name with different layouts, so which one a program gets depends on its search path, not its source",
+  "jcl-instream-credential": "Anyone who can read the repository reads the password, and it logs the job on wherever it is used",
+  "jcl-instream-security-command": "Anyone who can edit the job grants or alters authority when it runs, under the job's authority",
+  "jcl-instream-destructive": "Anyone who can edit the job deletes or overwrites a catalogued dataset when it runs",
+  "jcl-dlm-hides-instream": "A non-default DLM carries the stream past the /* a line-by-line reader stops at, so a reviewer or scanner sees less than what runs",
+  "jcl-ftp-cleartext": "The logon and the data cross the network in cleartext, readable by anyone on the path",
+  "jcl-ftp-sends-production-dataset": "A dataset the estate calls production leaves the system to the FTP partner",
+  "control-cards-from-dataset": "Whoever can update that data set decides what the step runs the next time the job does, with the job's authority",
+  "sort-exit-named": "The exit runs inside the sort with the step's authority and sees every record; whoever can replace that load module runs code in the job",
+  "tso-batch-runs-program": "What the step runs is decided by the commands, not the PGM= the job names, and runs with the job's TSO authority",
+  "build-pins-vulnerable-compiler": "The build compiles every pull request with a compiler version a published advisory affects, so a crafted source file can exploit it in CI",
+  "build-pins-exploited-compiler": "The pinned compiler has a vulnerability CISA lists as known to be exploited, and CI compiles untrusted source with it",
+  "site-declares-vulnerable-runtime": "The estate runs a runtime version a published advisory affects",
+  "build-pins-vulnerable-component": "The build pins a component version a published advisory affects",
+  "build-pins-exploited-component": "The pinned component has a vulnerability CISA lists as known to be exploited",
+  "recon-production-name-outside-production": "A production qualifier or system name appears in a job the estate does not run in production, telling a reader what to aim at",
+  "recon-routable-address-committed": "A routable address written into source tells a reader a real host to reach, and is the first thing someone mapping the estate wants",
+  "recon-nonproduction-job-writes-production-dataset": "A job the estate calls non-production creates, extends, holds or deletes a production dataset, so test-change authority reaches production data",
+  "recon-nonproduction-job-reads-production-dataset": "A job the estate calls non-production reads a production dataset, so production data is exposed to a non-production environment",
+  "vendor-privileged-command": "An in-stream command or step invokes a vendor product's privileged function (ACF2/Top Secret, Control-M, Connect:Direct), so anyone who can edit the job exercises that authority when it runs",
+  "web-cookie-without-secure-attributes": "A cookie is set without Secure/HttpOnly/SameSite, so it can cross the network in cleartext or be read by script",
+  "web-response-without-protective-headers": "An HTML response goes out without Content-Security-Policy, X-Frame-Options or X-Content-Type-Options, leaving the browser's defaults to decide who may frame or script it",
+  "web-response-tells-the-caller-what-it-runs": "The response carries a Server, X-Powered-By or version header, so anyone asking for a page learns which product and level to look up advisories for before trying anything",
+  "web-uri-carries-a-credential": "A query string is written to every proxy log, browser history and Referer header it passes, so the credential outlives the request in places nobody is watching",
+  "web-request-changes-state-without-a-token": "Any page the user visits can make their browser send this request with their credentials attached, and the program will act on it",
+  "cics-listener-accepts-cleartext": "The TCPIPSERVICE takes connections on a port with SSL off, so everything the session carries - the 3270 data stream, a SOAP body, a credential on a sign-on screen - crosses the network in the clear and can be read or changed in flight",
+  "web-link-opens-without-noopener": "A target=_blank link is emitted without rel=noopener, so the opened page can reach back into the opener (reverse tabnabbing)",
+  "compile-undefined-name": "The program uses a name nothing it declares or copies defines, so Enterprise COBOL stops it with IGYPS2121-S: the source in the tree is not the source of anything that runs",
+  "csd-defines-diagnostic-transaction": "This repository installs a CICS diagnostic transaction (CECI, CEMT, CEDA, ...) that runs commands a terminal types rather than a program the estate wrote, so anyone who can reach it drives the region",
+  "csd-transaction-without-command-security": "The transaction's program issues CICS system commands and its definition does not set CMDSEC(YES), so the region checks nobody's authority to issue them",
+  "job-loads-from-an-authorised-library": "The job loads programs from a library the estate names as APF-authorised, so anything written into that library runs with supervisor authority and can bypass every check RACF makes",
+  "log-writes-a-credential": "A field named as a credential is written to a log, where people the record was never for can read it",
+  "log-writes-personal-data": "A field named as personal data is written to a log, exposing it to everyone who can read the log",
+  "display-echoes-a-credential": "A credential shown back to whoever supplied it can be read off the screen and its scrollback, or out of a proxy, cache or browser history that keeps the response",
+  "binary-store-exceeds-picture-under-trunc-opt": "TRUNC(OPT) lets the compiler assume every value fits the PICTURE, so when one does not, whether the field keeps the excess digits or loses them depends on the code generated for that statement and can change with the compiler level or its optimisation",
+  "intermediate-result-loses-high-order-digits": "In ironwork's model of Enterprise COBOL a fixed-point intermediate carries at most 30 digits (31 under ARITH(EXTEND)) and, beyond that, keeps the decimal places the statement needs and drops high-order integer digits without raising SIZE ERROR, so a large enough value computes a wrong result silently",
+  "character-range-reverses-in-ascii": "The same source tests a different set of characters when it is compiled with an ASCII collating sequence - GnuCOBOL, Micro Focus, a migration target - so a test on one platform passes or fails for a reason the source does not show",
+  "zowe-config-secret-in-clear": "Anyone who can read the repository or a copy of it can log on to the mainframe as that user",
+  "zowe-config-tls-verify-off": "Anyone on the network path can present their own certificate and read or change the traffic to the mainframe, logon included",
+  "zowe-config-cleartext": "The logon and the data cross the network in cleartext",
+  "zowe-mcp-password-in-config": "Anyone who can read the configuration can log on to the mainframe as the user the agent acts for",
+  "zowe-mcp-tier-writes": "The agent can write, update or delete data sets and members as the user it logs on as, without a person approving each change",
+  "zowe-mcp-tier-full": "The agent can submit jobs and run commands on the mainframe as the user it logs on as, so text an attacker places where the agent reads it can run work on the system",
+  "zowe-mcp-data-marking-off": "Data read from the mainframe reaches the agent unmarked, so instructions planted in a data set, job output or member are not flagged as data",
+  "zowe-mcp-unpinned": "Whatever version the registry serves next runs with the agent's mainframe credentials",
+  "zowe-mock-credentials": "A password in mock data is often a real one copied in, and anyone who can read the repository has it"
+ },
+ "ruleRemedy": {
+  "argv-or-env-to-os-command": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+  "cics-terminal-to-os-command": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+  "cics-web-to-os-command": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+  "file-record-to-os-command": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+  "database-to-os-command": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+  "argv-or-env-to-dynamic-sql": "Use a static statement with host variables or parameter markers; never concatenate input into EXECUTE IMMEDIATE or PREPARE text",
+  "cics-terminal-to-dynamic-sql": "Use a static statement with host variables or parameter markers; never concatenate input into EXECUTE IMMEDIATE or PREPARE text",
+  "cics-web-to-dynamic-sql": "Use a static statement with host variables or parameter markers; never concatenate input into EXECUTE IMMEDIATE or PREPARE text",
+  "file-record-to-dynamic-sql": "Use a static statement with host variables or parameter markers; never concatenate input into EXECUTE IMMEDIATE or PREPARE text",
+  "database-to-dynamic-sql": "Use a static statement with host variables or parameter markers; never concatenate input into EXECUTE IMMEDIATE or PREPARE text",
+  "argv-or-env-to-cics-dynamic-transfer": "Resolve the program name from a fixed table of literals, never from input, a record or the communication area",
+  "cics-terminal-to-cics-dynamic-transfer": "Resolve the program name from a fixed table of literals, never from input, a record or the communication area",
+  "cics-web-to-cics-dynamic-transfer": "Resolve the program name from a fixed table of literals, never from input, a record or the communication area",
+  "file-record-to-cics-dynamic-transfer": "Resolve the program name from a fixed table of literals, never from input, a record or the communication area",
+  "database-to-cics-dynamic-transfer": "Resolve the program name from a fixed table of literals, never from input, a record or the communication area",
+  "argv-or-env-to-dynamic-program-load": "Resolve the called program name from a fixed table of literals, never from input or a record",
+  "cics-terminal-to-dynamic-program-load": "Resolve the called program name from a fixed table of literals, never from input or a record",
+  "cics-web-to-dynamic-program-load": "Resolve the called program name from a fixed table of literals, never from input or a record",
+  "file-record-to-dynamic-program-load": "Resolve the called program name from a fixed table of literals, never from input or a record",
+  "database-to-dynamic-program-load": "Resolve the called program name from a fixed table of literals, never from input or a record",
+  "argv-or-env-to-dynamic-file-path": "Map input to a fixed set of DDs or dataset names; do not build the ASSIGN or dynamic-allocation name from input",
+  "cics-terminal-to-dynamic-file-path": "Map input to a fixed set of DDs or dataset names; do not build the ASSIGN or dynamic-allocation name from input",
+  "cics-web-to-dynamic-file-path": "Map input to a fixed set of DDs or dataset names; do not build the ASSIGN or dynamic-allocation name from input",
+  "file-record-to-dynamic-file-path": "Map input to a fixed set of DDs or dataset names; do not build the ASSIGN or dynamic-allocation name from input",
+  "database-to-dynamic-file-path": "Map input to a fixed set of DDs or dataset names; do not build the ASSIGN or dynamic-allocation name from input",
+  "jcl-parm-to-os-command": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+  "jcl-parm-to-dynamic-sql": "Use a static statement with host variables or parameter markers; never concatenate input into EXECUTE IMMEDIATE or PREPARE text",
+  "jcl-parm-to-cics-dynamic-transfer": "Resolve the program name from a fixed table of literals, never from input, a record or the communication area",
+  "jcl-parm-to-dynamic-program-load": "Resolve the called program name from a fixed table of literals, never from input or a record",
+  "jcl-parm-to-dynamic-file-path": "Map input to a fixed set of DDs or dataset names; do not build the ASSIGN or dynamic-allocation name from input",
+  "jcl-instream-to-os-command": "Build the command only from fixed literals; never place input in the argument of CALL 'SYSTEM' or BPXWDYN. If it must vary, choose from an allow-list of known commands",
+  "jcl-instream-to-dynamic-sql": "Use a static statement with host variables or parameter markers; never concatenate input into EXECUTE IMMEDIATE or PREPARE text",
+  "jcl-instream-to-cics-dynamic-transfer": "Resolve the program name from a fixed table of literals, never from input, a record or the communication area",
+  "jcl-instream-to-dynamic-program-load": "Resolve the called program name from a fixed table of literals, never from input or a record",
+  "jcl-instream-to-dynamic-file-path": "Map input to a fixed set of DDs or dataset names; do not build the ASSIGN or dynamic-allocation name from input",
+  "argv-or-env-to-internal-reader": "Build submitted JCL from fixed skeletons; keep input out of the job stream, or validate it against a strict allow-list",
+  "cics-terminal-to-internal-reader": "Build submitted JCL from fixed skeletons; keep input out of the job stream, or validate it against a strict allow-list",
+  "cics-web-to-internal-reader": "Build submitted JCL from fixed skeletons; keep input out of the job stream, or validate it against a strict allow-list",
+  "file-record-to-internal-reader": "Build submitted JCL from fixed skeletons; keep input out of the job stream, or validate it against a strict allow-list",
+  "database-to-internal-reader": "Build submitted JCL from fixed skeletons; keep input out of the job stream, or validate it against a strict allow-list",
+  "jcl-parm-to-internal-reader": "Build submitted JCL from fixed skeletons; keep input out of the job stream, or validate it against a strict allow-list",
+  "jcl-instream-to-internal-reader": "Build submitted JCL from fixed skeletons; keep input out of the job stream, or validate it against a strict allow-list",
+  "cics-web-to-web-response": "Encode input for the output context before WEB SEND or SEND TEXT; do not emit it raw",
+  "cics-terminal-to-web-response": "Encode input for the output context before WEB SEND or SEND TEXT; do not emit it raw",
+  "file-record-to-web-response": "Encode input for the output context before WEB SEND or SEND TEXT; do not emit it raw",
+  "database-to-web-response": "Encode input for the output context before WEB SEND or SEND TEXT; do not emit it raw",
+  "cics-web-to-http-header": "Reject CR and LF and validate the value against an allow-list before WRITE HTTPHEADER",
+  "cics-terminal-to-http-header": "Reject CR and LF and validate the value against an allow-list before WRITE HTTPHEADER",
+  "file-record-to-http-header": "Reject CR and LF and validate the value against an allow-list before WRITE HTTPHEADER",
+  "database-to-http-header": "Reject CR and LF and validate the value against an allow-list before WRITE HTTPHEADER",
+  "cics-web-to-outbound-host": "Confirm the destination and the data classification are intended, and restrict who can write the source record",
+  "cics-terminal-to-outbound-host": "Confirm the destination and the data classification are intended, and restrict who can write the source record",
+  "file-record-to-outbound-host": "Confirm the destination and the data classification are intended, and restrict who can write the source record",
+  "database-to-outbound-host": "Confirm the destination and the data classification are intended, and restrict who can write the source record",
+  "cics-web-to-queue-name": "Select the queue from a fixed table, not from input or a record",
+  "cics-terminal-to-queue-name": "Select the queue from a fixed table, not from input or a record",
+  "file-record-to-queue-name": "Select the queue from a fixed table, not from input or a record",
+  "database-to-queue-name": "Select the queue from a fixed table, not from input or a record",
+  "argv-or-env-to-subscript": "Bound-check the value against the table size before using it as a subscript, or compile SSRANGE",
+  "cics-terminal-to-subscript": "Bound-check the value against the table size before using it as a subscript, or compile SSRANGE",
+  "cics-web-to-subscript": "Bound-check the value against the table size before using it as a subscript, or compile SSRANGE",
+  "jcl-parm-to-subscript": "Bound-check the value against the table size before using it as a subscript, or compile SSRANGE",
+  "jcl-instream-to-subscript": "Bound-check the value against the table size before using it as a subscript, or compile SSRANGE",
+  "argv-or-env-to-reference-modification": "Bound-check the offset and length against the field before the reference modification",
+  "cics-terminal-to-reference-modification": "Bound-check the offset and length against the field before the reference modification",
+  "cics-web-to-reference-modification": "Bound-check the offset and length against the field before the reference modification",
+  "jcl-parm-to-reference-modification": "Bound-check the offset and length against the field before the reference modification",
+  "jcl-instream-to-reference-modification": "Bound-check the offset and length against the field before the reference modification",
+  "argv-or-env-to-occurs-depending-count": "Validate the count against the OCCURS bounds before it sizes the table",
+  "cics-terminal-to-occurs-depending-count": "Validate the count against the OCCURS bounds before it sizes the table",
+  "cics-web-to-occurs-depending-count": "Validate the count against the OCCURS bounds before it sizes the table",
+  "jcl-parm-to-occurs-depending-count": "Validate the count against the OCCURS bounds before it sizes the table",
+  "jcl-instream-to-occurs-depending-count": "Validate the count against the OCCURS bounds before it sizes the table",
+  "argv-or-env-to-loop-bound": "Bound the loop counter against the table size, independent of the input",
+  "cics-terminal-to-loop-bound": "Bound the loop counter against the table size, independent of the input",
+  "cics-web-to-loop-bound": "Bound the loop counter against the table size, independent of the input",
+  "jcl-parm-to-loop-bound": "Bound the loop counter against the table size, independent of the input",
+  "jcl-instream-to-loop-bound": "Bound the loop counter against the table size, independent of the input",
+  "cics-terminal-to-arithmetic": "Test the field IS NUMERIC before the arithmetic and reject or default on failure",
+  "cics-terminal-to-log": "Strip control characters before DISPLAY or journal, and keep credential-shaped fields out of logs",
+  "cics-web-to-log": "Strip control characters before DISPLAY or journal, and keep credential-shaped fields out of logs",
+  "cics-terminal-to-storage-length": "Test the length against the most the program means to acquire before GETMAIN or CEEGTST, and refuse anything larger",
+  "cics-web-to-storage-length": "Test the length against the most the program means to acquire before GETMAIN or CEEGTST, and refuse anything larger",
+  "argv-or-env-to-storage-length": "Test the length against the most the program means to acquire before GETMAIN or CEEGTST, and refuse anything larger",
+  "jcl-parm-to-storage-length": "Test the length against the most the program means to acquire before GETMAIN or CEEGTST, and refuse anything larger",
+  "jcl-instream-to-storage-length": "Test the length against the most the program means to acquire before GETMAIN or CEEGTST, and refuse anything larger",
+  "cics-terminal-to-connection-target": "Connect only to a location or queue manager chosen from a fixed table, never one named by input",
+  "cics-web-to-connection-target": "Connect only to a location or queue manager chosen from a fixed table, never one named by input",
+  "argv-or-env-to-connection-target": "Connect only to a location or queue manager chosen from a fixed table, never one named by input",
+  "jcl-parm-to-connection-target": "Connect only to a location or queue manager chosen from a fixed table, never one named by input",
+  "jcl-instream-to-connection-target": "Connect only to a location or queue manager chosen from a fixed table, never one named by input",
+  "cics-terminal-to-cics-sysid": "Ship to a region chosen from a fixed table, or name the SYSID as a literal; never take it from input or a record",
+  "cics-web-to-cics-sysid": "Ship to a region chosen from a fixed table, or name the SYSID as a literal; never take it from input or a record",
+  "file-record-to-cics-sysid": "Ship to a region chosen from a fixed table, or name the SYSID as a literal; never take it from input or a record",
+  "database-to-cics-sysid": "Ship to a region chosen from a fixed table, or name the SYSID as a literal; never take it from input or a record",
+  "cics-terminal-to-cics-system-resource": "Name the resource an EXEC CICS SET changes from a fixed table, and keep SP commands out of programs input reaches",
+  "cics-web-to-cics-system-resource": "Name the resource an EXEC CICS SET changes from a fixed table, and keep SP commands out of programs input reaches",
+  "file-record-to-cics-system-resource": "Name the resource an EXEC CICS SET changes from a fixed table, and keep SP commands out of programs input reaches",
+  "database-to-cics-system-resource": "Name the resource an EXEC CICS SET changes from a fixed table, and keep SP commands out of programs input reaches",
+  "cics-web-to-xml-document": "Refuse a document that carries a DTD (<!DOCTYPE) before XML PARSE, and bound its length; check what the XMLPARSE option the program is compiled with does with entities",
+  "cics-terminal-to-xml-document": "Refuse a document that carries a DTD (<!DOCTYPE) before XML PARSE, and bound its length; check what the XMLPARSE option the program is compiled with does with entities",
+  "system-response-to-web-response": "Return a fixed message to the caller and keep SQLCODE, RESP and RESP2 out of the response",
+  "system-response-to-http-header": "Return a fixed message to the caller and keep SQLCODE, RESP and RESP2 out of the response",
+  "system-response-to-screen": "Return a fixed message to the caller and keep SQLCODE, RESP and RESP2 out of the response",
+  "cics-protected-field-to-record-key": "Re-derive the key from server state or authorize the access; do not trust a protected or hidden screen field as a key",
+  "cics-protected-field-to-record-update": "Re-derive the key from server state and authorize the change; do not trust a protected or hidden screen field as a key",
+  "cics-web-to-arithmetic": "Test the field IS NUMERIC before the arithmetic and reject or default on failure",
+  "argv-or-env-to-arithmetic": "Test the field IS NUMERIC before the arithmetic and reject or default on failure",
+  "jcl-parm-to-arithmetic": "Test the field IS NUMERIC before the arithmetic and reject or default on failure",
+  "jcl-instream-to-arithmetic": "Test the field IS NUMERIC before the arithmetic and reject or default on failure",
+  "database-to-outbound-http": "Confirm the destination and the data classification are intended, and restrict who can write the source record",
+  "file-record-to-outbound-http": "Confirm the destination and the data classification are intended, and restrict who can write the source record",
+  "database-to-socket-send": "Confirm the destination and data classification are intended, and restrict who can write the source record",
+  "file-record-to-socket-send": "Confirm the destination and data classification are intended, and restrict who can write the source record",
+  "database-to-message-queue": "Confirm the queue and data classification are intended; queues are how systems hand data on, so review the destination",
+  "database-to-extrapartition-queue": "Confirm the queue's destination and the data classification are intended",
+  "file-record-to-extrapartition-queue": "Confirm the queue's destination and the data classification are intended",
+  "file-record-to-message-queue": "Confirm the queue and data classification are intended; queues are how systems hand data on, so review the destination",
+  "call-parameter-exceeds-caller-record": "Make the callee's LINKAGE item no larger than every caller's argument, or pass and honour an explicit length",
+  "call-parameter-exceeds-argument": "Size the callee's LINKAGE item to the argument, or document that it deliberately spans the following fields",
+  "program-checks-stored-password": "Verify the password with EXEC CICS VERIFY PASSWORD or SIGNON, so RACF checks it and the application never stores it",
+  "password-case-folded-before-compare": "Compare the password as typed, or leave the comparison to the security manager with EXEC CICS VERIFY PASSWORD",
+  "cics-condition-ignored": "Give each command RESP and test it, or let the condition reach a HANDLE CONDITION that deals with it; keep NOHANDLE for commands whose failure is harmless",
+  "cics-commarea-without-length-check": "Test EIBCALEN before reading DFHCOMMAREA, and return when it is zero or shorter than the record the program expects",
+  "cics-transfer-to-variable-program": "Transfer only to a name chosen from a fixed table of literals, never one taken from input, a record or the communication area",
+  "cics-commarea-length-exceeds-area": "Pass a LENGTH no greater than the passed area, or LENGTH OF that area",
+  "cics-commarea-length-exceeds-callee": "Pass a LENGTH no greater than the callee's declared communication area",
+  "cics-signon-says-which-half-failed": "Answer both failures with the same message and the same timing, as the programs that get this right do: one \"Incorrect username or password\" for either",
+  "cics-signon-bypassed": "Reach the granted program only from the path where the password comparison succeeded; on any other entry, re-drive the sign-on",
+  "hidden-payload-in-identification-area": "Remove the content from the identification/columns-73+ area; nothing a program needs belongs there",
+  "hidden-payload-in-sequence-area": "Remove the content from the sequence area (columns 1-6); it is not part of the program",
+  "agent-directive-in-comment": "Delete the directive; treat its presence as a tampering incident and check who added it",
+  "encoded-blob": "Remove the encoded blob, or if it is legitimate data move it out of source into a named, documented resource",
+  "bidi-or-invisible-characters": "Strip the bidirectional/invisible characters; keep source to the plain characters the compiler reads",
+  "copybook-shadows-system": "Rename or remove the repository copy; let the system copybook resolve from its own library",
+  "copybook-shadowed": "Give the two copybooks distinct names, or make every program's search path resolve the intended one unambiguously",
+  "jcl-instream-credential": "Remove the password from the job; take the credential from a secured facility (a RACF keyring or a protected NETRC), never from in-stream JCL",
+  "jcl-instream-security-command": "Keep RACF or security-product commands out of application job streams; run them through a controlled, reviewed administration process",
+  "jcl-instream-destructive": "Remove the in-stream delete/define of a catalogued dataset, or gate it behind a controlled change; do not carry it in an application job",
+  "jcl-dlm-hides-instream": "Use the default delimiter, or make the DLM and where the stream really ends explicit to any reader",
+  "jcl-ftp-cleartext": "Require TLS: -a TLS or -r TLS on the FTP PARM, or SECURE_MECHANISM TLS in the in-stream SYSFTPD",
+  "jcl-ftp-sends-production-dataset": "Confirm the transfer and its partner are authorized for production data, and send over a TLS session",
+  "control-cards-from-dataset": "Keep the commands in-stream where they are reviewed with the job, or put the data set under the same change control and write access as the job",
+  "sort-exit-named": "Confirm the exit's load library is under change control with restricted write access, or remove the exit",
+  "tso-batch-runs-program": "Review what the commands run; name a program with PGM= where the step exists to run one",
+  "build-pins-vulnerable-compiler": "Upgrade the pinned compiler to a fixed version, or pin one no listed advisory affects",
+  "build-pins-exploited-compiler": "Upgrade the pinned compiler to a fixed version now; this one is being exploited in the wild",
+  "site-declares-vulnerable-runtime": "Upgrade the runtime to a fixed version, or apply the vendor's fix for the named advisory",
+  "build-pins-vulnerable-component": "Upgrade the pinned component to a fixed version, or pin one no listed advisory affects",
+  "build-pins-exploited-component": "Upgrade the pinned component to a fixed version now; this one is being exploited in the wild",
+  "recon-production-name-outside-production": "Keep production dataset names and system names out of non-production jobs; reference them through a symbolic the environment sets",
+  "recon-routable-address-committed": "Remove the address from source; reference the host through configuration the environment supplies",
+  "recon-nonproduction-job-writes-production-dataset": "Point the job at non-production datasets, or move it under production change control if it must touch production data",
+  "recon-nonproduction-job-reads-production-dataset": "Copy the data through a controlled, de-identified extract, or run the job under production controls",
+  "vendor-privileged-command": "Move the privileged product command out of the application job into the product's controlled administration path, or restrict who may submit the job",
+  "web-cookie-without-secure-attributes": "Set Secure, HttpOnly and SameSite on the Set-Cookie header the program writes",
+  "web-response-without-protective-headers": "Write Content-Security-Policy, X-Frame-Options and X-Content-Type-Options headers on the HTML response (or have the front-end proxy add them, declared in cobolwork.site.json)",
+  "web-response-tells-the-caller-what-it-runs": "Do not write the header, or write a value that names nothing: the client does not need it and the advisory record is public",
+  "web-uri-carries-a-credential": "Send the credential in the body of a POST, or in an Authorization header, and never in the path or query of a URI",
+  "web-request-changes-state-without-a-token": "Compare a token the program generated and stored against one the request carries, and refuse the change when they differ",
+  "cics-listener-accepts-cleartext": "Set SSL(YES) and name a certificate on the TCPIPSERVICE, or front it with a TLS-terminating proxy the estate controls and restrict the port to that proxy",
+  "web-link-opens-without-noopener": "Add rel=\"noopener\" (and noreferrer) to any target=\"_blank\" link the program emits",
+  "compile-undefined-name": "Define the missing name, or add the copybook that declares it, so the program compiles; if it is generated code, compile it before relying on it",
+  "csd-defines-diagnostic-transaction": "Do not install the diagnostic transactions in an application region, or restrict them by transaction security to named administrators",
+  "csd-transaction-without-command-security": "Set CMDSEC(YES) on the transaction, so the region checks the user's authority for the system commands the program issues",
+  "job-loads-from-an-authorised-library": "Restrict write access to the authorised library to the change process that owns it, and load from an unauthorised copy where the job does not need authority",
+  "log-writes-a-credential": "Do not log credential-shaped fields; mask or omit them before DISPLAY or any journal/log write",
+  "log-writes-personal-data": "Do not log personal-data fields; mask, tokenize or omit them before the log write",
+  "display-echoes-a-credential": "Acknowledge the credential without repeating it, or mask it before it is displayed",
+  "binary-store-exceeds-picture-under-trunc-opt": "Make the receiver COMP-5 or wide enough for the value, add ON SIZE ERROR, or compile the program with TRUNC(STD) or TRUNC(BIN)",
+  "intermediate-result-loses-high-order-digits": "Split the expression so each step fits, carry fewer decimal places in the operands and receivers, or compile with ARITH(EXTEND) where one more digit is enough",
+  "character-range-reverses-in-ascii": "Test the class the range means (IS NUMERIC, IS ALPHABETIC, a CLASS condition) or list the values, rather than relying on the order of the code page",
+  "zowe-config-secret-in-clear": "Remove the value from properties and list the key in the profile's secure array, so Zowe keeps it in the operating system's credential vault",
+  "zowe-config-tls-verify-off": "Set rejectUnauthorized to true and install the certificate authority that signed the mainframe's certificate",
+  "zowe-config-cleartext": "Set protocol to https",
+  "zowe-mcp-password-in-config": "Replace the literal with a reference such as ${env:NAME} and keep the value in the environment or a secrets manager",
+  "zowe-mcp-tier-writes": "Run at read-strict or read unless write access is reviewed and needed; grant update or delete for the task that needs it",
+  "zowe-mcp-tier-full": "Run at read-strict or read; give job submission to a separate, reviewed path",
+  "zowe-mcp-data-marking-off": "Remove ZOWE_MCP_DATA_MARKING=0 so the default marking applies",
+  "zowe-mcp-unpinned": "Pin the version: @zowe/mcp-server@<version>",
+  "zowe-mock-credentials": "Remove the password from the mock data or replace it with a placeholder"
+ },
+ "evidence": {
+  "path": "untrusted input was traced to a sensitive operation, and the route it took is recorded",
+  "construct": "the construct is a defect wherever it appears; no input has to reach it",
+  "tampering": "the source is arranged so a reader or a resolver sees something other than what runs",
+  "advisory": "a component version matches a published advisory against it",
+  "exposure": "information about the estate is written into the source",
+  "change": "a change moves an interface or adds a call target, which a reviewer has to look at",
+  "coverage": "the analysis stopped following here; a limit of the tool, not a defect in the code",
+  "context": "describes the estate - an entry point, a product in use - and asserts no defect"
+ },
+ "exploitabilityVerdicts": {
+  "confirmed": "the estate reproduced it on a system it owns and brought the result as a witness feed",
+  "exploitable": "input an attacker supplies reaches the operation with no check on every route, and the estate declares an entry that carries it open to any user",
+  "attacker-driven": "input whoever runs an entry supplies reaches the operation with no check on every route; the estate has not declared who may run that entry",
+  "restricted": "input reaches the operation with no check on every route, and every entry that carries it is behind a control the estate named",
+  "mitigated": "input reaches the operation, but a check runs first on every route, or SSRANGE turns an overrun into an abend",
+  "upstream": "the value comes from a file record or a database row, so whoever can write that data drives it",
+  "refuted": "no harmful value arrives: a check leaves only values the operation can take, or no route reaches it"
+ },
+ "ruleCompliance": {
+  "argv-or-env-to-os-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-os-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-os-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-os-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-os-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-dynamic-sql": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-dynamic-sql": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-dynamic-sql": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-dynamic-sql": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-dynamic-sql": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-cics-dynamic-transfer": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-cics-dynamic-transfer": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-cics-dynamic-transfer": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-cics-dynamic-transfer": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-cics-dynamic-transfer": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-dynamic-program-load": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-dynamic-program-load": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-dynamic-program-load": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-dynamic-program-load": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-dynamic-program-load": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-dynamic-file-path": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-dynamic-file-path": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-dynamic-file-path": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-dynamic-file-path": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-dynamic-file-path": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-os-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-dynamic-sql": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-cics-dynamic-transfer": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-dynamic-program-load": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-dynamic-file-path": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-os-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-dynamic-sql": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-cics-dynamic-transfer": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-dynamic-program-load": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-dynamic-file-path": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-internal-reader": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-internal-reader": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-internal-reader": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-internal-reader": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-internal-reader": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-internal-reader": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-internal-reader": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-web-response": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-web-response": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-web-response": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-web-response": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-http-header": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-http-header": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-http-header": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-http-header": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-outbound-host": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-outbound-host": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-outbound-host": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-outbound-host": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-queue-name": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-queue-name": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-queue-name": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-queue-name": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-subscript": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-subscript": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-subscript": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-subscript": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-subscript": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-reference-modification": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-reference-modification": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-reference-modification": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-reference-modification": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-reference-modification": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-occurs-depending-count": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-occurs-depending-count": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-occurs-depending-count": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-occurs-depending-count": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-occurs-depending-count": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-loop-bound": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-loop-bound": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-loop-bound": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-loop-bound": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-loop-bound": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-arithmetic": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-log": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-log": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-storage-length": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-storage-length": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-storage-length": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-storage-length": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-storage-length": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-connection-target": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-connection-target": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-connection-target": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-connection-target": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-connection-target": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-cics-sysid": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-cics-sysid": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-cics-sysid": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-cics-sysid": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-cics-system-resource": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-cics-system-resource": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "file-record-to-cics-system-resource": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-cics-system-resource": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-xml-document": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-terminal-to-xml-document": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "system-response-to-web-response": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "system-response-to-http-header": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "system-response-to-screen": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-protected-field-to-record-key": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-protected-field-to-record-update": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-web-to-arithmetic": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "argv-or-env-to-arithmetic": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-to-arithmetic": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-instream-to-arithmetic": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "database-to-outbound-http": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "file-record-to-outbound-http": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "database-to-socket-send": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "file-record-to-socket-send": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "database-to-message-queue": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "database-to-extrapartition-queue": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "file-record-to-extrapartition-queue": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "file-record-to-message-queue": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "call-parameter-exceeds-caller-record": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "call-parameter-exceeds-argument": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "program-without-entry": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "program-checks-stored-password": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(d)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "IA-5",
+    "title": "Authenticator Management"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "password-case-folded-before-compare": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-condition-ignored": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-commarea-without-length-check": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-transfer-to-variable-program": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-commarea-length-exceeds-area": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-commarea-length-exceeds-callee": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-signon-says-which-half-failed": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-signon-bypassed": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "hidden-payload-in-identification-area": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "hidden-payload-in-sequence-area": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "agent-directive-in-comment": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "encoded-blob": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "bidi-or-invisible-characters": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "copybook-shadows-system": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "copybook-shadowed": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "jcl-instream-credential": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(d)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "IA-5",
+    "title": "Authenticator Management"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "jcl-instream-security-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "jcl-instream-destructive": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "jcl-dlm-hides-instream": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-parm-is-an-entry-point": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "jcl-exec-pgm-unresolved": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(6)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "jcl-ftp-cleartext": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "IA-5(1)",
+    "title": "Password-based Authentication"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "jcl-ftp-sends-production-dataset": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-7",
+    "title": "Boundary Protection"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "control-cards-from-dataset": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(3)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-3",
+    "title": "Configuration Change Control"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M VII.B.3",
+    "title": "Additional Control Considerations in Change Management"
+   }
+  ],
+  "sort-exit-named": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "tso-batch-runs-program": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(6)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "build-pins-vulnerable-compiler": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "AIO VI.C.3",
+    "title": "Vulnerability and Patch Management"
+   }
+  ],
+  "build-pins-exploited-compiler": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "AIO VI.C.3",
+    "title": "Vulnerability and Patch Management"
+   }
+  ],
+  "site-declares-vulnerable-runtime": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "AIO VI.C.3",
+    "title": "Vulnerability and Patch Management"
+   }
+  ],
+  "build-pins-vulnerable-component": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "AIO VI.C.3",
+    "title": "Vulnerability and Patch Management"
+   }
+  ],
+  "build-pins-exploited-component": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "AIO VI.C.3",
+    "title": "Vulnerability and Patch Management"
+   }
+  ],
+  "recon-production-name-outside-production": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   }
+  ],
+  "recon-routable-address-committed": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   }
+  ],
+  "recon-nonproduction-job-writes-production-dataset": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "recon-nonproduction-job-reads-production-dataset": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SA-3(2)",
+    "title": "Use of Live or Operational Data"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M VII.B.2(a)",
+    "title": "Data Controls in the Testing Environment"
+   }
+  ],
+  "vendor-privileged-command": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "opaque-pointer-addressing": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "opaque-altered-control-flow": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "opaque-procedure-pointer": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "opaque-alternate-entry": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(4)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "web-cookie-without-secure-attributes": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-23",
+    "title": "Session Authenticity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "web-response-without-protective-headers": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-23",
+    "title": "Session Authenticity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "web-response-tells-the-caller-what-it-runs": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-23",
+    "title": "Session Authenticity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "web-uri-carries-a-credential": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-23",
+    "title": "Session Authenticity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "web-request-changes-state-without-a-token": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-23",
+    "title": "Session Authenticity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "cics-listener-accepts-cleartext": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-8",
+    "title": "Transmission Confidentiality and Integrity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "web-link-opens-without-noopener": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-23",
+    "title": "Session Authenticity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "compile-undefined-name": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "csd-defines-diagnostic-transaction": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "csd-transaction-without-command-security": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "job-writes-diagnostic-output-unrestricted": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "job-reaches-unix-system-services": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "job-runs-under-another-user": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "job-unloads-the-security-database": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "job-loads-from-an-authorised-library": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "log-writes-a-credential": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-11",
+    "title": "Error Handling"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "log-writes-personal-data": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-11",
+    "title": "Error Handling"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "display-echoes-a-credential": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-11",
+    "title": "Error Handling"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "binary-store-exceeds-picture-under-trunc-opt": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "intermediate-result-loses-high-order-digits": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "character-range-reverses-in-ascii": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-2",
+    "title": "Flaw Remediation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "zowe-config-secret-in-clear": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(d)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "IA-5",
+    "title": "Authenticator Management"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "zowe-config-tls-verify-off": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SC-8",
+    "title": "Transmission Confidentiality and Integrity"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "zowe-config-cleartext": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(a)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "IA-5(1)",
+    "title": "Password-based Authentication"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "zowe-mcp-password-in-config": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(d)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "IA-5",
+    "title": "Authenticator Management"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ],
+  "zowe-mcp-tier-writes": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "zowe-mcp-tier-full": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(c)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "AC-6",
+    "title": "Least Privilege"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.7",
+    "title": "User Security Controls"
+   }
+  ],
+  "zowe-mcp-data-marking-off": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(3)(b)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "SI-10",
+    "title": "Information Input Validation"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M V",
+    "title": "Development"
+   }
+  ],
+  "zowe-mcp-unpinned": [
+   {
+    "framework": "dora",
+    "clause": "Article 8(2)",
+    "title": "Identification"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "CM-8",
+    "title": "System Component Inventory"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "DA&M IV",
+    "title": "Common Development, Acquisition, and Maintenance Practices"
+   }
+  ],
+  "zowe-mock-credentials": [
+   {
+    "framework": "dora",
+    "clause": "Article 9(4)(d)",
+    "title": "Protection and prevention"
+   },
+   {
+    "framework": "nist-800-53r5",
+    "clause": "IA-5",
+    "title": "Authenticator Management"
+   },
+   {
+    "framework": "ffiec",
+    "clause": "IS II.C.19",
+    "title": "Encryption"
+   }
+  ]
+ },
+ "compliance": [
+  {
+   "framework": "dora",
+   "instrument": "Regulation (EU) 2022/2554",
+   "retrieved": "2026-09-20",
+   "coverage": "Articles 8 and 9 only. DORA Chapters III to V (incident reporting, resilience testing, third-party risk) place obligations that no static analysis of source code can evidence, and no row claims otherwise.",
+   "verified": "Every quote was matched verbatim against the cited instrument. The choice of clause is a human judgement and has not been reviewed by a qualified assessor.",
+   "appliesToTool": [
+    {
+     "clause": "Article 8(7)",
+     "title": "Identification",
+     "quote": "conduct a specific ICT risk assessment on all legacy ICT systems and, in any case before and after connecting technologies, applications or systems"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "framework": "nist-800-53r5",
+   "instrument": "NIST SP 800-53 Rev. 5.2.0",
+   "retrieved": "2026-09-20",
+   "coverage": "Control statements only, from the OSCAL catalogue. Assessment procedures, control enhancements not listed here, and the parameter values an organisation chooses are outside it.",
+   "verified": "Every quote was matched verbatim against the cited instrument. The choice of clause is a human judgement and has not been reviewed by a qualified assessor.",
+   "appliesToTool": [
+    {
+     "clause": "SA-11(1)",
+     "title": "Static Code Analysis",
+     "quote": "Require the developer of the system, system component, or system service to employ static code analysis tools to identify common flaws and document the results of the analysis."
+    }
+   ],
+   "unmapped": [
+    {
+     "ruleId": "recon-production-name-outside-production",
+     "why": "No control in SP 800-53 covers the disclosure of internal system naming in source. CM-8 is about maintaining an inventory, not about where its contents appear; SC-7 is about interfaces. Mapping to either would be a near miss."
+    },
+    {
+     "ruleId": "recon-routable-address-committed",
+     "why": "As above. The nearest control, SC-7, governs the interface rather than the disclosure of its address in a repository."
+    }
+   ]
+  },
+  {
+   "framework": "ffiec",
+   "instrument": "FFIEC IT Examination Handbook",
+   "retrieved": "2026-09-20",
+   "coverage": "Three booklets of ten: Development, Acquisition, and Maintenance; Information Security; and Architecture, Infrastructure, and Operations. The other seven - Audit, Business Continuity Management, Management, Outsourcing Technology Services, Retail and Wholesale Payment Systems, Supervision of Technology Service Providers - place obligations no static analysis of source code can evidence.",
+   "verified": "Every quote was matched verbatim against the cited instrument. The choice of clause is a human judgement and has not been reviewed by a qualified assessor.",
+   "appliesToTool": [
+    {
+     "clause": "DA&M V.C",
+     "title": "Testing",
+     "quote": "Static analysis: Personnel detect software vulnerabilities by examining the application source code and binary code and attempting to analyze and identify all possible behaviors that might arise at runtime."
+    }
+   ],
+   "unmapped": [
+    {
+     "ruleId": "recon-production-name-outside-production",
+     "why": "No FFIEC booklet covers the disclosure of internal system naming in source. DA&M IV concerns maintaining an inventory of components, not where the names of those components appear; IS II.C.19 concerns encrypting sensitive data, not naming conventions. Mapping to either would be a near miss."
+    },
+    {
+     "ruleId": "recon-routable-address-committed",
+     "why": "As above. The nearest candidates govern the network boundary or the inventory, not the disclosure of an address inside a repository."
+    }
+   ]
+  }
+ ]
+}

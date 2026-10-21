@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "minifiedCode lane one-shot baseline",
+  "description": "The set of scanner PLACE keys grandfathered when the minifiedCode lane was first captured for a repo, plus the journal of every capture and refresh. Applied by loadBaseline() in monitor/minify-baseline.mjs; a document that fails this schema is treated exactly as an unreadable one — it grandfathers NOTHING and the CLI refuses to overwrite it. The category segment of every place key is pinned to `minifiedCode` on purpose: monitor/issue-store.mjs consults these keys as one flat set across EVERY scanner category, so a key naming another lane would silently suppress a finding this file has no authority over.",
+  "type": "object",
+  "required": ["version", "repos", "journal"],
+  "additionalProperties": false,
+  "properties": {
+    "_comment": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "repos": {
+      "type": "object",
+      "description": "repo name -> its one capture. Empty is the normal state until an operator captures.",
+      "propertyNames": { "pattern": "^[A-Za-z0-9._-]+$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["capturedAt", "sliceHash", "placeKeys"],
+        "additionalProperties": false,
+        "properties": {
+          "capturedAt": { "type": "string", "minLength": 1 },
+          "sliceId": { "type": ["string", "null"] },
+          "sliceHash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{16}$",
+            "description": "sha256 of the sorted key list, truncated to 16. What anchors 'this is what was captured' to something a reader can recompute."
+          },
+          "placeKeys": {
+            "type": "array",
+            "description": "May be empty — a repo captured with nothing minified is a real capture, and the journal entry is what records that it happened.",
+            "items": {
+              "type": "string",
+              "pattern": "^sc:[^|]+\\|minifiedCode\\|[^|]+\\|[^|]+$",
+              "description": "sc:<repo>|minifiedCode|<rule>|<file>. Line-free, permanently: a place key that carried a line would un-grandfather itself the next time an unrelated edit moved the file."
+            }
+          }
+        }
+      }
+    },
+    "journal": {
+      "type": "array",
+      "description": "Append-only record of captures and refreshes. Required, and required even when empty: an absent journal beside a populated `repos` is capture history that was lost, and one-shot capture is only enforceable against a record of what was already done.",
+      "items": {
+        "type": "object",
+        "required": ["at", "action", "repo", "count"],
+        "additionalProperties": false,
+        "properties": {
+          "at": { "type": "string", "minLength": 1 },
+          "action": {
+            "enum": ["capture", "refresh"],
+            "description": "refresh is the operator override of one-shot capture. An unrecognised action would read as neither, which is how a re-baseline stops looking like one."
+          },
+          "repo": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+          "count": { "type": "integer", "minimum": 0 },
+          "who": { "type": "string" },
+          "sliceId": { "type": ["string", "null"] },
+          "sliceHash": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

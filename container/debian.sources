@@ -1,0 +1,18 @@
+# APT sources for container/Dockerfile: Debian's own dated snapshot, the one the base image was built
+# from (its debian.sources names 20261005T000000Z, which snapshot.debian.org serves as the two
+# timestamps below). A rebuild resolves the same package versions. Plain http because
+# ca-certificates is not installed yet; the archive key verifies every index. A snapshot's Release
+# file is past its Valid-Until by design, hence Check-Valid-Until: no on these sources only.
+Types: deb
+URIs: http://snapshot.debian.org/archive/debian/20261004T203145Z
+Suites: bookworm bookworm-updates
+Components: main
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+Check-Valid-Until: no
+
+Types: deb
+URIs: http://snapshot.debian.org/archive/debian-security/20261004T220601Z
+Suites: bookworm-security
+Components: main
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+Check-Valid-Until: no

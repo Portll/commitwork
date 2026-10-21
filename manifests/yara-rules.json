@@ -1,0 +1,54 @@
+{
+  "$comment": [
+    "YARA rule packs the yara-witness lane runs, pinned by commit and by sha256 per file. bin/yara-rules.mjs --install",
+    "fetches exactly these files into $CW_TOOLS_ROOT/yara-rules (default ~/.commitwork/tools) and refuses any byte that",
+    "does not match. The rules are NEVER vendored into this tree: php-malware-finder is LGPL-3.0 and signature-base is",
+    "DRL 1.1, whose attribution clause the lane meets by carrying each matching rule's author and this set's URL into",
+    "the finding. Upgrading a pack is an edit to this file in a commit."
+  ],
+  "sets": {
+    "php-malware-finder": {
+      "repo": "jvoisin/php-malware-finder",
+      "commit": "87b6d7faa4829b1e1c7c8895ef33d2b84d00b11f",
+      "url": "https://github.com/jvoisin/php-malware-finder",
+      "license": "LGPL-3.0-only",
+      "note": "Archived upstream since 2023; its regexes need yara-x --relaxed-re-syntax, and php.yar includes whitelist.yar relative to its own directory.",
+      "base": "data",
+      "entry": "php.yar",
+      "relaxedRegex": true,
+      "defaultSev": "",
+      "files": {
+        "php.yar": "ec0f90f51f66ce198696ff5b19982a8e1b86d34e0e9ecf30c6ac8c6b9024332a",
+        "whitelist.yar": "5ff3982fdfcbbd6165fe188c6b0d6456878a87400a30aa9941398c2073142f85",
+        "whitelists/custom.yar": "8159e2f50082811fae31f2eec88a4e91696fb1e62bfdd8bf9fd67ab56e88e379",
+        "whitelists/drupal.yar": "a8e6cb2afa8e5f2ba15f7dd52c6d500bd354d7dd1c4ab7209616f8f970b1ff06",
+        "whitelists/magento1ce.yar": "335d05d82c764cb4ef19c7c8d0fdc604b8f7d6645bc48ed9fef1bb6540db3f11",
+        "whitelists/magento2.yar": "3206df0d8af2c522314ec6c4521303bc8e1075dba80ff22f63c05a0aaa2d4fff",
+        "whitelists/phpmyadmin.yar": "f80450da2e2d005717431d9889f487a26c76df7a599f0139eea0334c57aa6380",
+        "whitelists/prestashop.yar": "62c0c0818395a31a3eaba2365ee0a2a32dfaf0ab11cf71a7c19970c46cb6e1a8",
+        "whitelists/symfony.yar": "718d622ec49c74a6f8f135358f8d23a1c607437fde33e5f70b51b69dde78623c",
+        "whitelists/wordpress.yar": "95db80bdc353e1567d5361a527d5f0c451e6cfbca9b14fd4757035ed2c6e9889"
+      },
+      "undeterminedReason": "measured 2026-10-08: its heuristic rules (ObfuscatedPhp, DodgyPhp, DodgyStrings, NonPrintableChars, DangerousPhp) matched ~160 files of a clean WordPress tree and ~200 of an exploited sibling, every one in a legitimate plugin, and none of the planted droppers; a match from this pack is therefore carried as undetermined, never as a severity"
+    },
+    "signature-base": {
+      "repo": "Neo23x0/signature-base",
+      "commit": "94a1c48d7ab499879287ff611dfe7f9c56376030",
+      "url": "https://github.com/Neo23x0/signature-base",
+      "license": "DRL-1.1",
+      "note": "The web-shell files only. Each rule carries a score in its meta, which sets the finding's severity.",
+      "base": "yara",
+      "entry": null,
+      "relaxedRegex": false,
+      "defaultSev": "med",
+      "files": {
+        "apt_laudanum_webshells.yar": "ab895af093afec02cb46582fc06fab320427759dbc43aeefea60499ed28d62cc",
+        "apt_webshell_chinachopper.yar": "22da4bfc1eeb2728a7826643ebaa86cd082af6c950752c4c962a3b9f479f909e",
+        "gen_cn_webshells.yar": "4775d01a68755e57dd63d934d5277dd290d8bb11a6c88094913370140a4c5ea0",
+        "gen_webshells.yar": "6876bdb29fe9cedc198d64b7e73d2d040c10918f47d40090b5d2ce1bf8c429d2",
+        "thor-webshells.yar": "a297a3cda25740f700ce5ac71b3924660c306d54138a277d0e6e87832961b192",
+        "webshell_regeorg.yar": "c138b217948712c379dd0bd7e8fb7c781daaecea0edad5f6f005d39ab7ea2241"
+      }
+    }
+  }
+}

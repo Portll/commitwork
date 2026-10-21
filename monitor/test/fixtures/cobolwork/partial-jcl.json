@@ -1,0 +1,104 @@
+{
+ "tool": "cobolwork",
+ "schemaVersion": 3,
+ "summary": {
+  "findings": 0,
+  "byRule": {},
+  "bySeverity": {},
+  "byEvidence": {},
+  "filesScanned": 1,
+  "bySet": {
+   "inventory": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "flow": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "cics": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "hidden": {
+    "filesScanned": 1,
+    "filesUnreadable": 0
+   },
+   "copybook": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "jcl": {
+    "filesScanned": 1,
+    "filesUnreadable": 0
+   },
+   "build": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "recon": {
+    "filesScanned": 1,
+    "filesUnreadable": 0
+   },
+   "vendor": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "opaque": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   }
+  },
+  "programs": 0,
+  "programFiles": 0,
+  "copybookFiles": 0,
+  "jclFiles": 1,
+  "copiesMissing": 0,
+  "filesUnreadable": 0,
+  "cicsPrograms": 0,
+  "crossProgram": 0,
+  "ruleSets": [
+   "flow",
+   "cics",
+   "hidden",
+   "copybook",
+   "jcl",
+   "build",
+   "recon",
+   "vendor",
+   "opaque"
+  ],
+  "flowModel": "byte-range",
+  "toolVersion": "0.2.0",
+  "filesEbcdic": 0,
+  "nosrc": false,
+  "filesOverBudget": 0,
+  "coverageIncomplete": true,
+  "setsIncomplete": [
+   {
+    "set": "jcl",
+    "kind": "coverage",
+    "why": "1 JCL file(s) were read in part - an INCLUDE not resolved, a symbolic with no value, or a statement that did not parse; the first is jcl/NIGHTLY.jcl:2: INCLUDE MEMBER=STDPARMS was not resolved, so its statements were not read"
+   },
+   {
+    "set": "recon",
+    "kind": "configuration",
+    "why": "no cobolwork.site.json: the production-name rule did not run, because nothing declares what production means in this estate"
+   }
+  ]
+ },
+ "inventory": {
+  "formats": {},
+  "missingCopybooks": {},
+  "unreadable": [],
+  "refusedCopies": [],
+  "ebcdic": [],
+  "symlinks": {
+   "followed": 0,
+   "outside": 0,
+   "broken": 0
+  },
+  "dirsUnreadable": 0
+ },
+ "findings": []
+}

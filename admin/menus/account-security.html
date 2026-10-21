@@ -1,0 +1,96 @@
+<section class="account-security-controls">
+<div class="hd"><h2>Sign-in methods &amp; recovery</h2></div>
+<p class="mut">Manage passwords and passkeys. Verify your identity before changing sign-in methods.</p>
+      <div id="reauth" class="sect jshide">
+        <div class="pop-h" role="presentation">Verify it is you</div>
+        <div class="mut" id="reauth-why"></div>
+        <label class="pk-fld jshide" id="reauth-pw-row" for="reauth-pw">password
+          <input type="password" id="reauth-pw" autocomplete="current-password"></label>
+        <div class="row-actions">
+          <button type="button" id="reauth-go" class="jshide">verify</button>
+          <button type="button" id="reauth-sso" class="jshide">Verify with SSO</button>
+        </div>
+        <span id="reauth-msg" class="mut jshide"></span>
+      </div>
+      <div id="pwblock" class="sect jshide">
+        <div class="pop-h" role="presentation">Password</div>
+        <div class="pk-state">
+          <span class="pk-dot unk" id="pw-dot" aria-hidden="true"></span>
+          <span id="pw-state">password state unknown</span>
+        </div>
+        <label class="pk-fld jshide" id="pw-cur-row" for="pw-cur">current password
+          <input type="password" id="pw-cur" autocomplete="current-password"></label>
+        <label class="pk-fld" for="pw-new">new password <span class="mut">(12 characters or more)</span>
+          <input type="password" id="pw-new" autocomplete="new-password"></label>
+        <div class="row-actions">
+          <button type="button" id="pw-go" class="pri">set password</button>
+        </div>
+        <span id="pw-msg" class="mut jshide"></span>
+        <div id="pw-codes" class="pf-once jshide">
+          <b>Write these down now.</b> Setting a password rotates your recovery codes, so any you
+          held before are void. They are shown once and are not recoverable from the panel.
+          <code id="pw-codes-list"></code>
+        </div>
+      </div>
+      <div id="pkenroll" class="sect jshide">
+        <div id="totp-state" class="pk-state">
+          <span class="pk-dot unk" aria-hidden="true"></span>
+          <span id="totp-state-txt">second-factor state unknown</span>
+        </div>
+        <div id="pk-state" class="pk-state">
+          <span class="pk-dot unk" aria-hidden="true"></span>
+          <span id="pk-state-txt">passkey state unknown</span>
+        </div>
+        <ul id="pk-list" class="pk-list jshide"></ul>
+        <div id="pk-revoke" class="jshide">
+          <div class="mut" id="pk-revoke-what"></div>
+          <label class="pk-fld" for="pk-revoke-pass">confirm your password to remove it
+            <input type="password" id="pk-revoke-pass" autocomplete="current-password"></label>
+          <div class="row-actions">
+            <button type="button" id="pk-revoke-go">remove</button>
+            <button type="button" id="pk-revoke-cancel">cancel</button>
+          </div>
+        </div>
+        <div class="pk-launch">
+          <button type="button" id="pk-add" class="pk-fp"
+                  title="enrol this device's Touch ID as a passkey for the account you are signed in as">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+                 stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <path d="M12 2.6c-3.1 0-5.7 1.6-7.1 3.6"/>
+              <path d="M19.1 6.2A8.4 8.4 0 0 0 12 2.6"/>
+              <path d="M3.2 10.4A8.8 8.8 0 0 1 12 6.2a8.8 8.8 0 0 1 8.8 4.2"/>
+              <path d="M6.6 12.2a5.4 5.4 0 0 1 10.8 0v2.2"/>
+              <path d="M9.6 12.2a2.4 2.4 0 0 1 4.8 0v3.6"/>
+              <path d="M12 12.4v5.4"/>
+              <path d="M6.6 16.4v1.6"/>
+              <path d="M17.4 16.8c0 1.6-.3 3-1 4.2"/>
+              <path d="M8.4 21a9 9 0 0 0 1.4-4.6"/>
+              <path d="M14.4 19.6c-.3 1-.7 1.9-1.2 2.6"/>
+            </svg>
+            <span id="pk-add-label">Enrol fingerprint</span>
+          </button>
+          <span id="pk-warn" class="pk-warn jshide"></span>
+          <div id="pk-err" class="pk-err jshide" role="alert">
+            <span id="pk-err-txt"></span>
+            <button type="button" id="pk-err-x" class="pk-err-x" title="dismiss">✕</button>
+          </div>
+        </div>
+        <div id="pk-form" class="jshide">
+          <label class="pk-fld" for="pk-pass">confirm your password
+            <input type="password" id="pk-pass" autocomplete="current-password"></label>
+          <label class="pk-fld" for="pk-label">name this passkey
+            <input type="text" id="pk-label" placeholder="e.g. MacBook Touch ID" autocomplete="off"></label>
+          <label class="pk-fld pk-chk"><input type="checkbox" id="pk-roaming">
+            <span>use a security key or a phone instead of this device</span></label>
+          <div class="row-actions">
+            <button type="button" id="pk-go" class="pri">enrol</button>
+            <button type="button" id="pk-cancel">cancel</button>
+          </div>
+        </div>
+        <span id="pk-msg" class="mut jshide"></span>
+      </div>
+      <div id="ssoext" class="sect jshide">
+        <label class="chk" for="sso-external"><input type="checkbox" id="sso-external"> Allow external sign-in</label>
+        <span id="sso-note" class="mut jshide"></span>
+      </div>
+</section>

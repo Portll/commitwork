@@ -1,0 +1,513 @@
+{
+ "tool": "cobolwork",
+ "schemaVersion": 2,
+ "summary": {
+  "findings": 27,
+  "byRule": {
+   "agent-directive-in-comment": 2,
+   "argv-or-env-to-os-command": 1,
+   "build-pins-vulnerable-compiler": 1,
+   "cics-commarea-length-exceeds-area": 1,
+   "cics-commarea-length-exceeds-callee": 1,
+   "cics-commarea-without-length-check": 2,
+   "cics-terminal-to-cics-dynamic-transfer": 1,
+   "cics-transfer-to-variable-program": 2,
+   "cics-web-to-dynamic-sql": 1,
+   "hidden-payload-in-identification-area": 1,
+   "jcl-dlm-hides-instream": 1,
+   "jcl-exec-pgm-unresolved": 3,
+   "jcl-instream-credential": 2,
+   "jcl-instream-destructive": 1,
+   "jcl-instream-security-command": 4,
+   "jcl-parm-is-an-entry-point": 3
+  },
+  "bySeverity": {
+   "high": 13,
+   "crit": 5,
+   "med": 3,
+   "info": 6
+  },
+  "filesScanned": 37,
+  "bySet": {
+   "inventory": {
+    "filesScanned": 37,
+    "filesUnreadable": 0
+   },
+   "flow": {
+    "filesScanned": 16,
+    "filesUnreadable": 0,
+    "stoppedBy": "memory reserve"
+   },
+   "cics": {
+    "filesScanned": 7,
+    "filesUnreadable": 0,
+    "filesNotRead": 21,
+    "stoppedBy": "memory reserve",
+    "notRead": "cics: 21 of 37 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   "hidden": {
+    "filesScanned": 16,
+    "filesUnreadable": 0,
+    "filesNotRead": 41,
+    "stoppedBy": "memory reserve",
+    "notRead": "hidden: 41 of 57 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   "copybook": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "jcl": {
+    "filesScanned": 16,
+    "filesUnreadable": 0,
+    "filesNotRead": 4,
+    "stoppedBy": "memory reserve",
+    "notRead": "jcl: 4 of 20 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   "build": {
+    "filesScanned": 2,
+    "filesUnreadable": 0
+   },
+   "recon": {
+    "filesScanned": 16,
+    "filesUnreadable": 0,
+    "filesNotRead": 41,
+    "stoppedBy": "memory reserve",
+    "notRead": "recon: 41 of 57 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   "vendor": {
+    "filesScanned": 0,
+    "filesUnreadable": 0
+   },
+   "opaque": {
+    "filesScanned": 16,
+    "filesUnreadable": 0,
+    "filesNotRead": 21,
+    "stoppedBy": "memory reserve",
+    "notRead": "opaque: 21 of 37 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   }
+  },
+  "programs": 37,
+  "programFiles": 37,
+  "copybookFiles": 0,
+  "jclFiles": 20,
+  "copiesMissing": 0,
+  "filesUnreadable": 0,
+  "cicsPrograms": 7,
+  "crossProgram": 2,
+  "ruleSets": [
+   "flow",
+   "cics",
+   "hidden",
+   "copybook",
+   "jcl",
+   "build",
+   "recon",
+   "vendor",
+   "opaque"
+  ],
+  "flowModel": "byte-range",
+  "toolVersion": "0.2.0",
+  "filesEbcdic": 0,
+  "nosrc": false,
+  "filesOverBudget": 0,
+  "coverageIncomplete": true,
+  "setsIncomplete": [
+   {
+    "set": "flow",
+    "why": "the rule set did not fully run"
+   },
+   {
+    "set": "cics",
+    "why": "cics: 21 of 37 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   {
+    "set": "hidden",
+    "why": "hidden: 41 of 57 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   {
+    "set": "jcl",
+    "why": "jcl: 4 of 20 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   {
+    "set": "recon",
+    "why": "recon: 41 of 57 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   },
+   {
+    "set": "opaque",
+    "why": "opaque: 21 of 37 files were not read because the scan hit its memory reserve. The findings below are over what was read, and are not a result for this repository as a whole."
+   }
+  ]
+ },
+ "inventory": {
+  "formats": {
+   "fixed": 37
+  },
+  "missingCopybooks": {},
+  "unreadable": [],
+  "refusedCopies": [],
+  "ebcdic": [],
+  "symlinks": {
+   "followed": 0,
+   "outside": 0,
+   "broken": 0
+  },
+  "dirsUnreadable": 0
+ },
+ "findings": [
+  {
+   "rule": "agent-directive-in-comment",
+   "path": "011-comment-directs-its-reader/HCOMMENT.cbl",
+   "line": 3,
+   "detail": "a comment addresses its reader with an instruction about instructions",
+   "sev": "high",
+   "cwe": "CWE-1427"
+  },
+  {
+   "rule": "agent-directive-in-comment",
+   "path": "011-comment-directs-its-reader/HCOMMENT.cbl",
+   "line": 4,
+   "detail": "a comment addresses its reader with an instruction about instructions",
+   "sev": "high",
+   "cwe": "CWE-1427"
+  },
+  {
+   "rule": "argv-or-env-to-os-command",
+   "sev": "crit",
+   "cwe": "CWE-78",
+   "path": "001-argv-reaches-os-command/P2.cbl",
+   "line": 10,
+   "program": "P2",
+   "crossProgram": true,
+   "hops": 4,
+   "detail": "Command-line or environment input reaches an operating-system command routine: ACCEPT ... FROM COMMAND-LINE at 001-argv-reaches-os-command/P1.cbl:8 reaches CALL 'SYSTEM' USING WS-LOCAL",
+   "trace": [
+    {
+     "program": "P1",
+     "item": "WS-IN",
+     "file": "001-argv-reaches-os-command/P1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "P1",
+     "item": "WS-CMD",
+     "file": "001-argv-reaches-os-command/P1.cbl",
+     "via": "MOVE at 001-argv-reaches-os-command/P1.cbl:9"
+    },
+    {
+     "program": "P2",
+     "item": "LK-CMD",
+     "file": "001-argv-reaches-os-command/P2.cbl",
+     "via": "CALL 'P2' argument 1 at 001-argv-reaches-os-command/P1.cbl:10"
+    },
+    {
+     "program": "P2",
+     "item": "WS-LOCAL",
+     "file": "001-argv-reaches-os-command/P2.cbl",
+     "via": "MOVE at 001-argv-reaches-os-command/P2.cbl:9"
+    }
+   ],
+   "related": [
+    {
+     "path": "001-argv-reaches-os-command/P1.cbl",
+     "line": 8,
+     "detail": "ACCEPT ... FROM COMMAND-LINE"
+    }
+   ],
+   "sources": 1
+  },
+  {
+   "rule": "build-pins-vulnerable-compiler",
+   "path": "035-the-build-pins-a-compiler-with-advisories/Dockerfile",
+   "line": 2,
+   "detail": "035-the-build-pins-a-compiler-with-advisories/Dockerfile pins gnucobol 2.2, which has 6 published advisories: CVE-2019-14468, CVE-2019-14486, CVE-2019-14528, CVE-2019-14541, CVE-2019-16395, CVE-2019-16396",
+   "related": [
+    {
+     "id": "CVE-2019-14468",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14468"
+    },
+    {
+     "id": "CVE-2019-14486",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14486"
+    },
+    {
+     "id": "CVE-2019-14528",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14528"
+    },
+    {
+     "id": "CVE-2019-14541",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-14541"
+    },
+    {
+     "id": "CVE-2019-16395",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-16395"
+    },
+    {
+     "id": "CVE-2019-16396",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-16396"
+    }
+   ],
+   "sev": "high",
+   "cwe": "CWE-1395"
+  },
+  {
+   "rule": "cics-commarea-length-exceeds-area",
+   "path": "008-commarea-length-exceeds-areas/CLEN.cbl",
+   "line": 8,
+   "program": "CLEN",
+   "detail": "CLEN passes LENGTH(200) with WS-AREA, which is 100 bytes",
+   "sev": "high",
+   "cwe": "CWE-805"
+  },
+  {
+   "rule": "cics-commarea-length-exceeds-callee",
+   "path": "008-commarea-length-exceeds-areas/CLEN.cbl",
+   "line": 8,
+   "program": "CLEN",
+   "detail": "CLEN passes LENGTH(200) to CCALLEE, whose DFHCOMMAREA is 50 bytes",
+   "sev": "high",
+   "cwe": "CWE-805"
+  },
+  {
+   "rule": "cics-commarea-without-length-check",
+   "path": "003-terminal-input-chooses-program/C2.cbl",
+   "line": 7,
+   "program": "C2",
+   "detail": "C2 reads DFHCOMMAREA (100 bytes declared) and never references EIBCALEN, so a shorter or absent communication area is read as if it were whole",
+   "sev": "high",
+   "cwe": "CWE-1284"
+  },
+  {
+   "rule": "cics-commarea-without-length-check",
+   "path": "006-commarea-read-without-length-check/CNOEIB.cbl",
+   "line": 7,
+   "program": "CNOEIB",
+   "detail": "CNOEIB reads DFHCOMMAREA (100 bytes declared) and never references EIBCALEN, so a shorter or absent communication area is read as if it were whole",
+   "sev": "high",
+   "cwe": "CWE-1284"
+  },
+  {
+   "rule": "cics-terminal-to-cics-dynamic-transfer",
+   "sev": "crit",
+   "cwe": "CWE-470",
+   "path": "003-terminal-input-chooses-program/C2.cbl",
+   "line": 10,
+   "program": "C2",
+   "crossProgram": true,
+   "hops": 3,
+   "detail": "Terminal input decides which program CICS transfers to: EXEC CICS RECEIVE at 003-terminal-input-chooses-program/C1.cbl:7 reaches EXEC CICS XCTL with a variable program name",
+   "trace": [
+    {
+     "program": "C1",
+     "item": "WS-BUF",
+     "file": "003-terminal-input-chooses-program/C1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "C2",
+     "item": "DFHCOMMAREA",
+     "file": "003-terminal-input-chooses-program/C2.cbl",
+     "via": "EXEC CICS LINK COMMAREA to C2"
+    },
+    {
+     "program": "C2",
+     "item": "WS-PGM",
+     "file": "003-terminal-input-chooses-program/C2.cbl",
+     "via": "MOVE at 003-terminal-input-chooses-program/C2.cbl:9"
+    }
+   ],
+   "related": [
+    {
+     "path": "003-terminal-input-chooses-program/C1.cbl",
+     "line": 7,
+     "detail": "EXEC CICS RECEIVE"
+    }
+   ],
+   "sources": 1
+  },
+  {
+   "rule": "cics-transfer-to-variable-program",
+   "path": "003-terminal-input-chooses-program/C2.cbl",
+   "line": 10,
+   "program": "C2",
+   "detail": "C2 runs EXEC CICS XCTL with the program name taken from WS-PGM",
+   "sev": "med",
+   "cwe": "CWE-470"
+  },
+  {
+   "rule": "cics-transfer-to-variable-program",
+   "path": "008-commarea-length-exceeds-areas/CLEN.cbl",
+   "line": 10,
+   "program": "CLEN",
+   "detail": "CLEN runs EXEC CICS XCTL with the program name taken from WS-PGM",
+   "sev": "med",
+   "cwe": "CWE-470"
+  },
+  {
+   "rule": "cics-web-to-dynamic-sql",
+   "sev": "crit",
+   "cwe": "CWE-89",
+   "path": "004-web-input-built-into-sql/S1.cbl",
+   "line": 11,
+   "program": "S1",
+   "crossProgram": false,
+   "hops": 2,
+   "detail": "Web input reaches dynamic SQL: EXEC CICS WEB RECEIVE at 004-web-input-built-into-sql/S1.cbl:8 reaches EXEC SQL EXECUTE IMMEDIATE from a host variable",
+   "trace": [
+    {
+     "program": "S1",
+     "item": "WS-Q",
+     "file": "004-web-input-built-into-sql/S1.cbl",
+     "via": "source"
+    },
+    {
+     "program": "S1",
+     "item": "WS-STMT",
+     "file": "004-web-input-built-into-sql/S1.cbl",
+     "via": "STRING at 004-web-input-built-into-sql/S1.cbl:9"
+    }
+   ],
+   "related": [
+    {
+     "path": "004-web-input-built-into-sql/S1.cbl",
+     "line": 8,
+     "detail": "EXEC CICS WEB RECEIVE"
+    }
+   ],
+   "sources": 1
+  },
+  {
+   "rule": "hidden-payload-in-identification-area",
+   "path": "009-payload-in-ignored-columns/HIDENT.cbl",
+   "line": 3,
+   "detail": "6 consecutive lines carry varying data in columns 73 to 80, which the compiler ignores",
+   "sev": "high",
+   "cwe": "CWE-1427"
+  },
+  {
+   "rule": "jcl-dlm-hides-instream",
+   "path": "031-a-delimiter-hides-the-rest-of-the-stream/HIDDEN.jcl",
+   "line": 4,
+   "step": "STEP010",
+   "detail": "SYSTSIN in step STEP010 uses DLM=##, so its 2 lines do not end at /*",
+   "sev": "med",
+   "cwe": "CWE-1427"
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "033-a-step-runs-a-program-nothing-defines/RUN.jcl",
+   "line": 3,
+   "step": "STEP020",
+   "detail": "step STEP020 runs GHOSTPGM, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "043-a-transfer-runs-a-program-on-the-partner-node/XFER.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 runs DMBATCH, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null
+  },
+  {
+   "rule": "jcl-exec-pgm-unresolved",
+   "path": "044-a-transfer-only-moves-a-dataset/XFER.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 runs DMBATCH, which no source in this tree defines, which is not a system utility, and which no loaded vendor pack supplies",
+   "sev": "info",
+   "cwe": null
+  },
+  {
+   "rule": "jcl-instream-credential",
+   "path": "027-instream-grants-authority-with-a-password/ADMIN.jcl",
+   "line": 5,
+   "step": "STEP010",
+   "detail": "in-stream data sets PASSWORD in SYSTSIN, in a file anyone who can read the repository can read",
+   "sev": "crit",
+   "cwe": "CWE-798"
+  },
+  {
+   "rule": "jcl-instream-credential",
+   "path": "031-a-delimiter-hides-the-rest-of-the-stream/HIDDEN.jcl",
+   "line": 6,
+   "step": "STEP010",
+   "detail": "in-stream data sets PASSWORD in SYSTSIN, in a file anyone who can read the repository can read",
+   "sev": "crit",
+   "cwe": "CWE-798"
+  },
+  {
+   "rule": "jcl-instream-destructive",
+   "path": "029-instream-deletes-a-catalogued-dataset/CLEANUP.jcl",
+   "line": 5,
+   "step": "STEP010",
+   "detail": "in-stream data runs DELETE against a catalogued dataset in step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "027-instream-grants-authority-with-a-password/ADMIN.jcl",
+   "line": 6,
+   "step": "STEP010",
+   "detail": "in-stream data issues PERMIT, which grants or alters authority, from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "041-a-job-creates-a-logonid-with-a-vendor-command/SECADM.jcl",
+   "line": 4,
+   "step": "STEP010",
+   "detail": "in-stream data issues an ACF2 administration command from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "041-a-job-creates-a-logonid-with-a-vendor-command/SECADM.jcl",
+   "line": 5,
+   "step": "STEP010",
+   "detail": "in-stream data issues an ACF2 administration command from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284"
+  },
+  {
+   "rule": "jcl-instream-security-command",
+   "path": "041-a-job-creates-a-logonid-with-a-vendor-command/SECADM.jcl",
+   "line": 6,
+   "step": "STEP010",
+   "detail": "in-stream data issues PERMIT, which grants or alters authority, from step STEP010",
+   "sev": "high",
+   "cwe": "CWE-284"
+  },
+  {
+   "rule": "jcl-parm-is-an-entry-point",
+   "path": "034-a-step-runs-a-program-the-tree-defines/RUN.jcl",
+   "line": 3,
+   "step": "STEP020",
+   "detail": "step STEP020 passes PARM= to PAYCALC, whose source is in this tree, so the flow rules treat that parameter as untrusted",
+   "sev": "info",
+   "cwe": "CWE-20"
+  },
+  {
+   "rule": "jcl-parm-is-an-entry-point",
+   "path": "037-a-job-parameter-reaches-an-os-command/RUN.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 passes PARM= to RUNCMD, whose source is in this tree, so the flow rules treat that parameter as untrusted",
+   "sev": "info",
+   "cwe": "CWE-20"
+  },
+  {
+   "rule": "jcl-parm-is-an-entry-point",
+   "path": "038-a-job-parameter-is-not-the-command-run/RUN.jcl",
+   "line": 2,
+   "step": "STEP010",
+   "detail": "step STEP010 passes PARM= to RUNCMD, whose source is in this tree, so the flow rules treat that parameter as untrusted",
+   "sev": "info",
+   "cwe": "CWE-20"
+  }
+ ]
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.cra-refresh-status/1",
+  "title": "CRA evidence refresh status",
+  "description": "refresh-status.json in the CRA output directory (CW_CRA_OUT), written atomically by cra/refresh.mjs on every exit path, the failed preflight gate's included, and read by cra/evidence-status.mjs. It records how the last refresh ended; the evidence index beside it records what the refresh produced.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "startedAt", "finishedAt", "exit", "ok", "reason", "steps"],
+  "properties": {
+    "schema": { "const": "commitwork.cra-refresh-status/1" },
+    "startedAt": { "type": "string", "description": "ISO 8601 (CW_CRA_NOW honoured)." },
+    "finishedAt": { "type": "string", "description": "ISO 8601 (CW_CRA_NOW honoured)." },
+    "exit": { "type": "integer", "description": "The run's exit: the worst step exit, or the preflight gate's when it stopped the run." },
+    "ok": { "type": "boolean", "description": "False when any step failed. A watch signal or a skipped optional step does not make it false." },
+    "reason": { "type": ["string", "null"], "description": "Why the run failed, naming each failed step; null when no step failed." },
+    "steps": {
+      "type": "array",
+      "description": "The steps that ran, in order. A run the preflight gate stopped lists only the steps up to it.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["step", "exit", "outcome"],
+        "properties": {
+          "step": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "exit": { "type": "integer" },
+          "outcome": { "enum": ["ok", "signal", "skipped", "failed"] },
+          "reason": { "type": ["string", "null"], "description": "Present unless the outcome is ok." }
+        }
+      }
+    }
+  }
+}

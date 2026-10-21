@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork/cobolwork-remediation-job.v1",
+  "title": "cobolwork remediation job",
+  "description": "<jobs dir>/<id>.json: one cobolwork remediation of one finding, rewritten atomically at every step by lib/cobolwork-remediation-jobs.mjs (the panel route keeps them under reports/<area>/cobolwork-remediation/, bin/cobolwork-remediate.mjs under CW_COBOLWORK_REMEDIATION_DIR). The job id is derived from the repository and the finding's fingerprint, never a line. This schema fixes the job record, the lodged draft, the apply record and each verification. An attempt records how far its draft got (refused before the gate, repeated, gated) and the gate's own checks; those fields differ per attempt and are not frozen beyond the attempt number and time. The drafter and reviewer engine descriptions are the engines' own.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "repo", "project", "fingerprint", "maxAttempts", "remote", "sourceLeavesMachine", "engines", "createdAt", "updatedAt", "state", "events", "attempts", "final", "review", "applied", "verifications", "error"],
+  "properties": {
+    "schema": { "const": "commitwork/cobolwork-remediation-job.v1" },
+    "id": { "type": "string", "pattern": "^[a-f0-9]{16}$" },
+    "repo": { "type": "string", "minLength": 1 },
+    "project": { "type": ["string", "null"] },
+    "fingerprint": { "type": "string", "minLength": 1, "description": "cobolwork's fingerprint for the finding." },
+    "maxAttempts": { "type": "integer", "minimum": 1 },
+    "remote": { "type": "boolean" },
+    "sourceLeavesMachine": { "type": "boolean", "description": "A remote reviewer was allowed, so the source may leave this machine." },
+    "engines": { "type": "object" },
+    "createdAt": { "type": "string", "minLength": 1 },
+    "updatedAt": { "type": "string", "minLength": 1 },
+    "state": {
+      "enum": ["queued", "running", "lodged", "failed", "refused", "unscanned", "stopped", "applied"],
+      "description": "refused: cobolwork ran and holds no such finding. unscanned: cobolwork could not run, so nothing was judged. A record that says running with no pipeline behind it is listed as orphaned by readers; the file itself never says orphaned."
+    },
+    "baseSha": { "type": ["string", "null"], "description": "The commit the drafts were made and gated against." },
+    "finding": { "type": ["object", "null"], "description": "cobolwork's finding as its explain packet stated it." },
+    "lodgedAt": { "type": "string" },
+    "events": {
+      "type": "array",
+      "maxItems": 120,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "msg"],
+        "properties": { "at": { "type": "string" }, "msg": { "type": "string", "maxLength": 400 } }
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["n", "at"],
+        "properties": {
+          "n": { "type": "integer", "minimum": 1 },
+          "at": { "type": "string" },
+          "engine": { "type": ["object", "null"] },
+          "verdict": { "enum": ["pass", "undecided", "fail"] },
+          "rejected": { "const": true }
+        }
+      }
+    },
+    "final": {
+      "type": ["object", "null"],
+      "required": ["attempt", "verdict", "outcome", "draftSha", "ref", "files", "diff"],
+      "description": "The best gated draft, kept under ref; null when no draft reached the gate. An undecided draft also carries the shared unknown fields.",
+      "properties": {
+        "attempt": { "type": "integer", "minimum": 1 },
+        "verdict": { "enum": ["pass", "undecided", "fail"] },
+        "outcome": { "type": "string" },
+        "draftSha": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "ref": { "type": "string", "minLength": 1 },
+        "files": { "type": "array", "items": { "type": "string" } },
+        "diff": { "type": "string" },
+        "unknown": { "const": true },
+        "unknownReason": { "const": "not-adjudicated" },
+        "unknownDetail": { "type": "string" }
+      }
+    },
+    "review": {
+      "type": ["object", "null"],
+      "description": "A second engine's review of the final draft: skipped with why, its answer, or its failure.",
+      "oneOf": [
+        { "type": "null" },
+        { "type": "object", "additionalProperties": false, "required": ["skipped"], "properties": { "skipped": { "type": "string" } } },
+        { "type": "object", "additionalProperties": false, "required": ["engine", "agrees", "concerns"], "properties": { "engine": { "type": ["object", "null"] }, "agrees": { "type": "boolean" }, "concerns": { "type": "string" } } },
+        { "type": "object", "additionalProperties": false, "required": ["engine", "error"], "properties": { "engine": { "type": ["object", "null"] }, "error": { "type": "string" } } }
+      ]
+    },
+    "applied": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["at", "commit", "files", "acknowledgedUndecided"],
+      "properties": {
+        "at": { "type": "string" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "files": { "type": "array", "items": { "type": "string" } },
+        "acknowledgedUndecided": { "type": "boolean", "description": "A person applied a draft the gate left undecided, and said so." }
+      }
+    },
+    "verifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "head", "verdict", "gateOutcome", "outcome", "reasons", "recorded"],
+        "properties": {
+          "at": { "type": "string" },
+          "head": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+          "verdict": { "enum": ["pass", "undecided", "fail"] },
+          "gateOutcome": { "type": "string" },
+          "outcome": { "enum": ["verified-fixed", "refuted-still-present", null], "description": "Only these two are outcomes; null when the gate decided neither." },
+          "reasons": { "type": "array", "maxItems": 20 },
+          "recorded": { "type": ["boolean", "string"], "description": "true when the outcome reached the adjudication journal; otherwise why it did not." },
+          "unknown": { "const": true },
+          "unknownReason": { "const": "not-adjudicated" },
+          "unknownDetail": { "type": "string" }
+        }
+      }
+    },
+    "error": { "type": ["string", "null"] },
+    "unknown": { "const": true, "description": "Set beside state unscanned: cobolwork never ran." },
+    "unknownReason": { "const": "not-run" },
+    "unknownDetail": { "type": "string" }
+  }
+}

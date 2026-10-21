@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork/monitor/schema/authored-judgment.schema.json",
+  "title": "Authored-judgment record — the shared as-of human-judgment shape (annotations / gate-exemptions / image-acceptance)",
+  "description": "Codifies the convention already carried informally (no schema until now) by monitor/annotations.json, monitor/gate-exemptions.json, and monitor/image-acceptance.json (accepted[]). All three are append-only logs of HUMAN judgments applied AS-OF `at` by rollup.mjs (matcher extracted to annotate-lib.mjs). The core is {match-fields, action, reason, who, at, expires?}; the match-fields differ per surface (findings vs gates vs images) and are captured as three variants. This schema ALSO defines the NEW forward-looking `disposition` field (HITL triage) as a field STRICTLY SEPARATE from the replay-critical `action` field — see the two enums below. Extend HERE; do not re-inline these enums at the read sites. Validation is structural (validate-authored-judgment.mjs, no AJV dependency — mirrors how status-enum.json/lifecycle-record.schema.json are self-scan references, not runtime-validated).",
+
+  "definitions": {
+    "action": {
+      "description": "HISTORICAL as-of judgment. rollup.mjs replays this by timestamp to recolor past slices, so its value MUST be time-stable and meaningful when applied to an OLD slice. The suppressing subset {accept, false-positive, wont-fix, incorrect-scan-result} drops a finding from open counts (annotate-lib.mjs SUPPRESSING_ACTIONS); incorrect-scan-result blames the INSTRUMENT rather than judging the subject, and REQUIRES a defect object naming it ({tool, detail, detector?, fixedIn?}) so the suppression can be checked rather than taken on trust. It is time-stable and therefore safe to replay onto an old slice: the detector was as broken then as now; `note`/`resolved` annotate without suppressing; `exempt` is the gate-overlay verb. NEVER put a `disposition` value here — 'as-of urg-remediate' is meaningless for recoloring history (breakers finding #3).",
+      "type": "string",
+      "enum": ["accept", "false-positive", "wont-fix", "note", "resolved", "exempt", "incorrect-scan-result"]
+    },
+    "disposition": {
+      "description": "NEW — FORWARD-LOOKING triage state (HITL remediation queue). 'what we intend to do next', not 'what we decided about the past'. NOT replayed as-of; represents current intent only. Drives the disposition triage layer in timeline2. Held in its OWN field so it can never contaminate the `action` replay (schema forbids overlap). `urg-remediate` = the loud/urgent lane.",
+      "type": "string",
+      "enum": ["remediate", "urg-remediate", "ignore", "accept", "backlog"]
+    },
+    "provenance": {
+      "description": "The who/at/(expires) discipline shared by all three surfaces. `at` is the as-of lower bound; `expires` (optional) is the exclusive upper bound that reverts the judgment to open. `recheckTrigger` is image-acceptance's named re-evaluation condition (a semantic sibling of expires).",
+      "type": "object",
+      "required": ["reason", "who", "at"],
+      "properties": {
+        "reason":         { "type": "string", "minLength": 1, "description": "Human rationale — why this judgment. Required on every record (never-imply-clean: an unexplained suppression is a lie)." },
+        "who":            { "type": "string", "minLength": 1, "description": "Author/authorizer. NOT the escalation recipient (that is bugReportedTo in the finding record)." },
+        "at":             { "type": "string", "format": "date-time", "description": "UTC ISO — as-of lower bound. Replaying a slice earlier than `at` shows the judgment NOT yet in force." },
+        "expires":        { "type": "string", "format": "date-time", "description": "Optional UTC ISO — exclusive upper bound; after it the judgment reverts to open. Set this to RETIRE a judgment; never delete the record (append-only)." },
+        "recheckTrigger": { "type": "string", "description": "image-acceptance only — named condition that re-opens the acceptance (e.g. 'next postgres:18.x patch tag'). Semantic sibling of expires." }
+      }
+    }
+  },
+
+  "oneOf": [
+    {
+      "title": "finding-annotation (monitor/annotations.json)",
+      "description": "Match {id,package,repo} AND-ed, omitted key = wildcard (annotate-lib.mjs annMatch). action from the shared enum.",
+      "type": "object",
+      "required": ["action", "reason", "who", "at"],
+      "properties": {
+        "id":          { "type": "string", "description": "CVE/GHSA/CWX id. Omitted = wildcard across ids." },
+        "package":     { "type": "string", "description": "Omitted = wildcard across packages." },
+        "repo":        { "type": "string", "description": "Omitted = wildcard fleet-wide." },
+        "action":      { "$ref": "#/definitions/action" },
+        "disposition": { "$ref": "#/definitions/disposition" },
+        "reason":      { "$ref": "#/definitions/provenance/properties/reason" },
+        "who":         { "$ref": "#/definitions/provenance/properties/who" },
+        "at":          { "$ref": "#/definitions/provenance/properties/at" },
+        "expires":     { "$ref": "#/definitions/provenance/properties/expires" }
+      },
+      "not": { "required": ["gate"] },
+      "additionalProperties": true
+    },
+    {
+      "title": "gate-exemption (monitor/gate-exemptions.json)",
+      "description": "Match {gate,service}. action is always 'exempt'.",
+      "type": "object",
+      "required": ["gate", "service", "action", "reason", "who", "at"],
+      "properties": {
+        "gate":        { "type": "string", "description": "Manifest check id: qg-boot-test | qg-contract-tests | qg-openapi | qg-ci | qg-boot-test-pass." },
+        "service":     { "type": "string", "description": "Service dir name." },
+        "action":      { "const": "exempt" },
+        "disposition": { "$ref": "#/definitions/disposition" },
+        "reason":      { "$ref": "#/definitions/provenance/properties/reason" },
+        "who":         { "$ref": "#/definitions/provenance/properties/who" },
+        "at":          { "$ref": "#/definitions/provenance/properties/at" },
+        "expires":     { "$ref": "#/definitions/provenance/properties/expires" }
+      },
+      "additionalProperties": true
+    },
+    {
+      "title": "image-acceptance (monitor/image-acceptance.json accepted[])",
+      "description": "Match {image,cve,package}. The risk-acceptance HALF is the authored judgment (reachability + containment + recheckTrigger); the fixStatus/pin half is machine-derivable and out of this schema's judgment scope.",
+      "type": "object",
+      "required": ["image", "cve", "severity", "reachability", "containment", "recheckTrigger", "who", "at"],
+      "properties": {
+        "image":          { "type": "string" },
+        "cve":            { "type": "string" },
+        "package":        { "type": "string" },
+        "severity":       { "type": "string", "enum": ["crit", "high", "med", "low"] },
+        "fixStatus":      { "type": "string", "description": "Machine-derivable half (not the judgment): no-fix-exists | fix-exists-not-applied | ..." },
+        "fixEvidence":    { "type": "string" },
+        "reachability":   { "type": "string", "minLength": 1, "description": "The judgment: why this residual is (in)accessible in role. Human risk call — no scan asserts it." },
+        "containment":    { "type": "array", "items": { "type": "string", "pattern": "^C[0-9]+$" }, "description": "Control ids (C1..Cn) from image-acceptance.json controls that neutralize the residual." },
+        "recheckTrigger": { "$ref": "#/definitions/provenance/properties/recheckTrigger" },
+        "disposition":    { "$ref": "#/definitions/disposition" },
+        "reason":         { "$ref": "#/definitions/provenance/properties/reason" },
+        "who":            { "$ref": "#/definitions/provenance/properties/who" },
+        "at":             { "$ref": "#/definitions/provenance/properties/at" },
+        "expires":        { "$ref": "#/definitions/provenance/properties/expires" }
+      },
+      "additionalProperties": true
+    }
+  ]
+}

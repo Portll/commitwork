@@ -1,0 +1,22 @@
+{
+  "note": "Template for the regenerable learning view. Copying this file creates an empty view; normally run node bin/learning-rebuild.mjs instead.",
+  "version": 1,
+  "generatedAt": "2026-01-01T00:00:00.000Z",
+  "sourceEventCount": 0,
+  "sourceChainHead": null,
+  "policySnapshot": {
+    "rampObservations": 8,
+    "weightFloor": 0.05,
+    "strongWeightFloor": 0.2,
+    "learningDecayRate": 0.007701635339554948,
+    "reinforceBonus": 0.15,
+    "contradictionPenalty": 0.25,
+    "jaccardThreshold": 0.45,
+    "minSupport": 3,
+    "tierStrongMinObservations": 4,
+    "tierStrongMinConfidence": 0.75,
+    "tierMediumMinConfidence": 0.5,
+    "tierWeakMaxObservations": 2
+  },
+  "patterns": {}
+}

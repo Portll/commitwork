@@ -1,0 +1,15 @@
+{
+  "$comment": "The reviewer's answer about one CodeQL stage-1 divergence (monitor/divergence-review.mjs): which analyst's verdict the evidence supports better, whether the disagreement comes from the prompt or verdict schema or from the evidence, and a suggested clarification. The analysts are labelled analyst-a (the local analyst) and analyst-b (the opus agent) only here and in the code that maps the answer back; the prompt never says which is which. A pointer for a human, never a classification, a severity or an override of either analyst. Enforced engine-side for the local reviewer (response_format.json_schema) and stated in the prompt for claude -p, whose reply is checked against the same fields. An unreadable schema refuses the review rather than accepting free-form output.",
+  "review": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["betterSupported", "why", "disagreementSource", "promptSchemaIssue", "suggestedClarification"],
+    "properties": {
+      "betterSupported": { "type": "string", "enum": ["analyst-a", "analyst-b", "both-defensible", "neither"], "description": "which stage-1 verdict the evidence in the prompt supports better, by the label the prompt gives it; both-defensible when each reading is supported, neither when the evidence supports neither" },
+      "why": { "type": "string", "description": "the evidence for that answer, citing the finding, the source context or the verdict text" },
+      "disagreementSource": { "type": "string", "enum": ["prompt-or-schema", "evidence", "both", "undetermined"], "description": "prompt-or-schema when the analysts read the instructions or class definitions differently; evidence when they read clear instructions against evidence that is ambiguous or incomplete" },
+      "promptSchemaIssue": { "type": "string", "enum": ["ambiguity", "missing-field", "unclear-class-definition", "other", "none"], "description": "the kind of prompt or schema problem; none when the disagreement is in the evidence" },
+      "suggestedClarification": { "type": "string", "description": "the wording to add or change in the analysis prompt or verdict schema; empty string when none is suggested" }
+    }
+  }
+}

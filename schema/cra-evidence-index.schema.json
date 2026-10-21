@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.cra-evidence-index/1",
+  "title": "CRA evidence index",
+  "description": "evidence-index.json in the CRA output directory (CW_CRA_OUT), written atomically by cra/refresh.mjs after a run passes the preflight gate: every artifact the run left in the directory with its sha256, and the inputs the evidence was built from. cra/evidence-status.mjs reads generatedAt and inputs to decide whether the pack is current. Indexes written before the schema field was added carry none; the reader accepts them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generatedAt", "slice", "steps", "inputs", "signed", "artifactCount", "artifacts", "note"],
+  "properties": {
+    "schema": { "const": "commitwork.cra-evidence-index/1" },
+    "generatedAt": { "type": "string", "description": "ISO 8601 (CW_CRA_NOW honoured)." },
+    "slice": { "type": ["string", "null"], "description": "The rollup's sliceId; null when the rollup could not be read." },
+    "steps": {
+      "type": "array",
+      "description": "The same step outcomes refresh-status.json records.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["step", "exit", "outcome"],
+        "properties": {
+          "step": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "exit": { "type": "integer" },
+          "outcome": { "enum": ["ok", "signal", "skipped", "failed"] },
+          "reason": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "description": "Each evidence input as it stood after the steps ran. A feed (kev, epss) refreshes on its own clock, so its change alone does not make the pack stale.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "feed", "path", "state"],
+        "properties": {
+          "name": { "enum": ["rollup", "ledger", "history", "annotations", "products", "controls", "kev", "epss"] },
+          "feed": { "type": "boolean" },
+          "path": { "type": ["string", "null"], "description": "Relative to the commitwork root when inside it; null when no path resolved." },
+          "state": { "enum": ["present", "absent", "unreadable", "unresolved"] },
+          "bytes": { "type": "integer", "minimum": 0, "description": "Present inputs only." },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Present inputs only." },
+          "error": { "type": "string", "description": "Unreadable inputs only: the error code or message." }
+        }
+      }
+    },
+    "signed": { "type": "boolean", "description": "Whether the run signed the durable evidence (an attestation key was present and signing was not disabled)." },
+    "timestamp": {
+      "type": "object",
+      "description": "The timestamp step: an RFC 3161 token (cra/timestamp.mjs) over each signature record attest sign wrote, then verified from disk. Indexes written before the step existed carry none; cra/evidence-status.mjs reads that as absent.",
+      "additionalProperties": false,
+      "required": ["state", "reason", "revocation", "records"],
+      "properties": {
+        "state": { "enum": ["anchored", "unanchored", "absent", "invalid"], "description": "The worst record's state. absent with no records when the step did not run (no CW_TSA_URL, or nothing was signed)." },
+        "reason": { "type": ["string", "null"], "description": "Why the state is not anchored; null when it is." },
+        "revocation": { "const": "not checked" },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["record", "state"],
+            "properties": {
+              "record": { "type": "string", "description": "The signature record, relative to the CRA output directory. Its token is <record>.tsq + <record>.tsr." },
+              "state": { "enum": ["anchored", "unanchored", "absent", "invalid"] },
+              "genTime": { "type": "string", "description": "The TSA's time for the token. Anchored and unanchored only." },
+              "tsa": { "type": "string", "description": "The TSA certificate's subject. Anchored and unanchored only." },
+              "reason": { "type": "string", "description": "Absent and invalid only." }
+            }
+          }
+        }
+      }
+    },
+    "artifactCount": { "type": "integer", "minimum": 0 },
+    "artifacts": {
+      "type": "array",
+      "description": "Sorted by path.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bytes", "sha256"],
+        "properties": {
+          "path": { "type": "string", "description": "Relative to the CRA output directory." },
+          "bytes": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "note": { "type": "string" }
+  }
+}

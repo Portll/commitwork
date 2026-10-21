@@ -1,0 +1,9 @@
+# The same loader-config surface as dirty/dataset.yaml with local relative paths and no template,
+# so the model-artefacts lane's silence here is about the content.
+configs:
+  - config_name: default
+    data_files:
+      - split: train
+        path: data/train-*.parquet
+      - split: test
+        path: data/test-*.parquet

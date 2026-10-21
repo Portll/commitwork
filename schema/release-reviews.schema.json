@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schema/release-reviews.schema.json",
+  "title": "release-reviews",
+  "description": "release/reviews.json in the private sidecar: reviewed dispositions that bin/pre-publish.mjs applies to secrets-sweep findings and unscanned blobs. Read from the sidecar's HEAD by bin/lib/release-reviews.mjs. A finding row is keyed by file, class and fingerprint, never by line, and covers at most `count` occurrences. An asset row is keyed by git blob hash.",
+  "type": "object",
+  "required": ["note", "findings", "assets"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string", "minLength": 1 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "cls", "fingerprint", "verdict", "count", "disposition", "reason", "reviewer", "reviewedAt"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string", "minLength": 1 },
+          "cls": { "type": "string", "minLength": 1 },
+          "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "verdict": { "enum": ["REAL-SECRET", "SENSITIVE-CONTEXT"] },
+          "count": { "type": "integer", "minimum": 1 },
+          "disposition": { "enum": ["pending", "synthetic-fixture", "public-by-design", "upstream-content", "not-a-credential", "redact", "move-to-sidecar", "rotate"] },
+          "reason": { "type": "string" },
+          "reviewer": { "type": "string" },
+          "reviewedAt": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}" }] }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["blob", "path", "disposition", "reason", "reviewer", "reviewedAt"],
+        "additionalProperties": false,
+        "properties": {
+          "blob": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "path": { "type": "string", "minLength": 1 },
+          "disposition": { "enum": ["pending", "publish", "withhold"] },
+          "reason": { "type": "string" },
+          "reviewer": { "type": "string" },
+          "reviewedAt": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}" }] }
+        }
+      }
+    }
+  }
+}

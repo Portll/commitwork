@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Daily suggestions (model output)",
+  "description": "What the model writes for one digest, passed to claude -p --json-schema. Only judgement lives here; everything mechanical (counts, coverage, provenance, run record) is added by bin/daily-run.mjs into commitwork.daily-report/1. bin/daily-validate.mjs then checks what a schema cannot: every id exists in the digest, every listed item is accounted for exactly once, every where entry names a file and line of a cited item, verify names a lane in the digest or an allowed command.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "headline",
+    "suggestions",
+    "notActioned"
+  ],
+  "properties": {
+    "headline": {
+      "type": "string",
+      "maxLength": 280
+    },
+    "suggestions": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "repo",
+          "findingIds",
+          "priority",
+          "title",
+          "why",
+          "where",
+          "change",
+          "verify",
+          "effort",
+          "confidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^S[0-9]{1,2}$"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "findingIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{16}$"
+            }
+          },
+          "priority": {
+            "enum": [
+              "p0",
+              "p1",
+              "p2",
+              "p3"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "why": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "where": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "file"
+              ],
+              "properties": {
+                "file": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Omitted only when the cited item has no lines."
+                }
+              }
+            }
+          },
+          "change": {
+            "type": "string",
+            "maxLength": 1200
+          },
+          "verify": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "expect"
+            ],
+            "properties": {
+              "lane": {
+                "type": "string",
+                "description": "A lane named in the digest, re-run for this repo."
+              },
+              "command": {
+                "type": "string",
+                "maxLength": 200,
+                "description": "A test command; the validator allows only the repo's own test runners."
+              },
+              "expect": {
+                "type": "string",
+                "maxLength": 300
+              }
+            }
+          },
+          "effort": {
+            "enum": [
+              "S",
+              "M",
+              "L"
+            ]
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "introducedBy": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          }
+        }
+      }
+    },
+    "notActioned": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "findingId",
+          "reason",
+          "note"
+        ],
+        "properties": {
+          "findingId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{16}$"
+          },
+          "reason": {
+            "enum": [
+              "suspected-false-positive",
+              "needs-operator",
+              "accepted-risk-on-record",
+              "low-value",
+              "data-fixture"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/yara-rules.schema.json",
+  "title": "Pinned YARA rule packs",
+  "description": "The third-party YARA rule packs the yara-witness lane runs, pinned by commit and by sha256 per file. bin/yara-rules.mjs --install fetches exactly these files into $CW_TOOLS_ROOT/yara-rules and refuses any byte off its pin; the packs are never vendored. A pack whose defaultSev is the empty string reports its matches as undetermined, with undeterminedReason saying why.",
+  "type": "object",
+  "required": ["sets"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": { "type": "array", "items": { "type": "string" } },
+    "sets": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["repo", "commit", "url", "license", "base", "entry", "relaxedRegex", "defaultSev", "files"],
+        "additionalProperties": false,
+        "properties": {
+          "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+          "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "url": { "type": "string", "pattern": "^https://" },
+          "license": { "type": "string", "minLength": 1 },
+          "note": { "type": "string" },
+          "base": { "type": "string", "pattern": "^[A-Za-z0-9_.-]*$" },
+          "entry": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_.-]+$" },
+          "relaxedRegex": { "type": "boolean" },
+          "defaultSev": { "type": "string", "enum": ["", "low", "med", "high", "crit"] },
+          "undeterminedReason": { "type": "string" },
+          "files": {
+            "type": "object",
+            "propertyNames": { "pattern": "^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$" },
+            "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        }
+      }
+    }
+  }
+}

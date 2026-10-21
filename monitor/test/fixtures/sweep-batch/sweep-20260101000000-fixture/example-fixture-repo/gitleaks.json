@@ -1,0 +1,16 @@
+[
+  {
+    "RuleID": "generic-api-key",
+    "File": "src/example-fixture.js",
+    "StartLine": 7,
+    "Commit": "1111111111111111111111111111111111111111",
+    "Entropy": 4.5
+  },
+  {
+    "RuleID": "generic-api-key",
+    "File": "test/example-fixture.test.js",
+    "StartLine": 3,
+    "Commit": "2222222222222222222222222222222222222222",
+    "Entropy": 3.9
+  }
+]

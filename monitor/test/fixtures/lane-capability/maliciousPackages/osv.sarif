@@ -1,0 +1,234 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "addresses": [],
+      "artifacts": [
+        {
+          "length": -1,
+          "location": {
+            "index": -1,
+            "uri": "file:///src/package-lock.json"
+          },
+          "parentIndex": -1,
+          "roles": []
+        }
+      ],
+      "graphs": [],
+      "invocations": [],
+      "language": "en-US",
+      "logicalLocations": [],
+      "newlineSequences": [
+        "\r\n",
+        "\n"
+      ],
+      "policies": [],
+      "redactionTokens": [],
+      "results": [
+        {
+          "partialFingerprints": {
+            "primaryLocationLineHash": "adc3ac3e452ae1e92878daff0aafb42bd77837c2ec0c469da24a4c16f58d9e6d"
+          },
+          "attachments": [],
+          "codeFlows": [],
+          "fixes": [],
+          "graphTraversals": [],
+          "graphs": [],
+          "kind": "fail",
+          "level": "warning",
+          "locations": [
+            {
+              "annotations": [],
+              "id": -1,
+              "logicalLocations": [],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "index": -1,
+                  "uri": "file:///src/package-lock.json"
+                }
+              },
+              "relationships": []
+            }
+          ],
+          "message": {
+            "arguments": [],
+            "text": "Package 'flatmap-stream@0.1.1' is vulnerable to 'GHSA-9x64-5r7x-2q53'."
+          },
+          "rank": -1,
+          "relatedLocations": [],
+          "ruleId": "GHSA-9x64-5r7x-2q53",
+          "ruleIndex": 0,
+          "stacks": [],
+          "taxa": []
+        },
+        {
+          "partialFingerprints": {
+            "primaryLocationLineHash": "75761e2c3021f0c2dc9cf0bc469ae9d5a0e9c86a957ee3ea32725311b37f8551"
+          },
+          "attachments": [],
+          "codeFlows": [],
+          "fixes": [],
+          "graphTraversals": [],
+          "graphs": [],
+          "kind": "fail",
+          "level": "warning",
+          "locations": [
+            {
+              "annotations": [],
+              "id": -1,
+              "logicalLocations": [],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "index": -1,
+                  "uri": "file:///src/package-lock.json"
+                }
+              },
+              "relationships": []
+            }
+          ],
+          "message": {
+            "arguments": [],
+            "text": "Package 'flatmap-stream@0.1.1' is vulnerable to 'GHSA-mh6f-8j2x-4483'."
+          },
+          "rank": -1,
+          "relatedLocations": [],
+          "ruleId": "GHSA-mh6f-8j2x-4483",
+          "ruleIndex": 1,
+          "stacks": [],
+          "taxa": []
+        },
+        {
+          "partialFingerprints": {
+            "primaryLocationLineHash": "27d95301e703968e5ffe3aab4730ad0a58a99fcbfc19d191996ed6269f832cae"
+          },
+          "attachments": [],
+          "codeFlows": [],
+          "fixes": [],
+          "graphTraversals": [],
+          "graphs": [],
+          "kind": "fail",
+          "level": "warning",
+          "locations": [
+            {
+              "annotations": [],
+              "id": -1,
+              "logicalLocations": [],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "index": -1,
+                  "uri": "file:///src/package-lock.json"
+                }
+              },
+              "relationships": []
+            }
+          ],
+          "message": {
+            "arguments": [],
+            "text": "Package 'flatmap-stream@0.1.1' is vulnerable to 'MAL-2025-20690'."
+          },
+          "rank": -1,
+          "relatedLocations": [],
+          "ruleId": "MAL-2025-20690",
+          "ruleIndex": 2,
+          "stacks": [],
+          "taxa": []
+        }
+      ],
+      "runAggregates": [],
+      "taxonomies": [],
+      "threadFlowLocations": [],
+      "tool": {
+        "driver": {
+          "contents": [
+            "localizedData",
+            "nonLocalizedData"
+          ],
+          "informationUri": "https://github.com/google/osv-scanner",
+          "isComprehensive": false,
+          "language": "en-US",
+          "locations": [],
+          "name": "osv-scanner",
+          "notifications": [],
+          "rules": [
+            {
+              "deprecatedIds": [
+                "GHSA-9x64-5r7x-2q53"
+              ],
+              "fullDescription": {
+                "markdown": "Version 0.1.1 of `flatmap-stream` is considered malicious.\n\nThis module runs an encrypted payload targeting a very specific application, `copay` and because they shared the same description it would have likely worked for `copay-dash`.\n\nThe injected code:\n\n- Read in AES encrypted data from a file disguised as a test fixture\n- Grabbed the npm package description of the module that imported it, using an automatically set environment variable\n- Used the package description as a key to decrypt a chunk of data pulled in from the disguised file\n\nThe decrypted data was part of a module, which was then compiled in memory and executed.\n\nThis module performed the following actions:\n\n- Decrypted another chunk of data from the disguised file\n- Concatenated a small, commented prefix from the first decrypted chunk to the end of the second decrypted chunk\n- Performed minor decoding tasks to transform the concatenated block of code from invalid JS to valid JS (we believe this was done to evade detection by dynamic analysis tools)\n- Wrote this processed block of JS out to a file stored in a dependency that would be packaged by the build scripts: \n\nThe chunk of code that was written out was the actual malicious code, intended to be run on devices owned by the end users of Copay.\n\nThis code would do the following:\n\n- Detect the current environment: Mobile/Cordova/Electron\n- Check the Bitcoin and Bitcoin Cash balances on the victim's copay account\n- If the current balance was greater than 100 Bitcoin, or 1000 Bitcoin Cash:\n  - Harvest the victim's account data in full\n  - Harvest the victim's copay private keys\n  - Send the victim's account data/private keys off to a collection\n\n\n## Recommendation\n\nIf you find this module in your environment it's best to remove it. The malicious version of event-stream and flatmap-stream have been removed from the npm Registry.",
+                "text": "Version 0.1.1 of `flatmap-stream` is considered malicious.\n\nThis module runs an encrypted payload targeting a very specific application, `copay` and because they shared the same description it would have likely worked for `copay-dash`.\n\nThe injected code:\n\n- Read in AES encrypted data from a file disguised as a test fixture\n- Grabbed the npm package description of the module that imported it, using an automatically set environment variable\n- Used the package description as a key to decrypt a chunk of data pulled in from the disguised file\n\nThe decrypted data was part of a module, which was then compiled in memory and executed.\n\nThis module performed the following actions:\n\n- Decrypted another chunk of data from the disguised file\n- Concatenated a small, commented prefix from the first decrypted chunk to the end of the second decrypted chunk\n- Performed minor decoding tasks to transform the concatenated block of code from invalid JS to valid JS (we believe this was done to evade detection by dynamic analysis tools)\n- Wrote this processed block of JS out to a file stored in a dependency that would be packaged by the build scripts: \n\nThe chunk of code that was written out was the actual malicious code, intended to be run on devices owned by the end users of Copay.\n\nThis code would do the following:\n\n- Detect the current environment: Mobile/Cordova/Electron\n- Check the Bitcoin and Bitcoin Cash balances on the victim's copay account\n- If the current balance was greater than 100 Bitcoin, or 1000 Bitcoin Cash:\n  - Harvest the victim's account data in full\n  - Harvest the victim's copay private keys\n  - Send the victim's account data/private keys off to a collection\n\n\n## Recommendation\n\nIf you find this module in your environment it's best to remove it. The malicious version of event-stream and flatmap-stream have been removed from the npm Registry."
+              },
+              "help": {
+                "markdown": "**Your dependency is vulnerable to [GHSA-9x64-5r7x-2q53](https://osv.dev/GHSA-9x64-5r7x-2q53)**.\n\n## [GHSA-9x64-5r7x-2q53](https://osv.dev/GHSA-9x64-5r7x-2q53)\n\n\u003cdetails\u003e\n\u003csummary\u003eDetails\u003c/summary\u003e\n\n\u003e Version 0.1.1 of `flatmap-stream` is considered malicious.\n\u003e \n\u003e This module runs an encrypted payload targeting a very specific application, `copay` and because they shared the same description it would have likely worked for `copay-dash`.\n\u003e \n\u003e The injected code:\n\u003e \n\u003e - Read in AES encrypted data from a file disguised as a test fixture\n\u003e - Grabbed the npm package description of the module that imported it, using an automatically set environment variable\n\u003e - Used the package description as a key to decrypt a chunk of data pulled in from the disguised file\n\u003e \n\u003e The decrypted data was part of a module, which was then compiled in memory and executed.\n\u003e \n\u003e This module performed the following actions:\n\u003e \n\u003e - Decrypted another chunk of data from the disguised file\n\u003e - Concatenated a small, commented prefix from the first decrypted chunk to the end of the second decrypted chunk\n\u003e - Performed minor decoding tasks to transform the concatenated block of code from invalid JS to valid JS (we believe this was done to evade detection by dynamic analysis tools)\n\u003e - Wrote this processed block of JS out to a file stored in a dependency that would be packaged by the build scripts: \n\u003e \n\u003e The chunk of code that was written out was the actual malicious code, intended to be run on devices owned by the end users of Copay.\n\u003e \n\u003e This code would do the following:\n\u003e \n\u003e - Detect the current environment: Mobile/Cordova/Electron\n\u003e - Check the Bitcoin and Bitcoin Cash balances on the victim's copay account\n\u003e - If the current balance was greater than 100 Bitcoin, or 1000 Bitcoin Cash:\n\u003e   - Harvest the victim's account data in full\n\u003e   - Harvest the victim's copay private keys\n\u003e   - Send the victim's account data/private keys off to a collection\n\u003e \n\u003e \n\u003e ## Recommendation\n\u003e \n\u003e If you find this module in your environment it's best to remove it. The malicious version of event-stream and flatmap-stream have been removed from the npm Registry.\n\n\u003c/details\u003e\n\n---\n\n### Affected Packages\n\n| Source | Package Name | Package Version |\n| --- | --- | --- |\n| lockfile:/src/package-lock.json | flatmap-stream | 0.1.1 |\n\n## Remediation\n\nIf you believe these vulnerabilities do not affect your code and wish to ignore them, add them to the ignore list in an\n`osv-scanner.toml` file located in the same directory as the lockfile containing the vulnerable dependency.\n\nSee the format and more options in our documentation here: https://google.github.io/osv-scanner/configuration/\n\nAdd or append these values to the following config files to ignore this vulnerability:\n\n`/src/osv-scanner.toml`\n\n```\n[[IgnoredVulns]]\nid = \"GHSA-9x64-5r7x-2q53\"\nreason = \"Your reason for ignoring this vulnerability\"\n```\n",
+                "text": "**Your dependency is vulnerable to [GHSA-9x64-5r7x-2q53](https://osv.dev/GHSA-9x64-5r7x-2q53)**.\n\n## [GHSA-9x64-5r7x-2q53](https://osv.dev/GHSA-9x64-5r7x-2q53)\n\n\u003cdetails\u003e\n\u003csummary\u003eDetails\u003c/summary\u003e\n\n\u003e Version 0.1.1 of `flatmap-stream` is considered malicious.\n\u003e \n\u003e This module runs an encrypted payload targeting a very specific application, `copay` and because they shared the same description it would have likely worked for `copay-dash`.\n\u003e \n\u003e The injected code:\n\u003e \n\u003e - Read in AES encrypted data from a file disguised as a test fixture\n\u003e - Grabbed the npm package description of the module that imported it, using an automatically set environment variable\n\u003e - Used the package description as a key to decrypt a chunk of data pulled in from the disguised file\n\u003e \n\u003e The decrypted data was part of a module, which was then compiled in memory and executed.\n\u003e \n\u003e This module performed the following actions:\n\u003e \n\u003e - Decrypted another chunk of data from the disguised file\n\u003e - Concatenated a small, commented prefix from the first decrypted chunk to the end of the second decrypted chunk\n\u003e - Performed minor decoding tasks to transform the concatenated block of code from invalid JS to valid JS (we believe this was done to evade detection by dynamic analysis tools)\n\u003e - Wrote this processed block of JS out to a file stored in a dependency that would be packaged by the build scripts: \n\u003e \n\u003e The chunk of code that was written out was the actual malicious code, intended to be run on devices owned by the end users of Copay.\n\u003e \n\u003e This code would do the following:\n\u003e \n\u003e - Detect the current environment: Mobile/Cordova/Electron\n\u003e - Check the Bitcoin and Bitcoin Cash balances on the victim's copay account\n\u003e - If the current balance was greater than 100 Bitcoin, or 1000 Bitcoin Cash:\n\u003e   - Harvest the victim's account data in full\n\u003e   - Harvest the victim's copay private keys\n\u003e   - Send the victim's account data/private keys off to a collection\n\u003e \n\u003e \n\u003e ## Recommendation\n\u003e \n\u003e If you find this module in your environment it's best to remove it. The malicious version of event-stream and flatmap-stream have been removed from the npm Registry.\n\n\u003c/details\u003e\n\n---\n\n### Affected Packages\n\n| Source | Package Name | Package Version |\n| --- | --- | --- |\n| lockfile:/src/package-lock.json | flatmap-stream | 0.1.1 |\n\n## Remediation\n\nIf you believe these vulnerabilities do not affect your code and wish to ignore them, add them to the ignore list in an\n`osv-scanner.toml` file located in the same directory as the lockfile containing the vulnerable dependency.\n\nSee the format and more options in our documentation here: https://google.github.io/osv-scanner/configuration/\n\nAdd or append these values to the following config files to ignore this vulnerability:\n\n`/src/osv-scanner.toml`\n\n```\n[[IgnoredVulns]]\nid = \"GHSA-9x64-5r7x-2q53\"\nreason = \"Your reason for ignoring this vulnerability\"\n```\n"
+              },
+              "id": "GHSA-9x64-5r7x-2q53",
+              "name": "GHSA-9x64-5r7x-2q53",
+              "properties": {
+                "security-severity": "9.8"
+              },
+              "relationships": [],
+              "shortDescription": {
+                "markdown": "GHSA-9x64-5r7x-2q53: Malicious Package in flatmap-stream",
+                "text": "GHSA-9x64-5r7x-2q53: Malicious Package in flatmap-stream"
+              }
+            },
+            {
+              "deprecatedIds": [
+                "GHSA-mh6f-8j2x-4483"
+              ],
+              "fullDescription": {
+                "markdown": "The NPM package `flatmap-stream` is considered malicious.  A malicious actor added this package as a dependency to the NPM `event-stream` package in version `3.3.6`.  Users of `event-stream` are encouraged to downgrade to the last non-malicious version, `3.3.4`, or upgrade to the latest  4.x version. \n\nUsers of `flatmap-stream` are encouraged to remove the dependency entirely.\n",
+                "text": "The NPM package `flatmap-stream` is considered malicious.  A malicious actor added this package as a dependency to the NPM `event-stream` package in version `3.3.6`.  Users of `event-stream` are encouraged to downgrade to the last non-malicious version, `3.3.4`, or upgrade to the latest  4.x version. \n\nUsers of `flatmap-stream` are encouraged to remove the dependency entirely.\n"
+              },
+              "help": {
+                "markdown": "**Your dependency is vulnerable to [GHSA-mh6f-8j2x-4483](https://osv.dev/GHSA-mh6f-8j2x-4483)**.\n\n## [GHSA-mh6f-8j2x-4483](https://osv.dev/GHSA-mh6f-8j2x-4483)\n\n\u003cdetails\u003e\n\u003csummary\u003eDetails\u003c/summary\u003e\n\n\u003e The NPM package `flatmap-stream` is considered malicious.  A malicious actor added this package as a dependency to the NPM `event-stream` package in version `3.3.6`.  Users of `event-stream` are encouraged to downgrade to the last non-malicious version, `3.3.4`, or upgrade to the latest  4.x version. \n\u003e \n\u003e Users of `flatmap-stream` are encouraged to remove the dependency entirely.\n\u003e \n\n\u003c/details\u003e\n\n---\n\n### Affected Packages\n\n| Source | Package Name | Package Version |\n| --- | --- | --- |\n| lockfile:/src/package-lock.json | flatmap-stream | 0.1.1 |\n\n## Remediation\n\nTo fix these vulnerabilities, update the vulnerabilities past the listed fixed versions below.\n\n### Fixed Versions\n\n| Vulnerability ID | Package Name | Fixed Version |\n| --- | --- | --- |\n| GHSA-mh6f-8j2x-4483 | event-stream | 4.0.0 |\n\nIf you believe these vulnerabilities do not affect your code and wish to ignore them, add them to the ignore list in an\n`osv-scanner.toml` file located in the same directory as the lockfile containing the vulnerable dependency.\n\nSee the format and more options in our documentation here: https://google.github.io/osv-scanner/configuration/\n\nAdd or append these values to the following config files to ignore this vulnerability:\n\n`/src/osv-scanner.toml`\n\n```\n[[IgnoredVulns]]\nid = \"GHSA-mh6f-8j2x-4483\"\nreason = \"Your reason for ignoring this vulnerability\"\n```\n",
+                "text": "**Your dependency is vulnerable to [GHSA-mh6f-8j2x-4483](https://osv.dev/GHSA-mh6f-8j2x-4483)**.\n\n## [GHSA-mh6f-8j2x-4483](https://osv.dev/GHSA-mh6f-8j2x-4483)\n\n\u003cdetails\u003e\n\u003csummary\u003eDetails\u003c/summary\u003e\n\n\u003e The NPM package `flatmap-stream` is considered malicious.  A malicious actor added this package as a dependency to the NPM `event-stream` package in version `3.3.6`.  Users of `event-stream` are encouraged to downgrade to the last non-malicious version, `3.3.4`, or upgrade to the latest  4.x version. \n\u003e \n\u003e Users of `flatmap-stream` are encouraged to remove the dependency entirely.\n\u003e \n\n\u003c/details\u003e\n\n---\n\n### Affected Packages\n\n| Source | Package Name | Package Version |\n| --- | --- | --- |\n| lockfile:/src/package-lock.json | flatmap-stream | 0.1.1 |\n\n## Remediation\n\nTo fix these vulnerabilities, update the vulnerabilities past the listed fixed versions below.\n\n### Fixed Versions\n\n| Vulnerability ID | Package Name | Fixed Version |\n| --- | --- | --- |\n| GHSA-mh6f-8j2x-4483 | event-stream | 4.0.0 |\n\nIf you believe these vulnerabilities do not affect your code and wish to ignore them, add them to the ignore list in an\n`osv-scanner.toml` file located in the same directory as the lockfile containing the vulnerable dependency.\n\nSee the format and more options in our documentation here: https://google.github.io/osv-scanner/configuration/\n\nAdd or append these values to the following config files to ignore this vulnerability:\n\n`/src/osv-scanner.toml`\n\n```\n[[IgnoredVulns]]\nid = \"GHSA-mh6f-8j2x-4483\"\nreason = \"Your reason for ignoring this vulnerability\"\n```\n"
+              },
+              "id": "GHSA-mh6f-8j2x-4483",
+              "name": "GHSA-mh6f-8j2x-4483",
+              "properties": {
+                "security-severity": "9.8"
+              },
+              "relationships": [],
+              "shortDescription": {
+                "markdown": "GHSA-mh6f-8j2x-4483: Critical severity vulnerability that affects event-stream and flatmap-stream",
+                "text": "GHSA-mh6f-8j2x-4483: Critical severity vulnerability that affects event-stream and flatmap-stream"
+              }
+            },
+            {
+              "deprecatedIds": [
+                "MAL-2025-20690"
+              ],
+              "fullDescription": {
+                "markdown": "The package flatmap-stream was found to contain malicious code.",
+                "text": "The package flatmap-stream was found to contain malicious code."
+              },
+              "help": {
+                "markdown": "**Your dependency is vulnerable to [MAL-2025-20690](https://osv.dev/MAL-2025-20690)**.\n\n## [MAL-2025-20690](https://osv.dev/MAL-2025-20690)\n\n\u003cdetails\u003e\n\u003csummary\u003eDetails\u003c/summary\u003e\n\n\u003e The package flatmap-stream was found to contain malicious code.\n\n\u003c/details\u003e\n\n---\n\n### Affected Packages\n\n| Source | Package Name | Package Version |\n| --- | --- | --- |\n| lockfile:/src/package-lock.json | flatmap-stream | 0.1.1 |\n\n## Remediation\n\nIf you believe these vulnerabilities do not affect your code and wish to ignore them, add them to the ignore list in an\n`osv-scanner.toml` file located in the same directory as the lockfile containing the vulnerable dependency.\n\nSee the format and more options in our documentation here: https://google.github.io/osv-scanner/configuration/\n\nAdd or append these values to the following config files to ignore this vulnerability:\n\n`/src/osv-scanner.toml`\n\n```\n[[IgnoredVulns]]\nid = \"MAL-2025-20690\"\nreason = \"Your reason for ignoring this vulnerability\"\n```\n",
+                "text": "**Your dependency is vulnerable to [MAL-2025-20690](https://osv.dev/MAL-2025-20690)**.\n\n## [MAL-2025-20690](https://osv.dev/MAL-2025-20690)\n\n\u003cdetails\u003e\n\u003csummary\u003eDetails\u003c/summary\u003e\n\n\u003e The package flatmap-stream was found to contain malicious code.\n\n\u003c/details\u003e\n\n---\n\n### Affected Packages\n\n| Source | Package Name | Package Version |\n| --- | --- | --- |\n| lockfile:/src/package-lock.json | flatmap-stream | 0.1.1 |\n\n## Remediation\n\nIf you believe these vulnerabilities do not affect your code and wish to ignore them, add them to the ignore list in an\n`osv-scanner.toml` file located in the same directory as the lockfile containing the vulnerable dependency.\n\nSee the format and more options in our documentation here: https://google.github.io/osv-scanner/configuration/\n\nAdd or append these values to the following config files to ignore this vulnerability:\n\n`/src/osv-scanner.toml`\n\n```\n[[IgnoredVulns]]\nid = \"MAL-2025-20690\"\nreason = \"Your reason for ignoring this vulnerability\"\n```\n"
+              },
+              "id": "MAL-2025-20690",
+              "name": "MAL-2025-20690",
+              "relationships": [],
+              "shortDescription": {
+                "markdown": "MAL-2025-20690: Malicious code in flatmap-stream (npm)",
+                "text": "MAL-2025-20690: Malicious code in flatmap-stream (npm)"
+              }
+            }
+          ],
+          "supportedTaxonomies": [],
+          "taxa": [],
+          "version": "2.6.0"
+        },
+        "extensions": []
+      },
+      "translations": [],
+      "versionControlProvenance": [],
+      "webRequests": [],
+      "webResponses": []
+    }
+  ],
+  "properties": {}
+}

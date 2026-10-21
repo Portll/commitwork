@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schema/agent-surface.schema.json",
+  "title": "agent-surface",
+  "description": "manifests/agent-surface.json — the operator-local agent surface commitwork installs and toggles: PreToolUse/Stop hooks, MCP servers and launch programs. A declaration read by bin/agent-surface.mjs; applying stays a human act. Every entry carries `why`, so a surface with no stated reason cannot be registered.",
+  "type": "object",
+  "required": ["hooks", "mcp", "launch"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": { "type": "string", "minLength": 1 },
+    "hooks": {
+      "type": "object",
+      "description": "Keyed by the hook's registry name.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["kind", "event", "matcher", "command", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "const": "hook" },
+          "event": { "type": "string", "minLength": 1, "description": "The harness lifecycle event the hook is attached to (PreToolUse, Stop, ...)." },
+          "matcher": { "type": "string", "minLength": 1, "description": "The tool-name matcher the harness applies before running the hook." },
+          "command": { "type": "string", "minLength": 1, "description": "The command line, with $CW_ROOT for this checkout." },
+          "selftest": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "argv that proves the hook is live." },
+          "selftestExpect": { "type": "string", "minLength": 1, "description": "The word the selftest must print." },
+          "why": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "description": "Keyed by the MCP server's registered name.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["kind", "command", "args", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "const": "mcp" },
+          "command": { "type": "string", "minLength": 1 },
+          "args": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "why": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "launch": {
+      "type": "object",
+      "description": "Keyed by the launch program's short name.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["kind", "plist", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "const": "launch" },
+          "plist": { "type": "string", "minLength": 1, "description": "The LaunchAgent label." },
+          "probe": { "type": "string", "minLength": 1, "description": "A URL that answers when the program is up." },
+          "why": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

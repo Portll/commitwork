@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.digest/1",
+  "title": "Digest",
+  "description": "The periodic digest bin/digest.mjs builds over a window: severity crossings from the issue store, ratchet breaches from the gate verdict journals, failed work from the sweep verdict journals and in-flight markers, and returned warnings: the ratchet breaches and failed work an operator had set aside in the disregarded-warning register and is seeing again. Written to reports/digest/digest-<end>.json with --write and delivered by bin/digest-deliver.mjs. A section whose inputs were absent, unreadable or silent in the window is not-measured or partial and says why in notMeasured; an empty items list means nothing was found only when the section is measured.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "digestId", "window", "generatedAt", "status", "headlines", "sections"],
+  "properties": {
+    "schema": { "const": "commitwork.digest/1" },
+    "digestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256 of this document serialised with digestId set to the empty string; bin/digest-deliver.mjs recomputes it and refuses a file that does not verify."
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["since", "until"],
+      "properties": {
+        "since": { "type": "string", "description": "Exclusive window start, ISO 8601." },
+        "until": { "type": "string", "description": "Inclusive window end, ISO 8601: CW_NOW or the time of the run." }
+      }
+    },
+    "generatedAt": { "type": "string", "description": "Equal to window.until." },
+    "status": { "enum": ["measured", "partial", "not-measured"] },
+    "headlines": { "type": "array", "items": { "type": "string" }, "description": "One line per section, in section order." },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severityCrossings", "ratchetBreaches", "failedWork"],
+      "properties": {
+        "severityCrossings": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "input", "notMeasured", "caveats", "items", "status", "headline"],
+          "properties": {
+            "title": { "const": "Severity crossings" },
+            "input": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "path", "state"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "path": { "type": "string" },
+                  "state": { "enum": ["read", "absent", "unreadable"] }
+                }
+              }
+            },
+            "notMeasured": { "type": "array", "items": { "type": "string" } },
+            "caveats": { "type": "array", "items": { "type": "string" } },
+            "coverage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["areas", "ingestedInWindow"],
+              "properties": {
+                "areas": { "type": "integer", "minimum": 0 },
+                "ingestedInWindow": { "type": "integer", "minimum": 0 }
+              },
+              "description": "Absent when the issue store could not be read."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["issueId", "kind", "from", "to", "firstAt", "lastAt", "crossings", "area", "repo", "title", "state"],
+                "properties": {
+                  "issueId": { "type": "string" },
+                  "kind": { "enum": ["entered", "raised", "reopened"] },
+                  "from": { "enum": [null, "crit", "high", "med", "low", "unknown"] },
+                  "to": { "enum": ["crit", "high", "med", "low"] },
+                  "firstAt": { "type": "string" },
+                  "lastAt": { "type": "string" },
+                  "crossings": { "type": "integer", "minimum": 1 },
+                  "area": { "type": ["string", "null"] },
+                  "repo": { "type": ["string", "null"] },
+                  "title": { "type": ["string", "null"] },
+                  "state": { "type": ["string", "null"] }
+                }
+              }
+            },
+            "status": { "enum": ["measured", "partial", "not-measured"] },
+            "headline": { "type": "string" }
+          }
+        },
+        "ratchetBreaches": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "input", "notMeasured", "caveats", "items", "undetermined", "status", "headline"],
+          "properties": {
+            "title": { "const": "Ratchet breaches" },
+            "input": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "path", "state"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "path": { "type": "string" },
+                  "state": { "enum": ["read", "absent", "unreadable"] }
+                }
+              }
+            },
+            "notMeasured": { "type": "array", "items": { "type": "string" } },
+            "caveats": { "type": "array", "items": { "type": "string" } },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["gate", "subject", "baseline", "peak", "latest", "firstAt", "lastAt", "runs", "standing", "runsInWindow"],
+                "properties": {
+                  "gate": { "type": "string" },
+                  "subject": { "type": "string", "description": "The breached metric for gate-ratchet, the verdict for gate-tests, or 'unattributed'." },
+                  "baseline": { "type": ["number", "null"] },
+                  "peak": { "type": ["number", "null"] },
+                  "latest": { "type": ["number", "null"] },
+                  "firstAt": { "type": "string" },
+                  "lastAt": { "type": "string" },
+                  "runs": { "type": "integer", "minimum": 1 },
+                  "key": { "type": ["string", "null"], "description": "The warning's identity in the disregarded-warning register, `source:code|subject` (monitor/disregarded-warnings.mjs); never a line or the message. Null when the row has no usable identity." },
+                  "standing": { "type": "boolean", "description": "Whether the latest decided run in the window still breaches this floor." },
+                  "runsInWindow": { "type": "integer", "minimum": 1 }
+                }
+              }
+            },
+            "undetermined": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["gate", "runs", "byVerdict"],
+                "properties": {
+                  "gate": { "type": "string" },
+                  "runs": { "type": "integer", "minimum": 1 },
+                  "byVerdict": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1 } }
+                }
+              }
+            },
+            "status": { "enum": ["measured", "partial", "not-measured"] },
+            "headline": { "type": "string" }
+          }
+        },
+        "failedWork": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "input", "notMeasured", "caveats", "items", "undetermined", "status", "headline"],
+          "properties": {
+            "title": { "const": "Failed work" },
+            "input": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "path", "state"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "path": { "type": "string" },
+                  "state": { "enum": ["read", "absent", "unreadable"] },
+                  "files": { "type": "integer", "minimum": 0 },
+                  "unreadable": { "type": "integer", "minimum": 0 },
+                  "markers": { "type": "integer", "minimum": 0 }
+                }
+              }
+            },
+            "notMeasured": { "type": "array", "items": { "type": "string" } },
+            "caveats": { "type": "array", "items": { "type": "string" } },
+            "coverage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["verdictsInWindow", "journalsRead"],
+              "properties": {
+                "verdictsInWindow": { "type": "integer", "minimum": 0 },
+                "journalsRead": { "type": "integer", "minimum": 0 }
+              },
+              "description": "Absent when the reports root could not be read."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["at", "area", "sliceId", "type", "subject", "detail"],
+                "properties": {
+                  "at": { "type": "string" },
+                  "area": { "type": ["string", "null"] },
+                  "sliceId": { "type": ["string", "null"] },
+                  "type": {
+                    "enum": ["scan-not-run", "repo-missing", "rollup-not-published", "step-failed", "ingest-refused",
+                      "export-failed", "canary-failed", "area-sweep-timed-out", "area-sweep-failed", "sweep-hung", "scheduled-job-failed"]
+                  },
+                  "subject": { "type": ["string", "null"] },
+                  "detail": { "type": ["string", "null"] },
+                  "key": { "type": ["string", "null"], "description": "The warning's identity in the disregarded-warning register, `source:code|subject` (monitor/disregarded-warnings.mjs); never a line or the message. Null when the row has no usable identity." }
+                }
+              }
+            },
+            "undetermined": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["source", "why"],
+                "properties": {
+                  "source": { "enum": ["sweep verdicts", "in-flight marker", "scheduled job journal"] },
+                  "fields": { "type": "integer", "minimum": 1, "description": "Sweep verdicts only: how many verdict fields were recorded as unknown." },
+                  "area": { "type": ["string", "null"], "description": "In-flight marker only." },
+                  "why": { "type": "string" }
+                }
+              }
+            },
+            "status": { "enum": ["measured", "partial", "not-measured"] },
+            "headline": { "type": "string" }
+          }
+        },
+        "returnedWarnings": {
+          "type": "object",
+          "description": "Optional: digests written before it carry three sections. An absent register means nothing was set aside (measured, with a caveat); an unreadable one makes the section not-measured, never empty.",
+          "additionalProperties": false,
+          "required": ["title", "input", "notMeasured", "caveats", "items", "status", "headline"],
+          "properties": {
+            "title": { "const": "Returned warnings" },
+            "input": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "path", "state"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "path": { "type": "string" },
+                  "state": { "enum": ["read", "absent", "unreadable"] }
+                }
+              }
+            },
+            "notMeasured": { "type": "array", "items": { "type": "string" } },
+            "caveats": { "type": "array", "items": { "type": "string" } },
+            "coverage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["occurrences", "fresh", "returned", "set-aside", "unidentified"],
+              "properties": {
+                "occurrences": { "type": "integer", "minimum": 0 },
+                "fresh": { "type": "integer", "minimum": 0 },
+                "returned": { "type": "integer", "minimum": 0 },
+                "set-aside": { "type": "integer", "minimum": 0, "description": "Seen at or before the set-aside in force: the occurrence that was judged, not a return." },
+                "unidentified": { "type": "integer", "minimum": 0 }
+              },
+              "description": "Per occurrence checked (one ratchet run or sweep verdict row). Absent when the register could not be read."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["key", "source", "code", "subject", "from", "firstSeenAt", "lastSeenAt", "occurrences", "disregarded"],
+                "properties": {
+                  "key": { "type": "string" },
+                  "source": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+                  "code": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+                  "subject": { "type": "string" },
+                  "from": { "enum": ["ratchetBreaches", "failedWork"], "description": "The section whose rows the warning is." },
+                  "firstSeenAt": { "type": "string", "description": "First occurrence in the window after the set-aside." },
+                  "lastSeenAt": { "type": "string" },
+                  "occurrences": { "type": "integer", "minimum": 1 },
+                  "disregarded": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["why", "who", "at", "firstAt", "setAsides"],
+                    "properties": {
+                      "why": { "type": "string" },
+                      "who": { "type": "string" },
+                      "at": { "type": "string", "description": "The latest set-aside in force at the window end." },
+                      "firstAt": { "type": "string" },
+                      "setAsides": { "type": "integer", "minimum": 1 }
+                    }
+                  }
+                }
+              }
+            },
+            "status": { "enum": ["measured", "partial", "not-measured"] },
+            "headline": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

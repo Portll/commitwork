@@ -1,0 +1,64 @@
+{
+  "tool": "log-evidence",
+  "summary": {
+    "findings": 3,
+    "byRule": {
+      "sqli-blind-extraction": 1,
+      "sqli-time-based": 1,
+      "upload-dir-php-request": 1
+    },
+    "filesScanned": 2,
+    "linesScanned": 3,
+    "bytesRead": 376,
+    "gzipped": 0,
+    "unreadable": 0,
+    "skipDirs": [
+      ".git",
+      "node_modules",
+      ".claude/worktrees",
+      "fixtures/scan-canary/dirty"
+    ],
+    "skippedPaths": [
+      ".git"
+    ],
+    "unreadableFiles": []
+  },
+  "findings": [
+    {
+      "rule": "upload-dir-php-request",
+      "path": "logs/access.log",
+      "sev": "high",
+      "cwe": "CWE-434",
+      "lines": 1,
+      "first": "2026-01-02 03:04:05",
+      "last": "2026-01-02 03:04:05",
+      "answered": 1,
+      "refused": 0,
+      "detail": "1 line(s) at 2026-01-02 03:04:05; responses: 1 answered (1xx-3xx), 0 refused (4xx/5xx) — an attempt was recorded; whether it succeeded is not determined"
+    },
+    {
+      "rule": "sqli-blind-extraction",
+      "path": "logs/daily/2026-01-02.log",
+      "sev": "high",
+      "cwe": "CWE-89",
+      "lines": 1,
+      "first": "2026-01-02 03:04:05",
+      "last": "2026-01-02 03:04:05",
+      "answered": 0,
+      "refused": 0,
+      "detail": "1 line(s) at 2026-01-02 03:04:05; targets cw_canary_secret_key — an attempt was recorded; whether it succeeded is not determined"
+    },
+    {
+      "rule": "sqli-time-based",
+      "path": "logs/daily/2026-01-02.log",
+      "sev": "high",
+      "cwe": "CWE-89",
+      "lines": 1,
+      "first": "2026-01-02 03:04:05",
+      "last": "2026-01-02 03:04:05",
+      "answered": 0,
+      "refused": 0,
+      "detail": "1 line(s) at 2026-01-02 03:04:05; targets cw_canary_secret_key — an attempt was recorded; whether it succeeded is not determined"
+    }
+  ]
+}

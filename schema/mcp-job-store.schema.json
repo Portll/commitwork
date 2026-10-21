@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MCP job store",
+  "description": "<prefix>.json in the MCP job store directory (CW_MCP_JOB_STORE, default <reports root>/mcp-jobs), written by mcp/jobs.mjs after every change to one server process's jobs, so a restarted server can answer run_checks_result for them. One file per process; a job still queued or running in a file whose process has exited is reported as interrupted and never re-run. The runner's log tail and the text an injection signal matched are not written here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "owner", "savedAt", "issued", "jobs"],
+  "properties": {
+    "schema": { "const": "commitwork.mcp-jobs/1" },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefix", "pid"],
+      "properties": {
+        "prefix": { "type": "string", "pattern": "^[a-z0-9]{1,32}$", "description": "The job id prefix this process issued; also the file name." },
+        "pid": { "type": "integer", "minimum": 1, "description": "The server process, checked for liveness before an in-flight job is called interrupted." }
+      }
+    },
+    "savedAt": { "type": "string", "description": "When this file was last written, ISO 8601." },
+    "issued": { "type": "integer", "minimum": 0, "description": "How many ids this process issued, so an id that left retention is told apart from one never issued." },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["jobId", "state", "request", "submittedAt", "startedAt", "finishedAt"],
+        "properties": {
+          "jobId": { "type": "string", "pattern": "^job-[a-z0-9]{1,32}-[0-9]+$" },
+          "state": { "enum": ["queued", "running", "done", "failed", "interrupted"] },
+          "request": { "type": ["object", "null"], "description": "What was asked: repo, manifest, group." },
+          "submittedAt": { "type": "string" },
+          "startedAt": { "type": ["string", "null"] },
+          "finishedAt": { "type": ["string", "null"] },
+          "interruptedAt": { "type": "string", "description": "When this process interrupted the job at shutdown." },
+          "reason": { "type": "string" },
+          "result": { "type": "object", "description": "The run_checks result, when the runner got that far." },
+          "injection": {
+            "type": "object",
+            "description": "Signals over the inputs and the output, each with its ledger write counts. A signal carries id, why and span; the matched text is not stored."
+          }
+        }
+      }
+    }
+  }
+}

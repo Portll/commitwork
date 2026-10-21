@@ -1,0 +1,6 @@
+{
+  "_comment": "R2 one-shot baseline for the minifiedCode lane (monitor/minify-baseline.mjs). Grandfathers pre-existing minified/obfuscated files so the lane's first run does not lodge a fleet-wide day-one class-S issue wave; only place keys (sc:<repo>|minifiedCode|<rule>|<file>, line-free) that appear AFTER capture file as issues. Git-TRACKED durable state (issues.json precedent) — gitignoring it would re-baseline on every fresh sweep host and reopen the first-run shock. Capture is ONE-SHOT per repo; re-baseline needs --refresh and is journaled, because a re-runnable baseline would let a payload landing after capture become permanently pre-existing (STPA UCA4). Empty until the lane graduates from `deep` to `all` and an operator captures.",
+  "version": 1,
+  "repos": {},
+  "journal": []
+}

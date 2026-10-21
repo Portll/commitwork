@@ -1,0 +1,15 @@
+# The shape of one repository's CodeQL data extensions, read by bin/codeql-model-pack.mjs from the
+# private store at <codeql-models dir>/<repository directory name>/*.yml (CW_CODEQL_MODELS).
+# Declare the repository's own sinks and sources, which CodeQL's library models cannot know about.
+# Paths are CodeQL canonical paths; list a function's with a query on Function.getCanonicalPath().
+extensions:
+  - addsTo:
+      pack: codeql/rust-all
+      extensible: sinkModel
+    data:
+      - ["<example_db::wire::Connection>::simple_query", "Argument[0]", "sql-injection", "manual"]
+  - addsTo:
+      pack: codeql/rust-all
+      extensible: sourceModel
+    data:
+      - ["<example_app::input::Terminal>::read_line", "ReturnValue", "remote", "manual"]

@@ -1,0 +1,15 @@
+/* commitwork panel - CVD palettes, LIGHT theme.  GENERATED, do not hand-edit.
+   Companion to panel-cvd.css; see that file's header for method, provenance and limits.
+   Loaded through the same media-attribute switch as panel-light.css so it follows a MANUAL theme
+   choice and not merely prefers-color-scheme. */
+/* protanopia — worst AA on this background 5.08:1 */
+:root[data-cvd="protanopia"]{--sev:#000021;--crit:#0016fd;--high:#3763b0;--med:#965358;--low:#577004;--live:#151b06;--part:#000063;--plan:#422cbb;--machine:#803061;--attest:#015624}
+
+/* deuteranopia — worst AA on this background 5.10:1 */
+:root[data-cvd="deuteranopia"]{--sev:#000021;--crit:#000bf2;--high:#6316a5;--med:#a7386b;--low:#cb180e;--live:#2c1509;--part:#bb0aa6;--plan:#8b24f8;--machine:#971f2d;--attest:#00004d}
+
+/* tritanopia — worst AA on this background 5.08:1 */
+:root[data-cvd="tritanopia"]{--sev:#000000;--crit:#ce010a;--high:#964e23;--med:#7a634e;--low:#1a5ce4;--live:#42000b;--part:#a006da;--plan:#4d0ba5;--machine:#004d0b;--attest:#c6116e}
+
+/* achromatopsia — worst AA on this background 5.09:1 */
+:root[data-cvd="achromatopsia"]{--sev:#3a3a3a;--crit:#040404;--high:#242424;--med:#4f4f4f;--low:#676767}

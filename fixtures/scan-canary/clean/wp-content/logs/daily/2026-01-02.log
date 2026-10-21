@@ -1,0 +1,2 @@
+2026-01-02 03:04:05 [query] SELECT option_value FROM wp_options WHERE option_name='siteurl' LIMIT 1
+2026-01-02 03:04:11 retrying after time.sleep(5)

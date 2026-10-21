@@ -1,0 +1,1110 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "organization": "GitHub",
+     "semanticVersion": "2.27.1",
+     "notifications": [
+      {
+       "id": "go/diagnostics/extraction-errors",
+       "name": "go/diagnostics/extraction-errors",
+       "shortDescription": {
+        "text": "Extraction errors"
+       },
+       "fullDescription": {
+        "text": "List all extraction errors for files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all extraction errors for files in the source code directory.",
+        "id": "go/diagnostics/extraction-errors",
+        "kind": "diagnostic",
+        "name": "Extraction errors"
+       }
+      },
+      {
+       "id": "go/diagnostics/successfully-extracted-files",
+       "name": "go/diagnostics/successfully-extracted-files",
+       "shortDescription": {
+        "text": "Extracted files"
+       },
+       "fullDescription": {
+        "text": "List all files that were extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "successfully-extracted-files"
+        ],
+        "description": "List all files that were extracted.",
+        "id": "go/diagnostics/successfully-extracted-files",
+        "kind": "diagnostic",
+        "name": "Extracted files"
+       }
+      },
+      {
+       "id": "go/baseline/expected-extracted-files",
+       "name": "go/baseline/expected-extracted-files",
+       "shortDescription": {
+        "text": "Expected extracted files"
+       },
+       "fullDescription": {
+        "text": "Files appearing in the source archive that are expected to be extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "expected-extracted-files",
+         "telemetry"
+        ]
+       }
+      },
+      {
+       "id": "cli/file-coverage-baseline",
+       "name": "cli/file-coverage-baseline",
+       "shortDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "fullDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/platform",
+       "name": "cli/platform",
+       "shortDescription": {
+        "text": "Platform"
+       },
+       "fullDescription": {
+        "text": "Platform"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/build-mode",
+       "name": "cli/build-mode",
+       "shortDescription": {
+        "text": "Database build mode"
+       },
+       "fullDescription": {
+        "text": "Database build mode"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/sip-enablement",
+       "name": "cli/sip-enablement",
+       "shortDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "fullDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      }
+     ],
+     "rules": [
+      {
+       "id": "go/sql-injection",
+       "name": "go/sql-injection",
+       "shortDescription": {
+        "text": "Database query built from user-controlled sources"
+       },
+       "fullDescription": {
+        "text": "Building a database query from user-controlled sources is vulnerable to insertion of malicious code by the user."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-089"
+        ],
+        "description": "Building a database query from user-controlled sources is vulnerable to insertion of\n              malicious code by the user.",
+        "id": "go/sql-injection",
+        "kind": "path-problem",
+        "name": "Database query built from user-controlled sources",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "8.8"
+       }
+      },
+      {
+       "id": "go/command-injection",
+       "name": "go/command-injection",
+       "shortDescription": {
+        "text": "Command built from user-controlled sources"
+       },
+       "fullDescription": {
+        "text": "Building a system command from user-controlled sources is vulnerable to insertion of malicious code by the user."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-078"
+        ],
+        "description": "Building a system command from user-controlled sources is vulnerable to insertion of\n              malicious code by the user.",
+        "id": "go/command-injection",
+        "kind": "path-problem",
+        "name": "Command built from user-controlled sources",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "9.8"
+       }
+      },
+      {
+       "id": "go/reflected-xss",
+       "name": "go/reflected-xss",
+       "shortDescription": {
+        "text": "Reflected cross-site scripting"
+       },
+       "fullDescription": {
+        "text": "Writing user input directly to an HTTP response allows for a cross-site scripting vulnerability."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-079",
+         "external/cwe/cwe-116"
+        ],
+        "description": "Writing user input directly to an HTTP response allows for\n              a cross-site scripting vulnerability.",
+        "id": "go/reflected-xss",
+        "kind": "path-problem",
+        "name": "Reflected cross-site scripting",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "7.8"
+       }
+      }
+     ]
+    },
+    "extensions": [
+     {
+      "name": "codeql/go-queries",
+      "semanticVersion": "1.6.11+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/go-queries/1.6.11/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/go-queries/1.6.11/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/go-all",
+      "semanticVersion": "7.3.2+6e9f9e38390175c41b99070a423c875f450759ca",
+      "taxa": [
+       {
+        "id": "ext/net.http.model.yml/2/15",
+        "properties": {
+         "CodeQL/DataExtensionLocation": {
+          "artifactLocation": {
+           "uri": "ext/net.http.model.yml"
+          },
+          "region": {
+           "startLine": 55,
+           "startColumn": 9,
+           "endLine": 55,
+           "endColumn": 9
+          }
+         }
+        }
+       },
+       {
+        "id": "ext/net.url.model.yml/0/16",
+        "properties": {
+         "CodeQL/DataExtensionLocation": {
+          "artifactLocation": {
+           "uri": "ext/net.url.model.yml"
+          },
+          "region": {
+           "startLine": 22,
+           "startColumn": 9,
+           "endLine": 22,
+           "endColumn": 9
+          }
+         }
+        }
+       },
+       {
+        "id": "ext/net.url.model.yml/0/24",
+        "properties": {
+         "CodeQL/DataExtensionLocation": {
+          "artifactLocation": {
+           "uri": "ext/net.url.model.yml"
+          },
+          "region": {
+           "startLine": 30,
+           "startColumn": 9,
+           "endLine": 30,
+           "endColumn": 9
+          }
+         }
+        }
+       },
+       {
+        "id": "ext/database.sql.model.yml/1/12",
+        "properties": {
+         "CodeQL/DataExtensionLocation": {
+          "artifactLocation": {
+           "uri": "ext/database.sql.model.yml"
+          },
+          "region": {
+           "startLine": 36,
+           "startColumn": 9,
+           "endLine": 36,
+           "endColumn": 9
+          }
+         }
+        }
+       }
+      ],
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/go-queries/1.6.11/.codeql/libraries/codeql/go-all/7.3.2/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/go-queries/1.6.11/.codeql/libraries/codeql/go-all/7.3.2/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/threat-models",
+      "semanticVersion": "1.0.58+6e9f9e38390175c41b99070a423c875f450759ca",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/go-queries/1.6.11/.codeql/libraries/codeql/threat-models/1.0.58/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/go-queries/1.6.11/.codeql/libraries/codeql/threat-models/1.0.58/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "invocations": [
+    {
+     "toolExecutionNotifications": [
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "go.mod",
+           "uriBaseId": "%SRCROOT%",
+           "index": 1
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "go/diagnostics/successfully-extracted-files",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "main.go",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "go/diagnostics/successfully-extracted-files",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "main.go",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "go/baseline/expected-extracted-files",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-06T16:11:53.573521Z",
+       "descriptor": {
+        "id": "cli/file-coverage-baseline",
+        "index": 3
+       },
+       "properties": {
+        "attributes": {
+         "durationMilliseconds": 256
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-06T16:11:55.363526Z",
+       "descriptor": {
+        "id": "cli/platform",
+        "index": 4
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "name": "Mac OS X",
+         "version": "26.4"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-06T16:11:55.371554Z",
+       "descriptor": {
+        "id": "cli/build-mode",
+        "index": 5
+       },
+       "properties": {
+        "attributes": {
+         "buildMode": "manual"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-06T16:11:55.394094Z",
+       "descriptor": {
+        "id": "cli/sip-enablement",
+        "index": 6
+       },
+       "properties": {
+        "attributes": {
+         "isEnabled": true
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      }
+     ],
+     "executionSuccessful": true
+    }
+   ],
+   "artifacts": [
+    {
+     "location": {
+      "uri": "main.go",
+      "uriBaseId": "%SRCROOT%",
+      "index": 0
+     }
+    },
+    {
+     "location": {
+      "uri": "go.mod",
+      "uriBaseId": "%SRCROOT%",
+      "index": 1
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "go/sql-injection",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "go/sql-injection",
+      "index": 10
+     },
+     "message": {
+      "text": "This query depends on a [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 16,
+         "startColumn": 22,
+         "endColumn": 92
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "83a065c16cf05a45:1",
+      "primaryLocationStartColumnFingerprint": "20"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 16,
+              "startColumn": 61,
+              "endColumn": 66
+             }
+            },
+            "message": {
+             "text": "selection of URL"
+            }
+           },
+           "taxa": [
+            {
+             "index": 0,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "source"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 16,
+              "startColumn": 61,
+              "endColumn": 74
+             }
+            },
+            "message": {
+             "text": "call to Query"
+            }
+           },
+           "taxa": [
+            {
+             "index": 1,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 16,
+              "startColumn": 61,
+              "endColumn": 86
+             }
+            },
+            "message": {
+             "text": "call to Get"
+            }
+           },
+           "taxa": [
+            {
+             "index": 2,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 16,
+              "startColumn": 22,
+              "endColumn": 92
+             }
+            },
+            "message": {
+             "text": "...+..."
+            }
+           },
+           "taxa": [
+            {
+             "index": 3,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "sink"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 16,
+         "startColumn": 61,
+         "endColumn": 66
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 16,
+         "startColumn": 61,
+         "endColumn": 66
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "go/command-injection",
+     "ruleIndex": 1,
+     "rule": {
+      "id": "go/command-injection",
+      "index": 28
+     },
+     "message": {
+      "text": "This command depends on a [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 12,
+         "startColumn": 27,
+         "endColumn": 51
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "509de56f8b4aca3c:1",
+      "primaryLocationStartColumnFingerprint": "25"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 12,
+              "startColumn": 27,
+              "endColumn": 32
+             }
+            },
+            "message": {
+             "text": "selection of URL"
+            }
+           },
+           "taxa": [
+            {
+             "index": 0,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "source"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 12,
+              "startColumn": 27,
+              "endColumn": 40
+             }
+            },
+            "message": {
+             "text": "call to Query"
+            }
+           },
+           "taxa": [
+            {
+             "index": 1,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 12,
+              "startColumn": 27,
+              "endColumn": 51
+             }
+            },
+            "message": {
+             "text": "call to Get"
+            }
+           },
+           "taxa": [
+            {
+             "index": 2,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 12,
+         "startColumn": 27,
+         "endColumn": 32
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 12,
+         "startColumn": 27,
+         "endColumn": 32
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "go/reflected-xss",
+     "ruleIndex": 2,
+     "rule": {
+      "id": "go/reflected-xss",
+      "index": 31
+     },
+     "message": {
+      "text": "Cross-site scripting vulnerability due to [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 18,
+         "startColumn": 10,
+         "endColumn": 43
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "23fad5f138450e05:1",
+      "primaryLocationStartColumnFingerprint": "8"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 18,
+              "startColumn": 17,
+              "endColumn": 22
+             }
+            },
+            "message": {
+             "text": "selection of URL"
+            }
+           },
+           "taxa": [
+            {
+             "index": 0,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "source"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 18,
+              "startColumn": 17,
+              "endColumn": 30
+             }
+            },
+            "message": {
+             "text": "call to Query"
+            }
+           },
+           "taxa": [
+            {
+             "index": 1,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 18,
+              "startColumn": 17,
+              "endColumn": 42
+             }
+            },
+            "message": {
+             "text": "call to Get"
+            }
+           },
+           "taxa": [
+            {
+             "index": 2,
+             "toolComponent": {
+              "index": 1
+             },
+             "properties": {
+              "CodeQL/DataflowRole": "step"
+             }
+            }
+           ]
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.go",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 18,
+              "startColumn": 10,
+              "endColumn": 43
+             }
+            },
+            "message": {
+             "text": "type conversion"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 18,
+         "startColumn": 17,
+         "endColumn": 22
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.go",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 18,
+         "startColumn": 17,
+         "endColumn": 22
+        }
+       }
+      }
+     ]
+    }
+   ],
+   "columnKind": "utf16CodeUnits",
+   "properties": {
+    "semmle.formatSpecifier": "sarif-latest",
+    "metricResults": [
+     {
+      "rule": {
+       "id": "go/summary/lines-of-code",
+       "index": 33
+      },
+      "ruleId": "go/summary/lines-of-code",
+      "ruleIndex": 33,
+      "value": 20,
+      "baseline": 20
+     }
+    ]
+   }
+  }
+ ]
+}

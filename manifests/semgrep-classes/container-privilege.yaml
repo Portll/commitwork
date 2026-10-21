@@ -1,0 +1,277 @@
+# Class rules: a container granted the host's privileges, in Compose files, CI job containers and
+# dev containers.
+#
+# Trivy's config scan covers Dockerfiles (DS-0002 for a root user) but reads no Compose file:
+# measured 2026-10-10 with Trivy 0.75.0, a service declaring `privileged: true` and `user: root`
+# produced no result while the Dockerfile beside it produced DS-0002. These rules cover the Compose
+# declarations that hand a container the host: privileged mode, the Docker socket, host namespaces
+# and capabilities that amount to root on the host. Compose files under test paths are test
+# infrastructure and out of scope, as in the other class rules.
+
+rules:
+  - id: cw-compose-privileged-container
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      A Compose service runs privileged or shares a host namespace. Code in the container can reach
+      the host's devices, processes or network directly. Drop the setting and grant only the specific
+      device or capability the service needs.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-250: Execution with Unnecessary Privileges']
+      confidence: HIGH
+      class: container-privilege
+    paths:
+      include:
+        - '**/docker-compose*.yml'
+        - '**/docker-compose*.yaml'
+        - '**/compose*.yml'
+        - '**/compose*.yaml'
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/testdata/**'
+        - '**/__tests__/**'
+    patterns:
+      - pattern-inside: |
+          services:
+            ...
+      - pattern-either:
+          - pattern: 'privileged: true'
+          - pattern: 'network_mode: host'
+          - pattern: 'pid: host'
+          - pattern: 'ipc: host'
+          - pattern: 'userns_mode: host'
+
+  - id: cw-compose-docker-socket-mount
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      A Compose service mounts the Docker socket. Anything that can write to it can start a
+      privileged container, which is root on the host. Use a socket proxy that allows only the calls
+      the service needs, or remove the mount.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-250: Execution with Unnecessary Privileges']
+      confidence: HIGH
+      class: container-privilege
+    paths:
+      include:
+        - '**/docker-compose*.yml'
+        - '**/docker-compose*.yaml'
+        - '**/compose*.yml'
+        - '**/compose*.yaml'
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/testdata/**'
+        - '**/__tests__/**'
+    patterns:
+      - pattern-inside: |
+          volumes:
+            ...
+      # One match per mount: anchored at the list item or the long form's source, never at both ends.
+      - pattern-regex: '-\s*["'']?(?:[^:\s"'']+:)?(?:/var)?/run/docker\.sock|source:\s*["'']?(?:/var)?/run/docker\.sock'
+
+  - id: cw-compose-host-root-capability
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      A Compose service adds a capability that amounts to root on the host (ALL or SYS_ADMIN). Grant
+      the narrow capability the service actually uses.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-250: Execution with Unnecessary Privileges']
+      confidence: HIGH
+      class: container-privilege
+    paths:
+      include:
+        - '**/docker-compose*.yml'
+        - '**/docker-compose*.yaml'
+        - '**/compose*.yml'
+        - '**/compose*.yaml'
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/testdata/**'
+        - '**/__tests__/**'
+    patterns:
+      - pattern-inside: |
+          cap_add:
+            ...
+      - pattern-regex: '(?<![A-Z_])(ALL|SYS_ADMIN|CAP_SYS_ADMIN)(?![A-Z_])'
+
+  # GitHub Actions job and service containers take `docker create` flags in `options:` and mounts in
+  # `volumes:`. Keyed on the workflow shape (jobs → container/services), not on the path. `docker run`
+  # inside a step is not read: on a hosted runner the step already holds root on its machine.
+  - id: cw-ci-privileged-container
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      A CI job or service container runs privileged, shares a host namespace or adds a capability
+      that amounts to root on the host (ALL or SYS_ADMIN). On a self-hosted runner, code in the
+      container, including anything a pull request can run, reaches the host that later jobs share;
+      on an ephemeral hosted runner it reaches only that job's machine. Drop the option and grant
+      only the device or capability the step needs.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-250: Execution with Unnecessary Privileges']
+      confidence: MEDIUM
+      class: container-privilege
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/testdata/**'
+        - '**/__tests__/**'
+    patterns:
+      - pattern-inside: |
+          jobs:
+            ...
+      - pattern-either:
+          - pattern-inside: |
+              container:
+                ...
+          - pattern-inside: |
+              services:
+                ...
+      - pattern: 'options: $OPTS'
+      - metavariable-regex:
+          metavariable: $OPTS
+          regex: '(?s).*?(?:--privileged(?:=true)?(?![=\w-])|--(?:pid|network|net|ipc|userns|uts)[= ]host\b|--cap-add[= ](?:ALL|SYS_ADMIN|CAP_SYS_ADMIN)\b)'
+
+  - id: cw-ci-docker-socket-mount
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      A CI job or service container mounts the Docker socket. Anything that can write to it can start
+      a privileged container, which is root on the runner; on a self-hosted runner that host is shared
+      with later jobs. Use a rootless or remote builder, or remove the mount.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-250: Execution with Unnecessary Privileges']
+      confidence: MEDIUM
+      class: container-privilege
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/testdata/**'
+        - '**/__tests__/**'
+    patterns:
+      - pattern-inside: |
+          jobs:
+            ...
+      - pattern-either:
+          - pattern-inside: |
+              container:
+                ...
+          - pattern-inside: |
+              services:
+                ...
+      - pattern-either:
+          - patterns:
+              - pattern-inside: |
+                  volumes:
+                    ...
+              - pattern-regex: '-\s*["'']?(?:[^:\s"'']+:)?(?:/var)?/run/docker\.sock'
+          - patterns:
+              - pattern: 'options: $OPTS'
+              - metavariable-regex:
+                  metavariable: $OPTS
+                  regex: '(?s).*?(?:-v|--volume|--mount)[= ]\S*?(?:/var)?/run/docker\.sock'
+
+  # Dev containers (devcontainer.json, JSON with comments). A root user inside the container is not
+  # flagged, as in the Compose rules: without privilege or the socket it is not root on the host.
+  - id: cw-devcontainer-privileged
+    languages: [json]
+    severity: WARNING
+    message: >-
+      A dev container runs privileged, shares a host namespace or adds a capability that amounts to
+      root on the host (ALL or SYS_ADMIN). Anything run in it, including a repository's own scripts
+      and extensions, reaches the developer's machine. Drop the setting and grant only what the
+      tooling needs.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-250: Execution with Unnecessary Privileges']
+      confidence: HIGH
+      class: container-privilege
+    paths:
+      include:
+        - '**/devcontainer.json'
+        - '**/.devcontainer.json'
+    pattern-either:
+      - pattern: '"privileged": true'
+      - patterns:
+          - pattern-inside: '"runArgs": [...]'
+          - pattern: '"$ARG"'
+          - metavariable-regex:
+              metavariable: $ARG
+              regex: '^(?:--privileged(?:=true)?|--(?:pid|network|net|ipc|userns|uts)=host|--cap-add=(?:ALL|SYS_ADMIN|CAP_SYS_ADMIN))$'
+      - patterns:
+          - pattern-inside: '"runArgs": [..., "$FLAG", "$VALUE", ...]'
+          - metavariable-regex:
+              metavariable: $FLAG
+              regex: '^--(?:pid|network|net|ipc|userns|uts|cap-add)$'
+          - metavariable-regex:
+              metavariable: $VALUE
+              regex: '^(?:host|ALL|SYS_ADMIN|CAP_SYS_ADMIN)$'
+          - pattern: '"$VALUE"'
+      - patterns:
+          - pattern-inside: '"capAdd": [...]'
+          - pattern: '"$CAP"'
+          - metavariable-regex:
+              metavariable: $CAP
+              regex: '^(?:ALL|SYS_ADMIN|CAP_SYS_ADMIN)$'
+
+  - id: cw-devcontainer-docker-socket-mount
+    languages: [json]
+    severity: WARNING
+    message: >-
+      A dev container mounts the host's Docker socket. Anything that can write to it can start a
+      privileged container, which is root on the developer's machine. Use Docker-in-Docker or a
+      remote builder, or remove the mount.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-250: Execution with Unnecessary Privileges']
+      confidence: HIGH
+      class: container-privilege
+    paths:
+      include:
+        - '**/devcontainer.json'
+        - '**/.devcontainer.json'
+    pattern-either:
+      - patterns:
+          - pattern-inside: '"mounts": [...]'
+          - pattern: '"$M"'
+          - metavariable-regex:
+              metavariable: $M
+              regex: '^(?:.*,)?(?:source|src)=(?:/var)?/run/docker\.sock(?:,.*)?$'
+      - patterns:
+          - pattern-inside: '"mounts": [...]'
+          - pattern: '"source": "$S"'
+          - metavariable-regex:
+              metavariable: $S
+              regex: '^(?:/var)?/run/docker\.sock$'
+      - patterns:
+          - pattern-inside: '"runArgs": [...]'
+          - pattern: '"$ARG"'
+          - metavariable-regex:
+              metavariable: $ARG
+              regex: '^(?:-v|--volume|--mount)=\S*(?:/var)?/run/docker\.sock'
+      - patterns:
+          - pattern-inside: '"runArgs": [..., "$FLAG", "$VALUE", ...]'
+          - metavariable-regex:
+              metavariable: $FLAG
+              regex: '^(?:-v|--volume|--mount)$'
+          - metavariable-regex:
+              metavariable: $VALUE
+              regex: '^\S*(?:/var)?/run/docker\.sock'
+          - pattern: '"$VALUE"'

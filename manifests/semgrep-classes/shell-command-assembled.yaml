@@ -1,0 +1,41 @@
+# Class rule: shell command text assembled at run time and handed to a shell.
+#
+# The registry's Rust command-injection rules require a web-framework source (actix/hyper/rocket),
+# so a CLI, daemon or build tool that formats a command string and runs it through `sh -c` is never
+# examined. The shape here is the sink itself: a shell interpreter invoked with its command-string
+# flag and an argument that is not a literal. JavaScript is covered by the registry's
+# library-agnostic detect-child-process and spawn-shell-true rules.
+
+rules:
+  - id: cw-shell-command-assembled-rust
+    languages: [rust]
+    severity: WARNING
+    message: >-
+      A shell is invoked with a command string that is not a literal. Whatever reaches the string
+      can add commands. Run the program directly with `Command::new(program).args(...)`, which
+      passes arguments without a shell.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
+      confidence: MEDIUM
+      class: shell-command-assembled
+    patterns:
+      - pattern-either:
+          - pattern: $CMD::new($SH). ... .arg($FLAG). ... .arg($ARG)
+          - pattern: $CMD::new($SH). ... .args([$FLAG, $ARG, ...])
+          - pattern: $CMD::new($SH). ... .args(&[$FLAG, $ARG, ...])
+          - pattern: $CMD::new($SH). ... .args(vec![$FLAG, $ARG, ...])
+      - metavariable-regex:
+          metavariable: $CMD
+          regex: '^(Command|std::process::Command|tokio::process::Command|process::Command)$'
+      - metavariable-regex:
+          metavariable: $SH
+          regex: '^"(?:/usr)?(?:/bin/)?(?:sh|bash|zsh|dash|ksh|fish|cmd|cmd\.exe|powershell|pwsh)"$'
+      - metavariable-regex:
+          metavariable: $FLAG
+          regex: '^"(?:-c|-lc|-ic|/C|/c|-Command|-command)"$'
+      - metavariable-pattern:
+          metavariable: $ARG
+          patterns:
+            - pattern-not: '"..."'

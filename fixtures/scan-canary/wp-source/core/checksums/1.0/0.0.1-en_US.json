@@ -1,0 +1,11 @@
+{
+ "checksums": {
+  "index.php": "260e09d23e8beb25b6594be333121c37",
+  "wp-includes/version.php": "3e82b7de3b1ab115d1f2799632c0e339",
+  "wp-includes/cw-canary-load.php": "e023f794b3ea4035bfd8d565d57d1c27",
+  "wp-admin/cw-canary-admin.php": "9bb68ee258d83a70109a15c4195db417",
+  "wp-content/index.php": "67442c5615eba73d105c0715c6620850",
+  "wp-content/plugins/index.php": "67442c5615eba73d105c0715c6620850",
+  "wp-content/themes/index.php": "67442c5615eba73d105c0715c6620850"
+ }
+}

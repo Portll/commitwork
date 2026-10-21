@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.feature-census/1",
+  "title": "Feature census",
+  "description": "reports/census.json (CW_FC_OUT): bin/feature-census.mjs applied to a feature inventory and manifests/feature-charter.json, putting each entry point of the censused surfaces in exactly one class. orphan and fragment are computed from the inventory and outrank the class the charter declares; a surface and key the charter does not name is unclassified. Rows are closed: a row carries only the fields named here. experimentalFlags and the experimental, flag and flagEnforcedBy row fields may be absent from an older census, and a reader treats their absence as no flags declared.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generatedBy", "generatedAt", "charterVersion", "inventoryGeneratedAt", "rater", "membershipTests", "counts", "bySurface", "documentationGap", "notCensused", "rows"],
+  "properties": {
+    "schema": { "const": "commitwork.feature-census/1" },
+    "generatedBy": { "const": "bin/feature-census.mjs" },
+    "generatedAt": { "type": "string", "minLength": 1, "description": "ISO 8601; CW_NOW when set." },
+    "charterVersion": { "type": ["string", "null"] },
+    "inventoryGeneratedAt": { "type": ["string", "null"], "description": "The generatedAt of the inventory this census read." },
+    "rater": { "type": "string", "minLength": 1 },
+    "membershipTests": { "type": "object", "additionalProperties": { "type": "string" }, "description": "The charter's membership test for each class, copied as applied." },
+    "counts": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z-]*$" },
+      "additionalProperties": { "type": "integer", "minimum": 1 },
+      "description": "Rows per class."
+    },
+    "bySurface": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": { "pattern": "^[a-z][a-z-]*$" },
+        "additionalProperties": { "type": "integer", "minimum": 1 }
+      },
+      "description": "Rows per class within each surface."
+    },
+    "documentationGap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "bySurface", "operatorCall"],
+      "description": "Whether a tracked markdown file names each row. Recorded beside the classes and never folded into them.",
+      "properties": {
+        "rule": { "type": "string" },
+        "bySurface": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["documented", "undocumented", "notMeasured"],
+            "properties": {
+              "documented": { "type": "integer", "minimum": 0 },
+              "undocumented": { "type": "integer", "minimum": 0 },
+              "notMeasured": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "operatorCall": { "type": "string" }
+      }
+    },
+    "notCensused": {
+      "type": "object",
+      "description": "Inventoried surfaces left out of the class map, with the counts that would otherwise disappear.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["total", "why", "readOnlyFromTests", "undocumented"],
+        "properties": {
+          "total": { "type": "integer", "minimum": 0 },
+          "why": { "type": ["string", "null"] },
+          "readOnlyFromTests": { "type": "integer", "minimum": 0 },
+          "undocumented": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "experimentalFlags": {
+      "type": "array",
+      "description": "Each flag the charter declares. Absent from censuses written before flags existed.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "groups", "rows", "enforcedBy", "unenforcedSurfaces"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "label": { "type": "string", "minLength": 1 },
+          "groups": { "type": "array", "items": { "type": "string" } },
+          "rows": { "type": "integer", "minimum": 0 },
+          "enforcedBy": { "type": "array", "items": { "type": "string" }, "description": "The runtime gates that can switch the flag's rows off." },
+          "unenforcedSurfaces": { "type": "array", "items": { "type": "string" }, "description": "Surfaces of the flag's groups that no runtime gate covers." }
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "surface", "name", "groupKey", "group", "declaredClass", "class", "missing", "documented", "coverageMeasured", "location", "tests", "docs", "testProbeWeak", "undetermined", "undeterminedWhy"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "The inventory feature id." },
+          "surface": { "enum": ["cli-command", "cli-script", "http-route", "ui-view", "mcp-tool", "job", "config-flag", "package-api"] },
+          "name": { "type": "string" },
+          "groupKey": { "type": "string", "description": "The key the charter's groups are matched on, derived per surface." },
+          "group": { "type": ["string", "null"], "description": "The charter group that names this row; null when none does." },
+          "declaredClass": { "type": ["string", "null"], "enum": ["core", "extension", "ring-outward", "fragment", null] },
+          "class": { "enum": ["core", "extension", "ring-outward", "fragment", "orphan", "unclassified"] },
+          "missing": { "type": ["string", "null"], "description": "Why the row is an orphan or a fragment; null for any other class." },
+          "documented": { "type": ["boolean", "null"], "description": "null when coverage was not measured for the row." },
+          "coverageMeasured": { "type": "boolean" },
+          "location": { "type": ["string", "null"], "description": "file:line, for a reader to jump to; never part of the row's identity." },
+          "tests": { "type": ["integer", "null"], "minimum": 0 },
+          "docs": { "type": ["integer", "null"], "minimum": 0 },
+          "experimental": { "type": "boolean" },
+          "flag": { "type": ["string", "null"] },
+          "flagEnforcedBy": { "type": ["string", "null"] },
+          "testProbeWeak": { "type": "boolean" },
+          "undetermined": { "type": "boolean" },
+          "undeterminedWhy": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

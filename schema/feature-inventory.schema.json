@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.feature-inventory/1",
+  "title": "Feature inventory",
+  "description": "reports/features.json (CW_FI_OUT): every entry point bin/feature-inventory.mjs found in a tree, with the tests and documents that name it. This schema fixes the report envelope and the fields every feature row shares. Each surface also records its own detail (a route's wired and pathKind, a view's navGroup, a script's referencedFrom and coreSibling, a flag's readSites, a package entry's kind and target, and so on); those differ per surface and are not frozen here, so further properties are allowed on a feature. A feature's id never includes its line, except for a route whose path could not be read, where the line is all that tells two such anchors apart.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generatedBy", "generatedAt", "root", "population", "skippedDirs", "outboundFetchAnchors", "surfaces", "totals", "features"],
+  "properties": {
+    "schema": { "const": "commitwork.feature-inventory/1" },
+    "generatedBy": { "const": "bin/feature-inventory.mjs" },
+    "generatedAt": { "type": "string", "minLength": 1, "description": "ISO 8601; CW_NOW when set." },
+    "root": { "type": "string", "description": "The inventoried tree, relative to itself." },
+    "population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filesWalked", "sourceFiles", "testFiles", "docFiles"],
+      "properties": {
+        "filesWalked": { "type": "integer", "minimum": 0 },
+        "sourceFiles": { "type": "integer", "minimum": 0 },
+        "testFiles": { "type": "integer", "minimum": 0 },
+        "docFiles": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "skippedDirs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Directory names the walk does not enter." },
+    "outboundFetchAnchors": { "type": "integer", "minimum": 0, "description": "method: anchors in admin/routes/ recognised as outbound fetch options rather than routes, and so not counted as features." },
+    "surfaces": {
+      "type": "object",
+      "propertyNames": { "pattern": "^(cli-command|cli-script|http-route|ui-view|mcp-tool|job|config-flag|package-api)$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["total", "undetermined", "withTests", "withDocs"],
+        "properties": {
+          "total": { "type": "integer", "minimum": 0 },
+          "undetermined": { "type": "integer", "minimum": 0 },
+          "withTests": { "type": "integer", "minimum": 0 },
+          "withDocs": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["features", "undetermined", "withTests", "withDocs"],
+      "properties": {
+        "features": { "type": "integer", "minimum": 0 },
+        "undetermined": { "type": "integer", "minimum": 0 },
+        "withTests": { "type": "integer", "minimum": 0 },
+        "withDocs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["surface", "id", "name", "file", "line", "entryPoint", "testProbe", "testProbeWeak", "coverageMeasured", "tests", "docs", "uiReachable"],
+        "properties": {
+          "surface": { "enum": ["cli-command", "cli-script", "http-route", "ui-view", "mcp-tool", "job", "config-flag", "package-api"] },
+          "id": { "type": "string", "minLength": 1, "description": "<surface>:<key>." },
+          "name": { "type": "string", "minLength": 1 },
+          "file": { "type": ["string", "null"], "description": "Where the entry point is declared; null for a configuration flag read only from tests." },
+          "line": { "type": "integer", "minimum": 0, "description": "Recorded so a reader can jump there; 0 when there is no production read site." },
+          "entryPoint": { "type": "boolean" },
+          "testProbe": { "type": "array", "items": { "type": "string" }, "description": "The strings a test or document must contain to count as naming this feature. Empty means coverage was not measured for it." },
+          "testProbeWeak": { "type": "boolean", "description": "The probe is a generic word that can match without naming the feature." },
+          "coverageMeasured": { "type": "boolean" },
+          "tests": { "type": "array", "items": { "type": "string" }, "description": "Test files that name the feature." },
+          "docs": { "type": "array", "items": { "type": "string" }, "description": "Markdown files that contain every probe." },
+          "uiReachable": { "type": "boolean" },
+          "undetermined": { "type": "boolean", "description": "The extractor saw the entry point and could not read it; undeterminedWhy says what is missing." },
+          "undeterminedWhy": { "type": "string" }
+        }
+      }
+    }
+  }
+}

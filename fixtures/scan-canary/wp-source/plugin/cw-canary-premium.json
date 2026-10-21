@@ -1,0 +1,15 @@
+{
+ "error": 0,
+ "message": null,
+ "data": {
+  "name": null,
+  "plugin": "cw-canary-premium",
+  "link": null,
+  "latest": null,
+  "closed": null,
+  "closed_reason": null,
+  "closed_date": null,
+  "vulnerability": null
+ },
+ "updated": 1767225600
+}

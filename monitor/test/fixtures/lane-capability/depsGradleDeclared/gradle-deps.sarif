@@ -1,0 +1,1596 @@
+{
+ "version": "2.1.0",
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "gradle-deps-scan",
+     "informationUri": "https://deps.dev",
+     "rules": [
+      {
+       "id": "GHSA-3pxv-7cmr-fjr4",
+       "shortDescription": {
+        "text": "GHSA-3pxv-7cmr-fjr4"
+       }
+      },
+      {
+       "id": "GHSA-6hg6-v5c8-fphq",
+       "shortDescription": {
+        "text": "GHSA-6hg6-v5c8-fphq"
+       }
+      },
+      {
+       "id": "GHSA-7rjr-3q55-vv33",
+       "shortDescription": {
+        "text": "GHSA-7rjr-3q55-vv33"
+       }
+      },
+      {
+       "id": "GHSA-8489-44mv-ggj8",
+       "shortDescription": {
+        "text": "GHSA-8489-44mv-ggj8"
+       }
+      },
+      {
+       "id": "GHSA-jfh8-c2jp-5v3q",
+       "shortDescription": {
+        "text": "GHSA-jfh8-c2jp-5v3q"
+       }
+      },
+      {
+       "id": "GHSA-p6xc-xr62-6r2g",
+       "shortDescription": {
+        "text": "GHSA-p6xc-xr62-6r2g"
+       }
+      },
+      {
+       "id": "GHSA-vc5p-v9hr-52mj",
+       "shortDescription": {
+        "text": "GHSA-vc5p-v9hr-52mj"
+       }
+      },
+      {
+       "id": "GHSA-27xj-rqx5-2255",
+       "shortDescription": {
+        "text": "GHSA-27xj-rqx5-2255"
+       }
+      },
+      {
+       "id": "GHSA-288c-cq4h-88gq",
+       "shortDescription": {
+        "text": "GHSA-288c-cq4h-88gq"
+       }
+      },
+      {
+       "id": "GHSA-4w82-r329-3q67",
+       "shortDescription": {
+        "text": "GHSA-4w82-r329-3q67"
+       }
+      },
+      {
+       "id": "GHSA-57j2-w4cx-62h2",
+       "shortDescription": {
+        "text": "GHSA-57j2-w4cx-62h2"
+       }
+      },
+      {
+       "id": "GHSA-58pp-9c76-5625",
+       "shortDescription": {
+        "text": "GHSA-58pp-9c76-5625"
+       }
+      },
+      {
+       "id": "GHSA-5949-rw7g-wx7w",
+       "shortDescription": {
+        "text": "GHSA-5949-rw7g-wx7w"
+       }
+      },
+      {
+       "id": "GHSA-5jmj-h7xm-6q6v",
+       "shortDescription": {
+        "text": "GHSA-5jmj-h7xm-6q6v"
+       }
+      },
+      {
+       "id": "GHSA-5p34-5m6p-p58g",
+       "shortDescription": {
+        "text": "GHSA-5p34-5m6p-p58g"
+       }
+      },
+      {
+       "id": "GHSA-5r5r-6hpj-8gg9",
+       "shortDescription": {
+        "text": "GHSA-5r5r-6hpj-8gg9"
+       }
+      },
+      {
+       "id": "GHSA-5ww9-j83m-q7qx",
+       "shortDescription": {
+        "text": "GHSA-5ww9-j83m-q7qx"
+       }
+      },
+      {
+       "id": "GHSA-6fpp-rgj9-8rwc",
+       "shortDescription": {
+        "text": "GHSA-6fpp-rgj9-8rwc"
+       }
+      },
+      {
+       "id": "GHSA-758m-v56v-grj4",
+       "shortDescription": {
+        "text": "GHSA-758m-v56v-grj4"
+       }
+      },
+      {
+       "id": "GHSA-85cw-hj65-qqv9",
+       "shortDescription": {
+        "text": "GHSA-85cw-hj65-qqv9"
+       }
+      },
+      {
+       "id": "GHSA-89qr-369f-5m5x",
+       "shortDescription": {
+        "text": "GHSA-89qr-369f-5m5x"
+       }
+      },
+      {
+       "id": "GHSA-8c4j-34r4-xr8g",
+       "shortDescription": {
+        "text": "GHSA-8c4j-34r4-xr8g"
+       }
+      },
+      {
+       "id": "GHSA-8w26-6f25-cm9x",
+       "shortDescription": {
+        "text": "GHSA-8w26-6f25-cm9x"
+       }
+      },
+      {
+       "id": "GHSA-95cm-88f5-f2c7",
+       "shortDescription": {
+        "text": "GHSA-95cm-88f5-f2c7"
+       }
+      },
+      {
+       "id": "GHSA-9gph-22xh-8x98",
+       "shortDescription": {
+        "text": "GHSA-9gph-22xh-8x98"
+       }
+      },
+      {
+       "id": "GHSA-9m6f-7xcq-8vf8",
+       "shortDescription": {
+        "text": "GHSA-9m6f-7xcq-8vf8"
+       }
+      },
+      {
+       "id": "GHSA-9vvp-fxw6-jcxr",
+       "shortDescription": {
+        "text": "GHSA-9vvp-fxw6-jcxr"
+       }
+      },
+      {
+       "id": "GHSA-c265-37vj-cwcc",
+       "shortDescription": {
+        "text": "GHSA-c265-37vj-cwcc"
+       }
+      },
+      {
+       "id": "GHSA-c2q3-4qrh-fm48",
+       "shortDescription": {
+        "text": "GHSA-c2q3-4qrh-fm48"
+       }
+      },
+      {
+       "id": "GHSA-cf6r-3wgc-h863",
+       "shortDescription": {
+        "text": "GHSA-cf6r-3wgc-h863"
+       }
+      },
+      {
+       "id": "GHSA-cmfg-87vq-g5g4",
+       "shortDescription": {
+        "text": "GHSA-cmfg-87vq-g5g4"
+       }
+      },
+      {
+       "id": "GHSA-cvm9-fjm9-3572",
+       "shortDescription": {
+        "text": "GHSA-cvm9-fjm9-3572"
+       }
+      },
+      {
+       "id": "GHSA-cxp5-3px4-pw24",
+       "shortDescription": {
+        "text": "GHSA-cxp5-3px4-pw24"
+       }
+      },
+      {
+       "id": "GHSA-f3j5-rmmp-3fc5",
+       "shortDescription": {
+        "text": "GHSA-f3j5-rmmp-3fc5"
+       }
+      },
+      {
+       "id": "GHSA-f9xh-2qgp-cq57",
+       "shortDescription": {
+        "text": "GHSA-f9xh-2qgp-cq57"
+       }
+      },
+      {
+       "id": "GHSA-fmmc-742q-jg75",
+       "shortDescription": {
+        "text": "GHSA-fmmc-742q-jg75"
+       }
+      },
+      {
+       "id": "GHSA-fqwf-pjwf-7vqv",
+       "shortDescription": {
+        "text": "GHSA-fqwf-pjwf-7vqv"
+       }
+      },
+      {
+       "id": "GHSA-gjmw-vf9h-g25v",
+       "shortDescription": {
+        "text": "GHSA-gjmw-vf9h-g25v"
+       }
+      },
+      {
+       "id": "GHSA-gwp4-hfv6-p7hw",
+       "shortDescription": {
+        "text": "GHSA-gwp4-hfv6-p7hw"
+       }
+      },
+      {
+       "id": "GHSA-gww7-p5w4-wrfv",
+       "shortDescription": {
+        "text": "GHSA-gww7-p5w4-wrfv"
+       }
+      },
+      {
+       "id": "GHSA-h3cw-g4mq-c5x2",
+       "shortDescription": {
+        "text": "GHSA-h3cw-g4mq-c5x2"
+       }
+      },
+      {
+       "id": "GHSA-h4rc-386g-6m85",
+       "shortDescription": {
+        "text": "GHSA-h4rc-386g-6m85"
+       }
+      },
+      {
+       "id": "GHSA-h822-r4r5-v8jg",
+       "shortDescription": {
+        "text": "GHSA-h822-r4r5-v8jg"
+       }
+      },
+      {
+       "id": "GHSA-hgj6-7826-r7m5",
+       "shortDescription": {
+        "text": "GHSA-hgj6-7826-r7m5"
+       }
+      },
+      {
+       "id": "GHSA-j823-4qch-3rgm",
+       "shortDescription": {
+        "text": "GHSA-j823-4qch-3rgm"
+       }
+      },
+      {
+       "id": "GHSA-jjjh-jjxp-wpff",
+       "shortDescription": {
+        "text": "GHSA-jjjh-jjxp-wpff"
+       }
+      },
+      {
+       "id": "GHSA-m6x4-97wx-4q27",
+       "shortDescription": {
+        "text": "GHSA-m6x4-97wx-4q27"
+       }
+      },
+      {
+       "id": "GHSA-mc6h-4qgp-37qh",
+       "shortDescription": {
+        "text": "GHSA-mc6h-4qgp-37qh"
+       }
+      },
+      {
+       "id": "GHSA-mph4-vhrx-mv67",
+       "shortDescription": {
+        "text": "GHSA-mph4-vhrx-mv67"
+       }
+      },
+      {
+       "id": "GHSA-mx7p-6679-8g3q",
+       "shortDescription": {
+        "text": "GHSA-mx7p-6679-8g3q"
+       }
+      },
+      {
+       "id": "GHSA-p43x-xfjf-5jhr",
+       "shortDescription": {
+        "text": "GHSA-p43x-xfjf-5jhr"
+       }
+      },
+      {
+       "id": "GHSA-q93h-jc49-78gg",
+       "shortDescription": {
+        "text": "GHSA-q93h-jc49-78gg"
+       }
+      },
+      {
+       "id": "GHSA-qjw2-hr98-qgfh",
+       "shortDescription": {
+        "text": "GHSA-qjw2-hr98-qgfh"
+       }
+      },
+      {
+       "id": "GHSA-qmqc-x3r4-6v39",
+       "shortDescription": {
+        "text": "GHSA-qmqc-x3r4-6v39"
+       }
+      },
+      {
+       "id": "GHSA-r3gr-cxrf-hg25",
+       "shortDescription": {
+        "text": "GHSA-r3gr-cxrf-hg25"
+       }
+      },
+      {
+       "id": "GHSA-r695-7vr9-jgc2",
+       "shortDescription": {
+        "text": "GHSA-r695-7vr9-jgc2"
+       }
+      },
+      {
+       "id": "GHSA-rf6r-2c4q-2vwg",
+       "shortDescription": {
+        "text": "GHSA-rf6r-2c4q-2vwg"
+       }
+      },
+      {
+       "id": "GHSA-rgv9-q543-rqg4",
+       "shortDescription": {
+        "text": "GHSA-rgv9-q543-rqg4"
+       }
+      },
+      {
+       "id": "GHSA-rpr3-cw39-3pxh",
+       "shortDescription": {
+        "text": "GHSA-rpr3-cw39-3pxh"
+       }
+      },
+      {
+       "id": "GHSA-v3xw-c963-f5hc",
+       "shortDescription": {
+        "text": "GHSA-v3xw-c963-f5hc"
+       }
+      },
+      {
+       "id": "GHSA-v585-23hc-c647",
+       "shortDescription": {
+        "text": "GHSA-v585-23hc-c647"
+       }
+      },
+      {
+       "id": "GHSA-vfqx-33qm-g869",
+       "shortDescription": {
+        "text": "GHSA-vfqx-33qm-g869"
+       }
+      },
+      {
+       "id": "GHSA-vvgp-rfg2-7rr6",
+       "shortDescription": {
+        "text": "GHSA-vvgp-rfg2-7rr6"
+       }
+      },
+      {
+       "id": "GHSA-wh8g-3j2c-rqj5",
+       "shortDescription": {
+        "text": "GHSA-wh8g-3j2c-rqj5"
+       }
+      },
+      {
+       "id": "GHSA-wjgm-6hv5-3cvf",
+       "shortDescription": {
+        "text": "GHSA-wjgm-6hv5-3cvf"
+       }
+      },
+      {
+       "id": "GHSA-wv8q-qhhj-9h54",
+       "shortDescription": {
+        "text": "GHSA-wv8q-qhhj-9h54"
+       }
+      },
+      {
+       "id": "GHSA-qv9r-c865-cp47",
+       "shortDescription": {
+        "text": "GHSA-qv9r-c865-cp47"
+       }
+      },
+      {
+       "id": "GHSA-7hhh-6rmp-j9qf",
+       "shortDescription": {
+        "text": "GHSA-7hhh-6rmp-j9qf"
+       }
+      },
+      {
+       "id": "GHSA-h46c-h94j-95f3",
+       "shortDescription": {
+        "text": "GHSA-h46c-h94j-95f3"
+       }
+      },
+      {
+       "id": "GHSA-r7wm-3cxj-wff9",
+       "shortDescription": {
+        "text": "GHSA-r7wm-3cxj-wff9"
+       }
+      },
+      {
+       "id": "GHSA-wf8f-6423-gfxg",
+       "shortDescription": {
+        "text": "GHSA-wf8f-6423-gfxg"
+       }
+      }
+     ]
+    }
+   },
+   "invocations": [
+    {
+     "executionSuccessful": true,
+     "workingDirectory": {
+      "uri": "file://."
+     },
+     "properties": {
+      "resolution": "declared",
+      "note": "Direct coordinates read from version catalogs and build files; transitive closure from deps.dev. A declared version can be overridden by Gradle constraints/resolutionStrategy/BOMs/plugins, so this is a FLOOR.",
+      "directCoordinates": 2,
+      "totalPackages": 6,
+      "depsDevResolved": 2,
+      "depsDevFailed": 0
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "GHSA-3pxv-7cmr-fjr4",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-3pxv-7cmr-fjr4 in org.apache.logging.log4j:log4j-core@2.14.1 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-6hg6-v5c8-fphq",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-6hg6-v5c8-fphq in org.apache.logging.log4j:log4j-core@2.14.1 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-7rjr-3q55-vv33",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-7rjr-3q55-vv33 in org.apache.logging.log4j:log4j-core@2.14.1 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-8489-44mv-ggj8",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-8489-44mv-ggj8 in org.apache.logging.log4j:log4j-core@2.14.1 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-jfh8-c2jp-5v3q",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-jfh8-c2jp-5v3q in org.apache.logging.log4j:log4j-core@2.14.1 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-p6xc-xr62-6r2g",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-p6xc-xr62-6r2g in org.apache.logging.log4j:log4j-core@2.14.1 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-vc5p-v9hr-52mj",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-vc5p-v9hr-52mj in org.apache.logging.log4j:log4j-core@2.14.1 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-27xj-rqx5-2255",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-27xj-rqx5-2255 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-288c-cq4h-88gq",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-288c-cq4h-88gq in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-4w82-r329-3q67",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-4w82-r329-3q67 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-57j2-w4cx-62h2",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-57j2-w4cx-62h2 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-58pp-9c76-5625",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-58pp-9c76-5625 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-5949-rw7g-wx7w",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-5949-rw7g-wx7w in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-5jmj-h7xm-6q6v",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-5jmj-h7xm-6q6v in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-5p34-5m6p-p58g",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-5p34-5m6p-p58g in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-5r5r-6hpj-8gg9",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-5r5r-6hpj-8gg9 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-5ww9-j83m-q7qx",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-5ww9-j83m-q7qx in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-6fpp-rgj9-8rwc",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-6fpp-rgj9-8rwc in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-758m-v56v-grj4",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-758m-v56v-grj4 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-85cw-hj65-qqv9",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-85cw-hj65-qqv9 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-89qr-369f-5m5x",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-89qr-369f-5m5x in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-8c4j-34r4-xr8g",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-8c4j-34r4-xr8g in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-8w26-6f25-cm9x",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-8w26-6f25-cm9x in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-95cm-88f5-f2c7",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-95cm-88f5-f2c7 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-9gph-22xh-8x98",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-9gph-22xh-8x98 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-9m6f-7xcq-8vf8",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-9m6f-7xcq-8vf8 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-9vvp-fxw6-jcxr",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-9vvp-fxw6-jcxr in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-c265-37vj-cwcc",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-c265-37vj-cwcc in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-c2q3-4qrh-fm48",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-c2q3-4qrh-fm48 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-cf6r-3wgc-h863",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-cf6r-3wgc-h863 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-cmfg-87vq-g5g4",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-cmfg-87vq-g5g4 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-cvm9-fjm9-3572",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-cvm9-fjm9-3572 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-cxp5-3px4-pw24",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-cxp5-3px4-pw24 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-f3j5-rmmp-3fc5",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-f3j5-rmmp-3fc5 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-f9xh-2qgp-cq57",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-f9xh-2qgp-cq57 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-fmmc-742q-jg75",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-fmmc-742q-jg75 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-fqwf-pjwf-7vqv",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-fqwf-pjwf-7vqv in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-gjmw-vf9h-g25v",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-gjmw-vf9h-g25v in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-gwp4-hfv6-p7hw",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-gwp4-hfv6-p7hw in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-gww7-p5w4-wrfv",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-gww7-p5w4-wrfv in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-h3cw-g4mq-c5x2",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-h3cw-g4mq-c5x2 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-h4rc-386g-6m85",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-h4rc-386g-6m85 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-h822-r4r5-v8jg",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-h822-r4r5-v8jg in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-hgj6-7826-r7m5",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-hgj6-7826-r7m5 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-j823-4qch-3rgm",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-j823-4qch-3rgm in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-jjjh-jjxp-wpff",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-jjjh-jjxp-wpff in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-m6x4-97wx-4q27",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-m6x4-97wx-4q27 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-mc6h-4qgp-37qh",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-mc6h-4qgp-37qh in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-mph4-vhrx-mv67",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-mph4-vhrx-mv67 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-mx7p-6679-8g3q",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-mx7p-6679-8g3q in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-p43x-xfjf-5jhr",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-p43x-xfjf-5jhr in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-q93h-jc49-78gg",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-q93h-jc49-78gg in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-qjw2-hr98-qgfh",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-qjw2-hr98-qgfh in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-qmqc-x3r4-6v39",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-qmqc-x3r4-6v39 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-r3gr-cxrf-hg25",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-r3gr-cxrf-hg25 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-r695-7vr9-jgc2",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-r695-7vr9-jgc2 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-rf6r-2c4q-2vwg",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-rf6r-2c4q-2vwg in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-rgv9-q543-rqg4",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-rgv9-q543-rqg4 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-rpr3-cw39-3pxh",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-rpr3-cw39-3pxh in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-v3xw-c963-f5hc",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-v3xw-c963-f5hc in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-v585-23hc-c647",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-v585-23hc-c647 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-vfqx-33qm-g869",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-vfqx-33qm-g869 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-vvgp-rfg2-7rr6",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-vvgp-rfg2-7rr6 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-wh8g-3j2c-rqj5",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-wh8g-3j2c-rqj5 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-wjgm-6hv5-3cvf",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-wjgm-6hv5-3cvf in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-wv8q-qhhj-9h54",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-wv8q-qhhj-9h54 in com.fasterxml.jackson.core:jackson-databind@2.9.8 (direct) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-qv9r-c865-cp47",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-qv9r-c865-cp47 in org.apache.logging.log4j:log4j-api@2.14.1 (transitive) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-7hhh-6rmp-j9qf",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-7hhh-6rmp-j9qf in com.fasterxml.jackson.core:jackson-core@2.9.8 (transitive) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-h46c-h94j-95f3",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-h46c-h94j-95f3 in com.fasterxml.jackson.core:jackson-core@2.9.8 (transitive) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-r7wm-3cxj-wff9",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-r7wm-3cxj-wff9 in com.fasterxml.jackson.core:jackson-core@2.9.8 (transitive) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "GHSA-wf8f-6423-gfxg",
+     "level": "warning",
+     "message": {
+      "text": "GHSA-wf8f-6423-gfxg in com.fasterxml.jackson.core:jackson-core@2.9.8 (transitive) — declared-version resolution, a floor not a ceiling"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "build.gradle"
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

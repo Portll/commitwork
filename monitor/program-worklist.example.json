@@ -1,0 +1,13 @@
+{
+  "note": "SYNTHETIC EXAMPLE of the programme worklist rendered by monitor/timeline2.mjs and reconciled by monitor/worklist-reconcile.mjs. The operator's worklist is a private record at monitor/private/program-worklist.json (CW_PROGRAM_WORKLIST overrides; absent means no programmes are rendered). Dependency-ordered: every dep row appears above its dependent, and every status cites its source.",
+  "programs": [
+    {
+      "key": "upgrade",
+      "title": "Example upgrade programme: runtime upgrade, then framework upgrade",
+      "items": [
+        { "id": "U-1", "phase": "Runtime", "title": "Move every service to the current runtime LTS", "deps": [], "status": "done", "evidence": "synthetic example: build logs of the upgrade" },
+        { "id": "U-2", "phase": "Framework", "title": "Upgrade the web framework on the upgraded runtime", "deps": ["U-1"], "status": "in-progress", "evidence": "synthetic example: tracking issue" }
+      ]
+    }
+  ]
+}

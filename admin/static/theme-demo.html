@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8">
+<title>commitwork theme — components</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="theme.css">
+<!-- Consumes theme.css as a real stylesheet rather than inlining it: if this page renders, the
+     theme works as a file the panel can link. Opens from file:// — the only asset is a sibling. -->
+<style>
+  body{margin:0;background:var(--cw-bg);color:var(--cw-ink);font-family:var(--cw-sans);font-size:14px}
+  .wrap{max-width:60rem;margin:0 auto;padding:1.6rem 1.25rem 5rem}
+  h1{font-size:1.05rem;font-weight:600;color:var(--cw-head);margin:0 0 .2rem}
+  h2{font-size:.8rem;font-weight:600;color:var(--cw-head);margin:2.2rem 0 .7rem;
+     border-bottom:1px solid var(--cw-line);padding-bottom:.35rem}
+  p.sub{color:var(--cw-mut);font-size:.78rem;margin:0 0 1rem;line-height:1.55}
+  .stage{background:var(--cw-panel);border:1px solid var(--cw-line);border-radius:var(--cw-r-lg);
+         padding:1.15rem}
+  .stage.on-light{border-color:#e3e2e0}
+  .row{display:flex;flex-wrap:wrap;gap:.85rem;align-items:flex-start}
+  .cap{font-size:.72rem;color:var(--cw-mut);margin:.7rem 0 0;line-height:1.5}
+  .scale{display:flex;align-items:center;gap:.5rem;margin-top:.8rem;
+         font-family:var(--cw-mono);font-size:.66rem;color:var(--cw-mut)}
+  .scale i{flex:1;height:1px;font-style:normal;
+    background:linear-gradient(90deg,rgba(155,176,105,.5),rgba(229,72,77,.9))}
+  code{font-family:var(--cw-mono);font-size:.74rem;color:var(--cw-head)}
+</style>
+
+<div class="wrap">
+  <h1>commitwork theme — components</h1>
+  <p class="sub">Everything here is styled by <code>theme.css</code>; this page adds only page
+     furniture. Hover the buttons: the halo tracks what the action grants, not how bright its
+     pigment is. Keyboard hints render for the platform you are reading on.</p>
+
+  <h2>Button family — dark surface</h2>
+  <div class="stage">
+    <div class="row">
+      <button class="cw-btn">No thanks, I'll reconsider
+        <span class="cw-keys" data-mac="esc" data-win="Esc"></span></button>
+      <button class="cw-btn cw-btn--fill cw-btn--ok">Run 2 selected
+        <span class="cw-keys" data-mac="⏎" data-win="Enter"></span></button>
+      <button class="cw-btn cw-btn--fill cw-btn--neutral">Yes, I understand
+        <span class="cw-keys" data-mac="⌘ ⏎" data-win="Ctrl Enter"></span></button>
+      <button class="cw-btn cw-btn--fill cw-btn--caution">Approve network lane
+        <span class="cw-keys" data-mac="⌘ ⌥ ⏎" data-win="Ctrl Alt Enter"></span></button>
+      <button class="cw-btn cw-btn--fill cw-btn--stop">Grant all 68
+        <span class="cw-keys" data-mac="⌘ ⇧ ⏎" data-win="Ctrl Shift Enter"></span></button>
+      <button class="cw-btn cw-btn--obsidian">Yes, I understand
+        <span class="cw-keys" data-mac="⌘ ⏎" data-win="Ctrl Enter"></span></button>
+    </div>
+    <div class="scale"><span>grants nothing · bare ⏎</span><i></i><span>irreversible · needs a modifier</span></div>
+    <p class="cap">The shortcut escalates with the halo, so the physical cost of the chord tracks
+       the consequence. Every fill takes dark ink — measured, not chosen: white text fails AA on
+       all five of these fills.</p>
+  </div>
+
+  <h2>Button family — light surface</h2>
+  <div class="stage on-light cw-light">
+    <div class="row">
+      <button class="cw-btn">No thanks, I'll reconsider
+        <span class="cw-keys" data-mac="esc" data-win="Esc"></span></button>
+      <button class="cw-btn cw-btn--fill cw-btn--ok">Approve and run
+        <span class="cw-keys" data-mac="⌘ ⇧ R" data-win="Ctrl Shift R"></span></button>
+      <button class="cw-btn cw-btn--fill cw-btn--neutral">Review first
+        <span class="cw-keys" data-mac="⌘ ." data-win="Ctrl ."></span></button>
+      <button class="cw-btn cw-btn--fill cw-btn--stop">Grant all 68
+        <span class="cw-keys" data-mac="⌘ ⇧ ⏎" data-win="Ctrl Shift Enter"></span></button>
+      <button class="cw-btn cw-btn--obsidian">Yes, I understand
+        <span class="cw-keys" data-mac="⌘ ⏎" data-win="Ctrl Enter"></span></button>
+    </div>
+    <p class="cap">Not a recolour: fills darken, text inverts to white, and the bloom becomes a
+       focus ring because a halo on a light ground reads as a smudge. Gold is the exception in both
+       directions — it keeps its bright fill and dark ink, because no gold light enough to look
+       gold can carry white text.</p>
+  </div>
+
+  <h2>Approval dialog</h2>
+  <div class="stage">
+    <div style="position:relative;height:16rem;overflow:hidden;border-radius:var(--cw-r-md);
+                background:var(--cw-bg)">
+      <div class="cw-scrim" style="position:absolute"></div>
+      <div class="cw-dialog" style="position:absolute;width:min(30rem,90%)">
+        <h3 class="cw-dialog__title">This lane runs a binary on your machine</h3>
+        <p class="cw-dialog__body"><code>sast-codeql</code> needs an executable commitwork does not
+          ship. commitwork holds no credentials for it and will not install it for you.</p>
+        <div class="cw-facts"><span>codeql</span><span>execute · read</span><span>6 repos</span></div>
+        <p class="cw-note">Approving records the grant in the change ledger against your name and
+          the time.</p>
+        <div class="cw-actions">
+          <button class="cw-btn">No thanks, I'll reconsider
+            <span class="cw-keys" data-mac="esc" data-win="Esc"></span></button>
+          <button class="cw-btn cw-btn--fill cw-btn--neutral">Yes, I understand
+            <span class="cw-keys" data-mac="⌘ ⏎" data-win="Ctrl Enter"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Selection grid</h2>
+  <div class="stage">
+    <div class="cw-grid">
+      <div class="cw-row cw-row--group">
+        <input class="cw-tick" type="checkbox" aria-label="select all in fast">
+        <span class="cw-row__name">fast</span>
+        <span class="cw-row__needs">14 lanes · the pre-commit set</span>
+      </div>
+      <div class="cw-row cw-row--lane"><input class="cw-tick" type="checkbox" checked aria-label="secrets">
+        <span class="cw-row__name">secrets</span>
+        <span class="cw-row__needs">trufflehog<span class="cw-badge cw-badge--binary">binary</span></span></div>
+      <div class="cw-row cw-row--lane"><input class="cw-tick" type="checkbox" aria-label="dast-nuclei">
+        <span class="cw-row__name">dast-nuclei</span>
+        <span class="cw-row__needs">nuclei<span class="cw-badge cw-badge--binary">binary</span><span class="cw-badge cw-badge--perm">network</span></span></div>
+    </div>
+  </div>
+
+  <h2>Select-this</h2>
+  <div class="stage">
+    <div class="row">
+      <button class="cw-pick" aria-pressed="false">Select this</button>
+      <button class="cw-pick" aria-pressed="true">Select this</button>
+    </div>
+    <p class="cap">Deliberately outside the semantic family: it picks a thing, it does not grant
+       anything.</p>
+  </div>
+</div>
+
+<script>
+// Keyboard hints are rendered for THIS platform. userAgentData is the non-deprecated source and is
+// absent on Safari and Firefox, so navigator.platform is the fallback — in that order, never a UA
+// string sniff. A hardcoded ⌘ in markup is wrong for every Windows and Linux reader.
+const IS_MAC = (() => {
+  const p = navigator.userAgentData && navigator.userAgentData.platform;
+  return p ? /mac/i.test(p) : /Mac|iPhone|iPad/i.test(navigator.platform || '');
+})();
+for (const el of document.querySelectorAll('.cw-keys')) {
+  const spec = el.dataset[IS_MAC ? 'mac' : 'win'] || '';
+  el.textContent = '';
+  for (const key of spec.split(' ').filter(Boolean)) {
+    const k = document.createElement('kbd');
+    k.className = 'cw-kbd'; k.textContent = key;
+    el.appendChild(k);
+  }
+}
+for (const b of document.querySelectorAll('.cw-pick')) {
+  b.addEventListener('click', () => {
+    const on = b.getAttribute('aria-pressed') === 'true';
+    for (const o of document.querySelectorAll('.cw-pick')) o.setAttribute('aria-pressed','false');
+    if (!on) b.setAttribute('aria-pressed','true');
+  });
+}
+</script>
+</html>

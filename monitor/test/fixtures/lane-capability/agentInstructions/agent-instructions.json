@@ -1,0 +1,59 @@
+{
+  "tool": "agent-instructions",
+  "summary": {
+    "findings": 6,
+    "byRule": {
+      "directive-in-command-file": 1,
+      "guard-bypass-directive": 1,
+      "agent-directive-exec": 2,
+      "html-comment-directive": 1,
+      "agent-directive-exfil": 1
+    },
+    "filesScanned": 3,
+    "filesSkipped": []
+  },
+  "findings": [
+    {
+      "rule": "directive-in-command-file",
+      "path": ".cursor/rules/deploy.md",
+      "sev": "high",
+      "cwe": "CWE-1427",
+      "detail": "1 exec/exfil directive line(s) in an executed prompt, first at line 5: fetch-and-execute ×1, credential-to-sink ×0"
+    },
+    {
+      "rule": "guard-bypass-directive",
+      "path": ".cursor/rules/deploy.md",
+      "sev": "crit",
+      "cwe": "CWE-693",
+      "detail": "1 line(s) instruct disabling or bypassing a hook or guard, first at line 7"
+    },
+    {
+      "rule": "agent-directive-exec",
+      "path": "AGENTS.md",
+      "sev": "high",
+      "cwe": "CWE-1427",
+      "detail": "1 line(s) instruct fetching from the network and executing the result, first at line 5"
+    },
+    {
+      "rule": "html-comment-directive",
+      "path": "AGENTS.md",
+      "sev": "high",
+      "cwe": "CWE-1427",
+      "detail": "1 of 1 HTML comment(s) carry a directive, first at line 7: agent-imperative, shell-verb, url"
+    },
+    {
+      "rule": "agent-directive-exec",
+      "path": "README.md",
+      "sev": "high",
+      "cwe": "CWE-1427",
+      "detail": "1 line(s) instruct fetching from the network and executing the result, first at line 7"
+    },
+    {
+      "rule": "agent-directive-exfil",
+      "path": "README.md",
+      "sev": "crit",
+      "cwe": "CWE-1427",
+      "detail": "1 line(s) pair a credential path or variable with a send sink, first at line 9"
+    }
+  ]
+}

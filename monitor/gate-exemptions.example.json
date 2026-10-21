@@ -1,0 +1,16 @@
+{
+  "_comment": "SYNTHETIC EXAMPLE of the gate-exemption overlay. The live overlay is a private record at monitor/private/gate-exemptions.json (CW_GATE_EXEMPTIONS overrides; absent means no exemption is in force). Append-only log mirroring annotations.json: applied by rollup.mjs as-of rollup time (entry active when at <= now and not expired). An active entry converts a red gate status into an ANNOTATED exempt state in rollup views; the raw gate statuses stay untouched. gate = manifest check id (qg-boot-test | qg-contract-tests | qg-openapi | qg-ci | qg-boot-test-pass); service = service dir name; area = the registry area the service belongs to. Never delete an entry — set expires. Write through bin/exempt.mjs.",
+  "exemptions": [
+    {
+      "gate": "qg-openapi",
+      "service": "example-gateway",
+      "area": "example-area",
+      "action": "exempt",
+      "reason": "Synthetic example: an edge router that forwards to downstream services and owns no API surface of its own.",
+      "who": "operator@example.test",
+      "at": "2026-01-15T00:00:00.000Z",
+      "expires": "2026-07-15T00:00:00.000Z",
+      "expiresReason": "re-review if the gateway gains endpoints of its own"
+    }
+  ]
+}

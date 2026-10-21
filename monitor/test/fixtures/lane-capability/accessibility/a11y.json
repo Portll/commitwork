@@ -1,0 +1,280 @@
+{
+  "tool": "a11y-wcag",
+  "standard": "WCAG 2.2",
+  "generatedAt": "2026-10-04T10:21:34.796Z",
+  "ran": true,
+  "files": [
+    "index.html"
+  ],
+  "subject": {
+    "algorithm": "sha256",
+    "digest": "sha256:03ac93c61558785298b27c272e7bff20a6d3f0216d5f8e0cd277369a2d5e6fc1",
+    "sources": [
+      {
+        "path": "index.html",
+        "kind": "css",
+        "sha256": "2614b43ac7f6b992f2c973226925dbef5aad0e5573cd11c3c513364b745ab2bf"
+      },
+      {
+        "path": "index.html",
+        "kind": "html",
+        "sha256": "ec341fbb2f1c8594cd5d72cf0fc8069b7373c7b1cb07e6798fc80a750cc1c51f"
+      }
+    ],
+    "note": "sha256 over every audited HTML file and stylesheet, path-qualified. A human attestation against a criterion this scanner cannot decide is bound to this digest and stops being in force the moment it moves — a ruling about a page is not a ruling about its rewrite."
+  },
+  "conformance": {
+    "A": "fails",
+    "AA": "fails",
+    "note": "A criterion this scanner cannot decide statically blocks a conformance claim the same way a failure does. \"unverified\" means exactly that — not \"probably fine\"."
+  },
+  "levels": {
+    "A": {
+      "total": 12,
+      "pass": 3,
+      "fail": 6,
+      "unchecked": 3
+    },
+    "AA": {
+      "total": 9,
+      "pass": 5,
+      "fail": 0,
+      "unchecked": 4
+    }
+  },
+  "criteria": [
+    {
+      "id": "1.1.1",
+      "level": "A",
+      "name": "Non-text Content",
+      "static": true,
+      "state": "fail",
+      "findings": [
+        {
+          "file": "index.html",
+          "detail": "<img> without alt: <img src=\"logo.png\">",
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "2.4.2",
+      "level": "A",
+      "name": "Page Titled",
+      "static": true,
+      "state": "fail",
+      "findings": [
+        {
+          "file": "index.html",
+          "detail": "no non-empty <title>",
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "2.4.4",
+      "level": "A",
+      "name": "Link Purpose (In Context)",
+      "static": true,
+      "state": "fail",
+      "findings": [
+        {
+          "file": "index.html",
+          "detail": "link with no discernible text",
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "3.1.1",
+      "level": "A",
+      "name": "Language of Page",
+      "static": true,
+      "state": "fail",
+      "findings": [
+        {
+          "file": "index.html",
+          "detail": "<html> has no lang attribute — a screen reader cannot pick a voice",
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "3.3.2",
+      "level": "A",
+      "name": "Labels or Instructions",
+      "static": true,
+      "state": "fail",
+      "findings": [
+        {
+          "file": "index.html",
+          "detail": "input with no label, aria-label or <label for>: <input type=\"text\" name=\"q\">",
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "4.1.2",
+      "level": "A",
+      "name": "Name, Role, Value",
+      "static": true,
+      "state": "fail",
+      "findings": [
+        {
+          "file": "index.html",
+          "detail": "button with no accessible name",
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "1.3.2",
+      "level": "A",
+      "name": "Meaningful Sequence",
+      "static": false,
+      "why": "as above: reading order is judged, not parsed",
+      "howToVerify": "Panel left. Turn CSS off entirely (DevTools ▸ disable the stylesheet, or Reader mode) and read top to bottom. The order content ARRIVES in must still make sense — a heading before the table it introduces, a coverage banner before the rows it qualifies. This panel is where that matters most: if a findings table arrives before the banner saying the scan was a VOID, the unstyled reading order tells a different story from the styled one.",
+      "state": "unchecked",
+      "findings": []
+    },
+    {
+      "id": "1.4.3",
+      "level": "AA",
+      "name": "Contrast (Minimum)",
+      "static": true,
+      "state": "unchecked",
+      "findings": [],
+      "why": "no stylesheet with custom properties was found to evaluate"
+    },
+    {
+      "id": "1.4.11",
+      "level": "AA",
+      "name": "Non-text Contrast",
+      "static": false,
+      "why": "needs the rendered UI: which borders/icons are meaningful boundaries is a design judgement",
+      "howToVerify": "Panel left, DevTools colour picker right. This is about NON-text: every control boundary and every icon that carries meaning needs 3:1 against what sits behind it. Check the input and select borders (--line / --line2 on --panel), the focus ring, the pill borders, and the status dot inside each pill. Do NOT re-check text here — 1.4.3 already machine-checks that. Judge only the shapes.",
+      "state": "unchecked",
+      "findings": []
+    },
+    {
+      "id": "2.4.3",
+      "level": "A",
+      "name": "Focus Order",
+      "static": false,
+      "why": "MEANINGFUL order cannot be read off the DOM — a sensible tab sequence is a human judgement",
+      "howToVerify": "Panel left, hands off the mouse. Tab from the top and say the order aloud: skip link, identity row, tab strip, then content. It must match how the page reads visually AND make sense as a sequence. The three failures to hunt: a control that jumps backwards, a dialog that lets focus escape behind it, and anything Tab reaches that you cannot see.",
+      "state": "unchecked",
+      "findings": []
+    },
+    {
+      "id": "2.4.11",
+      "level": "AA",
+      "name": "Focus Not Obscured (Minimum)",
+      "wcag22": true,
+      "static": false,
+      "why": "needs a live browser: whether a sticky header covers the focused element is a rendered-layout fact",
+      "howToVerify": "Panel on the left, nothing else needed. Click the first tab, then press Tab all the way down the page and watch the focus ring — it must stay FULLY visible at every stop. The failure to look for is the sticky identity bar covering a focused control when you Tab back upward, or a focused table row scrolling under it. Scroll to mid-page FIRST, then Tab: that is when it bites.",
+      "state": "unchecked",
+      "findings": []
+    },
+    {
+      "id": "2.5.8",
+      "level": "AA",
+      "name": "Target Size (Minimum)",
+      "wcag22": true,
+      "static": false,
+      "why": "needs a browser: 24x24 CSS px is a COMPUTED size, and this panel sizes controls in rem against a root font it adjusts at runtime",
+      "howToVerify": "Panel left, DevTools right (Cmd-Opt-I). Inspect the small controls — the tab-strip buttons, the ⏺ re-scan buttons, the copy / hand-off buttons on remediation cards. Read width and height in the Computed pane: each needs 24x24 CSS px, OR 24px of clear spacing around it. The ⏺ buttons are the likeliest failure. Check at a NARROW window too — the root font scales with the viewport, so that is the small end.",
+      "state": "unchecked",
+      "findings": []
+    },
+    {
+      "id": "3.3.7",
+      "level": "A",
+      "name": "Redundant Entry",
+      "wcag22": true,
+      "static": false,
+      "why": "needs flow analysis across a multi-step process; judgement, not markup",
+      "howToVerify": "Panel left, a second tab of the same panel right. Walk one multi-step flow end to end: log in, then a remediation hand-off (pick a check, choose an engine, pick a model, submit). Nothing you already supplied may be asked for again unless it is re-entered deliberately for security. A step that re-requests what an earlier step already holds is the failure.",
+      "state": "unchecked",
+      "findings": []
+    },
+    {
+      "id": "1.3.1",
+      "level": "A",
+      "name": "Info and Relationships",
+      "static": true,
+      "state": "pass",
+      "findings": []
+    },
+    {
+      "id": "1.4.4",
+      "level": "AA",
+      "name": "Resize Text",
+      "static": true,
+      "state": "pass",
+      "findings": []
+    },
+    {
+      "id": "2.4.1",
+      "level": "A",
+      "name": "Bypass Blocks",
+      "static": true,
+      "state": "pass",
+      "findings": []
+    },
+    {
+      "id": "2.4.6",
+      "level": "AA",
+      "name": "Headings and Labels",
+      "static": true,
+      "state": "pass",
+      "findings": []
+    },
+    {
+      "id": "2.4.7",
+      "level": "AA",
+      "name": "Focus Visible",
+      "static": true,
+      "state": "pass",
+      "findings": []
+    },
+    {
+      "id": "2.5.7",
+      "level": "AA",
+      "name": "Dragging Movements",
+      "wcag22": true,
+      "static": true,
+      "state": "pass",
+      "findings": []
+    },
+    {
+      "id": "3.2.6",
+      "level": "A",
+      "name": "Consistent Help",
+      "wcag22": true,
+      "static": true,
+      "state": "pass",
+      "findings": []
+    },
+    {
+      "id": "3.3.8",
+      "level": "AA",
+      "name": "Accessible Authentication (Minimum)",
+      "wcag22": true,
+      "static": true,
+      "state": "pass",
+      "findings": []
+    }
+  ],
+  "contrast": {
+    "checked": 0,
+    "violations": [],
+    "background": null,
+    "perFile": []
+  },
+  "totals": {
+    "violations": 6,
+    "criteriaFailing": 6
+  }
+}

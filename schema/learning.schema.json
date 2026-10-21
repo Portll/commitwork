@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Regenerable remediation learning view",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["note", "version", "generatedAt", "sourceEventCount", "sourceChainHead", "policySnapshot", "patterns"],
+  "properties": {
+    "note": { "type": "string", "minLength": 1 },
+    "version": { "const": 1 },
+    "generatedAt": { "type": "string", "minLength": 1 },
+    "sourceEventCount": { "type": "integer", "minimum": 0 },
+    "sourceChainHead": { "type": ["null", "string"] },
+    "policySnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rampObservations", "weightFloor", "strongWeightFloor", "learningDecayRate", "reinforceBonus", "contradictionPenalty", "jaccardThreshold", "minSupport", "tierStrongMinObservations", "tierStrongMinConfidence", "tierMediumMinConfidence", "tierWeakMaxObservations"],
+      "properties": {
+        "rampObservations": { "type": "number", "exclusiveMinimum": 0, "default": 8 },
+        "weightFloor": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.05 },
+        "strongWeightFloor": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.2 },
+        "learningDecayRate": { "type": "number", "minimum": 0, "default": 0.007701635339554948 },
+        "reinforceBonus": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.15 },
+        "contradictionPenalty": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.25 },
+        "jaccardThreshold": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.45 },
+        "minSupport": { "type": "number", "minimum": 1, "default": 3 },
+        "tierStrongMinObservations": { "type": "number", "minimum": 0, "default": 4 },
+        "tierStrongMinConfidence": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.75 },
+        "tierMediumMinConfidence": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
+        "tierWeakMaxObservations": { "type": "number", "minimum": 0, "default": 2 }
+      }
+    },
+    "patterns": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule", "pathPrefix", "package", "confidenceAlpha", "confidenceBeta", "observations", "calibratedConfidence", "tier", "weight", "weightAsOf", "lastEventAt", "lastEventType", "distinctAnnotators", "consolidated", "citedEvents"],
+        "properties": {
+          "rule": { "type": "string", "minLength": 1 },
+          "pathPrefix": { "type": "string", "minLength": 1 },
+          "package": { "type": ["null", "string"] },
+          "confidenceAlpha": { "type": "number", "minimum": 1 },
+          "confidenceBeta": { "type": "number", "minimum": 1 },
+          "observations": { "type": "number", "minimum": 0 },
+          "calibratedConfidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "tier": { "enum": ["weak", "medium", "strong"] },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+          "weightAsOf": { "type": "string", "minLength": 1 },
+          "lastEventAt": { "type": "string", "minLength": 1 },
+          "lastEventType": { "enum": ["fix-authored", "fix-verified", "fix-disputed", "fp-reinvestigated", "reopened-contradiction"] },
+          "distinctAnnotators": { "type": "integer", "minimum": 0 },
+          "consolidated": {
+            "type": ["null", "object"],
+            "additionalProperties": false,
+            "required": ["text", "supportCount", "sourceAnnotations"],
+            "properties": {
+              "text": { "type": "string", "minLength": 1 },
+              "supportCount": { "type": "integer", "minimum": 1 },
+              "sourceAnnotations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            }
+          },
+          "citedEvents": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    }
+  }
+}

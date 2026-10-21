@@ -1,0 +1,47 @@
+{
+  "findings": {
+    "high_confidence": [
+      {
+        "line": 3,
+        "type": "Config.Secrets: Hardcoded Secret",
+        "file": "config/config.exs",
+        "key": "password"
+      }
+    ],
+    "low_confidence": [
+      {
+        "line": 5,
+        "type": "SQL.Query: SQL injection",
+        "file": "lib/demo_web/controllers/page_controller.ex",
+        "variable": "name"
+      },
+      {
+        "line": 6,
+        "type": "DOS.StringToAtom: Unsafe `String.to_atom`",
+        "file": "lib/demo_web/controllers/page_controller.ex",
+        "variable": "params"
+      },
+      {
+        "line": 7,
+        "type": "Traversal.SendFile: Directory Traversal in `send_file`",
+        "file": "lib/demo_web/controllers/page_controller.ex",
+        "variable": "params"
+      },
+      {
+        "line": 8,
+        "type": "XSS.HTML: XSS in `html`",
+        "file": "lib/demo_web/controllers/page_controller.ex",
+        "variable": "Elixir.Phoenix.HTML and atom"
+      },
+      {
+        "line": 8,
+        "type": "XSS.Raw: XSS",
+        "file": "lib/demo_web/controllers/page_controller.ex",
+        "variable": "params"
+      }
+    ],
+    "medium_confidence": []
+  },
+  "sobelow_version": "0.15.0",
+  "total_findings": 6
+}

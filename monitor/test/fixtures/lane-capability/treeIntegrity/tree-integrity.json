@@ -1,0 +1,81 @@
+{
+  "tool": "tree-integrity",
+  "summary": {
+    "findings": 3,
+    "byRule": {
+      "record-file-missing": 1,
+      "record-hash-mismatch": 1,
+      "record-unlisted-file": 1
+    },
+    "filesScanned": 4,
+    "mode": "repo",
+    "applicable": true,
+    "notApplicable": 3,
+    "rulesNotApplicable": [
+      "git-untracked-code",
+      "git-modified",
+      "git-deleted"
+    ],
+    "notApplicableReasons": {
+      "git": "git drift is measured only on a deployed web root (brief/scan --webroot): in a working repository untracked and modified files are the normal state"
+    },
+    "unmeasured": [],
+    "git": {
+      "state": "not-applicable",
+      "reason": "git drift is measured only on a deployed web root (brief/scan --webroot): in a working repository untracked and modified files are the normal state"
+    },
+    "record": {
+      "state": "measured",
+      "records": 1,
+      "sites": 1,
+      "hashed": 3,
+      "verified": 1,
+      "unhashed": 2,
+      "unhashedAbsent": 1,
+      "outOfTree": 0,
+      "unsupportedHash": 0,
+      "conda": {
+        "distributions": 0,
+        "names": []
+      },
+      "bytecodeUnlisted": 0,
+      "foreignUnlisted": 0,
+      "unlistedNotJudged": [],
+      "unparseable": []
+    },
+    "unreadable": 0,
+    "skipDirs": [
+      ".git",
+      "node_modules",
+      ".claude/worktrees",
+      "fixtures/scan-canary/dirty"
+    ],
+    "skippedPaths": [
+      ".git"
+    ],
+    "unreadableFiles": []
+  },
+  "findings": [
+    {
+      "rule": "record-hash-mismatch",
+      "path": "site-packages/cw_canary_pkg/__init__.py",
+      "sev": "high",
+      "cwe": "CWE-345",
+      "detail": "content differs from the sha256 in site-packages/cw_canary_pkg-1.0.0.dist-info/RECORD (125 bytes recorded, 229 on disk)"
+    },
+    {
+      "rule": "record-unlisted-file",
+      "path": "site-packages/cw_canary_pkg/cw_canary_extra.py",
+      "sev": "high",
+      "cwe": "CWE-345",
+      "detail": "in cw_canary_pkg/, which cw_canary_pkg-1.0.0 installs, and listed in no RECORD there"
+    },
+    {
+      "rule": "record-file-missing",
+      "path": "site-packages/cw_canary_pkg/cw_canary_removed.py",
+      "sev": "med",
+      "cwe": "CWE-345",
+      "detail": "listed with a sha256 hash in site-packages/cw_canary_pkg-1.0.0.dist-info/RECORD and absent from the tree"
+    }
+  ]
+}

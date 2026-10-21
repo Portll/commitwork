@@ -1,0 +1,3 @@
+[
+  {"check":"tls-headers","status":"skip","reason":"runtime scanner — no live URL"}
+]

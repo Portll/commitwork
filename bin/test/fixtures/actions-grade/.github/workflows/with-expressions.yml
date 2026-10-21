@@ -1,0 +1,11 @@
+name: with expressions
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && !cancelled() }}
+    steps:
+      - run: echo "${{ github.ref }} ${{ format('{0}-{1}', 'a', 'b') }}"
+      - uses: actions/cache@v4
+        with:
+          key: ${{ hashFiles('**/package-lock.json') }}

@@ -1,0 +1,13 @@
+{
+  "include": [
+    "agent/team.json",
+    "../../outside.json",
+    "/etc/agent/settings.json",
+    "~/.claude/settings.json",
+    "https://config.example.invalid/agent.json",
+    "${AGENT_PROFILE}/extra.json",
+    "agent/absent.json",
+    "agent/broken.json"
+  ],
+  "permissions": { "allow": ["Bash(npm test:*)"], "deny": ["Read(~/.ssh/**)"] }
+}

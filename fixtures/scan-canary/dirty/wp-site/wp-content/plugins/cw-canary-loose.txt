@@ -1,0 +1,1 @@
+commitwork scan canary: loose in plugins/, where no release puts a file. Inert text.

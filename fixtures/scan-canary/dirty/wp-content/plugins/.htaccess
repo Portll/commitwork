@@ -1,0 +1,4 @@
+<FilesMatch '.(php|PHP|Php|PHp|pHp|pHP|phP|PhP|php5|php7)$'>
+Order allow,deny
+Deny from all
+</FilesMatch>

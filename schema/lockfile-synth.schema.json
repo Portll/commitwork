@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.online/schema/lockfile-synth.schema.json",
+  "title": "lockfile-synth.json — a resolved dependency graph for a tree that ships none",
+  "description": "Emitted by bin/lockfile-synth.sh. A repo that declares dependencies without pinning them reads exactly like a clean one to every lockfile-driven scanner, so this lane resolves one in a container. The provenance fields are the point: these versions are TODAY's resolution of an unpinned range, not what the project ships, and a consumer that forgets that is publishing findings about a tree nobody has.",
+  "type": "object",
+  "required": ["tool", "generatedAt", "ran"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": { "enum": ["lockfile-synth"] },
+    "generatedAt": { "type": "string" },
+
+    "ran": { "type": "boolean" },
+    "skipped": { "type": "boolean", "description": "Present only when ran is false." },
+    "synthesised": { "type": "boolean", "description": "false covers three different situations — already pinned, nothing to resolve, and resolver failed — which is why reason is required alongside it. Only the first is good news." },
+    "reason": { "type": "string" },
+    "ecosystem": { "enum": ["npm", "python"] },
+    "exit": { "type": "integer", "description": "The resolver's exit code when it failed. Present only on failure; a non-zero exit with no lockfile is an UNRESOLVED tree, which is a coverage void and not a clean result." },
+
+    "packages": { "type": "integer", "minimum": 0 },
+    "lockfile": {
+      "type": "string",
+      "description": "Path relative to the report dir. It MUST end in the ecosystem's canonical filename — osv-scanner selects its extractor by FILE NAME, so package-lock.synth.json is declined outright and scans nothing. The synthetic-ness lives in the directory, never the filename.",
+      "pattern": "(package-lock\\.json|requirements\\.txt)$"
+    },
+    "sourceUnmodified": { "type": "boolean", "description": "The scanned tree is byte-unchanged. Asserted rather than assumed because the whole lane would be unacceptable otherwise." },
+
+    "scriptsExecuted": { "type": "boolean", "description": "npm lane. Resolved with --ignore-scripts, so this is false; a true here would mean third-party install code ran." },
+    "buildBackendsExecuted": { "type": "boolean", "description": "python lane, and it is a PROVENANCE grade rather than a warning. false means the whole graph came from wheel metadata and no third-party build code ran. true means at least one sdist-only dependency had to execute its build backend to state its own requirements, so those versions carry weaker provenance." },
+    "from": { "type": "string", "description": "The source manifest the resolution started from." },
+    "note": { "type": "string" }
+  }
+}

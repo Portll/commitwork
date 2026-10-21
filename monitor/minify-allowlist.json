@@ -1,0 +1,4 @@
+{
+  "_comment": "Suppression list for the minifiedCode lane (bin/minify-detect.mjs). STRICT match: every entry requires repo + rule + file AND a mandatory `expires` date (Bifocal F2). An entry without `expires` is NOT honoured; an expired entry stops suppressing and increments summary.allowlistExpired. Additions are a HUMAN, journaled act — never applied autonomously by a remediation agent (Portll-security PS1). An unscoped entry (no repo) applies only to commitwork's own tree.",
+  "allow": []
+}

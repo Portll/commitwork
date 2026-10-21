@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ATT&CK technique graph",
+  "description": "MITRE's enterprise-attack bundle reduced to the technique and tactic hierarchy this repo uses. It sits in monitor/data/ beside the feeds, and it is NOT one: bin/attack-graph.mjs fetches the upstream bundle and this shape is ours, so the schema is required rather than optional. `dropped` is the conservation record \u2014 every technique the reduction discarded, counted by reason, so the count can be reconciled against the bundle instead of trusted.",
+  "type": "object",
+  "required": [
+    "source",
+    "domain",
+    "generated",
+    "techniques",
+    "tactics",
+    "dropped",
+    "count"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated": {
+      "type": "string",
+      "minLength": 1
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dropped": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "revoked",
+        "noId"
+      ],
+      "additionalProperties": false,
+      "description": "Why each discarded technique was discarded. Required in full: an absent reason is a technique that vanished without one.",
+      "properties": {
+        "deprecated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revoked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "noId": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "techniques": {
+      "type": "object",
+      "description": "Keyed by ATT&CK technique id (T1001, T1001.002).",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "name",
+          "tactics"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tactics": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "parent": {
+            "type": "string",
+            "pattern": "^T[0-9]{4}$",
+            "description": "Present only on a sub-technique, naming its parent. Its absence is what makes a technique top-level, so it is optional and never defaulted."
+          }
+        }
+      },
+      "propertyNames": {
+        "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$"
+      }
+    },
+    "tactics": {
+      "type": "object",
+      "description": "Keyed by tactic shortname (command-and-control).",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "name",
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^TA[0-9]{4}$"
+          }
+        }
+      },
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]+$"
+      }
+    }
+  }
+}

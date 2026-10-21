@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portll/commitwork/product.schema.json",
+  "title": "commitwork product registry (CRA scope)",
+  "description": "Maps monitored repos onto the unit the EU Cyber Resilience Act regulates: a product with digital elements. There is NO market gate on opening a case: the CRA watch (cra/watch.mjs) opens one on EVERY product a triggering repo maps to, and the product's reporting locale decides only the case's track. A KEV or EPSS trigger on a product whose locale resolves an advisory body (a Member State code, EU, or the legacy market.eu=true) runs on the article14 track and gets Art. 14 drafts; with no body delegated (no locale, a benchmark regime, or an unrecognised code) it runs the same 24h/72h/final clocks on the bestpractice track and files nothing; a critical finding with neither trigger opens an internal-policy case. Triggers in repos mapped to no product, and EPSS near-misses below the trigger, are surfaced as advisory.",
+  "type": "object",
+  "required": [
+    "manufacturer",
+    "products"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "manufacturer": {
+      "type": "object",
+      "description": "Art. 14 notifications identify the manufacturer. Fill once; every report draft inherits it.",
+      "required": [
+        "name",
+        "contact"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "string",
+          "description": "Monitored mailbox for vulnerability/authority correspondence."
+        },
+        "address": {
+          "type": "string"
+        },
+        "euRepresentative": {
+          "type": "string",
+          "description": "EU authorised representative, if the manufacturer is established outside the EU (CRA Art. 18)."
+        },
+        "csirtMemberState": {
+          "type": "string",
+          "description": "Member State whose CSIRT coordinates your notifications (routing hint for the ENISA single reporting platform)."
+        },
+        "establishedInEU": {
+          "type": "boolean",
+          "description": "Whether the manufacturer is established inside the EU. ABSENT MEANS UNKNOWN and has no default: Art. 18 binds only a manufacturer established OUTSIDE the EU, so cra/lib.mjs raises the missing-EU-representative advisory on an explicit false and never on an absence — unknown is not a violation."
+        }
+      }
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "repos",
+          "market"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version currently placed on the market. Keep current per release — the SBOM builder stamps it."
+          },
+          "description": {
+            "type": "string"
+          },
+          "repos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Monitor repo names (monitor/projects.json / rollup repo names) whose code ships in this product."
+          },
+          "market": {
+            "type": "object",
+            "required": [
+              "eu"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "eu": {
+                "type": "boolean",
+                "description": "true = placed on the EU market ⇒ CRA obligations (incl. Art. 14 reporting) apply. With no reporting.locale declared, true is read as locale EU, so ENISA is owed Art. 14 reports and triggered cases run on the article14 track. false does NOT stop a case opening: it runs the same clocks on the bestpractice track unless reporting.locale names a body."
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "default",
+                  "important-class-I",
+                  "important-class-II",
+                  "critical"
+                ],
+                "description": "CRA product category — drives the conformity-assessment route (self-assessment vs notified body)."
+              }
+            }
+          },
+          "supportEndsAt": {
+            "type": "string",
+            "description": "End of the support period during which vulnerability handling is owed (ISO date)."
+          },
+          "cvdPolicyUrl": {
+            "type": "string"
+          },
+          "advisoriesUrl": {
+            "type": "string"
+          },
+          "reporting": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "locale"
+            ],
+            "description": "Which reporting regime this product sits under. `locale` is resolved against cra/csirt-directory.json: a Member State code selects the regulatory track (ENISA + that state's coordinator CSIRT, per the Art. 14(7) cascade); a benchmarkRegimes code selects the best-practice track, which runs the same clocks and files nothing; anything else is UNRECOGNISED and reported as such, never silently treated as an undelegated locale. Absent = no locale declared, which is also its own state. `market.eu: true` is honoured as the legacy spelling of an unspecified EU locale.",
+            "properties": {
+              "locale": {
+                "type": "string",
+                "pattern": "^[A-Z]{2,3}$",
+                "description": "ISO 3166-1 alpha-2 Member State code (DE, FR, …), the literal 'EU' when the Member State is not yet determined, or a benchmark regime code from cra/csirt-directory.json."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

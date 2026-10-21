@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork/codeql-remediation-job.v1",
+  "title": "CodeQL remediation job",
+  "description": "reports/<area>/codeql-remediation/<id>.json: one dual-agent remediation run for one CodeQL finding, rewritten atomically at every step by admin/routes/codeql-remediation.mjs. The job id is derived from the finding's place (service, SARIF file, rule, file), never its line. This schema fixes the job record, its stages, the agreement, the lodged remediation and the apply record. Each stage's verdict follows the analysis or cross shape in schema/codeql-remediation.schema.json and is not repeated here; the finding is a row of the area's codeql-fleet.json, and the resweep the apply started is the trigger's own answer, so neither is frozen beyond the fields named.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "key", "project", "createdAt", "updatedAt", "finding", "state", "engines", "stages", "agreement", "remediation", "error", "applied"],
+  "properties": {
+    "schema": { "const": "commitwork/codeql-remediation-job.v1" },
+    "id": { "type": "string", "pattern": "^[a-f0-9]{16}$", "description": "The first 16 hex characters of sha256(key)." },
+    "key": { "type": "string", "minLength": 1, "description": "service|sarif|ruleId|file." },
+    "project": { "type": ["string", "null"] },
+    "createdAt": { "type": "string", "minLength": 1 },
+    "updatedAt": { "type": "string", "minLength": 1 },
+    "finding": {
+      "type": "object",
+      "required": ["service", "sarif", "ruleId", "file"],
+      "properties": {
+        "service": { "type": "string" },
+        "sarif": { "type": "string" },
+        "ruleId": { "type": "string" },
+        "file": { "type": "string" },
+        "line": { "type": ["integer", "null"], "description": "Context for the agents; not part of the job's identity." }
+      }
+    },
+    "state": {
+      "enum": ["queued", "running", "lodged", "failed", "stopped", "applied"],
+      "description": "stopped is an operator halt, never a verdict. A record that says running with no pipeline behind it is listed as orphaned by readers; the file itself never says orphaned."
+    },
+    "engines": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local", "review"],
+      "properties": {
+        "local": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engine", "model", "pinned"],
+          "properties": {
+            "engine": { "type": "string" },
+            "model": { "type": "string" },
+            "pinned": { "type": "boolean" },
+            "provider": { "type": "string", "description": "The model provider that ran the local analysis. Absent from jobs written before providers were recorded." },
+            "host": { "type": ["string", "null"] }
+          }
+        },
+        "review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engine", "model"],
+          "properties": { "engine": { "type": "string" }, "model": { "type": "string" } }
+        }
+      }
+    },
+    "stages": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The two independent analyses and the two cross-reviews. A stage appears when it is queued.",
+      "properties": {
+        "local": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["waiting", "running", "done", "failed", "stopped"] },
+            "queuedAt": { "type": "string" },
+            "startedAt": { "type": "string" },
+            "finishedAt": { "type": "string" },
+            "verdict": { "type": ["object", "null"] },
+            "thinking": { "type": ["string", "null"] },
+            "salvaged": { "type": "boolean" },
+            "raw": { "type": ["string", "null"], "description": "The reply, kept exactly when it did not parse as a verdict." },
+            "answeredBy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["provider", "engine", "model", "host"],
+              "description": "Which server answered, as lib/model-provider.mjs records it. Absent from records written before it was recorded.",
+              "properties": { "provider": { "type": "string" }, "engine": { "type": "string" }, "model": { "type": ["string", "null"] }, "host": { "type": "string" } }
+            },
+            "sampling": { "type": "string", "pattern": "^(model-default|pinned-[0-9]+(\\.[0-9]+)?)$", "description": "What the provider reports sending: pinned-0 when temperature 0 was sent, model-default when the model fixes its own sampling and none was. A model-default verdict cannot be re-derived by a re-run. Absent from records written before it was recorded; until then a model that fixes its own sampling was refused or rejected the request, so none of those verdicts is model-default." },
+            "error": { "type": ["string", "null"] }
+          }
+        },
+        "opus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["waiting", "running", "done", "failed", "stopped"] },
+            "queuedAt": { "type": "string" },
+            "startedAt": { "type": "string" },
+            "finishedAt": { "type": "string" },
+            "verdict": { "type": ["object", "null"] },
+            "thinking": { "type": ["string", "null"] },
+            "salvaged": { "type": "boolean" },
+            "raw": { "type": ["string", "null"], "description": "The reply, kept exactly when it did not parse as a verdict." },
+            "answeredBy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["provider", "engine", "model", "host"],
+              "description": "Which server answered, as lib/model-provider.mjs records it. Absent from records written before it was recorded.",
+              "properties": { "provider": { "type": "string" }, "engine": { "type": "string" }, "model": { "type": ["string", "null"] }, "host": { "type": "string" } }
+            },
+            "error": { "type": ["string", "null"] }
+          }
+        },
+        "localCross": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["waiting", "running", "done", "failed", "stopped"] },
+            "queuedAt": { "type": "string" },
+            "startedAt": { "type": "string" },
+            "finishedAt": { "type": "string" },
+            "verdict": { "type": ["object", "null"] },
+            "thinking": { "type": ["string", "null"] },
+            "salvaged": { "type": "boolean" },
+            "raw": { "type": ["string", "null"], "description": "The reply, kept exactly when it did not parse as a verdict." },
+            "answeredBy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["provider", "engine", "model", "host"],
+              "description": "Which server answered, as lib/model-provider.mjs records it. Absent from records written before it was recorded.",
+              "properties": { "provider": { "type": "string" }, "engine": { "type": "string" }, "model": { "type": ["string", "null"] }, "host": { "type": "string" } }
+            },
+            "sampling": { "type": "string", "pattern": "^(model-default|pinned-[0-9]+(\\.[0-9]+)?)$", "description": "What the provider reports sending: pinned-0 when temperature 0 was sent, model-default when the model fixes its own sampling and none was. A model-default verdict cannot be re-derived by a re-run. Absent from records written before it was recorded; until then a model that fixes its own sampling was refused or rejected the request, so none of those verdicts is model-default." },
+            "error": { "type": ["string", "null"] }
+          }
+        },
+        "opusCross": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["waiting", "running", "done", "failed", "stopped"] },
+            "queuedAt": { "type": "string" },
+            "startedAt": { "type": "string" },
+            "finishedAt": { "type": "string" },
+            "verdict": { "type": ["object", "null"] },
+            "thinking": { "type": ["string", "null"] },
+            "salvaged": { "type": "boolean" },
+            "raw": { "type": ["string", "null"], "description": "The reply, kept exactly when it did not parse as a verdict." },
+            "answeredBy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["provider", "engine", "model", "host"],
+              "description": "Which server answered, as lib/model-provider.mjs records it. Absent from records written before it was recorded.",
+              "properties": { "provider": { "type": "string" }, "engine": { "type": "string" }, "model": { "type": ["string", "null"] }, "host": { "type": "string" } }
+            },
+            "error": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "agreement": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["agree", "classifications", "basis"],
+      "description": "Derived from the two cross-review classifications; null until both finished.",
+      "properties": {
+        "agree": { "type": "boolean" },
+        "classifications": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["local", "opus"],
+          "properties": { "local": { "type": "string" }, "opus": { "type": "string" } }
+        },
+        "basis": { "type": "string" }
+      }
+    },
+    "remediation": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["classification", "executable", "diff", "source", "summary"],
+      "description": "What was lodged; null until lodged, and null on a stopped run.",
+      "properties": {
+        "classification": { "type": "string", "description": "The agreed classification, or disputed." },
+        "executable": { "type": "boolean" },
+        "diff": { "type": "string", "description": "A unified diff applicable from the repository root; empty when no change was offered." },
+        "source": { "enum": ["opus-cross", "local-cross", null] },
+        "summary": { "type": "string" }
+      }
+    },
+    "error": { "type": ["string", "null"] },
+    "applied": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["at", "commit", "files", "message", "resweep"],
+      "properties": {
+        "at": { "type": "string" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+        "files": { "type": "array", "items": { "type": "string" } },
+        "message": { "type": "string" },
+        "resweep": { "type": "object", "required": ["started"], "properties": { "started": { "type": "boolean" } } }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 120,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "msg"],
+        "properties": { "at": { "type": "string" }, "msg": { "type": "string", "maxLength": 400 } }
+      }
+    },
+    "repoPath": { "type": ["string", "null"], "description": "Where the repository resolved on this host; null when it did not." },
+    "sourceNote": { "type": "string", "description": "Which source lines the agents were shown, or why none were." },
+    "lodgedAt": { "type": "string" },
+    "stoppedAt": { "type": "string" },
+    "stoppedBy": { "type": "string" }
+  }
+}

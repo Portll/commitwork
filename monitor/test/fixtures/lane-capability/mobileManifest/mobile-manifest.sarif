@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "commitwork-mobile-manifest",
+          "informationUri": "https://github.com/Portll/commitwork",
+          "rules": [
+            {
+              "id": "mobile/allow-backup",
+              "name": "mobile/allow-backup",
+              "shortDescription": {
+                "text": "mobile/allow-backup"
+              },
+              "properties": {
+                "security-severity": "5.0"
+              }
+            },
+            {
+              "id": "mobile/cleartext-traffic",
+              "name": "mobile/cleartext-traffic",
+              "shortDescription": {
+                "text": "mobile/cleartext-traffic"
+              },
+              "properties": {
+                "security-severity": "5.0"
+              }
+            },
+            {
+              "id": "mobile/debuggable",
+              "name": "mobile/debuggable",
+              "shortDescription": {
+                "text": "mobile/debuggable"
+              },
+              "properties": {
+                "security-severity": "8.0"
+              }
+            },
+            {
+              "id": "mobile/exported-no-permission",
+              "name": "mobile/exported-no-permission",
+              "shortDescription": {
+                "text": "mobile/exported-no-permission"
+              },
+              "properties": {
+                "security-severity": "8.0"
+              }
+            }
+          ]
+        }
+      },
+      "properties": {
+        "manifestsExamined": 1
+      },
+      "results": [
+        {
+          "ruleId": "mobile/allow-backup",
+          "level": "warning",
+          "message": {
+            "text": "android:allowBackup=\"true\" lets application data be extracted over adb on a debuggable-capable device. Top 100 entry 107. (Only an EXPLICIT \"true\" is reported; the absence of this attribute is the platform default, not an author decision.)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/src/main/AndroidManifest.xml"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "mobile/cleartext-traffic",
+          "level": "warning",
+          "message": {
+            "text": "android:usesCleartextTraffic=\"true\" permits plaintext HTTP for the whole application. Top 100 entry 108."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/src/main/AndroidManifest.xml"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "mobile/debuggable",
+          "level": "error",
+          "message": {
+            "text": "android:debuggable=\"true\" ships a build any user can attach a debugger to and read process memory from. Top 100 entry 76."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/src/main/AndroidManifest.xml"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "mobile/exported-no-permission",
+          "level": "error",
+          "message": {
+            "text": "<activity android:name=\".SettingsActivity\"> is exported with no android:permission, so any other application on the device can invoke it. Top 100 entry 109."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/src/main/AndroidManifest.xml"
+                },
+                "region": {
+                  "startLine": 15
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "mobile/exported-no-permission",
+          "level": "error",
+          "message": {
+            "text": "<service android:name=\".SyncService\"> is exported with no android:permission, so any other application on the device can invoke it. Top 100 entry 109."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/src/main/AndroidManifest.xml"
+                },
+                "region": {
+                  "startLine": 16
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "mobile/exported-no-permission",
+          "level": "error",
+          "message": {
+            "text": "<receiver android:name=\".BootReceiver\"> is exported with no android:permission, so any other application on the device can invoke it. Top 100 entry 109."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/src/main/AndroidManifest.xml"
+                },
+                "region": {
+                  "startLine": 17
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

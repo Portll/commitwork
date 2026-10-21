@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "commitwork/formats.v1",
+  "title": "Public file formats",
+  "description": "manifests/formats.json: each file format commitwork writes or reads as a public interface (docs/STABILITY.md), with its version, schema and freeze state. bin/test/format-freeze.test.mjs applies it.",
+  "type": "object",
+  "required": ["note", "formats"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "note": { "type": "string", "minLength": 20, "maxLength": 600 },
+    "formats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "summary", "versionField", "version", "schema", "writer"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "status": {
+            "enum": ["frozen", "unschematized", "unversioned", "external"],
+            "description": "frozen: version stamped, schema pinned by history. unschematized: version stamped, no schema. unversioned: no version a reader can check. external: the shape is an upstream standard's."
+          },
+          "summary": { "type": "string", "minLength": 10, "maxLength": 200 },
+          "versionField": { "type": ["string", "null"], "minLength": 1 },
+          "version": { "type": ["string", "integer", "null"] },
+          "label": { "type": "string", "minLength": 1, "description": "The name prose and prompts use for a format whose documents carry no version." },
+          "schema": { "type": ["string", "null"], "minLength": 1 },
+          "upstream": { "type": "string", "pattern": "^https://" },
+          "writer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "module": { "type": "string", "minLength": 1 },
+              "export": { "type": "string", "minLength": 1 },
+              "call": { "type": "boolean" },
+              "document": { "type": "string", "minLength": 1 },
+              "source": { "type": "string", "minLength": 1 },
+              "match": { "type": "string", "minLength": 1 }
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["version", "fingerprint", "release", "change", "note"],
+              "additionalProperties": false,
+              "properties": {
+                "version": { "type": ["string", "integer"] },
+                "fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+                "release": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+                "change": { "enum": ["initial", "additive", "breaking"] },
+                "note": { "type": "string", "minLength": 10, "maxLength": 300 }
+              }
+            }
+          },
+          "pin": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "gap": { "type": "string", "minLength": 10, "maxLength": 300 }
+        }
+      }
+    }
+  }
+}

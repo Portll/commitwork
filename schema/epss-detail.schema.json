@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EPSS full-triple sidecar",
+  "description": "The probability/percentile/date triple for every CVE monitor/rollup.mjs has fetched a score for, keyed by CVE id. It sits in monitor/data/ beside the feeds and is NOT one: the upstream API returns a row shape of its own and rollup.mjs projects it into this map, so both ends are ours and a schema is required rather than optional — the same reasoning schema/attack-graph.schema.json gives for its own file. Absent is legitimately absent: the store begins empty and backfills only as CVEs are fetched, which is why rollup.mjs treats ENOENT as the sole absence and never substitutes an empty object. An entry that DOES exist must carry all three fields, because a partial triple lets a missing percentile read as a low one. Values are decimal STRINGS as the publisher emits them, never numbers: parsing them here would discard the trailing precision the string carries and assert a float the source never stated. Keys are constrained with propertyNames and values with an object-valued additionalProperties rather than patternProperties, which monitor/registry.mjs does not implement — the pair says the same thing in the subset the validator can actually evaluate, and a keyword it cannot evaluate would make the whole schema decorative.",
+  "type": "object",
+  "propertyNames": { "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$" },
+  "additionalProperties": {
+    "type": "object",
+    "required": ["probability", "percentile", "date"],
+    "additionalProperties": false,
+    "properties": {
+      "probability": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+      "percentile": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+      "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+    }
+  }
+}

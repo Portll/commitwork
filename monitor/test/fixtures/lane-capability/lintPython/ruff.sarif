@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "fixes": [
+            {
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "file:///fixture/repo/src/app.py"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "endColumn": 1,
+                        "endLine": 2,
+                        "startColumn": 1,
+                        "startLine": 1
+                      }
+                    }
+                  ]
+                }
+              ],
+              "description": {
+                "text": "Remove unused import: `os`"
+              }
+            }
+          ],
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///fixture/repo/src/app.py"
+                },
+                "region": {
+                  "endColumn": 10,
+                  "endLine": 1,
+                  "startColumn": 8,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`os` imported but unused"
+          },
+          "ruleId": "F401"
+        },
+        {
+          "fixes": [
+            {
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "file:///fixture/repo/src/app.py"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "endColumn": 1,
+                        "endLine": 3,
+                        "startColumn": 1,
+                        "startLine": 2
+                      }
+                    }
+                  ]
+                }
+              ],
+              "description": {
+                "text": "Remove unused import: `sys`"
+              }
+            }
+          ],
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///fixture/repo/src/app.py"
+                },
+                "region": {
+                  "endColumn": 11,
+                  "endLine": 2,
+                  "startColumn": 8,
+                  "startLine": 2
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "`sys` imported but unused"
+          },
+          "ruleId": "F401"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///fixture/repo/src/app.py"
+                },
+                "region": {
+                  "endColumn": 6,
+                  "endLine": 20,
+                  "startColumn": 5,
+                  "startLine": 20
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Ambiguous variable name: `l`"
+          },
+          "ruleId": "E741"
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///fixture/repo/src/app.py"
+                },
+                "region": {
+                  "endColumn": 113,
+                  "endLine": 32,
+                  "startColumn": 89,
+                  "startLine": 32
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Line too long (112 > 88)"
+          },
+          "ruleId": "E501"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/astral-sh/ruff",
+          "name": "ruff",
+          "rules": [
+            {
+              "fullDescription": {
+                "text": "## What it does\nChecks for lines that exceed the specified maximum character length.\n\n## Why is this bad?\nOverlong lines can hurt readability. [PEP 8], for example, recommends\nlimiting lines to 79 characters. By default, this rule enforces a limit\nof 88 characters for compatibility with Black and the Ruff formatter,\nthough that limit is configurable via the [`line-length`] setting.\n\nIn the interest of pragmatism, this rule makes a few exceptions when\ndetermining whether a line is overlong. Namely, it:\n\n1. Ignores lines that consist of a single \"word\" (i.e., without any\n   whitespace between its characters).\n2. Ignores lines that end with a URL, as long as the URL starts before\n   the line-length threshold.\n3. Ignores line that end with a pragma comment (e.g., `# type: ignore`\n   or `# noqa`), as long as the pragma comment starts before the\n   line-length threshold. That is, a line will not be flagged as\n   overlong if a pragma comment _causes_ it to exceed the line length.\n   (This behavior aligns with that of the Ruff formatter.)\n4. Ignores SPDX license identifiers and copyright notices\n   (e.g., `# SPDX-License-Identifier: MIT`), which are machine-readable\n   and should _not_ wrap over multiple lines.\n\nIf [`lint.pycodestyle.ignore-overlong-task-comments`] is `true`, this rule will\nalso ignore comments that start with any of the specified [`lint.task-tags`]\n(e.g., `# TODO:`).\n\n## Example\n```python\nmy_function(param1, param2, param3, param4, param5, param6, param7, param8, param9, param10)\n```\n\nUse instead:\n```python\nmy_function(\n    param1, param2, param3, param4, param5,\n    param6, param7, param8, param9, param10\n)\n```\n\n## Error suppression\nHint: when suppressing `E501` errors within multi-line strings (like\ndocstrings), the `noqa` directive should come at the end of the string\n(after the closing triple quote), and will apply to the entire string, like\nso:\n\n```python\n\"\"\"Lorem ipsum dolor sit amet.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.\n\"\"\"  # noqa: E501\n```\n\n## Options\n- `line-length`\n- `lint.task-tags`\n- `lint.pycodestyle.ignore-overlong-task-comments`\n- `lint.pycodestyle.max-line-length`\n\n[PEP 8]: https://peps.python.org/pep-0008/#maximum-line-length\n"
+              },
+              "help": {
+                "text": "Line too long ({width} > {limit})"
+              },
+              "helpUri": "https://docs.astral.sh/ruff/rules/line-too-long",
+              "id": "E501",
+              "properties": {
+                "id": "E501",
+                "kind": "pycodestyle",
+                "name": "line-too-long",
+                "problem.severity": "error"
+              },
+              "shortDescription": {
+                "text": "Line too long ({width} > {limit})"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "## What it does\nChecks for the use of the characters 'l', 'O', or 'I' as variable names.\n\nNote: This rule is automatically disabled for all stub files\n(files with `.pyi` extensions). The rule has little relevance for authors\nof stubs: a well-written stub should aim to faithfully represent the\ninterface of the equivalent .py file as it exists at runtime, including any\nambiguously named variables in the runtime module.\n\n## Why is this bad?\nIn some fonts, these characters are indistinguishable from the\nnumerals one and zero. When tempted to use 'l', use 'L' instead.\n\n## Example\n```python\nl = 0\nO = 123\nI = 42\n```\n\nUse instead:\n```python\nL = 0\no = 123\ni = 42\n```\n"
+              },
+              "help": {
+                "text": "Ambiguous variable name: `{name}`"
+              },
+              "helpUri": "https://docs.astral.sh/ruff/rules/ambiguous-variable-name",
+              "id": "E741",
+              "properties": {
+                "id": "E741",
+                "kind": "pycodestyle",
+                "name": "ambiguous-variable-name",
+                "problem.severity": "error"
+              },
+              "shortDescription": {
+                "text": "Ambiguous variable name: `{name}`"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "## What it does\nChecks for unused imports.\n\n## Why is this bad?\nUnused imports add a performance overhead at runtime, and risk creating\nimport cycles. They also increase the cognitive load of reading the code.\n\nIf an import statement is used to check for the availability or existence\nof a module, consider using `importlib.util.find_spec` instead.\n\nIf an import statement is used to re-export a symbol as part of a module's\npublic interface, consider using a \"redundant\" import alias, which\ninstructs Ruff (and other tools) to respect the re-export, and avoid\nmarking it as unused, as in:\n\n```python\nfrom module import member as member\n```\n\nAlternatively, you can use `__all__` to declare a symbol as part of the module's\ninterface, as in:\n\n```python\n# __init__.py\nimport some_module\n\n__all__ = [\"some_module\"]\n```\n\n## Preview\nWhen [preview] is enabled (and certain simplifying assumptions\nare met), we analyze all import statements for a given module\nwhen determining whether an import is used, rather than simply\nthe last of these statements. This can result in both different and\nmore import statements being marked as unused.\n\nFor example, if a module consists of\n\n```python\nimport a\nimport a.b\n```\n\nthen both statements are marked as unused under [preview], whereas\nonly the second is marked as unused under stable behavior.\n\nAs another example, if a module consists of\n\n```python\nimport a.b\nimport a\n\na.b.foo()\n```\n\nthen a diagnostic will be emitted for the second line under [preview],\nwhereas no diagnostic is emitted under stable behavior.\n\nNote that this behavior is somewhat subjective and is designed\nto conform to the developer's intuition rather than Python's actual\nexecution. To wit, the statement `import a.b` automatically executes\n`import a`, so in some sense `import a` is _always_ redundant\nin the presence of `import a.b`.\n\n\n## Fix safety\n\nFixes to remove unused imports are safe, except in `__init__.py` files.\n\nApplying fixes to `__init__.py` files is currently in preview. The fix offered depends on the\ntype of the unused import. Ruff will suggest a safe fix to export first-party imports with\neither a redundant alias or, if already present in the file, an `__all__` entry. If multiple\n`__all__` declarations are present, Ruff will not offer a fix. Ruff will suggest an unsafe fix\nto remove third-party and standard library imports -- the fix is unsafe because the module's\ninterface changes.\n\nSee [this FAQ section](https://docs.astral.sh/ruff/faq/#how-does-ruff-determine-which-of-my-imports-are-first-party-third-party-etc)\nfor more details on how Ruff\ndetermines whether an import is first or third-party.\n\n## Example\n\n```python\nimport numpy as np  # unused import\n\n\ndef area(radius):\n    return 3.14 * radius**2\n```\n\nUse instead:\n\n```python\ndef area(radius):\n    return 3.14 * radius**2\n```\n\nTo check the availability of a module, use `importlib.util.find_spec`:\n\n```python\nfrom importlib.util import find_spec\n\nif find_spec(\"numpy\") is not None:\n    print(\"numpy is installed\")\nelse:\n    print(\"numpy is not installed\")\n```\n\n## Options\n- `lint.ignore-init-module-imports`\n- `lint.pyflakes.allowed-unused-imports`\n\n## References\n- [Python documentation: `import`](https://docs.python.org/3/reference/simple_stmts.html#the-import-statement)\n- [Python documentation: `importlib.util.find_spec`](https://docs.python.org/3/library/importlib.html#importlib.util.find_spec)\n- [Typing documentation: interface conventions](https://typing.python.org/en/latest/spec/distributing.html#library-interface-public-and-private-symbols)\n\n[preview]: https://docs.astral.sh/ruff/preview/\n"
+              },
+              "help": {
+                "text": "`{name}` imported but unused; consider using `importlib.util.find_spec` to test for availability"
+              },
+              "helpUri": "https://docs.astral.sh/ruff/rules/unused-import",
+              "id": "F401",
+              "properties": {
+                "id": "F401",
+                "kind": "Pyflakes",
+                "name": "unused-import",
+                "problem.severity": "error"
+              },
+              "shortDescription": {
+                "text": "`{name}` imported but unused; consider using `importlib.util.find_spec` to test for availability"
+              }
+            }
+          ],
+          "version": "0.16.5"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

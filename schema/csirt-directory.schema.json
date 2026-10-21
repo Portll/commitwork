@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.local/schema/csirt-directory.schema.json",
+  "title": "CRA Art. 14(7) reporting-body directory",
+  "description": "Two separate things, deliberately not merged. (1) `establishmentRule` — the CASCADE from CRA Art. 14(7) that determines WHICH Member State's coordinator CSIRT a manufacturer reports to. The CRA states this rule in full, so it is transcribed here and is authoritative. (2) `memberStates` — the DIRECTORY of which CSIRT each Member State has designated as coordinator. The CRA does NOT enumerate these; they are designated nationally (NIS2 Art. 10). Every entry therefore starts with `coordinator: null`, which means NOT YET SOURCED — a known gap, never 'this state has no CSIRT' and never 'nothing is owed'. A null coordinator must render as unresolved, and must never be treated as an absence of obligation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "establishmentRule", "memberStates"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "note": { "type": "string" },
+    "establishmentRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "primary", "fallbackWhenNoUnionEstablishment"],
+      "properties": {
+        "source": { "type": "string", "description": "The provision transcribed, e.g. 'CRA Art. 14(7)'." },
+        "sourceUrl": { "type": "string" },
+        "primary": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Ordered tests for a manufacturer WITH a main establishment in the Union. First match wins.",
+          "items": { "$ref": "#/$defs/rule" }
+        },
+        "fallbackWhenNoUnionEstablishment": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Ordered tests for a manufacturer with NO main establishment in the Union (Art. 14(7) points (a)-(d)). First match wins.",
+          "items": { "$ref": "#/$defs/rule" }
+        }
+      }
+    },
+    "benchmarkRegimes": {
+      "type": "array",
+      "description": "Non-EU locales where the CRA timeline is followed as a BENCHMARK rather than an obligation. These carry no coordinator CSIRT and can never make a case filable — `regulatory` is the only track that files. They exist because the discipline has value where no EU body is owed a report (underwriting and procurement benchmarking being the operator's stated reason), and because rendering such a locale as 'nothing owed' would be wrong in substance even though it is right in law.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "name", "regime", "rationale"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[A-Z]{2,3}$" },
+          "name": { "type": "string" },
+          "regime": { "const": "benchmark", "description": "Never 'regulatory'. A benchmark locale delegates no body and files nothing." },
+          "rationale": { "type": "string", "description": "WHY the CRA timeline is applied here. An operator judgement, recorded as such." },
+          "source": { "type": "string", "description": "Where the rationale came from. Absent = operator assertion, not an external finding." }
+        }
+      }
+    },
+    "memberStates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "name", "coordinator"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "ISO 3166-1 alpha-2." },
+          "name": { "type": "string" },
+          "coordinator": {
+            "description": "null = NOT YET SOURCED. This is a declared gap and must render as unresolved, never as 'no body' and never as 'nothing owed'.",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "source", "verifiedAt"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "endpoint": { "type": "string", "description": "The electronic notification end-point Art. 14(7) requires the report to be submitted through." },
+                  "source": { "type": "string", "description": "Where this designation was read from. A designation with no source is not a designation." },
+                  "verifiedAt": { "type": "string", "format": "date", "description": "When the source was last re-read. Staleness is reported, never assumed fresh." }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "test"],
+      "properties": {
+        "id": { "type": "string", "description": "Stable id so a resolution can cite WHICH limb of the cascade decided it." },
+        "test": { "type": "string", "description": "The determination in the regulation's own terms." },
+        "citation": { "type": "string" }
+      }
+    }
+  }
+}

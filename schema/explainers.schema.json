@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Learning-mode explainers",
+  "description": "Plain-English explanations of terms the panel uses without defining them, keyed by a stable id. The id is what a dismissal remembers, which is why an explainer may never be written inline at a call site: rewording an inline string would silently un-dismiss it for everyone who had already dismissed it.",
+  "type": "object",
+  "required": ["note", "audience", "explainers"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string", "minLength": 1 },
+    "audience": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Who the text is for. Required, because an explainer written without a stated audience drifts into being written for its author."
+    },
+    "explainers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "term", "plain"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{1,40}$",
+            "description": "Stable and never reused. A dismissal set holds these, so a recycled id inherits someone else's dismissal."
+          },
+          "term": { "type": "string", "minLength": 1 },
+          "plain": {
+            "type": "string",
+            "minLength": 40,
+            "maxLength": 700,
+            "description": "One short paragraph. The floor refuses a stub that explains nothing; the ceiling refuses an essay in a tooltip."
+          },
+          "seeAlso": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,40}$" } }
+        }
+      }
+    }
+  }
+}

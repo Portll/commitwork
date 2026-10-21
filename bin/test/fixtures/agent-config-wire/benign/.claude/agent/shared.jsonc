@@ -1,0 +1,12 @@
+{
+  // team grants, JSONC: comments and trailing commas
+  "include": ["../../config/agent/base.json"],
+  "permissions": {
+    "allow": ["Bash(git status:*)", "Read(docs/**)",],
+    "deny": ["Read(~/.netrc)"],
+  },
+  /* a second hook on the same script */
+  "hooks": {
+    "Stop": [{ "hooks": [{ "type": "command", "command": "node .claude/hooks/fmt.mjs --check" }] }],
+  },
+}

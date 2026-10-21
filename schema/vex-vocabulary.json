@@ -1,0 +1,93 @@
+{
+  "note": "DERIVED by bin/vex-vocabulary-sync.mjs from schema/upstream/. Never hand-edit — a value that does not exist upstream must not be referenceable anywhere in this tree. Regenerate with `node bin/vex-vocabulary-sync.mjs --fetch`.",
+  "sources": {
+    "csaf": "https://raw.githubusercontent.com/oasis-tcs/csaf/master/csaf_2.0/json_schema/csaf_json_schema.json",
+    "cyclonedx": "https://raw.githubusercontent.com/CycloneDX/specification/master/schema/bom-1.5.schema.json",
+    "openvex": "https://raw.githubusercontent.com/openvex/spec/main/openvex_json_schema.json"
+  },
+  "total": 50,
+  "formats": {
+    "csaf": {
+      "status": [
+        "first_affected",
+        "first_fixed",
+        "fixed",
+        "known_affected",
+        "known_not_affected",
+        "last_affected",
+        "recommended",
+        "under_investigation"
+      ],
+      "justification": [
+        "component_not_present",
+        "inline_mitigations_already_exist",
+        "vulnerable_code_cannot_be_controlled_by_adversary",
+        "vulnerable_code_not_in_execute_path",
+        "vulnerable_code_not_present"
+      ],
+      "threat": [
+        "exploit_status",
+        "impact",
+        "target_set"
+      ],
+      "response": [
+        "mitigation",
+        "no_fix_planned",
+        "none_available",
+        "vendor_fix",
+        "workaround"
+      ]
+    },
+    "cyclonedx": {
+      "status": [
+        "resolved",
+        "resolved_with_pedigree",
+        "exploitable",
+        "in_triage",
+        "false_positive",
+        "not_affected"
+      ],
+      "justification": [
+        "code_not_present",
+        "code_not_reachable",
+        "requires_configuration",
+        "requires_dependency",
+        "requires_environment",
+        "protected_by_compiler",
+        "protected_at_runtime",
+        "protected_at_perimeter",
+        "protected_by_mitigating_control"
+      ],
+      "response": [
+        "can_not_fix",
+        "will_not_fix",
+        "update",
+        "rollback",
+        "workaround_available"
+      ]
+    },
+    "openvex": {
+      "status": [
+        "not_affected",
+        "affected",
+        "fixed",
+        "under_investigation"
+      ],
+      "justification": [
+        "component_not_present",
+        "vulnerable_code_not_present",
+        "vulnerable_code_not_in_execute_path",
+        "vulnerable_code_cannot_be_controlled_by_adversary",
+        "inline_mitigations_already_exist"
+      ]
+    }
+  },
+  "outOfScope": {
+    "csaf": {
+      "first_affected": "version-range concept; findings here bind to one resolved version",
+      "last_affected": "version-range concept; findings here bind to one resolved version",
+      "first_fixed": "version-range concept; the ledger records a fix instant, not a range boundary",
+      "recommended": "a vendor recommendation across versions, which this tool does not author"
+    }
+  }
+}

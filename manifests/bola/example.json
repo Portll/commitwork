@@ -1,0 +1,28 @@
+{
+  "$schema": "../../schema/bola-manifest.schema.json",
+  "repo": "example API (Keycloak + OpenAPI) — a synthetic manifest showing the finished shape",
+  "note": "SYNTHETIC EXAMPLE. Operator manifests for real targets are private records in monitor/private/bola/<name>.json (CW_BOLA_MANIFEST_DIR overrides), because a manifest names the target's realm, accounts and endpoints. Two tenants (A/B), each with a user and an admin, plus anon. Tokens are minted by Keycloak password grant; the passwords arrive through the named env vars at invocation, never inline. Ownership is SEEDED: each actor creates an object and the peers probe cross-reads. base is left unset — pass --base or export CW_TARGET_URL so this never invents a target.",
+  "actors": [
+    { "name": "anon", "role": "anon" },
+    { "name": "userA", "role": "user", "tenant": "tenantA",
+      "credential": { "type": "keycloak", "realm": "example", "client": "example-web", "username": "user-a@example.test", "passwordEnv": "BOLA_PASS_A" } },
+    { "name": "userB", "role": "user", "tenant": "tenantB",
+      "credential": { "type": "keycloak", "realm": "example", "client": "example-web", "username": "user-b@example.test", "passwordEnv": "BOLA_PASS_B" } },
+    { "name": "adminA", "role": "admin", "tenant": "tenantA",
+      "credential": { "type": "keycloak", "realm": "example", "client": "example-web", "username": "admin-a@example.test", "passwordEnv": "BOLA_PASS_ADMIN_A" } },
+    { "name": "adminB", "role": "admin", "tenant": "tenantB",
+      "credential": { "type": "keycloak", "realm": "example", "client": "example-web", "username": "admin-b@example.test", "passwordEnv": "BOLA_PASS_ADMIN_B" } }
+  ],
+  "objects": {
+    "model": "seed",
+    "types": [
+      {
+        "name": "document",
+        "create": { "path": "/api/documents", "body": { "title": "bola-probe", "visibility": "private" } },
+        "idPath": "id",
+        "getPath": "/api/documents/{id}"
+      }
+    ]
+  },
+  "discovery": { "openapi": ["/v3/api-docs"], "paths": ["/api/documents/1"] }
+}

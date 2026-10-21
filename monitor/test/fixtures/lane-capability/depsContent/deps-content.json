@@ -1,0 +1,37 @@
+{
+  "tool": "deps-content",
+  "summary": {
+    "findings": 3,
+    "byRule": {
+      "dep-install-exec": 1,
+      "dep-weak-integrity": 1,
+      "dep-missing-integrity": 1
+    },
+    "filesScanned": 3,
+    "packagesChecked": 2,
+    "lockfile": "package-lock.json"
+  },
+  "findings": [
+    {
+      "rule": "dep-install-exec",
+      "path": "node_modules/evil",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "detail": "install hook fetches/execs (postinstall)"
+    },
+    {
+      "rule": "dep-weak-integrity",
+      "path": "node_modules/evil",
+      "sev": "low",
+      "cwe": "CWE-494",
+      "detail": "integrity is sha1, not sha512"
+    },
+    {
+      "rule": "dep-missing-integrity",
+      "path": "node_modules/loose",
+      "sev": "med",
+      "cwe": "CWE-494",
+      "detail": "registry-resolved, no integrity hash"
+    }
+  ]
+}

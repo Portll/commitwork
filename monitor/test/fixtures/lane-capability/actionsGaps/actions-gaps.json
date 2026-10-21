@@ -1,0 +1,77 @@
+{
+  "tool": "actions-gaps",
+  "summary": {
+    "findings": 5,
+    "byRule": {
+      "permissions-absent": 3,
+      "self-hosted-runner": 1,
+      "workflow-run-trigger": 1
+    },
+    "filesScanned": 2,
+    "filesExamined": 2,
+    "workflowsDir": true,
+    "jobsScanned": 3,
+    "privilegedTriggerWorkflows": 1,
+    "runsOnDynamic": 0,
+    "runnerGroups": 0,
+    "unparseable": 0,
+    "unparseableFiles": [],
+    "unreadable": 0,
+    "unreadableFiles": [],
+    "skipped": 0,
+    "skippedFiles": [],
+    "void": false
+  },
+  "findings": [
+    {
+      "rule": "permissions-absent",
+      "path": ".github/workflows/ci.yml",
+      "sev": "med",
+      "cwe": "CWE-250",
+      "job": "build",
+      "step": "",
+      "line": 5,
+      "detail": "with no permissions: block on the job or the workflow — GITHUB_TOKEN takes the repository default"
+    },
+    {
+      "rule": "permissions-absent",
+      "path": ".github/workflows/ci.yml",
+      "sev": "med",
+      "cwe": "CWE-250",
+      "job": "deploy",
+      "step": "",
+      "line": 10,
+      "detail": "with no permissions: block on the job or the workflow — GITHUB_TOKEN takes the repository default"
+    },
+    {
+      "rule": "self-hosted-runner",
+      "path": ".github/workflows/ci.yml",
+      "sev": "high",
+      "cwe": "CWE-1104, CWE-284",
+      "job": "deploy",
+      "step": "",
+      "line": 10,
+      "detail": "runs-on names the self-hosted label (list)"
+    },
+    {
+      "rule": "permissions-absent",
+      "path": ".github/workflows/pr.yml",
+      "sev": "med",
+      "cwe": "CWE-250",
+      "job": "check",
+      "step": "",
+      "line": 5,
+      "detail": "with no permissions: block on the job or the workflow — GITHUB_TOKEN takes the repository default"
+    },
+    {
+      "rule": "workflow-run-trigger",
+      "path": ".github/workflows/pr.yml",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "job": "check",
+      "step": "step 1",
+      "line": 7,
+      "detail": "on pull_request_target: checks out the triggering head"
+    }
+  ]
+}

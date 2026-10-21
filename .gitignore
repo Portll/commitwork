@@ -1,0 +1,179 @@
+node_modules/
+# The deps-content canary. bin/deps-content.mjs discovers install hooks by reading
+# <root>/node_modules/<pkg>/package.json at the lockfile's own key, so the plant has to live on
+# that path or the scanner cannot see it — and the rule above would hide it from git. Re-included
+# for the two canary trees only; nothing under them is code, and the walking lanes still skip
+# node_modules through manifests/scan-exclude-dirs.txt.
+!/fixtures/scan-canary/*/node_modules/
+.DS_Store
+*.log
+# Golden lane fixtures record a tool's .log output byte for byte; they are tracked.
+!/monitor/test/fixtures/lane-capability/**/*.log
+# npx download cache for the host renovate dry-run (NPM_CONFIG_CACHE target; regenerable,
+# bypasses the root-owned ~/.npm) — see monitor/renovate-dryrun.mjs
+/.npm-cache/
+# scan outputs (SARIF/JSON can be large; treat as artifacts, not source)
+# NO TRAILING SLASH. `reports` can be a symlink to a directory outside the repo. A trailing slash
+# matches directories only, and git classifies a symlink as a file, so `/reports/` would stop
+# matching once the path is a link and the link would become visible to `git add`.
+/reports
+# artifacts a local run may drop into this dir
+/tmp/
+reflection.json
+sbom.json
+results.sarif
+osv-results.sarif
+# move-aside backups (monitor's pre-program/pre-mapglue convention) — kept on disk, not tracked
+*.pre-program-*
+*.pre-mapglue-*
+# sitemap fleet manifests are regenerable artifacts (node monitor/sitemap-data.mjs).
+# The S0 demo fixture (sitemap/build-fixture.mjs) is regenerable-only too: it harvests a real
+# source tree, so a committed copy carries that tree's structural data (file paths, symbol names,
+# internal hostnames) plus whatever secrets sit in its config.
+# No un-ignore: it must never be re-added to the index.
+/sitemap/data/*.sitemap.json
+# CRA attestation private keys — NEVER commit (public .pub is committable)
+cra/.keys/*.key
+# The rule above is path-pinned, but CW_ATTEST_KEYDIR (cra/lib.mjs resolveKeyDir) points the keydir
+# anywhere, including inside this repo, and a key placed by hand rather than by `attest.mjs keygen`
+# gets no keydir-local .gitignore either. Private key material is not source under any name here.
+# A legitimate key or certificate file needs `git add -f`, which is the right amount of friction.
+*.key
+*.pem
+
+# Generated sitemap data — regenerated on demand, never committed (portable: relative paths).
+#   slices snapshots: node bin/slices.mjs snapshot <slug> --date <d>
+#   mainline harvest: node bin/mainline-data.mjs <repoDir>
+# <area>.snapshots.json (front-end discovery list) points into slices/, which is gitignored below
+# — a committed copy is a dangling pointer on every checkout.
+sitemap/data/slices/
+sitemap/data/mainline.*.json
+/sitemap/data/*.snapshots.json
+
+# monitor/data network caches — regenerable: CISA KEV catalogue and FIRST.org EPSS scores. Never
+# track these: (1) they churn on every scan/watch run, and (2) a git-tracked copy gives a fresh
+# clone an mtime of "now". Freshness is judged from content (kev.json's catalogVersion/
+# dateReleased), never from mtime; see monitor/rollup.mjs and cra/watch.mjs.
+/monitor/data/kev.json
+/monitor/data/epss.json
+/monitor/data/learning.json
+
+# Claude Code local harness config (machine-specific; not part of the platform)
+/.claude/
+# sleight evaluation tooling writes its posture store (posture.db) under the cwd it ran from;
+# machine-local state, never source. No trailing slash: the pattern must keep matching if it becomes a link.
+/sleight_data
+
+# Generated from monitor/failure-taxonomy.json by bin/taxonomy-db.mjs --build; never the source of truth.
+monitor/commitwork.db
+
+# ── THE OPERATOR'S FLEET, NOT THE TOOL ──────────────────────────────────────────────────────────
+# What a scanner FOUND, and whose code it was pointed at, are facts about the scanned party — not
+# about commitwork. A public clone must carry the instrument and none of the evidence. The stores
+# live outside the tree and are reached through the symlinks below.
+#
+# gitignore is only consulted for UNTRACKED files, so a rule over a path already in the index does
+# nothing at all, while reading like protection to anyone auditing this file.
+# bin/test/inert-ignore-rules.test.mjs fails if any of these goes inert.
+#
+# No trailing slashes below: a trailing-slash pattern matches directories only, git classifies a
+# symlink as a file, and every path here can be a symlink. `/map/data/<area>/` would silently stop
+# matching.
+
+# The registry — repo names, filesystem paths and deploy scoping for the operator's fleet.
+# monitor/projects.example.json is the shipped template. CW_REGISTRY overrides the path; the
+# default is monitor/private/projects.json.
+#
+# The derived issue store — every scanned repo's findings, generated and hash-chained ("never
+# hand-edit"). CW_ISSUES overrides the path.
+/monitor/private
+# The registry's old path, so a stale copy is never re-added. Do not make it a symlink to the live
+# registry: an atomic write renames over a file symlink.
+/monitor/projects.json
+# The issue store's old path, for the same reason. The declared store is
+# monitor/private/issues.json.
+/monitor/issues.json
+
+# Scan output held for the map viewer: each area's CVE history and security findings. Another
+# party's security posture is theirs to disclose, not ours, so no area's data is tracked here.
+/map/data/*
+# evaluations/ — the cycle artifacts (audits, plans, remediations). An audit document quotes the
+# evidence it audits, so it discloses whatever it audited; that is the property that makes these
+# useful internally and unpublishable. Keep them in a separately versioned private store.
+#
+# No trailing slash: `evaluations` can be a symlink, a trailing-slash pattern matches only
+# directories, and git treats a symlink as a FILE, so `/evaluations/` would stop matching the
+# instant the path becomes a link. Do not restore the slash.
+/evaluations
+.wrangler/
+
+# docsite/.versions/ — the rolling overwrite-protection snapshots lib/docsite-versions.mjs writes
+# (editor saves, imports, state/reorder-triggered rebuilds, the taxonomy generators). Local safety
+# net, not a durable record — same reasoning /reports/ gets above. bin/docsite-publish.mjs never
+# picks it up regardless (it assembles the bundle from the manifest's declared docs, not a
+# directory walk of docsite/), so this line is about keeping it out of `git status`, not the
+# public site.
+/docsite/.versions/
+
+# Vendored reference corpus. None of it travels with the public repository; it lives in
+# commitwork-sidecar/reference and is regenerated there. Nothing in this repo reads it.
+# No trailing slash: git classifies a symlink as a file, so a directory-only pattern stops
+# matching the moment the path becomes a link.
+/reference
+
+# operational record: the status document is written to monitor/private/ (sidecar), never tracked
+/PROJECTSTATUS.md
+
+# Customer and fleet records live in the private dir (monitor/private is the sidecar link;
+# monitor/store-paths.mjs resolves each, CW_* overrides). The old paths stay ignored so a stray
+# copy is never re-added. The *.example.json files beside them are the public shapes.
+/monitor/annotations.json
+/monitor/gate-exemptions.json
+/monitor/image-acceptance.json
+/monitor/stub-allowlist.json
+# per-area editorial sidecars for build-security-data (the shared monitor/security-annotations.json stays)
+/monitor/security-annotations.*.json
+/monitor/owner-map.json
+/monitor/program-worklist.json
+/monitor/config-correctness-ledger.json
+# derived from the private worklist by worklist-reconcile.mjs; written beside it, never here
+/monitor/worklist-reconciled.json
+# operator BOLA manifests live in monitor/private/bola/; only the synthetic example ships in
+# manifests/bola/.
+# the CRA product registry is monitor/private/cra-products.json; cra/products.example.json ships
+/cra/products.json
+/monitor/credential-scope.json
+/monitor/data/epss-detail.json
+# WCAG attestations name the person who attested; the store is monitor/private/a11y-attestations.json
+/monitor/a11y-attestations.json
+# the CRA case log is monitor/private/cra-cases.json; the LLM posture is monitor/private/llm-runtime.json
+/cra/cases.json
+/monitor/llm-runtime.json
+# the memory store (lib/memory-store.mjs, CW_MEMORY_DB) and its SQLite journals
+/monitor/memory.db*
+
+# Hand-made pre-lifecycle backups. A backup of that kind is never source; nothing reads one, and the
+# walkers in bin/comment-schema.mjs and admin/routes/comments.mjs already skip the name.
+*.pre-lifecycle-*
+
+# Draft and hidden docsite documents live in the private docsite root (monitor/private/docsite,
+# CW_DOCSITE_PRIVATE). These are their old public-root paths, so a stale copy cannot be re-added.
+/docsite/content/guide.md
+/docsite/content/capabilities.md
+/docsite/content/budget.md
+/docsite/content/taxonomy-remediation.md
+/docsite/imported/taxonomy.html
+/docsite/imported/taxonomy-proposed.html
+/docsite/imported/scanner-subject-taxonomy.html
+/docsite/imported/e231ef2a-e056-497e-86c8-1e6c204f284a.html
+/docsite/pages/guide
+/docsite/pages/capabilities
+/docsite/pages/13144632-3d0d-40b1-ac19-549141d61dcc
+/docsite/pages/e231ef2a-e056-497e-86c8-1e6c204f284a
+/docsite/pages/e231ef2a-e056-497e-86c8-1e6c204f284a.html
+/docsite/pages/taxonomy.html
+/docsite/pages/taxonomy-proposed.html
+/docsite/pages/scanner-subject-taxonomy.html
+
+# The canary's planted logs are fixtures, not output: bin/log-evidence.mjs must find them in a clone.
+!fixtures/scan-canary/**/*.log

@@ -1,0 +1,223 @@
+# Class rules: SQL statement text assembled at run time.
+#
+# The registry's Rust and JavaScript SQL rules pair a web-framework source with a database-library
+# sink (actix/hyper/rocket x diesel/sqlx/postgres/tokio-postgres; knex/mysql/pg/mssql), so a program
+# with its own wire client, or none of those frameworks, gives them nothing to match while the lane
+# reports ran-and-clean. These rules key on the statement's own text instead, whatever executes it.
+# Go, Python and Java already have library-agnostic registry rules (string-formatted-query,
+# formatted-sql-query, formatted-sql-string).
+#
+# A statement is recognised by its verb at the start of the literal followed by the verb's
+# mandatory partner (SELECT ... FROM, INSERT INTO, UPDATE x SET, DELETE FROM, DECLARE x CURSOR, ...),
+# in one case throughout: SQL is written all upper or all lower, prose starts "Select a file from".
+# A message that only mentions a verb ("SYNCPOINT ROLLBACK: refused with SQLCODE {}") has no such
+# shape and is the false positive this exists to refuse.
+#
+# Two tiers, by evidence. Identifier or clause assembly (FROM {table}, SET {sets}) is low: the piece
+# is usually a constant. A value in a value position (inside quotes, after =/LIKE/IN (/VALUES (/a
+# comma) is med: the classic injection shape. Placeholder generation ({placeholders}, $${i},
+# ids.map(() => '?')) is binding, not injection, and is excluded. Neither tier establishes an
+# attacker-controlled source, so neither is high. Test, bench and fuzz code is out of scope: it
+# assembles SQL constantly and is not attack surface.
+#
+# Known blind spot, measured: Semgrep does not parse a macro nested in another macro's arguments,
+# so vec![format!("SELECT ...")] is never seen. A statement bound with let first is.
+#
+# The regexes repeat one statement grammar in four places; change them together. Every case in
+# fixtures/semgrep-classes/ is asserted both ways by monitor/test/semgrep-classes.test.mjs.
+
+rules:
+  - id: cw-sql-text-assembled-rust
+    languages: [rust]
+    severity: INFO
+    message: >-
+      SQL statement text is assembled at run time. When every interpolated piece is a constant or an
+      allow-listed identifier this is safe; confirm that, or bind the value as a parameter.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ['CWE-89: Improper Neutralization of Special Elements used in an SQL Command']
+      confidence: LOW
+      class: sql-text-assembled
+    paths:
+      exclude:
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '*.test.*'
+        - '*.spec.*'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/_tests/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/bench/**'
+        - '**/fuzz/**'
+        - '**/fuzzer/**'
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: format!($FMT, ...)
+              - metavariable-regex:
+                  metavariable: $FMT
+                  regex: '(?s)^"\s*(?:SELECT\b.*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b.*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()'
+              - metavariable-regex:
+                  metavariable: $FMT
+                  regex: '(?s)^.*?(?<!\{)\{(?!\{)[^{}]*\}'
+          - patterns:
+              - pattern-either:
+                  - pattern: |
+                      let mut $S = String::from($LIT);
+                      ...
+                      $S.push_str($X);
+                  - pattern: |
+                      let mut $S = $LIT.to_string();
+                      ...
+                      $S.push_str($X);
+                  - pattern: $LIT.to_string() + $X
+                  - pattern: $LIT.to_owned() + $X
+                  - pattern: String::from($LIT) + $X
+              - metavariable-regex:
+                  metavariable: $LIT
+                  regex: '(?s)^"\s*(?:SELECT\b.*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b.*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()'
+              - metavariable-pattern:
+                  metavariable: $X
+                  patterns:
+                    - pattern-not: '"..."'
+      - pattern-not-inside: 'mod tests { ... }'
+      - pattern-not-inside: 'mod test { ... }'
+      - pattern-not-inside: |
+          #[test]
+          fn $F(...) { ... }
+
+  - id: cw-sql-value-interpolated-rust
+    languages: [rust]
+    severity: WARNING
+    message: >-
+      A value is interpolated into a value position of an SQL statement (inside quotes, or after a
+      comparison, IN, VALUES or a list separator). Whatever reaches it can change the statement.
+      Bind it as a parameter.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-89: Improper Neutralization of Special Elements used in an SQL Command']
+      confidence: MEDIUM
+      class: sql-text-assembled
+    paths:
+      exclude:
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '*.test.*'
+        - '*.spec.*'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/_tests/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/bench/**'
+        - '**/fuzz/**'
+        - '**/fuzzer/**'
+    patterns:
+      - pattern: format!($FMT, ...)
+      - metavariable-regex:
+          metavariable: $FMT
+          regex: '(?s)^"\s*(?:SELECT\b.*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b.*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()(?:(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*''(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*'')*?(?:(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*''(?:\{\{|\}\}|\\.|[^''"{}\\]|\$\{[^{}]*\})*?(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\}|(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*?(?:=|<>|!=|<=|>=|<|>|\b(?i:LIKE)|\b(?i:IN)\s*\()\s*(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\}|.*?\b(?i:VALUES)\s*\((?:[^)"{]|\{\{|\$\{[^{}]*\})*?(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\})'
+      - pattern-not-inside: 'mod tests { ... }'
+      - pattern-not-inside: 'mod test { ... }'
+      - pattern-not-inside: |
+          #[test]
+          fn $F(...) { ... }
+
+  - id: cw-sql-text-assembled-js
+    languages: [javascript, typescript]
+    severity: INFO
+    message: >-
+      SQL statement text is assembled at run time. When every interpolated piece is a constant or an
+      allow-listed identifier this is safe; confirm that, or bind the value as a parameter.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ['CWE-89: Improper Neutralization of Special Elements used in an SQL Command']
+      confidence: LOW
+      class: sql-text-assembled
+    paths:
+      exclude:
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '*.test.*'
+        - '*.spec.*'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/_tests/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/bench/**'
+        - '**/fuzz/**'
+        - '**/fuzzer/**'
+    pattern-either:
+      - patterns:
+          - pattern: '`...${$X}...`'
+          - pattern-regex: '(?s)`\s*(?:SELECT\b[^`]*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b[^`]*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()[^`]*`'
+      - patterns:
+          - pattern-either:
+              - pattern: '"$LIT" + $X'
+              - pattern: "'$LIT' + $X"
+          - metavariable-regex:
+              metavariable: $LIT
+              regex: '(?s)^\s*(?:SELECT\b.*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b.*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()'
+          - metavariable-pattern:
+              metavariable: $X
+              patterns:
+                - pattern-not: '"..."'
+                - pattern-not: "'...'"
+
+  - id: cw-sql-value-interpolated-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A value is interpolated into a value position of an SQL statement (inside quotes, or after a
+      comparison, IN, VALUES or a list separator). Whatever reaches it can change the statement.
+      Bind it as a parameter.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-89: Improper Neutralization of Special Elements used in an SQL Command']
+      confidence: MEDIUM
+      class: sql-text-assembled
+    paths:
+      exclude:
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '*.test.*'
+        - '*.spec.*'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/_tests/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/bench/**'
+        - '**/fuzz/**'
+        - '**/fuzzer/**'
+    pattern-either:
+      - patterns:
+          - pattern: '`...${$X}...`'
+          - pattern-regex: '(?s)`\s*(?:SELECT\b[^`]*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b[^`]*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()(?:(?:\$\{[^{}]*\}|\\.|[^`''$\\]|\$(?!\{))*''(?:\$\{[^{}]*\}|\\.|[^`''$\\]|\$(?!\{))*'')*?(?:(?:\$\{[^{}]*\}|\\.|[^`''$\\]|\$(?!\{))*''(?:\$\$\{[^{}]*\}|\\.|[^`''$\\]|\$(?!\{))*?(?<!\$)\$\{(?![^}]*[''"]\?[''"])(?![^}]*\$\$\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})|(?:\$\{[^{}]*\}|\\.|[^`''$\\]|\$(?!\{))*?(?:=|<>|!=|<=|>=|<|>|\b(?i:LIKE)|\b(?i:IN)\s*\()\s*(?<!\$)\$\{(?![^}]*[''"]\?[''"])(?![^}]*\$\$\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})|[^`]*?\b(?i:VALUES)\s*\((?:[^)`$]|\$\$\{[^{}]*\}|\$(?!\{))*?(?<!\$)\$\{(?![^}]*[''"]\?[''"])(?![^}]*\$\$\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\}))[^`]*`'
+      - patterns:
+          - pattern-either:
+              - pattern: '"$LIT" + $X'
+              - pattern: "'$LIT' + $X"
+          - metavariable-regex:
+              metavariable: $LIT
+              regex: '(?s)^\s*(?:SELECT\b.*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b.*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\().*?(?:''|(?:=|<>|!=|<=|>=|<|>|\b(?i:LIKE)|\b(?i:IN)\s*\()|\b(?i:VALUES)\s*\([^)]*)\s*$'
+          - metavariable-pattern:
+              metavariable: $X
+              patterns:
+                - pattern-not: '"..."'
+                - pattern-not: "'...'"

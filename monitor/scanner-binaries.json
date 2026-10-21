@@ -1,0 +1,23 @@
+{
+  "comment": "The scanner/tool binaries whose OUTPUT commitwork trusts. monitor/scanner-binary.mjs pins each one (resolved path + sha256 + version string) against an accepted baseline; any deviation is a diff to re-accept, never a silent change. versionArgs is per-tool because there is no convention. Entry scripts (semgrep, prowler, guarddog, depscan are Python launchers) are hashed as resolved — the version output is the second witness that reaches the package behind the launcher; the two cannot share a failure mode.",
+  "tools": [
+    { "name": "semgrep", "versionArgs": ["--version"] },
+    { "name": "codeql", "versionArgs": ["version", "--format=terse"] },
+    { "name": "osv-scanner", "versionArgs": ["--version"] },
+    { "name": "gitleaks", "versionArgs": ["version"] },
+    { "name": "trufflehog", "versionArgs": ["--version"] },
+    { "name": "trivy", "versionArgs": ["--version"] },
+    { "name": "syft", "versionArgs": ["--version"] },
+    { "name": "grype", "versionArgs": ["--version"] },
+    { "name": "prowler", "versionArgs": ["--version"] },
+    { "name": "guarddog", "versionArgs": ["--version"] },
+    { "name": "depscan", "versionArgs": ["--version"] },
+    { "name": "zizmor", "versionArgs": ["--version"] },
+    { "name": "actionlint", "versionArgs": ["-version"] },
+    { "name": "hadolint", "versionArgs": ["--version"] },
+    { "name": "govulncheck", "versionArgs": ["-version"] },
+    { "name": "gosec", "versionArgs": ["-version"] },
+    { "name": "act", "versionArgs": ["--version"] },
+    { "name": "deno", "versionArgs": ["--version"] }
+  ]
+}

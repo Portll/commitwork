@@ -1,0 +1,401 @@
+{
+  "$schema": "../schema/formats.schema.json",
+  "note": "Every file format commitwork treats as a public interface (docs/STABILITY.md), and whether it is frozen. A frozen format's schema is pinned by its last history line; bin/test/format-freeze.test.mjs fails on a shape change until a line is appended. Non-frozen entries are the remaining gap, listed so it stays visible.",
+  "formats": [
+    {
+      "id": "daily-digest",
+      "status": "frozen",
+      "summary": "The per-area batch digest the daily suggestions run reads.",
+      "versionField": "schema",
+      "version": "commitwork.daily-digest/1",
+      "schema": "schema/daily-digest.schema.json",
+      "writer": { "module": "monitor/daily.mjs", "export": "DIGEST_SCHEMA" },
+      "history": [
+        { "version": "commitwork.daily-digest/1", "fingerprint": "sha256:029ba4e602f4502219719d5e88188ea102f3c1d888ffc93f5d26df09495e89e5", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." },
+        { "version": "commitwork.daily-digest/1", "fingerprint": "sha256:a9c8f2369f026a4a9d2ec9a2cde161124f3691e4293b3f778994b5b5ef38b1c6", "release": "0.6.20", "change": "additive", "note": "Optional repos[].advice: cobolwork's advice document for the swept revision (state read, with its items in summary.ordered order) or why there is none (state unavailable). The property is optional and nothing else moved, so every earlier digest still validates." }
+      ]
+    },
+    {
+      "id": "daily-report",
+      "status": "frozen",
+      "summary": "The daily suggestions report written for one area and batch.",
+      "versionField": "schema",
+      "version": "commitwork.daily-report/1",
+      "schema": "schema/daily-report.schema.json",
+      "writer": { "module": "bin/daily-run.mjs", "export": "REPORT_SCHEMA" },
+      "history": [
+        { "version": "commitwork.daily-report/1", "fingerprint": "sha256:227fa191d364f909fc3f0e97da7ccdbe4114c590ce9f2897308f3eece7116f0f", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." },
+        { "version": "commitwork.daily-report/1", "fingerprint": "sha256:4eb71042c0278488b9bce760c4a47aac15697fc09e22ddbabc399b6cf3f83a48", "release": "0.6.20", "change": "additive", "note": "Optional advice: per repo whose cobolwork lane ran, the suggestion list cobolwork's advice document gives in its order, or why there was none. The property is optional and nothing else moved, so every earlier report still validates." }
+      ]
+    },
+    {
+      "id": "commitwork-report",
+      "status": "frozen",
+      "summary": "The product-neutral security report cra/neutral-report.mjs publishes.",
+      "versionField": "specVersion",
+      "version": "commitwork-report/1.0",
+      "schema": "schema/commitwork-report.schema.json",
+      "writer": { "module": "cra/neutral-report.mjs", "export": "SPEC_VERSION" },
+      "history": [
+        { "version": "commitwork-report/1.0", "fingerprint": "sha256:3a724f351120e274f7f37622736e6b5e07ca769b880ab7508955f10b8a8f69d3", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." }
+      ]
+    },
+    {
+      "id": "issue-store",
+      "status": "frozen",
+      "summary": "The issue tracker store: hash-chained events and derived issue state.",
+      "versionField": "version",
+      "version": 1,
+      "schema": "schema/issue.schema.json",
+      "writer": { "module": "monitor/issue-store.mjs", "export": "emptyIssuesDoc", "call": true },
+      "history": [
+        { "version": 1, "fingerprint": "sha256:1670ee55a1813caf7c94e409f65eac871099c69520db1d045ae1eeca14b17fc8", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." },
+        { "version": 1, "fingerprint": "sha256:110523afe5a4facc739e0b3658726363910409aa74bd95ebbd70bf09ffdce3dd", "release": "0.1.504", "change": "additive", "note": "llm.engine accepts anthropic and openai-compatible; optional llm.host names the server that answered." },
+        { "version": 1, "fingerprint": "sha256:1d5e63385e4f9823b9fb9d653aab7006f9b461499019c082da5d9cda3f8a7535", "release": "0.5.4", "change": "additive", "note": "Event types issue-snoozed and issue-unsnoozed; optional nullable snoozedUntil on an open issue (feed triage, 42e78dd6). Classified from the diff: the enum only gains values and the field is optional, so every earlier store still validates." },
+        { "version": 1, "fingerprint": "sha256:07882a902efc0abcda96697d268c23b44113de5c7c4ac26346df763d8aac5951", "release": "0.6.50", "change": "additive", "note": "Optional source.ruleTitle (the rule's own description, rule-level metadata) and evidence tier worktree-copy (an issue keyed on a worktree copy closed as superseded). Classified from the diff: a new optional property and an enum that only gains a value, so every earlier store still validates." }
+      ]
+    },
+    {
+      "id": "rollup-slice",
+      "status": "frozen",
+      "summary": "One rollup slice: the fleet's findings and lane outcomes for one sweep.",
+      "versionField": "sliceVersion",
+      "version": 1,
+      "schema": "schema/slice.schema.json",
+      "writer": { "source": "monitor/rollup.mjs", "match": "const SLICE_VERSION = 1;" },
+      "history": [
+        { "version": 1, "fingerprint": "sha256:4e0b8a2701a57a4bbd93020f2990d71cc2382240a8e2aa77bc41c8cecba91591", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." }
+      ]
+    },
+    {
+      "id": "pattern-baseline",
+      "status": "frozen",
+      "summary": "The pattern-scan baseline of grandfathered finding identities.",
+      "versionField": "schema",
+      "version": "commitwork.pattern-baseline/1",
+      "schema": "schema/pattern-baseline.schema.json",
+      "writer": { "document": "monitor/pattern-baseline.json" },
+      "history": [
+        { "version": "commitwork.pattern-baseline/1", "fingerprint": "sha256:a572ef4e8c474d85bffa3a15533916541f7109fdb9d39619211bd7752a7d4842", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." }
+      ]
+    },
+    {
+      "id": "feature-charter",
+      "status": "frozen",
+      "summary": "The feature charter declaration the feature census reads.",
+      "versionField": "schema",
+      "version": "commitwork.feature-charter/1",
+      "schema": "schema/feature-charter.schema.json",
+      "writer": { "document": "manifests/feature-charter.json" },
+      "history": [
+        { "version": "commitwork.feature-charter/1", "fingerprint": "sha256:8b3e2cec0b60b6e8c9b94fed6f98ddbf4650f299b90c9294f7e2c980e41dcdaa", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." }
+      ]
+    },
+    {
+      "id": "digest",
+      "status": "frozen",
+      "summary": "The cross-area digest bin/digest.mjs builds and delivers.",
+      "versionField": "schema",
+      "version": "commitwork.digest/1",
+      "schema": "schema/digest.schema.json",
+      "writer": { "module": "bin/digest.mjs", "export": "SCHEMA" },
+      "history": [
+        { "version": "commitwork.digest/1", "fingerprint": "sha256:4c36d9f17ab4831acd55b563b59d6302f7feaa46cc5a9f28a5cf69ec93f2a96b", "release": "0.5.7", "change": "initial", "note": "Pinned when the schema was written from bin/digest.mjs." },
+        { "version": "commitwork.digest/1", "fingerprint": "sha256:9c9d9f35f4e8a80d1bc55d4089da8c794c6ff013366d05dcb0f0ff4da5fca4d7", "release": "0.5.30", "change": "additive", "note": "Optional sections.returnedWarnings (set-aside warnings seen again in the window, with the set-aside beside them) and an optional key on ratchet-breach and failed-work items. Both are optional, so every earlier digest still validates." },
+        { "version": "commitwork.digest/1", "fingerprint": "sha256:74d388948d3b79f953e029e477a02a7968346d8af09f09b9f94c6394b321d9eb", "release": "0.5.40", "change": "additive", "note": "Failed work gains the item type scheduled-job-failed (a failed step of a run recorded in the scheduled job journal) and the undetermined source scheduled job journal. Both widen an enum, so every earlier digest still validates." }
+      ]
+    },
+    {
+      "id": "digest-deliveries",
+      "status": "frozen",
+      "summary": "The ledger of digest deliveries to chat and webhook targets.",
+      "versionField": "schema",
+      "version": "commitwork.digest-deliveries/1",
+      "schema": "schema/digest-deliveries.schema.json",
+      "writer": { "module": "bin/digest-deliver.mjs", "export": "LEDGER_SCHEMA" },
+      "history": [
+        { "version": "commitwork.digest-deliveries/1", "fingerprint": "sha256:af43d6d6358c1f9b5b81933befbdabf38797fab87f5cbae931c3267f63c8743c", "release": "0.5.7", "change": "initial", "note": "Pinned when the schema was written from bin/digest-deliver.mjs." }
+      ]
+    },
+    {
+      "id": "daily-ledger",
+      "status": "frozen",
+      "summary": "The ledger of daily suggestions already put on the todo list.",
+      "versionField": "schema",
+      "version": "commitwork.daily-ledger/1",
+      "schema": "schema/daily-ledger.schema.json",
+      "writer": { "module": "monitor/daily-todos.mjs", "export": "LEDGER_SCHEMA" },
+      "history": [
+        { "version": "commitwork.daily-ledger/1", "fingerprint": "sha256:33bf096c4e94c72663446ae755ab2546001401bb55fad915ba5d9490967e13fb", "release": "0.5.7", "change": "initial", "note": "Pinned when the schema was written from monitor/daily-todos.mjs." }
+      ]
+    },
+    {
+      "id": "feature-census",
+      "status": "frozen",
+      "summary": "The feature census report.",
+      "versionField": "schema",
+      "version": "commitwork.feature-census/1",
+      "schema": "schema/feature-census.schema.json",
+      "writer": { "source": "bin/feature-census.mjs", "match": "schema: 'commitwork.feature-census/1'" },
+      "history": [
+        { "version": "commitwork.feature-census/1", "fingerprint": "sha256:db48e6ebd587b01e949fc9cca88be11a074078dd4cf7662aead4632564d9c49f", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written from bin/feature-census.mjs; censuses from before experimental flags still validate." }
+      ]
+    },
+    {
+      "id": "feature-inventory",
+      "status": "frozen",
+      "summary": "The feature inventory report.",
+      "versionField": "schema",
+      "version": "commitwork.feature-inventory/1",
+      "schema": "schema/feature-inventory.schema.json",
+      "writer": { "source": "bin/feature-inventory.mjs", "match": "schema: 'commitwork.feature-inventory/1'" },
+      "history": [
+        { "version": "commitwork.feature-inventory/1", "fingerprint": "sha256:a6c6a72db76106ecf1a63bf29d68b50ba06f47ed190d9ea13f819872dfc79e1a", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written: the envelope and shared feature fields; per-surface detail stays open." }
+      ]
+    },
+    {
+      "id": "pattern-scan",
+      "status": "frozen",
+      "summary": "The pattern-scan record of detector runs and observations.",
+      "versionField": "schema",
+      "version": "commitwork.pattern-scan/1",
+      "schema": "schema/pattern-scan.schema.json",
+      "writer": { "source": "bin/lib/pattern-core.mjs", "match": "schema: 'commitwork.pattern-scan/1'" },
+      "history": [
+        { "version": "commitwork.pattern-scan/1", "fingerprint": "sha256:ebc7358b204043c5647e013c8455c527e410a78d1998f9d1ad165618c0d6ae65", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written from bin/pattern-scan.mjs; per-detector extra and denominator detail stay open." }
+      ]
+    },
+    {
+      "id": "verdict-journal",
+      "status": "frozen",
+      "summary": "The verdict journal: one chained record per gate decision.",
+      "versionField": "v",
+      "version": 1,
+      "schema": "schema/verdict-journal.schema.json",
+      "writer": { "source": "bin/lib/verdict-journal-core.mjs", "match": "const envelope = { v: 1," },
+      "history": [
+        { "version": 1, "fingerprint": "sha256:2bb38511c15b59cb7f87ff054b01dd8c514ad70af136be81cb43bd650b4ce343", "release": "0.5.7", "change": "initial", "note": "Pinned when the schema was written: the shared envelope only; each gate body stays open." }
+      ]
+    },
+    {
+      "id": "run-scan",
+      "status": "frozen",
+      "summary": "scan.json: the per-run table of lane cells for each scanned repository.",
+      "versionField": "version",
+      "version": 1,
+      "schema": "schema/run-scan.schema.json",
+      "writer": { "source": "bin/commitwork.mjs", "match": "JSON.stringify({ version: 1, baseline: manifest.repo" },
+      "history": [
+        { "version": 1, "fingerprint": "sha256:d8d28e6f342214bfa1c9553f8bf66bbedfdbb5bb17821a65ca999268ad09ab17", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written: the envelope, rows and shared cell fields; the threat models stay isolation.mjs's." }
+      ]
+    },
+    {
+      "id": "build-health",
+      "status": "frozen",
+      "summary": "The build-health tool's JSON result.",
+      "versionField": "schemaVersion",
+      "version": 2,
+      "schema": "schema/build-health.schema.json",
+      "writer": { "source": "bin/build-health.mjs", "match": "schemaVersion: 2," },
+      "history": [
+        { "version": 2, "fingerprint": "sha256:cd202bdd6cfdaf97828a70f179ff76099523b71ad166aa8aac835fa49406d11c", "release": "0.5.7", "change": "initial", "note": "Pinned when the schema was written: the envelope and shared row fields; per-language detail stays open." }
+      ]
+    },
+    {
+      "id": "triage-verdict-record",
+      "status": "frozen",
+      "summary": "The verdict file a local-model triage run writes beside its evidence.",
+      "versionField": "schema",
+      "version": "commitwork/triage-verdict.v1",
+      "schema": "schema/triage-verdict-record.schema.json",
+      "writer": { "source": "admin/routes/remediation.mjs", "match": "schema: 'commitwork/triage-verdict.v1'" },
+      "history": [
+        { "version": "commitwork/triage-verdict.v1", "fingerprint": "sha256:f5c4896cf20d731cb71c5390bbc02f45869de20ef55a3163645a3751c810a6b9", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written: the envelope; the inner verdict is schema/triage-verdict.schema.json's." }
+      ]
+    },
+    {
+      "id": "codeql-remediation-job",
+      "status": "frozen",
+      "summary": "A CodeQL remediation job record.",
+      "versionField": "schema",
+      "version": "commitwork/codeql-remediation-job.v1",
+      "schema": "schema/codeql-remediation-job.schema.json",
+      "writer": { "source": "admin/routes/codeql-remediation.mjs", "match": "schema: 'commitwork/codeql-remediation-job.v1'" },
+      "history": [
+        { "version": "commitwork/codeql-remediation-job.v1", "fingerprint": "sha256:60c2eb8445cd8e04a298695c41ee1c8dc3719f2b00532c3dac80679c2d8d3a02", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written from admin/routes/codeql-remediation.mjs; stage verdicts stay that schema's." },
+        { "version": "commitwork/codeql-remediation-job.v1", "fingerprint": "sha256:bff15e32b00dddbbf49c96b60bbc2b830d99d2e0ea635ac922480a9bf68e3cf0", "release": "0.5.74", "change": "additive", "note": "Optional sampling on the local and localCross stages: pinned-0 when temperature 0 was sent, model-default when the hosted model fixes its own sampling and none was. The field is optional and nothing else moved, so every earlier job still validates." }
+      ]
+    },
+    {
+      "id": "cobolwork-remediation-job",
+      "status": "frozen",
+      "summary": "A cobolwork remediation job record.",
+      "versionField": "schema",
+      "version": "commitwork/cobolwork-remediation-job.v1",
+      "schema": "schema/cobolwork-remediation-job.schema.json",
+      "writer": { "module": "lib/cobolwork-remediation-jobs.mjs", "export": "JOB_SCHEMA" },
+      "history": [
+        { "version": "commitwork/cobolwork-remediation-job.v1", "fingerprint": "sha256:f6ef8bfefcdefcb44230975bdaa6e655bc1c14dd634ebf639e29699e415133b7", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written from lib/cobolwork-remediation-jobs.mjs; per-attempt detail stays open." }
+      ]
+    },
+    {
+      "id": "cra-refresh-status",
+      "status": "frozen",
+      "summary": "refresh-status.json: how the last CRA evidence refresh ended.",
+      "versionField": "schema",
+      "version": "commitwork.cra-refresh-status/1",
+      "schema": "schema/cra-refresh-status.schema.json",
+      "writer": { "module": "cra/evidence-status.mjs", "export": "REFRESH_STATUS_SCHEMA" },
+      "history": [
+        { "version": "commitwork.cra-refresh-status/1", "fingerprint": "sha256:99891c5ed44726f7169c0d2b20ab916c593f94b8bf252cae4514219ea585bcb9", "release": "0.5.7", "change": "initial", "note": "Pinned when the schema was written from cra/refresh.mjs." }
+      ]
+    },
+    {
+      "id": "cra-evidence-index",
+      "status": "frozen",
+      "summary": "evidence-index.json: every artifact a CRA evidence refresh produced, with its sha256 and inputs.",
+      "versionField": "schema",
+      "version": "commitwork.cra-evidence-index/1",
+      "schema": "schema/cra-evidence-index.schema.json",
+      "writer": { "module": "cra/evidence-status.mjs", "export": "EVIDENCE_INDEX_SCHEMA" },
+      "history": [
+        { "version": "commitwork.cra-evidence-index/1", "fingerprint": "sha256:f83c18e5493f51ebfb9d65aa30a398fd3af5234d00ff4ad3de870ba1aa1ed93d", "release": "0.5.7", "change": "initial", "note": "Stamped and pinned together; indexes written before carry no schema field and are still read." },
+        { "version": "commitwork.cra-evidence-index/1", "fingerprint": "sha256:46c0804db89068ede6568790e2b1c4b73ad8358e61ade6fc669a352ff7c54695", "release": "0.5.34", "change": "additive", "note": "Optional timestamp: the RFC 3161 step's state, reason and per-record tokens. The field is optional and nothing else moved, so every earlier index still validates." }
+      ]
+    },
+    {
+      "id": "mcp-emission-ledger",
+      "status": "frozen",
+      "summary": "The MCP emission ledger: one chained row per injection-shaped signal a run_checks_start job raised.",
+      "versionField": "v",
+      "version": 1,
+      "schema": "schema/mcp-emission-ledger.schema.json",
+      "writer": { "module": "mcp/emission-ledger.mjs", "export": "ROW_VERSION" },
+      "history": [
+        { "version": 1, "fingerprint": "sha256:5c562b6ba6edb12e04d58d9cd0a8bd0637ad5b342f58936d0f6a6bf659705c61", "release": "0.5.17", "change": "initial", "note": "Pinned when the ledger was written: a hash of the matched span, never the text." }
+      ]
+    },
+    {
+      "id": "mcp-job-store",
+      "status": "frozen",
+      "summary": "One MCP server process's jobs, kept so run_checks_result answers after a restart.",
+      "versionField": "schema",
+      "version": "commitwork.mcp-jobs/1",
+      "schema": "schema/mcp-job-store.schema.json",
+      "writer": { "module": "mcp/jobs.mjs", "export": "JOB_STORE_SCHEMA" },
+      "history": [
+        { "version": "commitwork.mcp-jobs/1", "fingerprint": "sha256:ceae95dbab063b388bbc77a6a9886aa738fd5797c7290fcbad47b3c14bbd92a7", "release": "0.5.17", "change": "initial", "note": "Pinned when restart survival was written." }
+      ]
+    },
+    {
+      "id": "inbox-state",
+      "status": "unschematized",
+      "summary": "The per-operator read and snooze state of the Inbox, written under a lock by monitor/inbox.mjs.",
+      "versionField": "schema",
+      "version": "commitwork.inbox-state/1",
+      "schema": null,
+      "writer": { "module": "monitor/inbox.mjs", "export": "INBOX_STATE_SCHEMA" },
+      "gap": "No schema file. readInboxState checks the schema stamp and that entries is an object; the entry shape (readAt, snoozedUntil, at) is not described anywhere a reader can validate against."
+    },
+    {
+      "id": "lane-reports",
+      "status": "unversioned",
+      "summary": "Each lane's raw report in a run directory, read back through monitor/extractors.mjs.",
+      "versionField": null,
+      "version": null,
+      "schema": null,
+      "writer": { "module": "bin/commitwork.mjs" },
+      "gap": "Each report is its scanner's own shape; commitwork stamps no version and the extracted rows have no per-lane schema."
+    },
+    {
+      "id": "check-manifests",
+      "status": "unversioned",
+      "summary": "The check manifests under manifests/ and repo-local commitwork.json.",
+      "versionField": null,
+      "version": null,
+      "schema": "schema/manifest.schema.json",
+      "writer": { "document": "manifests/security-baseline.json" },
+      "gap": "A schema exists; a manifest carries no version field, so a reader cannot refuse a shape it does not know."
+    },
+    {
+      "id": "evidence-pack",
+      "status": "unversioned",
+      "summary": "The CRA evidence pack cra/pack.mjs writes: markdown documents and an index.",
+      "versionField": null,
+      "version": null,
+      "schema": null,
+      "writer": { "module": "cra/pack.mjs" },
+      "gap": "Markdown with no version marker and no description of the files a pack must contain."
+    },
+    {
+      "id": "daily-suggestions",
+      "status": "unversioned",
+      "summary": "The suggestions document the daily model run returns.",
+      "versionField": null,
+      "version": null,
+      "label": "commitwork.daily-suggestions/1",
+      "schema": "schema/daily-suggestions.schema.json",
+      "writer": { "module": "monitor/daily-validate.mjs" },
+      "gap": "Named in the prompt and validated against a schema; the document itself carries no version field."
+    },
+    {
+      "id": "mcp-tools",
+      "status": "unversioned",
+      "summary": "The tool names and input schemas the MCP server lists.",
+      "versionField": null,
+      "version": null,
+      "schema": null,
+      "writer": { "module": "mcp/tools.mjs" },
+      "pin": "sha256:6dfc63312c4d9b9fd450e86dd72f39434693faf53415eb35a44cb4b98d892da4",
+      "gap": "No version a client can read. The listed shapes are pinned by fingerprint, so a change fails the freeze test."
+    },
+    {
+      "id": "sarif-export",
+      "status": "external",
+      "summary": "commitwork's findings as SARIF, one log per scanned repository.",
+      "versionField": "version",
+      "version": "2.1.0",
+      "schema": null,
+      "upstream": "https://json.schemastore.org/sarif-2.1.0.json",
+      "writer": { "module": "bin/lib/sarif-export.mjs", "export": "SARIF_VERSION" },
+      "gap": "The upstream schema is not vendored. run.properties.commitwork has no schema; partialFingerprints are pinned by bin/test/finding-identity-pin.test.mjs."
+    },
+    {
+      "id": "cyclonedx-sbom",
+      "status": "external",
+      "summary": "The CycloneDX SBOM and CycloneDX VEX documents cra/ writes.",
+      "versionField": "specVersion",
+      "version": "1.5",
+      "schema": "schema/upstream/bom-1.5.schema.json",
+      "writer": { "source": "cra/sbom.mjs", "match": "specVersion: '1.5'" }
+    },
+    {
+      "id": "spdx-sbom",
+      "status": "external",
+      "summary": "The SPDX SBOM converted from the CycloneDX one.",
+      "versionField": "spdxVersion",
+      "version": "SPDX-2.3",
+      "schema": null,
+      "writer": { "module": "cra/spdx.mjs", "export": "SPDX_VERSION" },
+      "gap": "The upstream SPDX 2.3 schema is not vendored, so nothing here validates the output against it."
+    },
+    {
+      "id": "csaf-vex",
+      "status": "external",
+      "summary": "The CSAF VEX advisory cra/vex-formats.mjs writes.",
+      "versionField": "csaf_version",
+      "version": "2.0",
+      "schema": "schema/upstream/csaf_json_schema.json",
+      "writer": { "source": "cra/vex-formats.mjs", "match": "csaf_version: '2.0'" }
+    },
+    {
+      "id": "openvex",
+      "status": "external",
+      "summary": "The OpenVEX document cra/vex-formats.mjs writes.",
+      "versionField": "@context",
+      "version": "https://openvex.dev/ns/v0.2.0",
+      "schema": "schema/upstream/openvex_json_schema.json",
+      "writer": { "source": "cra/vex-formats.mjs", "match": "'@context': 'https://openvex.dev/ns/v0.2.0'" }
+    }
+  ]
+}

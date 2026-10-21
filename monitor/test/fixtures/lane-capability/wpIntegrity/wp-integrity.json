@@ -1,0 +1,138 @@
+{
+  "tool": "wp-integrity",
+  "summary": {
+    "findings": 5,
+    "byRule": {
+      "wp-core-file-added": 1,
+      "wp-core-file-modified": 1,
+      "wp-plugin-file-added": 1,
+      "wp-plugin-file-modified": 1,
+      "wp-plugins-root-file": 1
+    },
+    "filesScanned": 13,
+    "filesHashed": 10,
+    "softChanges": 0,
+    "lineEndingOnly": 0,
+    "installs": [
+      {
+        "path": ".",
+        "layout": "site-root",
+        "core": {
+          "state": "present",
+          "version": "0.0.1",
+          "locale": "en_US"
+        }
+      }
+    ],
+    "components": {
+      "core": 1,
+      "plugins": 2,
+      "singleFilePlugins": 0,
+      "themes": 1,
+      "muPlugins": 0,
+      "verified": 2,
+      "unverifiable": 2,
+      "unavailable": 0
+    },
+    "verified": [
+      {
+        "kind": "core",
+        "slug": "wordpress",
+        "version": "0.0.1",
+        "locale": "en_US",
+        "path": ".",
+        "files": 4,
+        "modified": 1,
+        "added": 1,
+        "missing": 0
+      },
+      {
+        "kind": "plugin",
+        "slug": "cw-canary-plugin",
+        "version": "1.0.0",
+        "path": "wp-content/plugins/cw-canary-plugin",
+        "files": 3,
+        "modified": 1,
+        "added": 1,
+        "missing": 0
+      }
+    ],
+    "unverifiable": [
+      {
+        "kind": "plugin",
+        "slug": "cw-canary-premium",
+        "version": "2.0.0",
+        "path": "wp-content/plugins/cw-canary-premium",
+        "why": "downloads.wordpress.org publishes no checksums for cw-canary-premium 2.0.0: a premium or custom plugin, or a version wordpress.org never released"
+      },
+      {
+        "kind": "theme",
+        "slug": "cw-canary-theme",
+        "version": "1.0.0",
+        "path": "wp-content/themes/cw-canary-theme",
+        "why": "wordpress.org publishes no theme checksums, and this is not a theme the core release in the tree bundles"
+      }
+    ],
+    "unavailable": [],
+    "notMeasured": [],
+    "sources": {
+      "coreChecksums": "file (CW_WP_API_URL)",
+      "pluginChecksums": "file (CW_WP_DOWNLOADS_URL)",
+      "cache": "off"
+    },
+    "requests": {
+      "network": 0,
+      "cache": 0,
+      "staleCache": 0,
+      "file": 3,
+      "failed": 0,
+      "cacheWriteFailures": 0
+    },
+    "unreadable": 0,
+    "unreadableFiles": [],
+    "skipDirs": [
+      ".git",
+      "node_modules",
+      ".claude/worktrees",
+      "fixtures/scan-canary/dirty"
+    ],
+    "skippedPaths": []
+  },
+  "findings": [
+    {
+      "rule": "wp-plugins-root-file",
+      "path": "wp-content/plugins/cw-canary-loose.txt",
+      "sev": "high",
+      "cwe": "CWE-506",
+      "detail": "a file directly in plugins/ that is neither index.php nor a plugin: no release puts a file here"
+    },
+    {
+      "rule": "wp-plugin-file-added",
+      "path": "wp-content/plugins/cw-canary-plugin/includes/cw-canary-cache.php",
+      "sev": "high",
+      "cwe": "CWE-506",
+      "detail": "server code cw-canary-plugin 1.0.0 does not ship, inside a plugin that otherwise verifies"
+    },
+    {
+      "rule": "wp-plugin-file-modified",
+      "path": "wp-content/plugins/cw-canary-plugin/includes/cw-canary-helper.php",
+      "sev": "high",
+      "cwe": "CWE-345",
+      "detail": "differs from cw-canary-plugin 1.0.0 as downloads.wordpress.org publishes it: sha256 differs"
+    },
+    {
+      "rule": "wp-core-file-added",
+      "path": "wp-includes/cw-canary-extra.php",
+      "sev": "high",
+      "cwe": "CWE-506",
+      "detail": "server code WordPress 0.0.1 (en_US) does not ship, inside a core directory"
+    },
+    {
+      "rule": "wp-core-file-modified",
+      "path": "wp-includes/cw-canary-load.php",
+      "sev": "high",
+      "cwe": "CWE-345",
+      "detail": "differs from WordPress 0.0.1 (en_US) as api.wordpress.org publishes it: md5 differs"
+    }
+  ]
+}

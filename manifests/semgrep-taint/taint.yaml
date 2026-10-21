@@ -1,0 +1,120 @@
+# Local taint rules for the sast lane.
+#
+# WHY THESE EXIST. --pro-intrafile is a real capability: a rule requiring interprocedural taint
+# within one file finds a flow the OSS engine misses. As of 2026-08-25, p/default, p/owasp-top-ten
+# and p/security-audit produce BYTE-IDENTICAL output with and without the flag: those packs are
+# pattern-heavy, so the engine engages and has nothing to do.
+#
+# These rules give the engine work, from rules we control and can read, rather than hoping a
+# registry pack contains some. A pack whose contents we cannot enumerate is a dependency whose
+# coverage we cannot state.
+#
+# EVERY RULE HERE MUST FAIL WITHOUT --pro-intrafile. That is the entry condition, asserted by
+# monitor/test/semgrep-taint.test.mjs: a rule that the OSS engine also finds belongs in a pattern
+# pack, not here, because it would make the Pro dependency look load-bearing when it is not.
+#
+# Sources and sinks are deliberately narrow. A broad source list produces findings that are true and
+# useless, which trains an operator to stop reading the lane — class A4, alarm fatigue.
+
+rules:
+  - id: cw-env-to-shell
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Environment input reaches a shell execution sink. The value crosses at least one function
+      boundary, so the flow is invisible to pattern matching and to the OSS engine.
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      confidence: HIGH
+      commitwork: requires-pro-intrafile
+    pattern-sources:
+      - pattern: process.env.$X
+    # Sinks are the positions a shell parses: the command string of exec/execSync, the script after
+    # sh -c, and the command or argv of a spawn with shell: true. Matching any argument also caught
+    # `env: { ...process.env }` in the options and argv-array spawns that run no shell at all.
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern-either:
+                      - pattern: $CP.execSync($CMD, ...)
+                      - pattern: $CP.exec($CMD, ...)
+                  # $CP is the child_process module, not anything with an exec method: RegExp has one.
+                  - metavariable-regex:
+                      metavariable: $CP
+                      regex: ^(cp|child_process|childProcess|proc)$
+              - pattern: execSync($CMD, ...)
+          - focus-metavariable: $CMD
+      - patterns:
+          - pattern-either:
+              - pattern: $CP.spawnSync($SH, [..., $FLAG, $SCRIPT, ...], ...)
+              - pattern: $CP.spawn($SH, [..., $FLAG, $SCRIPT, ...], ...)
+              - pattern: $CP.execFileSync($SH, [..., $FLAG, $SCRIPT, ...], ...)
+          - metavariable-regex:
+              metavariable: $SH
+              regex: ^["'`](/bin/|/usr/bin/)?(sh|bash|zsh|dash)["'`]$
+          - metavariable-regex:
+              metavariable: $FLAG
+              regex: ^["'`]-c["'`]$
+          - focus-metavariable: $SCRIPT
+      - patterns:
+          - pattern-either:
+              - pattern: '$CP.spawnSync($C, $A, {..., shell: true, ...})'
+              - pattern: '$CP.spawn($C, $A, {..., shell: true, ...})'
+          - focus-metavariable: [$C, $A]
+
+  - id: cw-req-to-shell
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request input reaches a shell execution sink across a function boundary. This is the shape a
+      pattern rule cannot see: neither the read nor the exec is suspicious alone.
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      confidence: HIGH
+      commitwork: requires-pro-intrafile
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.body
+          - pattern: $REQ.query
+          - pattern: $REQ.params
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern-either:
+                      - pattern: $CP.execSync($CMD, ...)
+                      - pattern: $CP.exec($CMD, ...)
+                  # $CP is the child_process module, not anything with an exec method: RegExp has one.
+                  - metavariable-regex:
+                      metavariable: $CP
+                      regex: ^(cp|child_process|childProcess|proc)$
+              - pattern: execSync($CMD, ...)
+          - focus-metavariable: $CMD
+
+  - id: cw-env-to-shell-py
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Environment input reaches a shell execution sink across a function boundary in Python.
+    metadata:
+      category: security
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      confidence: HIGH
+      commitwork: requires-pro-intrafile
+    pattern-sources:
+      - pattern-either:
+          - pattern: os.environ[...]
+          - pattern: os.environ.get(...)
+          - pattern: os.getenv(...)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: os.system(...)
+          - pattern: subprocess.call(...)
+          - pattern: subprocess.run(..., shell=True, ...)
+          - pattern: subprocess.Popen(..., shell=True, ...)

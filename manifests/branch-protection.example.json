@@ -1,0 +1,11 @@
+{
+  "note": "Synthetic example of the branch-protection record. The real record is private: monitor/private/branch-protection.json, or CW_BRANCH_PROTECTION. bin/verify-branch-protection.mjs asserts each repo's live required-status-checks are a superset of requiredChecks; bin/commit-provenance.mjs applies unsigned-on-protected-branch only where requireSigned is true. Checks are only ever added here, in lockstep with the platform change that makes them required.",
+  "repos": [
+    {
+      "repo": "example-org/example-app",
+      "branch": "main",
+      "requiredChecks": ["test"],
+      "requireSigned": false
+    }
+  ]
+}

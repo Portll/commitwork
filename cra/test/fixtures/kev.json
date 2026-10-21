@@ -1,0 +1,11 @@
+{
+  "title": "Test KEV",
+  "vulnerabilities": [
+    {
+      "cveID": "CVE-2026-11111"
+    },
+    {
+      "cveID": "CVE-2026-44444"
+    }
+  ]
+}

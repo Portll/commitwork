@@ -1,0 +1,31 @@
+{
+  "tool": "test-hermetic",
+  "summary": {
+    "findings": 1,
+    "byRule": {
+      "test-failed": 1
+    },
+    "filesScanned": 2,
+    "void": false,
+    "prepareSteps": 0,
+    "declaredBy": null,
+    "runnerDiskGb": 14,
+    "toolchainLibs": "/Library/Developer/CommandLineTools/usr/lib",
+    "testsRun": true,
+    "cargoExit": 101,
+    "passed": 1,
+    "failed": 1,
+    "ignored": 0,
+    "binaries": 2,
+    "targetBytes": 2269184
+  },
+  "findings": [
+    {
+      "rule": "test-failed",
+      "path": "src/lib.rs",
+      "sev": "high",
+      "test": "tests::reads_the_developers_config",
+      "detail": "tests::reads_the_developers_config failed on an empty home: panicked at src/lib.rs:13:9: expected /var/folders/n8/fl550k09545ct30sb57tjp1r0000gn/T/cw-hermetic-home-GMCIb3/.config to exist"
+    }
+  ]
+}

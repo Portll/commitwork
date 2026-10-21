@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "note": "What may update and merge itself in this repository: read by `commitwork deps --update` (bin/lib/update-policy.mjs), which can only narrow an operator's settings by it, and by the CI job dependabot-merge (bin/dependency-policy-check.mjs). commitwork declares zero runtime dependencies, so production updates are empty and every npm package is a development one. cooldownDays matches .github/dependabot.yml, and bin/test/dependency-policy.test.mjs holds the two equal.",
+  "zeroRuntimeDependencies": true,
+  "cooldownDays": 7,
+  "update": {
+    "prod": [],
+    "dev": ["patch", "minor", "major", "lockfile", "advisories"],
+    "actions": ["patch", "minor", "major"]
+  },
+  "automerge": {
+    "prod": [],
+    "dev": ["patch", "minor", "lockfile", "advisories"],
+    "actions": ["patch", "minor"]
+  }
+}

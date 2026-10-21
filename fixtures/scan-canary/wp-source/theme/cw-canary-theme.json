@@ -1,0 +1,51 @@
+{
+ "error": 0,
+ "message": null,
+ "data": {
+  "name": "CW Canary Theme",
+  "theme": "cw-canary-theme",
+  "link": null,
+  "latest": null,
+  "closed": 0,
+  "closed_reason": null,
+  "closed_date": null,
+  "vulnerability": [
+   {
+    "uuid": "1e47d2322828b17a14049a2ce2d2d8c6",
+    "name": "CW Canary Theme < 1.0.1 - Synthetic canary advisory",
+    "description": null,
+    "operator": {
+     "min_version": null,
+     "min_operator": null,
+     "max_version": "1.0.1",
+     "max_operator": "lt",
+     "unfixed": "0",
+     "closed": "0"
+    },
+    "source": [
+     {
+      "id": "CW-CANARY-THEME-0001",
+      "name": "CW Canary Theme < 1.0.1 - Synthetic canary advisory",
+      "link": "https://example.invalid/commitwork-scan-canary",
+      "description": "commitwork scan canary: a synthetic advisory.",
+      "date": "2026-01-01"
+     }
+    ],
+    "impact": {
+     "cvss3": {
+      "version": "3.1",
+      "score": "5.4",
+      "severity": "medium"
+     },
+     "cwe": [
+      {
+       "cwe": "CWE-79",
+       "name": "Cross-site Scripting"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "updated": 1767225600
+}

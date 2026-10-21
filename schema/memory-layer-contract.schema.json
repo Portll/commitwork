@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/memory-layer-contract.schema.json",
+  "title": "Memory-layer client contract",
+  "type": "object",
+  "required": ["contractVersion", "title", "why", "measuredAgainst", "tenant", "scopeTags", "endpoints", "tagsAreNotIdentity", "receipt", "syncPoints", "redaction", "transport", "migration"],
+  "additionalProperties": false,
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "why": { "type": "string", "minLength": 20 },
+    "measuredAgainst": { "type": "object" },
+    "tenant": { "type": "object" },
+    "scopeTags": { "type": "object" },
+    "endpoints": { "type": "object" },
+    "tagsAreNotIdentity": { "type": "object" },
+    "receipt": { "type": "object" },
+    "syncPoints": { "type": "object" },
+    "redaction": { "type": "object" },
+    "transport": { "type": "object" },
+    "migration": { "type": "object" }
+  }
+}

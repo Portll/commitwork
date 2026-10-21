@@ -1,0 +1,9 @@
+# A Hugging Face dataset loader config, PLANTED for bin/model-artefacts.mjs. Nothing loads it: no
+# datasets library runs under fixtures/, and the remote host is under .invalid (RFC 2606).
+configs:
+  - config_name: default
+    data_files:
+      - split: train
+        path: "{{ lookup('file', '/etc/passwd') }}"
+      - split: test
+        path: s3://canary.invalid/test.parquet

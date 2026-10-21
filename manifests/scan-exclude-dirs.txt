@@ -1,0 +1,43 @@
+# Directories that are BUILD OUTPUT or VENDORED CODE, and are therefore not the repository.
+#
+# ONE LIST, MANY LANES. Every tree-walking lane reads this file, so they all answer "is this the
+# repository?" the same way. Separate copies drift, and a lane whose copy lacks `target` publishes
+# findings from build output.
+#
+# WHY IT EXISTS. In a Rust repository with no C of its own, sast-joern reports the vendored C
+# headers that dependency build scripts (lz4-sys and friends) emit under target/debug/build/, and
+# nothing from the repository's own source. With the exclusion the lane still logs
+# `ScanPass completed`, so it reads a GENUINE CLEAN. shell-lint picks up scripts under ./target the
+# same way.
+#
+# THE DETERMINISM HALF. `target/` is untracked. Whether it exists and what it holds depends on
+# whether somebody built the repo before the sweep, so two sweeps of the SAME COMMIT disagree when a
+# `cargo check` ran in between. Same inputs must give the same outputs, and an untracked build
+# directory is not an input.
+#
+# This file is NOT applied to the CodeQL lanes: those consume codeql-filters.txt in a different
+# syntax and under a stricter refusal, and widening them is a separate change with a separate blast
+# radius.
+#
+# THE RISK, STATED. These names are matched as PATH SEGMENTS in every scanned repository. A repo in
+# which `target/` or `build/` is genuine hand-written source would have it silently dropped, and an
+# over-exclusion is a false clean — the worst failure this platform has. Two bounds: the list holds
+# only names known to be generated, and it is deliberately SHORT. `out`, `bin` and `obj` are NOT
+# here despite being conventional build directories, because `bin/` is real source in this very
+# repository.
+#
+# FORMAT: one directory NAME per line, matched as a full path segment, OR a relative PATH of such
+# names (`a/b`), matched only where the whole path ends on a segment boundary — so `.claude/worktrees`
+# excludes that one directory and never a `worktrees/` of the target's own. Blank lines and
+# #-comments ignored. Consumed via bin/scan-exclusions.mjs, which renders it per tool and gives
+# the JS walkers dirExcluder() — never re-typed inline.
+
+node_modules      # every JS dependency tree; four dependency lanes judge these properly instead
+target            # Cargo. The case above.
+vendor            # Go and PHP vendoring, plus hand-vendored assets
+dist              # conventional bundler output
+build             # conventional build output (Gradle, CMake, many others)
+.gradle           # Gradle's own cache
+.git              # not source, and walking it is slow
+reports           # commitwork's own generated report tree — gitignored, regenerated every sweep
+.claude/worktrees # a nested agent worktree is this repository checked out again, so every row from it is a duplicate

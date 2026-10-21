@@ -1,0 +1,32 @@
+{
+  "_fixture": "SYNTHETIC. Reproduces the SHAPE of a shipped sauron baseline artifact (18 bare-number dimensions plus the surrounding envelope) with invented scores and prose. Deliberately not a copy of any real evaluations/ artifact: audit output quotes what it audits, and this file ships with the open-source unit. Paired with rescore.json.",
+  "kind": "sauron-evaluation",
+  "target": "fixture/subject",
+  "generated": "2026-01-01T00:00:00.000Z",
+  "score": 4.1,
+  "dimensions": {
+    "writeIntegrity": 2.8,
+    "boundaryConsistency": 3,
+    "statusValidity": 5.8,
+    "pathCompleteness": 2.9,
+    "crossInvocationSafety": 4.2,
+    "errorResilience": 3.6,
+    "fractalConsistency": 5,
+    "clusterTopology": 6.1,
+    "voidCoverage": 3.3,
+    "spectralCoherence": 4.7,
+    "branchCoverage": 5.5,
+    "adversarialResistance": 6,
+    "reversionSafety": 2.5,
+    "seamIntegrity": 3.9,
+    "idempotency": 4.4,
+    "temporalSafety": 3.1,
+    "authPiiBoundary": 5.2,
+    "evidenceQuality": 3.7
+  },
+  "findings": [],
+  "appliedFunctions": ["edge_walk"],
+  "danglingFunctions": [],
+  "hardening": [],
+  "executionStart": "2026-01-01T00:00:00.000Z"
+}

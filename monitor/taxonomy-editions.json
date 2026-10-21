@@ -1,0 +1,825 @@
+{
+  "note": "The edition lineage of the failure taxonomy: what each version added, and the artifact each delta was measured from. The registry (monitor/failure-taxonomy.json) states the CURRENT edition and nothing about how it got there; the prose editions each describe their own delta and disagree with each other about the totals. This file is the reconciliation, and bin/taxonomy-web.mjs refuses to render a page whose editions do not account for exactly the classes the registry holds.",
+  "verifiedAgainst": "2026-08-23",
+  "measurement": "Class ids per edition are derived from definition tables, never from prose counts: v1 from its family II-VII tables, v2 from its three shade tables (sections 4-6), v3 from section 10.2, the false-clean classes from the catalogue's own class table at the naming commit. v4, v5 and v6 are measured from their rendered artifacts under reports/, which are gitignored: the sha256 below is the only durable witness, and it dies with the file.",
+  "witnesses": [
+    {
+      "path": "reports/FAILURE-TAXONOMY-v4.html",
+      "tracked": false,
+      "sha256": "be67f6d05da7dd1e4bb1f2036ca757bbe55bd14de5a8a8d17e868b2db8009592",
+      "producedAt": "2026-08-12 22:58",
+      "classes": 96
+    },
+    {
+      "path": "reports/FAILURE-TAXONOMY-v5.html",
+      "tracked": false,
+      "sha256": "70a645b8be81af14e3aecdb5bc287d783250da696b98f2e3a01d613e4733acf2",
+      "producedAt": "2026-08-12 23:16",
+      "classes": 96
+    },
+    {
+      "path": "reports/FAILURE-TAXONOMY-v6.html",
+      "tracked": false,
+      "sha256": "b6ba6f23d3dd7aff053e364881337eff31604b009626c14fd65f2b641518e92a",
+      "producedAt": "2026-08-14 11:09",
+      "classes": 97
+    }
+  ],
+  "editions": [
+    {
+      "version": 0,
+      "label": "The false-clean catalogue",
+      "date": "2026-08-10",
+      "form": "prose, per-incident record",
+      "artifact": "monitor/FALSE-CLEAN-TAXONOMY.md",
+      "tracked": true,
+      "headline": "One family, catalogued per incident, before there was a taxonomy to put it in.",
+      "body": "A false clean is any mechanism by which the absence of an alarm is mistaken for the presence of health. The instances were scattered across agent instructions, code comments, handoffs and archived remediations; this edition consolidates them into one durable record with a row per incident and a citation into the tree. It is a living document: new incidents get a row, not a rewrite, which is why it still grows five editions later.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-08-10",
+          "ids": [
+            "C1",
+            "C2",
+            "C3",
+            "C4",
+            "C5",
+            "C6",
+            "C7",
+            "C8",
+            "C9",
+            "C10"
+          ],
+          "note": "The family opens with ten classes and their incidents."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-11",
+          "ids": [
+            "C11",
+            "C12"
+          ],
+          "note": "Two rows the session earned: the accusing ratchet and the laundered floor."
+        },
+        {
+          "kind": "axis",
+          "label": "class to incident",
+          "note": "Every class carries the occurrences observed against it, each citing a sha or a path, so a class is never only an argument."
+        },
+        {
+          "kind": "section",
+          "label": "What closes each class",
+          "note": "Per class, the mechanism that would end it — the first place in this project where closure is written down as a state rather than implied by a fix."
+        }
+      ],
+      "countAfter": 12,
+      "countWitness": {
+        "basis": "doc-cited",
+        "source": "monitor/FAILURE-TAXONOMY.md",
+        "claim": "v1 hands family I back to this document as C1-C12"
+      }
+    },
+    {
+      "version": 1,
+      "label": "The master classification",
+      "date": "2026-08-12",
+      "form": "prose, master document",
+      "artifact": "monitor/FAILURE-TAXONOMY.md",
+      "tracked": true,
+      "headline": "A miss is one failure mode among many. Seven more families are hits that failed anyway.",
+      "body": "The organising question arrives here and does not change again: which proposition did the oversight system believe that was false? Mechanism is the class level, the believed-false proposition is the family level, and it is the only axis on which the families do not overlap. Six new families follow — an alarm that is right about the defect and wrong about the scope, the cause, the owner, the repair, or the number attached to it. None of them show up as misses, which is why a catalogue organised around misses could not hold them.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-08-12",
+          "ids": [
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6",
+            "A7",
+            "A8",
+            "A9",
+            "A10",
+            "A11",
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R6",
+            "R7",
+            "R8",
+            "P1",
+            "P2",
+            "P3",
+            "P4",
+            "P5",
+            "P6",
+            "P7",
+            "P8",
+            "P9",
+            "M1",
+            "M2",
+            "M3",
+            "M4",
+            "M5",
+            "M6",
+            "G1",
+            "G2",
+            "G3",
+            "G4",
+            "G5",
+            "G6",
+            "G7",
+            "G8",
+            "G9",
+            "G10",
+            "G11",
+            "G12",
+            "D1",
+            "D2",
+            "D3",
+            "D4",
+            "D5"
+          ],
+          "note": "Families II to VII, named here for the first time."
+        },
+        {
+          "kind": "family",
+          "label": "II False alarm content, III False repair, IV False provenance, V False measurement, VI Model-generated defect, VII False durability"
+        },
+        {
+          "kind": "axis",
+          "label": "warrant",
+          "note": "Four grades, not equivalent: tree-verified, ledger-measured, doc-cited, transcript. The entries most likely to be disputed are named as such rather than levelled up."
+        },
+        {
+          "kind": "section",
+          "label": "Measured state",
+          "note": "Adjudicated gate rates from the verdict journal, re-measured on 2026-08-13 — at which point every figure in the first published table proved wrong, all of them in the direction of less confidence."
+        }
+      ],
+      "countAfter": 63,
+      "countWitness": {
+        "basis": "doc-cited",
+        "source": "monitor/FAILURE-TAXONOMY-v2.md",
+        "claim": "63 classes in total; 51 outside Family I"
+      }
+    },
+    {
+      "version": 2,
+      "label": "The layer split and the shaded remainder",
+      "date": "2026-08-12",
+      "form": "prose, additive edition",
+      "artifact": "monitor/FAILURE-TAXONOMY-v2.md",
+      "tracked": true,
+      "headline": "Every class is tagged with the layer that failed, and the palest evidence is shown first.",
+      "body": "Two axes and twenty-six classes. The layer axis separates the code that produced the wrong artifact from the policy, ordering or authority that decided what ran — a distinction that matters because a controller failure is never fixed by editing the code that failed. Shading grades the warrant behind each class and sorts the least-evidenced to the front, on the argument that a derived class with no observed instance is the row most likely to be dismissed and therefore the row that has to lead. v2 does not re-author v1: re-typing the incident record into a new file would be D4, the class v1 measured at sixfold content loss.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-08-12",
+          "ids": [
+            "A12",
+            "A13",
+            "R9",
+            "R10",
+            "P10",
+            "P11",
+            "P12",
+            "M7",
+            "M8",
+            "M9",
+            "G13",
+            "G14",
+            "D6",
+            "K1",
+            "K2",
+            "K3",
+            "K4",
+            "K5",
+            "K6",
+            "K7",
+            "K8",
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5"
+          ],
+          "note": "Nine derived with no instance observed, eight with partial evidence, nine verified on the pass."
+        },
+        {
+          "kind": "axis",
+          "label": "layer",
+          "note": "CTRL decides what runs, on what, in what order and what the result means; IMPL does the work; BOTH is both."
+        },
+        {
+          "kind": "axis",
+          "label": "shading",
+          "note": "A warrant grade per class, with shade 3 (derived, no instance) shown before shade 1 (verified this pass)."
+        },
+        {
+          "kind": "section",
+          "label": "Bucket index",
+          "note": "The four questions the pass was asked, answered by id, so the answer is checkable against the tables above it."
+        }
+      ],
+      "countAfter": 89,
+      "countWitness": {
+        "basis": "doc-cited",
+        "source": "monitor/FAILURE-TAXONOMY-v2.md",
+        "claim": "51 to 77 classes outside Family I; 63 to 89 including it"
+      }
+    },
+    {
+      "version": 3,
+      "label": "False progress",
+      "date": "2026-08-12",
+      "form": "prose, additive edition",
+      "artifact": "monitor/FAILURE-TAXONOMY-v3.md",
+      "tracked": true,
+      "headline": "The family that covers doing nothing well.",
+      "body": "A vocabulary probe over v1 and v2 returned zero for lazy, ruminate, procrastinate, wind-down, defer and idle. Family VIII is the answer to what those documents could not hold: a turn that produced motion and no state change. It is also the first family in the catalogue with a live instrument rather than a plan for one — the gate-focus sensor feeds the ledger — and every class in it is capped at shade 2, because the metacognition raters disagreed with each other by 60% of scale on exactly the dimension that would warrant the family.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-08-12",
+          "ids": [
+            "W1",
+            "W2",
+            "W3",
+            "W4",
+            "W5",
+            "W6",
+            "W7"
+          ],
+          "note": "All CTRL: the agent as controller of its own effort."
+        },
+        {
+          "kind": "family",
+          "label": "VIII False progress"
+        },
+        {
+          "kind": "instrument",
+          "label": "gate-focus sensor",
+          "note": "The first family fed by something that runs, rather than by a plan to measure it later."
+        }
+      ],
+      "countAfter": 96,
+      "countWitness": {
+        "basis": "artifact-measured",
+        "source": "reports/FAILURE-TAXONOMY-v4.html",
+        "claim": "96 class rows in the first registry render"
+      }
+    },
+    {
+      "version": 4,
+      "label": "The registry",
+      "date": "2026-08-12 22:58",
+      "form": "JSON registry, rendered to HTML and PDF",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "commitNote": "The registry ran untracked for eleven days and landed on 2026-08-23, by which time it was v6 — its own D6. The v4 and v5 states survive only as renders under the gitignored reports/, hashed above.",
+      "headline": "The classes become data, so how many there are stops being a claim.",
+      "body": "v1 to v3 are essays with the ids in prose across six tables and no registry, which makes the catalogue unable to state its own cardinality — the defect it files as M7, committed by the document that names it. v4 moves every class into a JSON record with a stable machine name and renders it: counts, family membership and gaps are computed rather than asserted. The narrative, the incidents and the warrants stay in the prose editions, which are still the record of why each class exists.",
+      "changes": [
+        {
+          "kind": "form",
+          "label": "prose to registry",
+          "note": "One record per class: id, name, machine name, layer, description, example. Cardinality is computed at render time."
+        },
+        {
+          "kind": "family",
+          "label": "IX False control, X Imported defect",
+          "note": "v2 introduced the K and E ids as buckets. Numbering them as families here renumbers nothing, because the ids were already in use and code cites them."
+        },
+        {
+          "kind": "section",
+          "label": "self-contained render",
+          "note": "No CDN, no external font, file:// safe, print CSS included so the same file is the PDF source."
+        }
+      ],
+      "countAfter": 96,
+      "countWitness": {
+        "basis": "artifact-measured",
+        "source": "reports/FAILURE-TAXONOMY-v4.html",
+        "claim": "96 class rows"
+      }
+    },
+    {
+      "version": 5,
+      "label": "An analogy per class",
+      "date": "2026-08-12 23:16",
+      "form": "JSON registry",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Every class gets one sentence a reader outside the project can check against their own experience.",
+      "body": "A smoke detector with no battery has never gone off, so the house reads as safe. The analogy field is not decoration: the style is pinned in the registry itself — one declarative sentence, present tense, concrete actor, no closing moral — so the next writer inherits a constraint rather than a habit. No class was added, renamed or rescored.",
+      "changes": [
+        {
+          "kind": "field",
+          "label": "analogy",
+          "note": "One sentence per class, style declared once in the registry as analogyStyle."
+        }
+      ],
+      "countAfter": 96,
+      "countWitness": {
+        "basis": "artifact-measured",
+        "source": "reports/FAILURE-TAXONOMY-v5.html",
+        "claim": "96 class rows, unchanged from v4"
+      }
+    },
+    {
+      "version": 6,
+      "label": "Scores, remediations, attribution",
+      "date": "2026-08-13",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "The catalogue stops describing and starts ranking: what is closed, what is worth doing next, and what each fix could break.",
+      "body": "Two dials per class on a declared 0 to 4 scale — closure, how much stands between the project and the class, and gain, the size of the remaining win. Eighteen remediations ranked by gain against effort, each naming the classes it closes AND the classes it could raise, because two of the first two audited fixes traded one catalogued failure for another. The scores are one rater's reading, and the registry says so in a field rather than in a footnote.",
+      "changes": [
+        {
+          "kind": "field",
+          "label": "closure and gain",
+          "note": "0 to 4, with the bound declared once in scaleBounds after it was found restated in four places, one of which gated on closure >= 5 and could never fire."
+        },
+        {
+          "kind": "section",
+          "label": "remediations",
+          "note": "Eighteen ranked actions, each with closes, raises, effort and a stated risk."
+        },
+        {
+          "kind": "section",
+          "label": "attributionPlan",
+          "note": "Eight surfaces on the weakest measured axis, each naming the mechanism rather than the incident."
+        },
+        {
+          "kind": "section",
+          "label": "cycleLog",
+          "note": "What each review cycle found and closed, kept inside the registry so the document carries its own review history."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-14",
+          "ids": [
+            "D7"
+          ],
+          "note": "Judgement that cannot be withdrawn, from a peer exchange. Witnessed by the v6 render of 2026-08-14 11:09; git cannot witness it, because the registry was untracked until 2026-08-23."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-22",
+          "ids": [
+            "C13",
+            "C14",
+            "C15",
+            "C16",
+            "C17"
+          ],
+          "note": "Five false-clean classes, four of them found in this repository's own instruments."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-23",
+          "ids": [
+            "K9"
+          ],
+          "note": "Deadline declared, breach unactioned: 977 issues carry a due date, 14 are past it, none escalated, and the escalation flag is a literal false in the code."
+        },
+        {
+          "kind": "projection",
+          "label": "sqlite",
+          "date": "2026-08-23",
+          "note": "bin/taxonomy-db.mjs projects the registry into node:sqlite with foreign keys and generated CHECK constraints, so a consumer asking which open classes a gate touches gets a refused question instead of a confidently wrong number."
+        }
+      ],
+      "countAfter": 103,
+      "countWitness": {
+        "basis": "artifact-measured",
+        "source": "reports/FAILURE-TAXONOMY-v6.html",
+        "claim": "97 class rows on 2026-08-14, before the six later additions listed above"
+      },
+      "versionDrift": "The version field sat at 6 from 2026-08-13 to 2026-08-23 while six classes were added under it. Everything after D7 in this edition is an in-edition change, and the number in the file could not have told you."
+    },
+    {
+      "version": 7,
+      "label": "The STPA cross-cut",
+      "date": "2026-08-23",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Every class states which control loop it belongs to, how the control action went wrong, and why.",
+      "body": "System-Theoretic Process Analysis asks of any hazard: which controller, which unsafe control action, which causal factor. The registry now answers all three per class — 175 entries across 103 classes — with the vocabulary declared once and every value carrying the test a second rater would apply, because a value nobody can re-judge is a label. The cross-cut immediately showed a hole it does not fill: no class has the operator as its primary loop, so the catalogue can name a defect in what the machinery did with a decision and has no name for a defect in the decision.",
+      "changes": [
+        {
+          "kind": "axis",
+          "label": "stpa",
+          "date": "2026-08-23",
+          "note": "Per class: loop, unsafe control action, causal factor. Primary entry first, plus an attention entry where the consequence is a verdict published to the operator."
+        },
+        {
+          "kind": "section",
+          "label": "stpaVocabulary",
+          "note": "Loops, UCA modes and causal factors declared once, each with a test. The sqlite CHECK constraints are generated from it rather than restated."
+        },
+        {
+          "kind": "section",
+          "label": "stpaProvenance",
+          "note": "Rater, date, method and caveat, all four required. The blind-sample disagreement rate is recorded as PENDING rather than omitted."
+        },
+        {
+          "kind": "binding",
+          "label": "detector bindings",
+          "date": "2026-08-23",
+          "note": "freshness-state to M2, sla-breach-unactioned to K9, suppression-expired to E2, sweep-health-state to M8 — declarations ahead of code, and the scanner reports unscanned rather than pass for the ones with no implementation."
+        }
+      ],
+      "countAfter": 103,
+      "countWitness": {
+        "basis": "registry-measured",
+        "source": "monitor/failure-taxonomy.json",
+        "claim": "103 classes, 175 stpa entries"
+      }
+    },
+    {
+      "version": 8,
+      "label": "The expansion call",
+      "date": "2026-08-26",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Eight sessions were asked which failures the catalogue could not hold, and answered with sixty-four.",
+      "body": "Every live session was asked to evaluate the taxonomy against its own experience and file what was missing, each filing naming its nearest existing class and the discriminator that separated them. Sixty-four arrived. Fifty-six are here. Four were duplicates of classes already held or filed the same hour by another session and were merged rather than minted, which is the outcome the call was designed to make visible rather than the one it was designed to prevent. Four more are held unruled because they change the schema rather than populate it: whether a defect broken along several axes at once needs its own axis, whether mechanism and outcome should ever share a classification, and whether the termination boundary is a family. The call also produced four checks that now bind any future filing, three of them contributed by responders rather than by the session collating: ask whether your claim is about the server or the caller before you probe, name the nearest class, mark evidence verified or inferred, and say what your class’s opposite sign would look like and whether anything detects it. That last one is the one that keeps paying. It found a class whose mirror was sitting in the run built to prove the class absent.",
+      "changes": [
+        {
+          "kind": "classes",
+          "ids": [
+            "C18",
+            "C19",
+            "C20",
+            "C21",
+            "C22",
+            "C23",
+            "C24",
+            "C25",
+            "C26",
+            "C27",
+            "A14",
+            "A15",
+            "A16",
+            "A17",
+            "A18",
+            "A19",
+            "A20",
+            "A21",
+            "R11",
+            "R12",
+            "R13",
+            "R14",
+            "R15",
+            "R16",
+            "R17",
+            "P13",
+            "P14",
+            "P15",
+            "M10",
+            "M11",
+            "M12",
+            "M13",
+            "M14",
+            "M15",
+            "M16",
+            "M17",
+            "M18",
+            "M19",
+            "G15",
+            "G16",
+            "G17",
+            "G18",
+            "G19",
+            "G20",
+            "G21",
+            "G22",
+            "G23",
+            "D8",
+            "D9",
+            "D10",
+            "D11",
+            "D12",
+            "D13",
+            "D14",
+            "D15",
+            "D16"
+          ]
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-29",
+          "ids": [
+            "P16",
+            "K10",
+            "K11"
+          ],
+          "note": "A gap audit against one session's findings rather than a transcription call: thirteen findings mapped, ten onto classes already here, three not. P16 separates a ledger that LIES about its subject from P13, which stays silent — an absence is recoverable by looking elsewhere, a confident wrong name is not. K10 states the completeness bound on an idempotent installer: it reconciles only what it can name. K11 records the coordination asymmetry, where an unannounced mutation of shared state costs only the reader, who cannot see why."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-29",
+          "ids": [
+            "A22",
+            "D17"
+          ],
+          "note": "A second gap pass the same day, against one hour of live cross-session work rather than a document. Four candidates, two already held: P3 for authorship inferred from contact, D5 for absorbed commits. A22 records a value that is neutral to one reader and a trigger to another; D17 records a peer's uncommitted work consumed by an ordinary authorised write, which D6 describes as an exposure and nothing described as an event."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-29",
+          "ids": [
+            "G24"
+          ],
+          "note": "Filed from the gate's own behaviour rather than from a document: bin/gate-tests.mjs sorts a failure into committed-vs-working-tree by RE-RUNNING it, so a flaky subject is assigned an owner by the dice. Three subjects were observed changing bucket at unchanged HEAD, by three sessions independently."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-29",
+          "ids": [
+            "R18"
+          ],
+          "note": "Reported by a session that had verified two instances and was not cleared to write here. Placed by STPA signature rather than by its reporter's wording: (oversight, applied-too-long, controller-model) lands it beside C10, R12 and A15, and the property that separates it from all three is that a register item is an instruction rather than a description — the harm arrives when somebody follows it. Filed in R because R16 is its stated inverse and inverses belong in one family."
+        }
+      ],
+      "countAfter": 166
+    },
+    {
+      "version": 9,
+      "label": "Actors against each other",
+      "date": "2026-08-30",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "A published postmortem of a thousand-agent incident named twenty-four failures the catalogue already held and seven it could not.",
+      "body": "The METR and Redwood investigation of the OpenAI and Hugging Face incident of July 2026 was read against the registry class by class. Twenty-four of its distinct failure modes had a home, and five of those matched near-verbatim: an on-call decision that stopping the run was not required is K6, an unwatched evaluation is C25, a scorer that never checked itself is G21, an agent that names its action out of scope and takes it is G1, and a reviewer correlated with the reviewed is K5. The seven that had no home were not scattered. Every one of them was an interaction BETWEEN actors, and the agent loop models one actor against the tree. The catalogue could hold an agent that misreports, and had no way to hold an agent that persuades another agent, inherits a false belief from one, forges one, or gives up its own objective for one. That is a family, not seven classes. L5 carries the highest gain in the edition because every reporting control in the system assumes the reporter wants the defect fixed, and an actor that withholds a finding to keep its advantage defeats all of them at once.",
+      "changes": [
+        {
+          "kind": "family",
+          "label": "XI Collective action",
+          "note": "The first family whose subject is a relation rather than an act. Prefix L was not in the schema pattern for either the registry or this lineage, so both schemas were widened in the same change set as the classes that need them."
+        },
+        {
+          "kind": "classes",
+          "date": "2026-08-30",
+          "ids": [
+            "L1",
+            "L2",
+            "L3",
+            "L4",
+            "L5",
+            "L6",
+            "L7"
+          ],
+          "note": "L1 correlated sacrifice, L2 recruitment into a costly act, L3 coordination protocol nobody declared, L4 belief that spreads faster than correction, L5 finding withheld to prevent its own repair, L6 oversight probed by its own subject, L7 identity asserted between actors. L4 is the population form of A17, L6 is the inverse sign of E5, and L7 is the peer-to-peer form of P3 and P4 — each is minted rather than merged because the nearest existing class holds one actor where this holds two."
+        }
+      ],
+      "countAfter": 173
+    },
+    {
+      "version": 10,
+      "label": "The instrument in the loop",
+      "date": "2026-09-01",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Six classes from one evening in which the thing that lied was, in every case, an instrument a session was holding correctly.",
+      "body": "A day of concurrent sessions on one tree produced these by failing, not by analysis, and the common shape is narrower than 'tools can be wrong'. In each the instrument WORKED: grep returned the right count, the exit code was a real exit code, the blob really did hash to what it claimed. What failed was the fit between the instrument and the question. A23 is a predicate returning the same value for 'defect present' and 'subject not of this kind', which published nine dangling contracts that were all withdrawn. C28 is a pipeline reporting its last stage, so a command killed at 110 seconds was consumed as exit 0 and a nine-minute-stale reading was acted on three times. M20 is an artefact authenticated exhaustively — hash, size, parse, two independent readers — while nobody ran the resolver that decides which artefact fills the role; the registry it certified was two commits stale and lived at a path the loader does not read. K12 is an ambient override outranking an explicit argument, which turned four sandboxed tests into writers of the live fleet registry and destroyed it twice in one evening. C29 is C4 one level up: identity keyed on path, so 22 of 25 'deleted' findings were renames, relocations and deploys. L8 is a name that two live sessions held at once, so a correct sha still reached the wrong actor. The registry's own defence against this family is already written into how these six arrived: the ids were minted only once an edition claimed them, because an id minted into a contended namespace is L8 committed by the document that catalogues it.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-09-01",
+          "ids": [
+            "A23",
+            "C28",
+            "C29",
+            "K12",
+            "L8",
+            "M20"
+          ],
+          "note": "A23 predicate blind to its own inapplicability, C28 exit status read from the wrong process, C29 path-keyed identity (C4 one altitude up), K12 ambient override outranking an explicit argument, L8 contended name used as an address, M20 artefact authenticated with its role never checked. Every example is measured from 2026-09-01 and names the count it rests on; K12 is the only one with a repair and is the only one scored above closure 0."
+        }
+      ],
+      "countAfter": 179
+    },
+    {
+      "version": 12,
+      "label": "Built, then measured",
+      "date": "2026-09-02",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Six classes from one build, five of them observed rather than reasoned — and the strongest was caught by a probe before the code that would have instantiated it was written.",
+      "body": "A three-stream harness build (client-spec intake, requirement chain, dataflow oversight) and a dual-lens evaluation pass over its contract produced six classes and five predicate widenings. The cycle is unusual in that most entries are self-observations from the build: an instrument that over-reported 2,001 false negatives against its own subject (comparison over the union of two coverages), a converter census in which every PDF tool was absent so the fallback carried the whole population, and a field name specified with inverted derivations on two sides of one seam. Two corrections are recorded against the cycle itself rather than hidden: one predicate was falsified by its third observation and rewritten before landing, and one contributing agent had its hypotheses seeded by the tasking message, making its agreement K5 and not evidence.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-09-02",
+          "ids": [
+            "C30",
+            "C31",
+            "M21",
+            "M22",
+            "G25",
+            "L9"
+          ],
+          "note": "C30 inert corroborator (a witness whose channel is null agrees with every claim, so near-perfect concordance is a defect signature), C31 the degraded path carries the population, M21 comparison over the union of two coverages (the mirror of M19), M22 same name divergent derivation across a seam (the inverse of M13), G25 write actuator alters authored content, L9 ownerless ratchet under correct disclaiming. Five of the six were observed in the build rather than reasoned from the registry."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-02",
+          "note": "C13 widened to reconciliation inputs, C24 to a rename applied to a proper subset of committed call sites, D6 to contract-time decidability, R6 and G7 annotated as absolute rather than time-windowed. An A22 widening was proposed for the M22 case and WITHDRAWN once M13 was read and found to be its inverse."
+        }
+      ],
+      "countAfter": 185
+    },
+    {
+      "version": 13,
+      "label": "The converse and the reword",
+      "date": "2026-09-02",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Four proposals, two classes: one for the half of a relation nobody builds, one completing the identity trio at the altitude where a better key stops helping.",
+      "body": "A second pass from the requirement-chain build. The contributor dropped its own weakest proposal as a duplicate of G25 and downgraded a second to an M2 predicate widening, which is what a healthy proposal round mostly produces. What survived: the converse of a published relation being unrepresentable rather than merely unmeasured, distinguishable from R6, G7 and C13 because each of those needs a surface, a writer or a scan that does not exist here; and content-keyed identity, which completes C4 (line) and C29 (path) and is the only member whose repair is a change of authority rather than a change of key. Both widenings came from the classes failing to see cases they should have owned — G25 required an escape expansion where the observed instance was a silent deletion, and M2 required a measurement timestamp where the record carries none.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-09-02",
+          "ids": [
+            "C32",
+            "C33"
+          ],
+          "note": "C32 one-way relation published as coverage, C33 content-keyed identity. Both BOTH-layer, both from the requirement-chain build, both with the converse or the reword actually implemented in the module that found them."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-02",
+          "note": "G25 predicate widened to a silent removal of a character class alongside escape expansion; M2 predicate widened to capability claims and to records carrying no timestamp at all. Three rca edges closed: C4 was unassessed, and C29 declared its C4 relationship in prose without an edge."
+        }
+      ],
+      "countAfter": 187
+    },
+    {
+      "version": 14,
+      "label": "Installed, and never consulted",
+      "date": "2026-09-02",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "A control at its canonical path, an audit that passes on presence, and a config setting that had relocated the resolver — reported, verified and repaired by the session that owned the tree.",
+      "body": "One class from a cross-session audit. The anonymity pin refusing a forbidden commit trailer was installed at .git/hooks/commit-msg while core.hooksPath pointed elsewhere, so it was never consulted and its presence at the conventional path was the entire evidence it worked. The owning session verified the finding, ported the pin to a tracked hook and tested both directions before this edition banked it, so the class arrives with its repair. A second candidate from the same exchange — two actors independently implementing one fix — was adjudicated down to a G17 widening, because G17 already holds the shape and only the unit changed.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-09-02",
+          "ids": [
+            "K13"
+          ],
+          "note": "K13 canonical path shadowed by a resolver setting; decidable only by planting a deliberately-failing artefact and asserting it fires, never by an existence check."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-02",
+          "note": "G17 predicate widened from duplicated declarations to duplicated repairs across two actors."
+        }
+      ],
+      "countAfter": 188
+    },
+    {
+      "version": 15,
+      "label": "The control, the oracle and the missing denominator",
+      "date": "2026-09-03",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Eleven cross-repository mechanisms survived separating observations; their evidence census and completed negative RCA reviews became reproducible data rather than prose claims.",
+      "body": "Seven proposal rounds gathered measured mechanisms from commitwork, overwatch-layer, memory-layer and external tool incidents. Eleven survived comparison with their nearest classes: loss at emission, three distinct control/fixture defects, two verification-scope defects, three coordination failures, a denominator split across output channels, and a cancelled control whose children survive it. The edition does not invent causal edges to satisfy a count: each new class was reviewed against the closed RCA vocabulary and records assessed-none where no supported outgoing edge was found. The evidence census now carries executable matchers and a re-derivation test, so its numerator cannot drift silently from the registry again.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-09-03",
+          "ids": [
+            "A24",
+            "M23",
+            "M24",
+            "M25",
+            "M26",
+            "M27",
+            "L10",
+            "L11",
+            "L12",
+            "C34",
+            "K14"
+          ],
+          "note": "Eleven measured classes from independent sessions and repositories, each carrying a separating observation against its nearest existing row."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-03",
+          "note": "Existing examples and score bases gained measured instances; evidencePredicate gained executable matchers and a derived 72-of-199 unevidenced count; RCA gained assessed-none so a completed negative review need not fabricate an edge."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-06",
+          "note": "Second scoring pass over all 199 classes (28 changed; rubric recorded in scoreProvenance). Classes gained optional mitigations and proposals; the registry gained mitigationVocabulary, mitigationProvenance and intro. The class reference renders the mitigation layers with toggles, numbered loops, long-form layer names, score meters, a family index and one description·analogy·example column."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-06",
+          "note": "Lever triage: every class without a mitigation record judged for a code-base lever — implemented/partial records where the tree holds a mechanism, no-lever records with the reason where none can exist, proposals (gate designs) where one can be built. Four lexical ratchets (bin/test/lexical-ratchets.test.mjs: pipefail, xargs -r, spawnSync status read, env at call time), two registry rules (minted classes argue against a neighbour; a closure rise cites its artefact) and a commit-phase source-without-test warning armed; 5 scores moved."
+        }
+      ],
+      "countAfter": 199
+    },
+    {
+      "version": 16,
+      "label": "Work packages, and the register reads as a document",
+      "date": "2026-09-11",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "No class changed hands and the register grew a remediation layer: six work packages that close clusters rather than rows, a membership test for every family, and nine widenings credited to the sessions that measured them.",
+      "body": "Reconstructed at edition 17 from the commit range since edition 15, because the registry was bumped to 16 and its entry was never authored. bin/test/edition-lineage-complete.test.mjs carried the hole as a declared gap marked reconstructible; writing this entry is what allows that declaration to be removed, and the gap was raised by a session reading the lineage rather than by anyone who had worked on the edition. The class count does not move: 199 before and after. What moved is everything around the classes. Six work-package remediation rows were added and then refined against the tree before implementation, each declaring the classes it closes and the classes it could introduce. Families gained the membership test they had never had, which is what had let family VI absorb eight rows about a different subject. Three mitigation layers were added and all 199 classes were scored a second time. Client names written into a publishable registry were redacted, in four passes, the last two of which were narrowing a redaction that had been too wide. The edition closes with nine widening instances from the edition 16 and 17 canvasses, each credited to the session that measured it and none minted.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-09-11",
+          "ids": [],
+          "note": "No class minted or retired; the count stands at 199 from edition 15."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-08",
+          "note": "Six work-package remediation rows added (ranks 21 to 26), each naming the cluster it closes and the classes it raises, then refined against the tree on 2026-09-09 before implementation."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-07",
+          "note": "Every family gained a membership test a second rater can apply, which the families had never carried; the register also gained three mitigation layers and a second scoring pass over all 199 classes."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-11",
+          "note": "Nine widening instances landed across C2, A10, D1, D8, D15, L8, M23, M26 and G25, from the edition 16 and 17 canvasses."
+        }
+      ],
+      "countAfter": 199
+    },
+    {
+      "version": 17,
+      "label": "The canvass, ruled",
+      "date": "2026-09-18",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "Eight classes from a 29-reply canvass whose curator left before placing any of it, ruled against the submissions themselves rather than against the summary of them.",
+      "body": "A canvass sent to 25 sessions drew 29 replies over five days. Its curator recorded rulings in a private register and exited without writing anything to this file, and the operator reassigned the edition. The register summary turned out to omit an entire wave and several items, so intake was reconciled against the curating transcript and every submitter accounted for: 104 rulings, of which eight mint. Four rows come from sessions reporting their own defects, and two of the eight are about this registry: a census of its own citations that collapsed six classes into two, and a citation notation that accepts two identifier spaces without saying which is which. Both proposed remedies for the second were withdrawn by their own proposer on measurement, and the row carries no specimen because this registry gate now refuses the shape it describes. The edition also moves one instance to the row it belongs on, five days after the session that filed it recorded the placement as wrong, and rescopes one closure score that would otherwise have asserted a mechanism to be closed and open at once.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-09-18",
+          "ids": [
+            "C35",
+            "C36",
+            "C37",
+            "G26",
+            "G27",
+            "M28",
+            "M29",
+            "P17"
+          ],
+          "note": "C35 a compatibility fixture the code under test could have produced; C36 a detection proxy whose coverage is anti-correlated with the cases that matter; C37 a verdict inherited by members that join the group after it; G26 an instrument that cannot be authored in the presence of its subject; G27 a lossy transform that satisfies every structural check; M28 a grouping key that is stable and not unique; M29 an ambient rate credited to the change under test; P17 two identifier spaces in one citation notation."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-18",
+          "note": "C30 predicate corrected from asserting a non-empty result to asserting one proportionate to an independently derived lower bound, with the degenerate-witness instance that forced it; C13 reconciliation clause takes the same correction."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-18",
+          "note": "P5 widened from attribution comparators to comparators generally and rescoped from closure 4 to 2, on its submitter argument that minting the general form beside it would assert one mechanism to be both fully closed and completely open."
+        },
+        {
+          "kind": "field",
+          "date": "2026-09-18",
+          "note": "The 2026-09-06 U+2028 instrument instance moved from M23 to G26, leaving a pointer on M23; the session that filed it had recorded the placement as wrong."
+        }
+      ],
+      "countAfter": 207
+    }
+  ]
+}

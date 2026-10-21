@@ -1,0 +1,99 @@
+{
+  "name": "commitwork",
+  "version": "0.6.125",
+  "description": "Repository security scanner, local CI runner and scheduled monitor, with remediation and compliance-evidence tooling. Manifest-driven; runs against any git repository.",
+  "homepage": "https://www.commitwork.online",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Portll/commitwork.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Portll/commitwork/issues"
+  },
+  "type": "module",
+  "bin": {
+    "commitwork": "bin/commitwork.mjs"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "monitor/",
+    "schema/",
+    "cra/",
+    "manifests/",
+    "map/",
+    "sitemap/",
+    "admin/",
+    "provenance/",
+    "mcp/",
+    "LICENSING.md",
+    "LICENSE-APACHE-2.0",
+    "docs/AGPL-SCOPE.md",
+    "docs/PUBLIC-REPOSITORY-BOUNDARY.md",
+    "!**/test/",
+    "!**/*.test.mjs",
+    "!sitemap/data/",
+    "!map/data/",
+    "!monitor/data/epss.json",
+    "!monitor/data/kev.json",
+    "!monitor/data/learning.json",
+    "!monitor/data/epss-detail.json",
+    "!monitor/commitwork.db",
+    "!monitor/memory.db*",
+    "!monitor/projects.json",
+    "!monitor/issues.json",
+    "!monitor/private",
+    "!monitor/program-worklist.json",
+    "!monitor/annotations.json",
+    "!monitor/owner-map.json",
+    "!monitor/gate-exemptions.json",
+    "!monitor/image-acceptance.json",
+    "!monitor/stub-allowlist.json",
+    "!monitor/config-correctness-ledger.json",
+    "!monitor/worklist-reconciled.json",
+    "!monitor/credential-scope.json",
+    "!monitor/security-annotations.*.json",
+    "!monitor/a11y-attestations.json",
+    "!monitor/llm-runtime.json",
+    "!cra/products.json",
+    "!cra/cases.json",
+    "!**/*.key",
+    "!**/*.pem",
+    "!**/*.log",
+    "!**/*.pre-lifecycle-*",
+    "!**/*.pre-program-*",
+    "!**/*.pre-mapglue-*",
+    "!**/reflection.json",
+    "!**/sbom.json",
+    "!**/results.sarif",
+    "!**/osv-results.sarif",
+    "!**/node_modules/",
+    "!**/.wrangler/",
+    "!**/.DS_Store"
+  ],
+  "filesNote": "The publishable unit is the whole tracked tree except the export-ignored paths in .gitattributes: ci/, CLAUDE.md, docs/TRAPS.md and monitor/data/advisory-cvss.json. This list is the npm package's subset: the runtime directories, mcp/ (the MCP server, and mcp/tools.mjs, which the wire layer licenses under Apache-2.0), and the licence files the package's licence statements point to. LICENSE-APACHE-2.0 is listed because npm's automatic inclusion takes LICENSE but not a suffixed name, so without the entry the Apache carve-out ships without its text; bin/test/npm-pack-contents.test.mjs holds the list to the wire-layer manifest. Without a files list npm packs the working tree minus ignore rules, including CLAUDE.md, ci/, docsite/ and any untracked local file: npm pack reads the WORKING TREE, so an untracked local file ships while a gitignored one does not. LICENSING.md is listed because `license` says SEE LICENSE IN LICENSING.md and npm's automatic inclusions cover LICENSE/LICENCE, not this filename, so omitting it leaves the licence field pointing at nothing. With a files list npm does not read the root .gitignore, so a gitignored file inside a listed directory ships whenever it is on disk. The release packs a clean checkout, where none exists; the negations mirror each .gitignore rule that covers a listed directory so a local pack leaves them out too, and the same test plants one file per rule to keep the two lists in step.",
+  "scripts": {
+    "list": "node bin/commitwork.mjs list --manifest security-baseline",
+    "doctor": "node bin/commitwork.mjs doctor --manifest security-baseline",
+    "test": "node bin/test-run.mjs",
+    "prepare": "node monitor/install-git-hook.mjs --write --prepare",
+    "test:raw": "node --test --test-concurrency=1 \"admin/**/*.test.mjs\" \"bin/**/*.test.mjs\" \"lib/**/*.test.mjs\" \"monitor/**/*.test.mjs\" \"sitemap/**/*.test.mjs\" \"cra/**/*.test.mjs\" \"map/**/*.test.mjs\" \"chunk-diff/**/*.test.mjs\" \"flow/**/*.test.mjs\" \"mcp/**/*.test.mjs\" \"codegraph/**/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "license": "AGPL-3.0-or-later OR LicenseRef-PolyForm-Internal-Use-1.0.0",
+  "licenseNote": "AGPL-3.0-or-later, or PolyForm Internal Use 1.0.0 by written agreement, with Apache-2.0 over the files manifests/wire-layer.json lists. See LICENSING.md and docs/AGPL-SCOPE.md. The grants apply to commitwork as published at https://github.com/Portll/commitwork. No warranty implied or given.",
+  "devDependencies": {
+    "renovate": "^44.173.0"
+  },
+  "allowScripts": {
+    "protobufjs": false,
+    "core-js-pure": false,
+    "dtrace-provider": false,
+    "re2": true
+  },
+  "overrides": {
+    "markdown-it": "15.0.3"
+  }
+}

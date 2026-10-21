@@ -1,0 +1,702 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "organization": "GitHub",
+     "semanticVersion": "2.27.1",
+     "notifications": [
+      {
+       "id": "js/diagnostics/extraction-errors",
+       "name": "js/diagnostics/extraction-errors",
+       "shortDescription": {
+        "text": "Extraction errors"
+       },
+       "fullDescription": {
+        "text": "List all extraction errors for files in the source code directory."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "description": "List all extraction errors for files in the source code directory.",
+        "id": "js/diagnostics/extraction-errors",
+        "kind": "diagnostic",
+        "name": "Extraction errors"
+       }
+      },
+      {
+       "id": "js/diagnostics/successfully-extracted-files",
+       "name": "js/diagnostics/successfully-extracted-files",
+       "shortDescription": {
+        "text": "Extracted files"
+       },
+       "fullDescription": {
+        "text": "Lists all files in the source code directory that were extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "successfully-extracted-files"
+        ],
+        "description": "Lists all files in the source code directory that were extracted.",
+        "id": "js/diagnostics/successfully-extracted-files",
+        "kind": "diagnostic",
+        "name": "Extracted files"
+       }
+      },
+      {
+       "id": "js/baseline/expected-extracted-files",
+       "name": "js/baseline/expected-extracted-files",
+       "shortDescription": {
+        "text": "Expected extracted files"
+       },
+       "fullDescription": {
+        "text": "Files appearing in the source archive that are expected to be extracted."
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       },
+       "properties": {
+        "tags": [
+         "expected-extracted-files",
+         "telemetry"
+        ]
+       }
+      },
+      {
+       "id": "cli/file-coverage-baseline",
+       "name": "cli/file-coverage-baseline",
+       "shortDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "fullDescription": {
+        "text": "File coverage baseline telemetry"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/platform",
+       "name": "cli/platform",
+       "shortDescription": {
+        "text": "Platform"
+       },
+       "fullDescription": {
+        "text": "Platform"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      },
+      {
+       "id": "cli/sip-enablement",
+       "name": "cli/sip-enablement",
+       "shortDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "fullDescription": {
+        "text": "macOS SIP enablement status"
+       },
+       "defaultConfiguration": {
+        "enabled": true
+       }
+      }
+     ],
+     "rules": [
+      {
+       "id": "js/missing-rate-limiting",
+       "name": "js/missing-rate-limiting",
+       "shortDescription": {
+        "text": "Missing rate limiting"
+       },
+       "fullDescription": {
+        "text": "An HTTP request handler that performs expensive operations without restricting the rate at which operations can be carried out is vulnerable to denial-of-service attacks."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "warning"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-770",
+         "external/cwe/cwe-307",
+         "external/cwe/cwe-400"
+        ],
+        "description": "An HTTP request handler that performs expensive operations without\n              restricting the rate at which operations can be carried out is vulnerable\n              to denial-of-service attacks.",
+        "id": "js/missing-rate-limiting",
+        "kind": "problem",
+        "name": "Missing rate limiting",
+        "precision": "high",
+        "problem.severity": "warning",
+        "security-severity": "7.5"
+       }
+      },
+      {
+       "id": "js/command-line-injection",
+       "name": "js/command-line-injection",
+       "shortDescription": {
+        "text": "Uncontrolled command line"
+       },
+       "fullDescription": {
+        "text": "Using externally controlled strings in a command line may allow a malicious user to change the meaning of the command."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "correctness",
+         "security",
+         "external/cwe/cwe-078",
+         "external/cwe/cwe-088"
+        ],
+        "description": "Using externally controlled strings in a command line may allow a malicious\n              user to change the meaning of the command.",
+        "id": "js/command-line-injection",
+        "kind": "path-problem",
+        "name": "Uncontrolled command line",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "9.8"
+       }
+      },
+      {
+       "id": "js/reflected-xss",
+       "name": "js/reflected-xss",
+       "shortDescription": {
+        "text": "Reflected cross-site scripting"
+       },
+       "fullDescription": {
+        "text": "Writing user input directly to an HTTP response allows for a cross-site scripting vulnerability."
+       },
+       "defaultConfiguration": {
+        "enabled": true,
+        "level": "error"
+       },
+       "properties": {
+        "tags": [
+         "security",
+         "external/cwe/cwe-079",
+         "external/cwe/cwe-116"
+        ],
+        "description": "Writing user input directly to an HTTP response allows for\n              a cross-site scripting vulnerability.",
+        "id": "js/reflected-xss",
+        "kind": "path-problem",
+        "name": "Reflected cross-site scripting",
+        "precision": "high",
+        "problem.severity": "error",
+        "security-severity": "7.8"
+       }
+      }
+     ]
+    },
+    "extensions": [
+     {
+      "name": "codeql/javascript-queries",
+      "semanticVersion": "2.4.2+94101634db019b00637dd5cfe241f7e570da290d",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/javascript-queries/2.4.2/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/javascript-queries/2.4.2/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/javascript-all",
+      "semanticVersion": "2.8.2+94101634db019b00637dd5cfe241f7e570da290d",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/javascript-queries/2.4.2/.codeql/libraries/codeql/javascript-all/2.8.2/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/javascript-queries/2.4.2/.codeql/libraries/codeql/javascript-all/2.8.2/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "name": "codeql/threat-models",
+      "semanticVersion": "1.0.54+94101634db019b00637dd5cfe241f7e570da290d",
+      "locations": [
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/javascript-queries/2.4.2/.codeql/libraries/codeql/threat-models/1.0.54/",
+        "description": {
+         "text": "The QL pack root directory."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackRoot"
+         ]
+        }
+       },
+       {
+        "uri": "file:///src/fixture/.codeql/packages/codeql/javascript-queries/2.4.2/.codeql/libraries/codeql/threat-models/1.0.54/qlpack.yml",
+        "description": {
+         "text": "The QL pack definition file."
+        },
+        "properties": {
+         "tags": [
+          "CodeQL/LocalPackDefinitionFile"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "invocations": [
+    {
+     "toolExecutionNotifications": [
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "app.js",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "js/diagnostics/successfully-extracted-files",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "package.json",
+           "uriBaseId": "%SRCROOT%",
+           "index": 1
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "js/diagnostics/successfully-extracted-files",
+        "index": 1
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "locations": [
+        {
+         "physicalLocation": {
+          "artifactLocation": {
+           "uri": "app.js",
+           "uriBaseId": "%SRCROOT%",
+           "index": 0
+          }
+         }
+        }
+       ],
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "descriptor": {
+        "id": "js/baseline/expected-extracted-files",
+        "index": 2
+       },
+       "properties": {
+        "formattedMessage": {
+         "text": ""
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:54:18.567097Z",
+       "descriptor": {
+        "id": "cli/file-coverage-baseline",
+        "index": 3
+       },
+       "properties": {
+        "attributes": {
+         "durationMilliseconds": 166
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:54:20.266620Z",
+       "descriptor": {
+        "id": "cli/platform",
+        "index": 4
+       },
+       "properties": {
+        "attributes": {
+         "arch": "aarch64",
+         "name": "Mac OS X",
+         "version": "26.4"
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      },
+      {
+       "message": {
+        "text": ""
+       },
+       "level": "none",
+       "timeUtc": "2026-10-04T10:54:20.287056Z",
+       "descriptor": {
+        "id": "cli/sip-enablement",
+        "index": 5
+       },
+       "properties": {
+        "attributes": {
+         "isEnabled": true
+        },
+        "visibility": {
+         "statusPage": false,
+         "telemetry": true
+        }
+       }
+      }
+     ],
+     "executionSuccessful": true
+    }
+   ],
+   "artifacts": [
+    {
+     "location": {
+      "uri": "app.js",
+      "uriBaseId": "%SRCROOT%",
+      "index": 0
+     }
+    },
+    {
+     "location": {
+      "uri": "package.json",
+      "uriBaseId": "%SRCROOT%",
+      "index": 1
+     }
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "js/missing-rate-limiting",
+     "ruleIndex": 0,
+     "rule": {
+      "id": "js/missing-rate-limiting",
+      "index": 39
+     },
+     "message": {
+      "text": "This route handler performs [a system command](1), but is not rate-limited."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 6,
+         "startColumn": 17,
+         "endLine": 8,
+         "endColumn": 2
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "1e05d96e865e7fbc:1",
+      "primaryLocationStartColumnFingerprint": "16"
+     },
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 7,
+         "startColumn": 3,
+         "endColumn": 59
+        }
+       },
+       "message": {
+        "text": "a system command"
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "js/command-line-injection",
+     "ruleIndex": 1,
+     "rule": {
+      "id": "js/command-line-injection",
+      "index": 68
+     },
+     "message": {
+      "text": "This command line depends on a [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 7,
+         "startColumn": 8,
+         "endColumn": 21
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "b987da6baf7e0a82:1",
+      "primaryLocationStartColumnFingerprint": "5"
+     },
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 7,
+         "startColumn": 8,
+         "endColumn": 21
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "js/reflected-xss",
+     "ruleIndex": 2,
+     "rule": {
+      "id": "js/reflected-xss",
+      "index": 74
+     },
+     "message": {
+      "text": "Cross-site scripting vulnerability due to a [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 11,
+         "startColumn": 12,
+         "endColumn": 50
+        }
+       }
+      }
+     ],
+     "partialFingerprints": {
+      "primaryLocationLineHash": "3611d64af5410647:1",
+      "primaryLocationStartColumnFingerprint": "9"
+     },
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.js",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 11,
+              "startColumn": 27,
+              "endColumn": 41
+             }
+            },
+            "message": {
+             "text": "req.query.name"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.js",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 11,
+              "startColumn": 12,
+              "endColumn": 50
+             }
+            },
+            "message": {
+             "text": "'<p>Hel ...  '</p>'"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 11,
+         "startColumn": 27,
+         "endColumn": 41
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 11,
+         "startColumn": 27,
+         "endColumn": 41
+        }
+       }
+      }
+     ]
+    }
+   ],
+   "newlineSequences": [
+    "\r\n",
+    "\n",
+    " ",
+    " "
+   ],
+   "columnKind": "utf16CodeUnits",
+   "properties": {
+    "semmle.formatSpecifier": "sarif-latest",
+    "metricResults": [
+     {
+      "rule": {
+       "id": "js/summary/lines-of-code",
+       "index": 85
+      },
+      "ruleId": "js/summary/lines-of-code",
+      "ruleIndex": 85,
+      "value": 10
+     },
+     {
+      "rule": {
+       "id": "js/summary/lines-of-user-code",
+       "index": 86
+      },
+      "ruleId": "js/summary/lines-of-user-code",
+      "ruleIndex": 86,
+      "value": 10,
+      "baseline": 10
+     }
+    ]
+   }
+  }
+ ]
+}

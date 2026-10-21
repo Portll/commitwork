@@ -1,0 +1,19 @@
+{
+  "_comment": "SHARED, PROJECT-NEUTRAL defaults for the machine-generated security count table. Numbers come from commitwork rollup.json via bin/build-security-data.mjs; only labels and State prose live in an annotations sidecar so they survive regeneration. {crit}/{high}/{med}/{low}/{kev}/{cves} tokens in State are filled from live counts. THIS FILE MUST STAY PROJECT-NEUTRAL: it is the fallback sidecar for EVERY project's rollup, so any editorial claim written here is asserted about whichever fleet is passed in. A project's own prose belongs in monitor/security-annotations.<report-dir>.json, which the generator selects automatically — see security-annotations.<area>.json.",
+  "_history": "Prose in a State cell is read as a verdict on the counts beside it. Rows may declare an `asserts` block stating what their prose claims about the scan; when the scan disagrees the generator replaces the cell with the contradiction and exits 3. Every state string in THIS file is built from tokens alone, so it restates the counts and cannot go stale.",
+  "surfaceOrder": ["npm", "jvm"],
+  "rows": [
+    { "surface": "npm", "label": "npm / JavaScript", "state": "{high}H / {med}M" },
+    { "surface": "jvm", "label": "JVM / Maven", "state": "{high}H / {med}M" }
+  ],
+  "totalLabel": "Deployed total",
+  "totalState": "{high}H / {med}M across {cves} findings",
+  "toolSurfaces": {
+    "osv": "jvm", "trivy": "jvm", "trivy-jvm": "jvm", "deps-jvm": "jvm",
+    "npm-audit": "npm", "npm": "npm", "retire": "npm", "socket": "npm",
+    "semgrep": "sast", "codeql": "sast",
+    "gitleaks": "secrets", "trufflehog": "secrets"
+  },
+  "_toolSurfacesNote": "A tool id here maps to a surface IF that tool appears in rollup.json repos[].findings. A key that matches nothing in one scan may match in another area's scan, so the map must not be read as a coverage claim. build-security-data.mjs emits toolSurfaceCoverage {matched, declaredButUnseen, seenButUndeclared} into security-data.json and prints the unseen list, so a declared-but-absent surface reads as UNMEASURED rather than as a surface with zero findings. Note also that surfaceOrder covers npm+jvm only: sast and secrets are recognised here and counted, but not rendered in the table.",
+  "_notWired": "bin/build-security-data.mjs is a MANUAL-RUN tool. No sweep, script, workflow or panel route invokes it, so this editorial layer does not regenerate on its own and any table it has injected is only as fresh as the last hand-run. Wiring it into the sweep (or into the panel's report generation) is unfinished work."
+}

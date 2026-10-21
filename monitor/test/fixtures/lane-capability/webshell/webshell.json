@@ -1,0 +1,97 @@
+{
+  "tool": "webshell-detect",
+  "summary": {
+    "findings": 7,
+    "byRule": {
+      "double-extension": 1,
+      "dropper-state-file": 1,
+      "encoded-server-payload": 1,
+      "htaccess-php-lock": 1,
+      "php-auto-prepend": 1,
+      "server-code-in-upload-dir": 1,
+      "silenced-unbounded": 1
+    },
+    "filesScanned": 7,
+    "bytesRead": 909,
+    "layersDecoded": 1,
+    "unreadable": 0,
+    "windowed": 0,
+    "surfaces": {
+      "serverCode": 1,
+      "htaccess": 1,
+      "phpIni": 2,
+      "mediaChecked": 0,
+      "encodedBodies": 1
+    },
+    "htaccessLocks": {
+      "files": 1,
+      "readOnly": 0,
+      "sample": [
+        "plugins/.htaccess"
+      ]
+    },
+    "maxBytes": 4194304,
+    "skipDirs": [
+      ".git",
+      "node_modules",
+      ".claude/worktrees",
+      "fixtures/scan-canary/dirty"
+    ],
+    "skippedPaths": [
+      ".git"
+    ],
+    "unreadableFiles": [],
+    "windowedFiles": []
+  },
+  "findings": [
+    {
+      "rule": "php-auto-prepend",
+      "path": ".user.ini",
+      "sev": "high",
+      "cwe": "CWE-829",
+      "detail": "auto_prepend_file → cw-canary.ico"
+    },
+    {
+      "rule": "dropper-state-file",
+      "path": "plugins/.cw-canary-state",
+      "sev": "high",
+      "cwe": "CWE-506",
+      "detail": "credential key(s) pass beside server-code filename(s) cw-canary-obj.php"
+    },
+    {
+      "rule": "htaccess-php-lock",
+      "path": "plugins/.htaccess",
+      "sev": "high",
+      "cwe": "CWE-506",
+      "detail": "1 .htaccess file(s) deny every case variant of the PHP extension — a lock an intruder drops to keep other intruders out"
+    },
+    {
+      "rule": "double-extension",
+      "path": "plugins/cw-canary.php.b64",
+      "sev": "high",
+      "cwe": "CWE-434",
+      "detail": ".php.b64"
+    },
+    {
+      "rule": "encoded-server-payload",
+      "path": "plugins/cw-canary.php.b64",
+      "sev": "high",
+      "cwe": "CWE-506",
+      "detail": "server code inside an encoded layer (in layer base64)"
+    },
+    {
+      "rule": "silenced-unbounded",
+      "path": "plugins/cw-canary.php.b64",
+      "sev": "high",
+      "cwe": "CWE-506",
+      "detail": "error reporting silenced and the time limit removed together (in layer base64)"
+    },
+    {
+      "rule": "server-code-in-upload-dir",
+      "path": "uploads/2026/10/cw-canary.php",
+      "sev": "high",
+      "cwe": "CWE-434",
+      "detail": ".php file under an upload directory"
+    }
+  ]
+}

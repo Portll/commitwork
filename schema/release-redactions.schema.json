@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schema/release-redactions.schema.json",
+  "title": "release-redactions",
+  "description": "monitor/release-redactions.json — names that must not appear in the PUBLIC REPOSITORY. Consumed by bin/test/release-names.test.mjs, which validates against THIS schema rather than re-implementing it, so there is one statement of the shape and not two. Distinct from schema/publish-redactions.schema.json: that governs the docsite publish boundary over a client-only population, this governs the repository release over a wider one that includes the operator's own products. Merging them would redact commitwork's own tool names from its own public documentation.",
+  "type": "object",
+  "required": ["note", "names"],
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why this file exists and how it differs from publish-redactions. Required: a redaction set with no rationale is one nobody can audit, and this one's whole subtlety is that it is NOT the other one."
+    },
+    "names": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One entry per identity to remove. Order is not significant; the consumer sorts longest-first so a longer name is consumed before a shorter one it contains.",
+      "items": {
+        "type": "object",
+        "required": ["name", "replacement", "scope", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "description": "The source identity. Whitespace is refused: a key containing it would never match a rendered identifier, so it would silently redact nothing."
+          },
+          "replacement": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Provisional until the operator finalises it. Non-empty: an empty replacement deletes the surrounding sentence's subject and leaves prose reading as though nothing was removed."
+          },
+          "scope": {
+            "enum": ["all", "prose"],
+            "description": "`all` — every occurrence goes, including paths and filenames. `prose` — occurrences go EXCEPT those matching `exempt`, which are external contracts this repo does not own and cannot rename without breaking an integration."
+          },
+          "exempt": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Substrings marking an occurrence as an external contract that stays. Only meaningful with scope `prose`. Every entry must be VERIFIED present in the tree, not assumed — an exemption for a form that does not exist silently widens the carve-out."
+          },
+          "replacementAlternatives": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Further acceptable replacements where ONE name does not fit every site, because the identity plays more than one role. The reviewer picks per occurrence. Only meaningful alongside `reviewPerSite`: a set of alternatives with no per-site review is an invitation to pick the first one everywhere and call it done."
+          },
+          "reviewPerSite": {
+            "type": "boolean",
+            "description": "True when the test for redaction is a JUDGEMENT no substring rule makes — typically because the name is also an ordinary word in this repo's subject matter. The consumer still enumerates every occurrence, but the count is a REVIEW list rather than a replace list, and it must not be mass-substituted."
+          },
+          "ruling": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The operator's words and the measurement behind them, where an entry needed a decision rather than a rule. Kept verbatim so a later reader can see what was decided rather than inferring it from the outcome."
+          },
+          "undetermined": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Substrings whose status is genuinely unsettled — not known-exempt, not known-in-scope. The consumer reports these in their own bucket, outside pass and fail, rather than resolving them by guess. Absence of a ruling is its own state and is displayed as such."
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The ruling and its evidence. Required: an identity in a redaction set with no stated reason cannot be re-litigated by a later reader, who will not know whether it was measured or assumed."
+          }
+        }
+      }
+    },
+    "outOfScope": {
+      "type": "object",
+      "description": "Names deliberately NOT redacted, with the reason. Recorded so a deliberate asymmetry does not read as an oversight to the next reader — the one failure mode a redaction set cannot self-diagnose.",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "local-docs": {
+      "command": "npx",
+      "args": ["-y", "canary-mcp-docs@1.4.2", "--root", "${HOME}/docs"],
+      "env": {
+        "DOCS_URL": "http://127.0.0.1:8080",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "local-sse": {
+      "type": "sse",
+      "url": "http://localhost:3030/sse"
+    }
+  }
+}

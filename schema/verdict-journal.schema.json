@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verdict journal record",
+  "description": "One line of a gate's verdict journal, <gate>.jsonl under CW_VERDICT_DIR (default .claude/verdicts), written by journal() in bin/lib/verdict-journal-core.mjs. This schema fixes the envelope every gate shares. The rest of the record is the gate's own body (verdict, exit, metrics, baseline and so on), which differs per gate and is not frozen here, so further properties are allowed. Rotated generations (<gate>.jsonl.N) hold the same records. The adjudication ledger and the other chained files in the same directory are not gate journals and do not follow this schema.",
+  "type": "object",
+  "required": ["v", "gate", "at", "pid", "session"],
+  "properties": {
+    "v": { "const": 1 },
+    "gate": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "The gate that decided; also the journal's file name." },
+    "at": { "type": "string", "description": "When the record was written, ISO 8601 (CW_NOW honoured)." },
+    "pid": { "type": "integer", "description": "The writing process." },
+    "session": { "type": ["string", "null"], "description": "The agent session that ran the gate, when the gate knows it." },
+    "prev": {
+      "type": "string",
+      "pattern": "^(genesis|rotation:[0-9a-f]{32}|[0-9a-f]{32})$",
+      "description": "The tamper-evidence link: the first 32 hex characters of the sha256 of the previous line, 'genesis' at the start of a fresh journal, or 'rotation:<hash>' at the start of a generation after rotation. Every record written now carries it; it is absent only on records written before the chain existed, which readers count as unchained."
+    }
+  }
+}

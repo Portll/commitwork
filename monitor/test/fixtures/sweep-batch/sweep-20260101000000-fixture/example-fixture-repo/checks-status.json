@@ -1,0 +1,5 @@
+[
+  { "check": "secrets-gitleaks", "status": "pass", "durationMs": 1, "at": "2026-01-01T00:00:00.000Z" },
+  { "check": "deps-osv", "status": "pass", "durationMs": 1, "at": "2026-01-01T00:00:00.000Z" },
+  { "check": "sast-semgrep", "status": "skip", "durationMs": 0, "at": "2026-01-01T00:00:00.000Z" }
+]

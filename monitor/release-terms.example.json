@@ -1,0 +1,22 @@
+{
+  "$schema": "../schema/release-terms.schema.json",
+  "$comment": "The shape of the private denied-term list that bin/lib/release-terms.mjs reads from the sidecar (monitor/release-terms.json) or from CW_RELEASE_TERMS. The real list names private things; every term here is synthetic.",
+  "rules": [
+    {
+      "id": "internal-tool",
+      "why": "a tool that is not part of the product",
+      "words": ["example-internal-tool", "example-sibling-service"]
+    },
+    {
+      "id": "customer-pseudonym",
+      "why": "a pseudonym that stands in for a customer",
+      "patterns": ["\\bexample-customer-[a-z]\\b"]
+    },
+    {
+      "id": "maintainer-history",
+      "why": "a ruling or an incident from the maintainer's own history",
+      "patterns": ["\\bexample-ruling\\b", "\\bexample-incident 20\\d\\d-\\d\\d-\\d\\d\\b"],
+      "exceptPaths": ["docs/CHANGELOG.md"]
+    }
+  ]
+}

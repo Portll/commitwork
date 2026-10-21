@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "commitwork external judgement (the return path payload)",
+  "description": "One human judgement pushed back at a scanner finding from OUTSIDE this repo (MCP tool call, panel POST, future webhook). EVERYTHING VALIDATED HERE IS ATTACKER-INFLUENCED. Restricted to the keyword subset monitor/registry.mjs::checkNode implements (type/required/properties/additionalProperties/items/pattern/enum/minItems/minimum/maximum/exclusiveMinimum/oneOf) — an unimplemented keyword is a validation failure, never a silent skip. There is no maxLength in that subset, so every length bound is expressed as an anchored, non-backtracking `pattern`. Runtime consumer: monitor/ingest-external.mjs::ingestExternal (every ingest, all three transports). A payload that fails this schema is QUARANTINED, never partially applied.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["issueId", "disposition", "reason", "rescan"],
+  "properties": {
+    "issueId": {
+      "description": "The issue being judged. Deliberately a SHAPE bound (bounded, anchored, single character class) rather than a copy of the ISS- grammar: monitor/issue-key.mjs owns that grammar and it has already changed once (flat ISS-XXXXXX -> org/class-scoped ISS-<ORG>-<C>-<XXXXXX>). A duplicate of it here would be one more place to forget. The authority is the store itself — ingest-external.mjs looks the id up in issues{}, and an id that resolves to nothing is refused as unknown-issue.",
+      "type": "string",
+      "pattern": "^ISS-[0-9A-Z][0-9A-Z-]{0,63}$"
+    },
+    "disposition": {
+      "description": "false-positive = the scanner is wrong. remediated = a human says they fixed it (a CLAIM, awaiting scan evidence — it does NOT suppress). not-applicable = real but not needing remediation here (accepted risk).",
+      "enum": ["false-positive", "remediated", "not-applicable"]
+    },
+    "reason": {
+      "description": "Why. 8..2000 printable characters. The control-character exclusion is the first half of 'ingested text never reaches a shell, a RegExp or innerHTML': nothing that could terminate a line, forge a log record or smuggle an escape sequence gets past the door. Escaping at the sink is the second half.",
+      "type": "string",
+      "pattern": "^[^\\u0000-\\u001f\\u007f]{8,2000}$"
+    },
+    "rescan": {
+      "description": "The depth of the re-scan this judgement asks for — REQUIRED, and 'none' must be said out loud. A sweep group (all | fast | supply-chain | deep) or a single manifest check id, or the literal 'none'. The schema can only bound the SHAPE: the closed set of legal values is derived from monitor/scanner-checks.mjs at runtime (ingest-external.mjs::rescanLevels), because duplicating that list into a static enum here is how the two drift and an unknown level silently becomes 'all'.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "expires": {
+      "description": "When this ruling stops being in force, ISO-8601 UTC. Optional: a suppressing disposition with no explicit expiry is given the default TTL (CW_DISPOSITION_TTL_DAYS, 90d) rather than living forever — an unbounded suppression is a deletion with extra steps. An expiry already in the past, or beyond CW_DISPOSITION_MAX_TTL_DAYS, is refused.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]{3})?Z$"
+    },
+    "subjectDigest": {
+      "description": "Optional optimistic-concurrency pin: the subject digest the caller BELIEVES it is judging (read back from issue_dispositions / GET /api/ingest/targets). If it does not match the store's current digest the ingest is REFUSED as stale — a ruling filed against a subject that has already moved is a ruling about something else.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

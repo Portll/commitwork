@@ -1,0 +1,2 @@
+{"ScenarioFinished": {"label": "POST /v1/users", "status": "failure"}}
+{"ScenarioFinished": {"label": "GET /v1/orders", "status": "error"}}

@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.local/schema/manifest-map.schema.json",
+  "title": "manifest map",
+  "description": "The generated index of a check manifest, written by bin/manifest-map.mjs. `line` is the whole point of the file — a reader jumps to a check instead of scanning 257K — so it is required on every entry and nullable only where the id string could not be located literally in the raw text.",
+  "type": "object",
+  "required": ["generatedBy", "manifest", "manifestLines", "checkCount", "byId", "byGroup", "byTool", "byTrigger"],
+  "additionalProperties": false,
+  "properties": {
+    "generatedBy": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The tool that owns this file. Never hand-edit; regenerate."
+    },
+    "manifest": { "type": "string", "minLength": 1 },
+    "manifestLines": { "type": "integer", "minimum": 1 },
+    "checkCount": { "type": "integer", "minimum": 0 },
+    "byId": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["line", "groups", "tools"],
+        "additionalProperties": false,
+        "properties": {
+          "line": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "description": "Line of this check's `\"id\"` in the raw manifest text. null means the id string could not be located — reported as unknown rather than guessed, because a wrong line is worse than an absent one."
+          },
+          "description": { "type": "string" },
+          "groups": { "type": "array", "items": { "type": "string" } },
+          "tools": { "type": "array", "items": { "type": "string" } },
+          "docker": { "type": "boolean" },
+          "appliesIfExists": { "type": "array", "items": { "type": "string" } },
+          "appliesIfSourceExt": { "type": "array", "items": { "type": "string" } },
+          "appliesIfGit": { "type": "boolean" },
+          "requiresUrl": { "type": "boolean" },
+          "report": { "type": ["string", "null"] },
+          "timeoutSec": { "type": ["integer", "null"], "minimum": 0 },
+          "universal": {
+            "type": "boolean",
+            "description": "No applies* gate at all, so the check runs everywhere. A different fact from \"no gate matched here\", and the two must not collapse."
+          }
+        }
+      }
+    },
+    "byGroup": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    },
+    "byTool": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    },
+    "byTrigger": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    }
+  }
+}

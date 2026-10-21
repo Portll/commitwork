@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/disregarded-warnings.schema.json",
+  "title": "Disregarded-warning register",
+  "description": "Append-only register of warnings an operator saw and set aside, and of their returns. Identity is {source, code, subject}; a line number is never part of it, so `line` is not a permitted field. Mirrors validateDisregard in monitor/disregarded-warnings.mjs.",
+  "type": "object",
+  "required": ["disregarded"],
+  "additionalProperties": false,
+  "properties": {
+    "_comment": { "type": "string", "minLength": 1 },
+    "disregarded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "code", "subject", "why", "who", "at"],
+        "additionalProperties": false,
+        "properties": {
+          "source": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+          "code": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+          "subject": { "type": "string", "pattern": "\\S" },
+          "why": { "type": "string", "pattern": "\\S" },
+          "who": { "type": "string", "pattern": "\\S" },
+          "at": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "returned": {
+      "type": "array",
+      "description": "One event per (warning, set-aside): the first time the warning was seen after that set-aside. Mirrors validateReturn.",
+      "items": {
+        "type": "object",
+        "required": ["key", "source", "code", "subject", "setAsideAt", "seenAt", "recordedAt", "via"],
+        "additionalProperties": false,
+        "properties": {
+          "key": { "type": "string", "pattern": "^[A-Za-z0-9._-]+:[A-Za-z0-9._-]+\\|\\S" },
+          "source": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+          "code": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+          "subject": { "type": "string", "pattern": "\\S" },
+          "setAsideAt": { "type": "string", "minLength": 1 },
+          "seenAt": { "type": "string", "minLength": 1 },
+          "recordedAt": { "type": "string", "minLength": 1 },
+          "via": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" }
+        }
+      }
+    }
+  }
+}

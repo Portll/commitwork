@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Failure-taxonomy edition lineage",
+  "description": "What each edition of the failure taxonomy added, and the artifact each delta was measured from. bin/taxonomy-web.mjs joins this to monitor/failure-taxonomy.json and refuses to publish a lineage that does not account for exactly the classes the registry holds. This schema constrains SHAPE; the reconciliation constrains TRUTH, and neither substitutes for the other.",
+  "type": "object",
+  "required": ["note", "measurement", "editions"],
+  "additionalProperties": false,
+  "properties": {
+    "note": { "type": "string", "minLength": 1 },
+    "measurement": {
+      "type": "string",
+      "minLength": 1,
+      "description": "How the per-edition id lists were derived. Required because an edition list with no stated method is a claim, not a measurement."
+    },
+    "verifiedAgainst": { "type": "string" },
+    "witnesses": {
+      "type": "array",
+      "description": "Artifacts a delta was measured from that git does not carry. Each records its own durability.",
+      "items": {
+        "type": "object",
+        "required": ["path", "tracked", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "tracked": { "type": "boolean" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "producedAt": { "type": "string" },
+          "classes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "editions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["version", "label", "date", "form", "artifact", "headline", "body", "changes"],
+        "additionalProperties": false,
+        "properties": {
+          "version": { "type": "integer", "minimum": 0 },
+          "label": { "type": "string", "minLength": 1 },
+          "date": { "type": "string", "minLength": 1 },
+          "form": { "type": "string", "minLength": 1 },
+          "artifact": { "type": "string", "minLength": 1 },
+          "tracked": { "type": "boolean" },
+          "commit": { "type": ["string", "null"] },
+          "commitNote": { "type": "string" },
+          "headline": { "type": "string", "minLength": 1 },
+          "body": { "type": "string", "minLength": 1 },
+          "versionDrift": { "type": "string" },
+          "countAfter": { "type": "integer", "minimum": 0 },
+          "countWitness": {
+            "type": "object",
+            "required": ["basis", "source", "claim"],
+            "additionalProperties": false,
+            "properties": {
+              "basis": { "enum": ["doc-cited", "artifact-measured", "registry-measured"] },
+              "source": { "type": "string", "minLength": 1 },
+              "claim": { "type": "string", "minLength": 1 }
+            }
+          },
+          "changes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["kind"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": { "enum": ["classes", "axis", "field", "section", "family", "form", "instrument", "projection", "binding"] },
+                "ids": {
+                  "type": "array",
+                  "items": { "type": "string", "pattern": "^[CARPMGDWKEL][0-9]{1,2}$" },
+                  "description": "Class ids introduced. The prefix set is the ten family prefixes; a bare number or an unknown letter is a typo, not a class."
+                },
+                "label": { "type": "string" },
+                "note": { "type": "string" },
+                "date": { "type": "string" },
+                "commit": { "type": ["string", "null"] },
+                "retired": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

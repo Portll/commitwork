@@ -1,0 +1,19 @@
+--- a/console/src/main/scala/io/joern/console/BridgeBase.scala
++++ b/console/src/main/scala/io/joern/console/BridgeBase.scala
+@@ -438,9 +438,15 @@
+   private def argsStringFromConfig(config: Config): String = {
+     config.frontendArgs match {
+       case Array() => ""
+       case args =>
++        // Frontend args are interpolated into a generated Scala source file, so they must be
++        // escaped as Scala/Java string literals -- exactly as `src` already is in
++        // loadOrCreateCpg above. Without this, any arg containing a backslash or a quote
++        // produces an invalid literal and the generated script fails to COMPILE. A regex is
++        // the common case: `--exclude-regex '.*/\.git/.*'` contains `\.`, which is not a legal
++        // Scala escape sequence.
+         val quotedArgs = args.map { arg =>
+-          "\"" ++ arg ++ "\""
++          "\"" ++ StringEscapeUtils.escapeJava(arg) ++ "\""
+         }
+         val argsString = quotedArgs.mkString(", ")
+         s", args=List($argsString)"

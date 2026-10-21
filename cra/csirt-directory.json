@@ -1,0 +1,92 @@
+{
+  "$schema": "../schema/csirt-directory.schema.json",
+  "version": 1,
+  "note": "The Art. 14(7) cascade is transcribed from the regulation and is authoritative. The per-state coordinator directory is NOT in the CRA — CSIRTs are designated nationally — so every coordinator is null until a source is read and recorded. A null coordinator means NOT YET SOURCED. It must render as unresolved: the reporting obligation exists regardless of whether we have located the end-point, and showing an unsourced state as 'no body' would convert our own research gap into an apparent absence of obligation.",
+  "establishmentRule": {
+    "source": "CRA Art. 14(7)",
+    "sourceUrl": "https://www.european-cyber-resilience-act.com/Cyber_Resilience_Act_Article_14.html",
+    "primary": [
+      {
+        "id": "cybersecurity-decisions",
+        "test": "The Member State where decisions related to the cybersecurity of the manufacturer's products with digital elements are predominantly taken.",
+        "citation": "Art. 14(7)"
+      },
+      {
+        "id": "most-employees",
+        "test": "Where that Member State cannot be determined, the Member State in which the manufacturer has the establishment with the highest number of employees in the Union.",
+        "citation": "Art. 14(7)"
+      }
+    ],
+    "fallbackWhenNoUnionEstablishment": [
+      {
+        "id": "authorised-representative",
+        "test": "The Member State in which the authorised representative acting on behalf of the manufacturer for the highest number of products is established.",
+        "citation": "Art. 14(7)(a)"
+      },
+      {
+        "id": "importer",
+        "test": "The Member State in which the importer placing on the market the highest number of products is established.",
+        "citation": "Art. 14(7)(b)"
+      },
+      {
+        "id": "distributor",
+        "test": "The Member State in which the distributor making available on the market the highest number of products is established.",
+        "citation": "Art. 14(7)(c)"
+      },
+      {
+        "id": "users",
+        "test": "The Member State in which the highest number of users are located.",
+        "citation": "Art. 14(7)(d)"
+      }
+    ]
+  },
+  "benchmarkRegimes": [
+    { "code": "GB", "name": "United Kingdom", "regime": "benchmark",
+      "rationale": "London-market underwriters benchmark secure-lifecycle and 24h-notification practice against the CRA; the UK Cyber Security and Resilience Bill trails a similar philosophy. No CRA body is owed a report.",
+      "source": "operator assertion 2026-08-22 — NOT independently verified; treat as a recorded judgement, not a finding" },
+    { "code": "US", "name": "United States", "regime": "benchmark",
+      "rationale": "US underwriters cannot separate domestic from EU risk for manufacturers selling into Europe, and use CRA SBOM/dependency-tracking expectations when assessing standard of care. No CRA body is owed a report.",
+      "source": "operator assertion 2026-08-22 — NOT independently verified" },
+    { "code": "AU", "name": "Australia", "regime": "benchmark",
+      "rationale": "APAC insurers reportedly require a CRA-framed gap assessment before extending global product-liability cover; domestic policies are said not to cover EU regulatory enforcement costs. No CRA body is owed a report.",
+      "source": "operator assertion 2026-08-22 — NOT independently verified" },
+    { "code": "SG", "name": "Singapore", "regime": "benchmark",
+      "rationale": "Export-driven risk profile; same underwriting benchmarking as AU. No CRA body is owed a report.",
+      "source": "operator assertion 2026-08-22 — NOT independently verified" },
+    { "code": "CH", "name": "Switzerland", "regime": "benchmark",
+      "rationale": "Reinsurance hub; global reinsurers are said to prefer uniform CRA-derived product categories for modelling systemic supply-chain risk. No CRA body is owed a report.",
+      "source": "operator assertion 2026-08-22 — NOT independently verified" },
+    { "code": "BM", "name": "Bermuda", "regime": "benchmark",
+      "rationale": "Reinsurance hub; as CH. No CRA body is owed a report.",
+      "source": "operator assertion 2026-08-22 — NOT independently verified" }
+  ],
+  "memberStates": [
+    { "code": "AT", "name": "Austria", "coordinator": null },
+    { "code": "BE", "name": "Belgium", "coordinator": null },
+    { "code": "BG", "name": "Bulgaria", "coordinator": null },
+    { "code": "HR", "name": "Croatia", "coordinator": null },
+    { "code": "CY", "name": "Cyprus", "coordinator": null },
+    { "code": "CZ", "name": "Czechia", "coordinator": null },
+    { "code": "DK", "name": "Denmark", "coordinator": null },
+    { "code": "EE", "name": "Estonia", "coordinator": null },
+    { "code": "FI", "name": "Finland", "coordinator": null },
+    { "code": "FR", "name": "France", "coordinator": null },
+    { "code": "DE", "name": "Germany", "coordinator": null },
+    { "code": "GR", "name": "Greece", "coordinator": null },
+    { "code": "HU", "name": "Hungary", "coordinator": null },
+    { "code": "IE", "name": "Ireland", "coordinator": null },
+    { "code": "IT", "name": "Italy", "coordinator": null },
+    { "code": "LV", "name": "Latvia", "coordinator": null },
+    { "code": "LT", "name": "Lithuania", "coordinator": null },
+    { "code": "LU", "name": "Luxembourg", "coordinator": null },
+    { "code": "MT", "name": "Malta", "coordinator": null },
+    { "code": "NL", "name": "Netherlands", "coordinator": null },
+    { "code": "PL", "name": "Poland", "coordinator": null },
+    { "code": "PT", "name": "Portugal", "coordinator": null },
+    { "code": "RO", "name": "Romania", "coordinator": null },
+    { "code": "SK", "name": "Slovakia", "coordinator": null },
+    { "code": "SI", "name": "Slovenia", "coordinator": null },
+    { "code": "ES", "name": "Spain", "coordinator": null },
+    { "code": "SE", "name": "Sweden", "coordinator": null }
+  ]
+}

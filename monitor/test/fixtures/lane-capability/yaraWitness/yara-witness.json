@@ -1,0 +1,95 @@
+{
+  "tool": "yara-witness",
+  "summary": {
+    "findings": 3,
+    "byRule": {
+      "signature-base:ChinaChopper_Generic": 1,
+      "signature-base:EXT_WEBSHELL_PHP_Generic": 1,
+      "signature-base:WEBSHELL_PHP_Generic_Eval": 1
+    },
+    "filesScanned": 2,
+    "matchedFiles": 1,
+    "engine": {
+      "tool": "yara-x",
+      "version": "1.21.0"
+    },
+    "ruleSets": [
+      {
+        "name": "php-malware-finder",
+        "commit": "87b6d7faa4829b1e1c7c8895ef33d2b84d00b11f",
+        "license": "LGPL-3.0-only",
+        "url": "https://github.com/jvoisin/php-malware-finder"
+      },
+      {
+        "name": "signature-base",
+        "commit": "94a1c48d7ab499879287ff611dfe7f9c56376030",
+        "license": "DRL-1.1",
+        "url": "https://github.com/Neo23x0/signature-base"
+      }
+    ],
+    "threads": 2,
+    "divergence": {
+      "both": 1,
+      "yaraOnly": {
+        "count": 0,
+        "sample": []
+      },
+      "detectOnly": {
+        "count": 0,
+        "sample": []
+      },
+      "note": "a file only one witness flags is the other's false negative or this one's false positive; neither is decided here"
+    },
+    "skippedPaths": [
+      ".git"
+    ],
+    "unreadable": 0,
+    "unreadableFiles": [],
+    "undetermined": {
+      "count": 2,
+      "files": 1,
+      "byRule": {
+        "php-malware-finder:DodgyPhp": 1,
+        "php-malware-finder:ObfuscatedPhp": 1
+      },
+      "reasons": [
+        "measured 2026-10-08: its heuristic rules (ObfuscatedPhp, DodgyPhp, DodgyStrings, NonPrintableChars, DangerousPhp) matched ~160 files of a clean WordPress tree and ~200 of an exploited sibling, every one in a legitimate plugin, and none of the planted droppers; a match from this pack is therefore carried as undetermined, never as a severity"
+      ],
+      "sample": [
+        {
+          "rule": "php-malware-finder:DodgyPhp",
+          "path": "s.php",
+          "detail": "php-malware-finder rule DodgyPhp — LGPL-3.0-only https://github.com/jvoisin/php-malware-finder"
+        },
+        {
+          "rule": "php-malware-finder:ObfuscatedPhp",
+          "path": "s.php",
+          "detail": "php-malware-finder rule ObfuscatedPhp — LGPL-3.0-only https://github.com/jvoisin/php-malware-finder"
+        }
+      ]
+    }
+  },
+  "findings": [
+    {
+      "rule": "signature-base:ChinaChopper_Generic",
+      "path": "s.php",
+      "sev": "med",
+      "cwe": "CWE-506",
+      "detail": "signature-base rule ChinaChopper_Generic by Florian Roth (Nextron Systems) — DRL-1.1 https://github.com/Neo23x0/signature-base"
+    },
+    {
+      "rule": "signature-base:EXT_WEBSHELL_PHP_Generic",
+      "path": "s.php",
+      "sev": "med",
+      "cwe": "CWE-506",
+      "detail": "signature-base rule EXT_WEBSHELL_PHP_Generic by Arnim Rupp (https://github.com/ruppde) — DRL-1.1 https://github.com/Neo23x0/signature-base"
+    },
+    {
+      "rule": "signature-base:WEBSHELL_PHP_Generic_Eval",
+      "path": "s.php",
+      "sev": "med",
+      "cwe": "CWE-506",
+      "detail": "signature-base rule WEBSHELL_PHP_Generic_Eval by Arnim Rupp (https://github.com/ruppde) — DRL-1.1 https://github.com/Neo23x0/signature-base"
+    }
+  ]
+}

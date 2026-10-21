@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schema/publish-redactions.schema.json",
+  "title": "publish-redactions",
+  "description": "monitor/publish-redactions.json — the names replaced when a private register is rendered into a public docsite page. Applied on write by bin/taxonomy-web.mjs and bin/taxonomy-render.mjs via lib/publish-redactions.mjs, which validates against THIS schema rather than re-implementing it, so there is one statement of the shape and not two. Keys are matched case-insensitively and longest-first; a key containing whitespace would never match a rendered identifier, so it is refused here rather than silently redacting nothing.",
+  "type": "object",
+  "required": ["note", "map"],
+  "additionalProperties": false,
+  "properties": {
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why this file exists and what belongs in it. Required: a redaction map with no rationale is one nobody can audit."
+    },
+    "map": {
+      "type": "object",
+      "description": "source name -> published replacement. Both sides non-empty: an empty replacement would delete the surrounding sentence's subject and leave prose that reads as though nothing was removed.",
+      "propertyNames": { "type": "string", "minLength": 1, "pattern": "^\\S+$" },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    }
+  }
+}

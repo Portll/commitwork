@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Build-health result",
+  "description": "The JSON report bin/build-health.mjs prints for one sub-check of one repository, which the manifest redirects into the run's report directory. This schema fixes the report envelope and what every result row shares. Each row's remaining fields are the detail of its language and sub-check (phases, deviations, unused dependencies, dead links and so on); they differ per pair and are not frozen here, so further properties are allowed. Reports written before schemaVersion 2 carry no schemaVersion and are not described by this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tool", "schemaVersion", "sub", "repo", "languages", "docFiles", "status", "results"],
+  "properties": {
+    "tool": { "const": "build-health" },
+    "schemaVersion": { "const": 2 },
+    "sub": { "enum": ["deadcode", "toolchain", "provenance", "format", "lint", "boottest"] },
+    "repo": { "type": "string", "description": "The absolute path the check ran over." },
+    "languages": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Ids of the languages whose ecosystem markers were found." },
+    "docFiles": { "type": "integer", "minimum": 0 },
+    "status": {
+      "type": "string",
+      "pattern": "^(n/a|green|RED|no-tests|unreadable|env-blocked|skipped|MISMATCH|ok|advisory|clean|findings:[1-9][0-9]*)$",
+      "description": "The folded verdict for the sub-check. toolchain uses green, RED, no-tests, unreadable, env-blocked, skipped and n/a; provenance ok, MISMATCH and advisory; format, lint and deadcode clean, findings:<n>, unreadable, skipped, advisory (lint) and n/a; boottest green, RED and n/a."
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ran"],
+        "properties": {
+          "lang": { "type": "string" },
+          "kind": { "const": "documentation" },
+          "ran": { "type": "boolean", "description": "False when the pair is not implemented, its tool is absent or its environment refused it; note or status says which." },
+          "status": { "type": "string" },
+          "note": { "type": "string" }
+        },
+        "oneOf": [
+          { "required": ["lang"] },
+          { "required": ["kind"] }
+        ]
+      }
+    }
+  }
+}

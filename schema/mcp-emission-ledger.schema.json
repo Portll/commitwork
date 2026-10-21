@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MCP emission ledger row",
+  "description": "One line of the MCP emission ledger, mcp-emissions.jsonl in the private store directory (CW_MCP_EMISSIONS), written by recordSignals() in mcp/emission-ledger.mjs: one row per injection-shaped signal the detector in lib/untrusted-text.mjs raised over a run_checks_start job's inputs or output. A row records that a signal was seen, never a severity. It carries a hash of the matched text and never the text, which is attacker-controlled and may carry a secret. Rotated generations (mcp-emissions.jsonl.N) hold the same rows.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "at", "jobId", "tool", "source", "rule", "span"],
+  "properties": {
+    "v": { "const": 1 },
+    "at": { "type": "string", "description": "When the row was written, ISO 8601 (CW_NOW honoured)." },
+    "jobId": { "type": "string", "pattern": "^job-[a-z0-9]{1,32}-[0-9]+$", "description": "The job the signal was raised on, as run_checks_start returned it." },
+    "tool": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "The MCP tool whose request created the job." },
+    "source": { "enum": ["input", "output"], "description": "input: the request's string arguments. output: the run's result and the scanned tail of its log." },
+    "rule": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "The detector signal id, e.g. override-instructions." },
+    "span": { "type": "string", "pattern": "^[0-9a-f]{16}$", "description": "The first 16 hex characters of the sha256 of the domain-separated matched text (spanHash). The same text gives the same span, so repeats can be counted without the text being stored." },
+    "prev": {
+      "type": "string",
+      "pattern": "^(genesis|unlinked|rotation:[0-9a-f]{32}|[0-9a-f]{32})$",
+      "description": "The chain link written by chainedAppend in bin/lib/touch-chain.mjs: the first 32 hex characters of the sha256 of the previous line, 'genesis' at the start, 'rotation:<hash>' after a rotation, or 'unlinked' when the lock could not be had in time."
+    },
+    "rotfail": { "type": "string", "description": "Present only on an unlinked row written while a rotation failed: which step, and its error code." }
+  }
+}

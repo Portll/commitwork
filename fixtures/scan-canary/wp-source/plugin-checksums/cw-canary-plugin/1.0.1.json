@@ -1,0 +1,20 @@
+{
+ "plugin": "cw-canary-plugin",
+ "version": "1.0.1",
+ "source": [],
+ "zip": [],
+ "files": {
+  "cw-canary-plugin.php": {
+   "md5": "2169ef0850e8a59173b9ff05474d6ed5",
+   "sha256": "c8e21646087bba144680d5e1f70a41a600e49f3086323edfbfeae49547fc7ecc"
+  },
+  "includes/cw-canary-helper.php": {
+   "md5": "cd83d2c6594d636f5dcc70f14cbd9665",
+   "sha256": "1c3e2ffbdc3a00269de729e0ae0fa8ca6b5eda2e1604889f8dc0864c06ca2251"
+  },
+  "readme.txt": {
+   "md5": "8424d101f5244d2b52c6dc9dd15a10f8",
+   "sha256": "0e17be5323912ee133b1825cc605a6688a7fbd536080b6bf77fd4785d54e4d77"
+  }
+ }
+}

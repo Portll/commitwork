@@ -1,0 +1,4 @@
+{
+  "_comment": "Suppression list for the commitVelocity lane (bin/commit-velocity.mjs). STRICT match: every entry requires rule + author AND a mandatory `expires` date; repo is optional and absent means commitwork's own tree only. An entry without `expires` is NOT honoured; an expired entry stops suppressing and increments summary.allowlistExpired. Per RULE on purpose: acknowledging an agent fleet's machine-speed-commits leaves its workflow-edit-burst and sensitive-file-burst firing. Additions are a HUMAN, journaled act — never applied autonomously by a remediation agent.",
+  "allow": []
+}
