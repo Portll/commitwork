@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 331 | 269 | 62 |
-| Exit codes (declared in the header) | 344 | 147 | 197 |
-| `CW_*` environment variables (described in an `env` header) | 876 | 191 | 685 |
+| Commands (a usage line in the header) | 332 | 270 | 62 |
+| Exit codes (declared in the header) | 345 | 148 | 197 |
+| `CW_*` environment variables (described in an `env` header) | 878 | 191 | 687 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -1276,6 +1276,17 @@ release-names-reseed.mjs — lower the release-names HEAD floor as cleanups land
 
 - Usage: `node bin/release-names-reseed.mjs [--write] (default is a dry run)`
 - Exit: undeclared
+
+### `bin/release-report.mjs`
+
+bin/release-report.mjs — what a deploy box served, whether it should have, and for how long.
+
+- Usage: `node bin/release-report.mjs --evidence <file> [--evidence <file> ...] [--fetch]`
+- Option: `--evidence <file> a saved document; repeatable`
+- Option: `--fetch pull each source of monitor/private/releases.json over ssh and keep the documents`
+- Option: `--out <dir> base directory for the reports, default <reports>/releases; one <product>/ each`
+- Option: `--json print the report JSON (an array when several products) to stdout`
+- Exit: 0 ok · 1 the serving release is blocked, or commitwork and the box disagree on a finding · 2 usage, unreadable or invalid input, or a failed fetch (invalid input writes nothing) · 4 evidence older than 26 h, or the KEV catalogue stale or undated (no agreement is claimed)
 
 ### `bin/release-tag.mjs`
 
@@ -2638,8 +2649,8 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-876 `CW_*` names read by tracked non-test sources: 756 by name, and
-120 indirect (quoted in a file that reads the environment by a computed key, so the read
+878 `CW_*` names read by tracked non-test sources: 760 by name, and
+118 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
 
@@ -2948,7 +2959,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_EOL_API` | direct | `bin/eol-snapshot.mjs` | base URL |
 | `CW_EOL_SNAPSHOT` | direct | `bin/eol-snapshot.mjs` | output path |
 | `CW_EPHEMERAL_MIN` | direct | `monitor/listeners.mjs` | undocumented |
-| `CW_EPSS` | indirect | `cra/lib.mjs` | undocumented |
+| `CW_EPSS` | direct | `bin/release-report.mjs` | undocumented |
 | `CW_EPSS_DETAIL` | indirect | `bin/test-run.mjs`, `cra/lib.mjs`, `monitor/store-paths.mjs` | undocumented |
 | `CW_EPSS_PATH` | direct | `monitor/dep-findings.mjs` | undocumented |
 | `CW_ESCALATE` | direct | `cra/watch.mjs` | undocumented |
@@ -3056,7 +3067,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_JVM_KEEP_SCRATCH` | direct | `bin/jvm-resolve.sh` | undocumented |
 | `CW_JVM_TIMEOUT` | direct | `bin/jvm-resolve.sh` | undocumented |
 | `CW_KEEP_REPORTS` | direct | `mcp/server.mjs` | undocumented |
-| `CW_KEV` | indirect | `cra/lib.mjs` | undocumented |
+| `CW_KEV` | direct | `bin/release-report.mjs` | undocumented |
 | `CW_KEV_PATH` | direct | `monitor/dep-findings.mjs` | undocumented |
 | `CW_KEV_STALE_DAYS` | direct | `cra/lib.mjs` | undocumented |
 | `CW_LANES` | indirect | `bin/lane-staleness.mjs` | undocumented |
@@ -3266,6 +3277,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_REFUTATIONS` | direct | `monitor/store-paths.mjs` | undocumented |
 | `CW_REGISTRY` | direct | `bin/hermetic-test.mjs`, `monitor/history-chain.mjs`, `monitor/registry.mjs`, `monitor/store-paths.mjs` | registry, and through it the reports root (`monitor/defect-signature.mjs`) |
 | `CW_REGISTRY_REQUIRE_REAL` | indirect | `monitor/registry.mjs` | undocumented |
+| `CW_RELEASES_DIR` | direct | `bin/release-report.mjs` | undocumented |
 | `CW_RELEASES_OUT` | direct | `bin/releases-atom.mjs` | undocumented |
 | `CW_RELEASES_PATTERN` | direct | `bin/releases-atom.mjs` | undocumented |
 | `CW_RELEASES_SELF` | direct | `bin/releases-atom.mjs` | undocumented |
@@ -3277,6 +3289,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_RELEASE_REVIEWS_SCHEMA` | direct | `bin/lib/release-reviews.mjs` | undocumented |
 | `CW_RELEASE_SCRATCH` | direct | `bin/release-candidate.mjs` | the directory the tests gate makes its scratch HOME in (default ~/.cache/commitwork/release-candidate), read at call time |
 | `CW_RELEASE_SOURCE` | direct | `bin/release-candidate.mjs`, `bin/web-roadmap.mjs` | the repository --work reads commits from; default this checkout |
+| `CW_RELEASE_SOURCES` | direct | `bin/release-report.mjs` | undocumented |
 | `CW_RELEASE_TAG_PREFIX` | direct | `bin/release-tag.mjs` | the release tag prefix, default v (`bin/changelog.mjs`) |
 | `CW_RELEASE_TERMS` | direct | `bin/lib/release-terms.mjs` | a list file; overrides the sidecar |
 | `CW_REMEDIATION_INPUT` | indirect | `monitor/remediation-pr.mjs` | undocumented |

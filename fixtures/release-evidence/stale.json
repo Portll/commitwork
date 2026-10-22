@@ -1,0 +1,62 @@
+{
+  "schema": "commitwork.release-evidence/1",
+  "product": "audiencedirect-site",
+  "generated_at": "2026-10-20T20:00:00Z",
+  "source": "ad-site-deploy@0123456789ab",
+  "policy": {
+    "name": "ad-release-gate",
+    "kev": true,
+    "critical": true,
+    "high_epss_min": 0.1,
+    "runtime_only": true,
+    "keep_days": 90,
+    "keep_min": 3,
+    "verdict_max_age_hours": 48
+  },
+  "serving": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "releases": [
+    {
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "built_at": "2026-10-20T08:00:00Z",
+      "state": "serving",
+      "verdict": {
+        "checked_at": "2026-10-20T19:00:00Z",
+        "status": "clean",
+        "blocking": [],
+        "findings": [],
+        "unchecked": {
+          "jsr": 3,
+          "remote_hosts": [
+            "esm.sh"
+          ]
+        },
+        "kev_catalog": "2026.10.20"
+      },
+      "verdict_at": "2026-10-20T19:00:00Z",
+      "inventory": {
+        "npm": [
+          {
+            "name": "left-pad",
+            "version": "1.0.0",
+            "runtime": true,
+            "source": "lock"
+          }
+        ],
+        "jsr": [
+          "@std/assert"
+        ],
+        "unchecked_remote": [
+          "esm.sh"
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "at": "2026-10-20T08:30:00Z",
+      "event": "serving",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "detail": null
+    }
+  ]
+}

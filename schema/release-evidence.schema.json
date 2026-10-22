@@ -1,0 +1,446 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Release evidence",
+  "description": "The document a deploy box prints for bin/release-report.mjs: which release is serving, what it was checked against, and the event trail. Produced by ad-site-deploy; the reporter validates it and never edits it. Every timestamp is ISO 8601 with a zone.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "product",
+    "generated_at",
+    "source",
+    "policy",
+    "serving",
+    "releases",
+    "events"
+  ],
+  "properties": {
+    "schema": {
+      "const": "commitwork.release-evidence/1"
+    },
+    "product": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "description": "Names the report directory, so it is path-safe by construction."
+    },
+    "generated_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The producer, as ad-site-deploy@<sha>."
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "kev",
+        "critical",
+        "high_epss_min",
+        "runtime_only",
+        "keep_days",
+        "keep_min",
+        "verdict_max_age_hours"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kev": {
+          "type": "boolean",
+          "description": "A KEV-listed finding blocks."
+        },
+        "critical": {
+          "type": "boolean",
+          "description": "A critical finding blocks."
+        },
+        "high_epss_min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "A high finding blocks at or above this EPSS score."
+        },
+        "runtime_only": {
+          "type": "boolean",
+          "description": "Only runtime dependencies can block."
+        },
+        "keep_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "keep_min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verdict_max_age_hours": {
+          "type": "number",
+          "minimum": 0,
+          "description": "A kept release is rollback-eligible only while its clean verdict is younger than this."
+        }
+      }
+    },
+    "serving": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "releases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sha",
+          "built_at",
+          "state",
+          "verdict",
+          "verdict_at",
+          "inventory"
+        ],
+        "properties": {
+          "sha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "built_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "state": {
+            "enum": [
+              "serving",
+              "kept",
+              "failed-live"
+            ]
+          },
+          "verdict": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "checked_at",
+              "status",
+              "blocking",
+              "findings",
+              "unchecked",
+              "kev_catalog"
+            ],
+            "properties": {
+              "checked_at": {
+                "type": "string",
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+              },
+              "status": {
+                "enum": [
+                  "clean",
+                  "blocked"
+                ]
+              },
+              "blocking": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "cves",
+                    "package",
+                    "version",
+                    "runtime",
+                    "severity",
+                    "cvss",
+                    "epss",
+                    "kev",
+                    "blocking",
+                    "reason"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "The advisory id (GHSA, OSV or CVE) the finding was raised under."
+                    },
+                    "cves": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$"
+                      }
+                    },
+                    "package": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "runtime": {
+                      "type": "boolean",
+                      "description": "False for a dev-only dependency."
+                    },
+                    "severity": {
+                      "enum": [
+                        "critical",
+                        "high",
+                        "medium",
+                        "low",
+                        "unknown"
+                      ]
+                    },
+                    "cvss": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 10
+                    },
+                    "epss": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Null is unknown, never zero."
+                    },
+                    "kev": {
+                      "type": "boolean"
+                    },
+                    "blocking": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "findings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "cves",
+                    "package",
+                    "version",
+                    "runtime",
+                    "severity",
+                    "cvss",
+                    "epss",
+                    "kev",
+                    "blocking",
+                    "reason"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "The advisory id (GHSA, OSV or CVE) the finding was raised under."
+                    },
+                    "cves": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$"
+                      }
+                    },
+                    "package": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "runtime": {
+                      "type": "boolean",
+                      "description": "False for a dev-only dependency."
+                    },
+                    "severity": {
+                      "enum": [
+                        "critical",
+                        "high",
+                        "medium",
+                        "low",
+                        "unknown"
+                      ]
+                    },
+                    "cvss": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 10
+                    },
+                    "epss": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Null is unknown, never zero."
+                    },
+                    "kev": {
+                      "type": "boolean"
+                    },
+                    "blocking": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "unchecked": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "jsr",
+                  "remote_hosts"
+                ],
+                "properties": {
+                  "jsr": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "JSR packages the check cannot see."
+                  },
+                  "remote_hosts": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Remote hosts the build imports from, which no lockfile covers."
+                  }
+                }
+              },
+              "kev_catalog": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The box-side KEV catalogue version the verdict was taken against."
+              }
+            }
+          },
+          "verdict_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "inventory": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "npm",
+              "jsr",
+              "unchecked_remote"
+            ],
+            "properties": {
+              "npm": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "version",
+                    "runtime",
+                    "source"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "runtime": {
+                      "type": "boolean"
+                    },
+                    "source": {
+                      "enum": [
+                        "lock",
+                        "esm.sh"
+                      ]
+                    }
+                  }
+                }
+              },
+              "jsr": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unchecked_remote": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "at",
+          "event",
+          "sha",
+          "detail"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+          },
+          "event": {
+            "enum": [
+              "built",
+              "serving",
+              "refused",
+              "failed-live",
+              "removed",
+              "blocked"
+            ]
+          },
+          "sha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

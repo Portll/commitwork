@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-344 commands: 147 declared, 12 prose, 185 undeclared. Of the declared, 116 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 31 declare a code of 20 or above.
+345 commands: 148 declared, 12 prose, 185 undeclared. Of the declared, 117 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 31 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -714,6 +714,15 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | accepted |
 | 1 | blocked |
 | 2 | incomplete (a gate could not run, or was skipped) |
+
+### `bin/release-report.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | ok |
+| 1 | the serving release is blocked, or commitwork and the box disagree on a finding |
+| 2 | usage, unreadable or invalid input, or a failed fetch (invalid input writes nothing) |
+| 4 | evidence older than 26 h, or the KEV catalogue stale or undated (no agreement is claimed) |
 
 ### `bin/release-tag.mjs`
 

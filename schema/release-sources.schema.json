@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Release-evidence sources",
+  "description": "The private list bin/release-report.mjs --fetch reads (monitor/private/releases.json): one deploy box per entry. The box's forced command prints the release-evidence document, so no remote command is sent. A key path may start with ~/.",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["product", "ssh", "key"],
+    "properties": {
+      "$comment": { "type": "string" },
+      "product": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$", "description": "Names the stored documents and the report directory; must equal the product the box reports." },
+      "ssh": { "type": "string", "pattern": "^[A-Za-z0-9_][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za-z0-9.-]*$", "description": "user@host. Cannot start with a dash, so it cannot be read as an ssh option." },
+      "key": { "type": "string", "pattern": "^[^-]", "description": "The private key file." }
+    }
+  }
+}

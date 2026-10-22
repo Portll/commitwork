@@ -1,0 +1,100 @@
+{
+  "schema": "commitwork.release-evidence/1",
+  "product": "audiencedirect-site",
+  "generated_at": "2026-10-22T10:00:00Z",
+  "source": "ad-site-deploy@0123456789ab",
+  "policy": {
+    "name": "ad-release-gate",
+    "kev": true,
+    "critical": true,
+    "high_epss_min": 0.1,
+    "runtime_only": true,
+    "keep_days": 90,
+    "keep_min": 3,
+    "verdict_max_age_hours": 48
+  },
+  "serving": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "releases": [
+    {
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "built_at": "2026-10-21T08:00:00Z",
+      "state": "serving",
+      "verdict": {
+        "checked_at": "2026-10-22T09:00:00Z",
+        "status": "blocked",
+        "blocking": [
+          {
+            "id": "GHSA-crit-0000-0001",
+            "cves": [
+              "CVE-2099-0100"
+            ],
+            "package": "evil-lib",
+            "version": "1.0.0",
+            "runtime": true,
+            "severity": "critical",
+            "cvss": 9.8,
+            "epss": 0.5,
+            "kev": false,
+            "blocking": true,
+            "reason": "critical severity"
+          }
+        ],
+        "findings": [
+          {
+            "id": "GHSA-crit-0000-0001",
+            "cves": [
+              "CVE-2099-0100"
+            ],
+            "package": "evil-lib",
+            "version": "1.0.0",
+            "runtime": true,
+            "severity": "critical",
+            "cvss": 9.8,
+            "epss": 0.5,
+            "kev": false,
+            "blocking": true,
+            "reason": "critical severity"
+          }
+        ],
+        "unchecked": {
+          "jsr": 3,
+          "remote_hosts": [
+            "esm.sh"
+          ]
+        },
+        "kev_catalog": "2026.10.20"
+      },
+      "verdict_at": "2026-10-22T09:00:00Z",
+      "inventory": {
+        "npm": [
+          {
+            "name": "left-pad",
+            "version": "1.0.0",
+            "runtime": true,
+            "source": "lock"
+          }
+        ],
+        "jsr": [
+          "@std/assert"
+        ],
+        "unchecked_remote": [
+          "esm.sh"
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "at": "2026-10-21T08:30:00Z",
+      "event": "serving",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "detail": null
+    },
+    {
+      "at": "2026-10-22T09:00:00Z",
+      "event": "blocked",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "detail": "critical: evil-lib"
+    }
+  ]
+}

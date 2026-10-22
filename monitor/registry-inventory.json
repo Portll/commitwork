@@ -365,6 +365,13 @@
       "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
     },
     {
+      "path": "monitor/releases.example.json",
+      "kind": "store",
+      "schema": "schema/release-sources.schema.json",
+      "binding": "none",
+      "note": "Synthetic example of the private record; bin/test/schema-required.test.mjs validates it."
+    },
+    {
       "path": "monitor/pattern-baseline.json",
       "kind": "store",
       "schema": "schema/pattern-baseline.schema.json",
@@ -438,6 +445,13 @@
       "schema": "schema/owner-map.schema.json",
       "binding": "mirrored",
       "note": "Private record (monitor/store-paths.mjs), kept outside the tracked tree; the example beside it is the public shape."
+    },
+    {
+      "path": "monitor/private/releases.json",
+      "kind": "store",
+      "schema": "schema/release-sources.schema.json",
+      "binding": "validator",
+      "note": "Private record (monitor/store-paths.mjs), kept outside the tracked tree; loadSources in bin/release-report.mjs refuses an invalid list (bin/test/release-report.test.mjs). monitor/releases.example.json is the public shape."
     },
     {
       "path": "monitor/private/program-worklist.json",

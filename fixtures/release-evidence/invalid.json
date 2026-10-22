@@ -1,0 +1,43 @@
+{
+  "schema": "commitwork.release-evidence/2",
+  "product": "audiencedirect-site",
+  "generated_at": "2026-10-22T10:00:00Z",
+  "source": "ad-site-deploy@0123456789ab",
+  "policy": {
+    "name": "ad-release-gate",
+    "kev": true,
+    "critical": true,
+    "high_epss_min": 0.1,
+    "runtime_only": true,
+    "keep_days": 90,
+    "keep_min": 3,
+    "verdict_max_age_hours": 48
+  },
+  "serving": "nothex",
+  "releases": [
+    {
+      "sha": "zz",
+      "built_at": null,
+      "state": "kept",
+      "verdict": null,
+      "verdict_at": null,
+      "inventory": {
+        "npm": [
+          {
+            "name": "left-pad",
+            "version": "1.0.0",
+            "runtime": true,
+            "source": "lock"
+          }
+        ],
+        "jsr": [
+          "@std/assert"
+        ],
+        "unchecked_remote": [
+          "esm.sh"
+        ]
+      }
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "$comment": "SYNTHETIC EXAMPLE of the release-evidence sources. The operator's list is a private record at monitor/private/releases.json (CW_RELEASE_SOURCES overrides; absent means bin/release-report.mjs --fetch has nothing to fetch). One entry per deploy box: `product` names the stored documents and the report directory and must equal the product the box reports; `ssh` is user@host; `key` is the private key file. The host's forced command prints the release-evidence document (schema/release-evidence.schema.json), so no remote command is sent.",
+    "product": "example-site",
+    "ssh": "evidence@deploy.example.com",
+    "key": "~/.ssh/example-site-evidence"
+  }
+]
