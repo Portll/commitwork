@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://commitwork.local/schema/manifest-map.schema.json",
+  "$id": "https://commitwork.local/schema/security-baseline.map.schema.json",
   "title": "manifest map",
   "description": "The generated index of a check manifest, written by bin/manifest-map.mjs. `line` is the whole point of the file — a reader jumps to a check instead of scanning 257K — so it is required on every entry and nullable only where the id string could not be located literally in the raw text.",
   "type": "object",
