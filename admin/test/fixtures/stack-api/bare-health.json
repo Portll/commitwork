@@ -1,0 +1,49 @@
+{
+  "ok": true,
+  "route": "/v1/health",
+  "schemaVersion": 1,
+  "stamp": {
+    "verifiedAt": "2026-10-22T11:06:12.000Z",
+    "verifiedAtUnix": 1792667172,
+    "generator": "commitwork-runner · runner/api-routes.mjs",
+    "durationMs": 0
+  },
+  "sources": [
+    {
+      "id": "dispatcher",
+      "status": "live",
+      "reason": null
+    },
+    {
+      "id": "meter",
+      "status": "unavailable",
+      "reason": "no meter configured"
+    },
+    {
+      "id": "ledger",
+      "status": "unavailable",
+      "reason": "no ledger configured"
+    },
+    {
+      "id": "veld",
+      "status": "unmeasured",
+      "reason": "no URL configured"
+    },
+    {
+      "id": "spine",
+      "status": "unmeasured",
+      "reason": "no URL configured"
+    }
+  ],
+  "coverage": {
+    "requested": 5,
+    "measured": 1,
+    "unknownFields": 0
+  },
+  "data": {
+    "uptimeSec": 0,
+    "sourcesUp": 1,
+    "sourcesUnmeasured": 2,
+    "sourcesDown": 2
+  }
+}

@@ -90,9 +90,29 @@ describe('commitwork brief --webroot', () => {
     assert.match(withIt.stdout, /not measured: WordPress wp-content only/);
   });
 
-  test('--webroot needs one named directory', () => {
-    const r = cli(['brief', '--webroot', '--dry-run']);
+  // An absolute path that does not exist, so scanOutDir refuses: the shape of a public checkout,
+  // which holds none of the private records. Named rather than left to the ambient sidecar — with
+  // one present these two cases would both pass for the wrong reason.
+  const noStore = () => {
+    const base = mkdtempSync(join(tmpdir(), 'cw-webroot-nostore-'));
+    roots.push(base);
+    return { CW_SIDECAR: join(base, 'absent-sidecar'), CW_SCAN_PATH_OUT: '' };
+  };
+
+  test('--webroot needs one named directory, said with no private store to resolve', () => {
+    const r = cli(['brief', '--webroot', '--dry-run'], noStore());
     assert.notEqual(r.status, 0);
     assert.match(r.stderr + r.stdout, /scans one named directory/);
+    assert.doesNotMatch(r.stderr + r.stdout, /refusing to start a scan/,
+      'a wrong flag is answered before the output store is resolved, or a public checkout can never be told');
+  });
+
+  // The other direction, which the case above cannot show: moving the flag check ahead of the store
+  // must not have dropped the store's refusal for a call whose arguments are usable.
+  test('a named directory with no private store is still refused for the store', () => {
+    const root = tree({ 'wp-includes/version.php': "<?php\n$wp_version = '6.9.0';\n" });
+    const r = cli(['brief', root, '--webroot', '--dry-run'], noStore());
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr + r.stdout, /refusing to start a scan/);
   });
 });

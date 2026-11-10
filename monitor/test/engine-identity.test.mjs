@@ -81,13 +81,32 @@ describe('probeEndpoint', () => {
 });
 
 describe('endpointsFor', () => {
-  test('manifest hosts plus overwatch; lmstudio expects its app as owner; shared ports are marked', () => {
-    const eps = endpointsFor();
-    assert.ok(eps.some((e) => e.id === 'overwatch' && e.baseUrl.includes('7980')));
+  test('manifest hosts plus the agent-task ledger; lmstudio expects its app as owner; shared ports are marked', () => {
+    const eps = endpointsFor(undefined, {});
+    assert.ok(eps.some((e) => e.id === 'agent-ledger' && e.baseUrl.includes('7980')));
     const lm = eps.find((e) => e.id === 'lmstudio');
     assert.equal(lm.ownerMatch, 'LM Studio');
     assert.equal(lm.portIsShared, false);
     assert.ok(eps.filter((e) => e.portIsShared).length >= 1, 'the 8080 group exists and is marked shared');
+  });
+
+  // The expected owner of the consumed ledger is a private process name, so the tree carries no
+  // default for it. Both directions, because only one of them lies quietly: undeclared must not
+  // become a verdict, and a declared value must actually reach the comparison.
+  test('the ledger endpoint carries no owner expectation unless the env declares one', () => {
+    const bare = endpointsFor(undefined, {}).find((e) => e.id === 'agent-ledger');
+    assert.equal(bare.ownerMatch, null, 'an owner name is baked into the tree');
+    assert.notEqual(bare.ownerMatch, '', 'an empty ownerMatch makes String.includes() true for every process alive');
+    const declared = endpointsFor(undefined, { CW_AGENT_LEDGER_OWNER: 'some-supervisor', CW_AGENT_LEDGER_URL: 'http://127.0.0.1:9999' })
+      .find((e) => e.id === 'agent-ledger');
+    assert.equal(declared.ownerMatch, 'some-supervisor');
+    assert.equal(declared.baseUrl, 'http://127.0.0.1:9999');
+  });
+
+  test('no endpoint id names a tool outside this product', () => {
+    for (const e of endpointsFor(undefined, {})) {
+      assert.doesNotMatch(e.id, /overwatch/i, `endpoint id '${e.id}' names a private tool`);
+    }
   });
 });
 
@@ -130,6 +149,45 @@ describe('the spoof scenario, end to end', () => {
       const r = assessIdentities(observed, { at: 't0', endpoints: { lmstudio: { fingerprint: 'the-real-one', owner: ['LM Studio Helper'] } } });
       assert.equal(r.rows.find((x) => x.id === 'lmstudio').state, 'owner-changed');
       assert.equal(r.state, 'findings');
+    })();
+  });
+
+  // The failure this guards is a FABRICATED verdict, in both signs, from the same hole. With no
+  // declared owner the old code reached String(text).includes(undefined): false for the right
+  // process, so an OWNER MISMATCH finding against a correctly-running service — and had the value
+  // been '' instead, true for every process alive, so a pass that measured nothing. Undecided is
+  // the only answer an undeclared expectation earns, and it is reported as its own field rather
+  // than borrowing the shared-port reason, which is undecided for an unrelated cause.
+  test('an undeclared owner is undecided, never a mismatch and never a pass', async () => {
+    const dir = scratch();
+    const lst = join(dir, 'listeners.json');
+    writeFileSync(lst, JSON.stringify([{ pid: 11, command: 'node', args: 'node server/serve.mjs', addr: '127.0.0.1', port: 7980 }]));
+    await env({ CW_BIND_LISTENERS: lst, CW_AGENT_LEDGER_OWNER: '' }, async () => {
+      const observed = await observeEndpoints({
+        fetchImpl: async (url) => (String(url).includes('7980') ? engineFetch([])(url) : (() => { const e = new Error('x'); e.cause = { code: 'ECONNREFUSED' }; throw e; })()),
+      });
+      const row = observed.find((o) => o.id === 'agent-ledger');
+      assert.ok(row && !row.absent, 'the ledger endpoint answered');
+      assert.equal(row.ownerOk, null, 'an undeclared owner produced an owner verdict');
+      assert.equal(row.ownerUndeclared, true, 'the reason the owner axis is undecided is not reported');
+      assert.notEqual(row.portIsShared, true, 'the undecided reason must not be borrowed from the shared-port case');
+      const r = assessIdentities(observed, { at: 't0', endpoints: {} });
+      assert.notEqual(r.rows.find((x) => x.id === 'agent-ledger').state, 'owner-changed',
+        'an undeclared owner expectation produced a spoof finding');
+    })();
+  });
+
+  test('a declared owner still reaches the comparison and can mismatch', async () => {
+    const dir = scratch();
+    const lst = join(dir, 'listeners.json');
+    writeFileSync(lst, JSON.stringify([{ pid: 12, command: 'node', args: 'node somethingelse.mjs', addr: '127.0.0.1', port: 7980 }]));
+    await env({ CW_BIND_LISTENERS: lst, CW_AGENT_LEDGER_OWNER: 'expected-supervisor' }, async () => {
+      const observed = await observeEndpoints({
+        fetchImpl: async (url) => (String(url).includes('7980') ? engineFetch([])(url) : (() => { const e = new Error('x'); e.cause = { code: 'ECONNREFUSED' }; throw e; })()),
+      });
+      const row = observed.find((o) => o.id === 'agent-ledger');
+      assert.equal(row.ownerOk, false, 'a declared owner name never reached the comparison');
+      assert.equal(row.ownerUndeclared, undefined, 'a declared expectation was reported as undeclared');
     })();
   });
 

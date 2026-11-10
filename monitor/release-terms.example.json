@@ -1,21 +1,64 @@
 {
   "$schema": "../schema/release-terms.schema.json",
-  "$comment": "The shape of the private denied-term list that bin/lib/release-terms.mjs reads from the sidecar (monitor/release-terms.json) or from CW_RELEASE_TERMS. The real list names private things; every term here is synthetic.",
+  "$comment": "The shape of the private denied-term list that bin/lib/release-terms.mjs reads from the sidecar (monitor/release-terms.json) or from CW_RELEASE_TERMS. The list is a detector derived from the publication boundary's ownership table: every term declares the key its reports are labelled by, why it is denied and the test a reader applies to a hit; a term whose pattern is too wide is narrowed by an exception naming one exact path and the count measured there, rather than dropped; and a term withdrawn keeps the measurement that withdrew it. The real list names private things; every term here is synthetic.",
   "rules": [
     {
       "id": "internal-tool",
       "why": "a tool that is not part of the product",
-      "words": ["example-internal-tool", "example-sibling-service"]
+      "words": [
+        {
+          "key": "workflow-dependency",
+          "word": "example-internal-tool",
+          "why": "the tool is a dependency of the maintainer's workflow, not a feature of the product",
+          "test": "does the text name the tool, or the capability and its contract? a capability survives publication under its own name"
+        },
+        {
+          "key": "sibling-service",
+          "word": "example-sibling-service",
+          "why": "a service of the maintainer's that this product calls over a CW_* configured address",
+          "test": "replace the name with the interface it implements; if the sentence still says what the code does, the name was disclosure",
+          "exceptPaths": [{ "path": "docs/example-interface.md", "count": 1 }],
+          "measured": "2026-01-01: 2 hits in docs/example-interface.md, 1 of them the declared heading where the name is the subject of a reviewed public description. The count withdraws that one; a second occurrence in the same file is reported, so the exception is an allowance and not a blind file."
+        }
+      ]
     },
     {
       "id": "customer-pseudonym",
       "why": "a pseudonym that stands in for a customer",
-      "patterns": ["\\bexample-customer-[a-z]\\b"]
+      "patterns": [
+        {
+          "key": "roster-letter",
+          "pattern": "\\bexample-customer-[a-z]\\b",
+          "why": "the pseudonym indexes the reversal table the sidecar holds, so publishing it publishes half the mapping",
+          "test": "is the letter drawn from the engagement roster? a synthetic fixture uses example-customer-x or -y, which this pattern does not match"
+        }
+      ]
     },
     {
       "id": "maintainer-history",
       "why": "a ruling or an incident from the maintainer's own history",
-      "patterns": ["\\bexample-ruling\\b", "\\bexample-incident 20\\d\\d-\\d\\d-\\d\\d\\b"],
+      "patterns": [
+        {
+          "key": "ruling",
+          "pattern": "\\bexample-ruling\\b",
+          "why": "a ruling is a record of the maintainer deciding, which no reader of the public tree can check",
+          "test": "can a reader of the public tree verify the claim from the public tree? a ruling is verifiable only against the private register"
+        },
+        {
+          "key": "dated-incident",
+          "pattern": "\\bexample-incident 20\\d\\d-\\d\\d-\\d\\d\\b",
+          "why": "a dated incident is an operational record of the maintainer's own fleet",
+          "test": "is the date attached to something that happened on the maintainer's machines, or to a published contract a consumer depends on?"
+        }
+      ],
+      "removed": [
+        {
+          "kind": "word",
+          "term": "example-third-party-model",
+          "why": "a publicly released third-party model family, in the same category as four other model names the list does not deny",
+          "measured": "2026-01-01: 12 of 12 hits were a model identifier passed through CW_LLM_MODEL; the tree carries four further undenied model names, so the rule fired on one member of a category"
+        }
+      ],
       "exceptPaths": ["docs/CHANGELOG.md"]
     }
   ]

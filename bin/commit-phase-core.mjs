@@ -360,6 +360,45 @@ export function worktreeAction({ worktree, before, after, taken } = {}) {
   return 'merge';
 }
 
+/**
+ * One landed path in ANOTHER checkout that has the moved ref checked out. Each state is
+ * `<mode>:<blob>`, or null for absent; `before`/`after` are the parent's and the commit's.
+ * 'current' (index and file already the commit's), 'fast-forward' (each of them is the parent's
+ * or the commit's, so writing the commit's loses nothing) or 'left' (anything else is a peer's).
+ */
+export function followAction({ index = null, worktree = null, before = null, after = null } = {}) {
+  if (index === after && worktree === after) return 'current';
+  const known = (s) => s === before || s === after;
+  return known(index) && known(worktree) ? 'fast-forward' : 'left';
+}
+
+/** Paths of the non-bare checkouts in `git worktree list --porcelain` output that have `ref` checked out. */
+export function checkoutsOf(porcelain, ref) {
+  return String(porcelain ?? '').split(/\n\s*\n/).map((block) => {
+    const lines = block.split('\n');
+    const field = (k) => lines.find((l) => l === k || l.startsWith(`${k} `));
+    return { path: field('worktree')?.slice('worktree '.length), branch: field('branch')?.slice('branch '.length), bare: Boolean(field('bare')) };
+  }).filter((w) => w.path && !w.bare && w.branch === ref).map((w) => w.path);
+}
+
+/**
+ * `git diff-tree -r -z --no-renames` output as [{ path, before, after }], each state `<mode>:<blob>`
+ * or null for absent. Null when an entry does not parse: a misread pairing would name wrong paths.
+ */
+export function parseDiffTree(z) {
+  const parts = String(z ?? '').split('\0');
+  if (parts.at(-1) === '') parts.pop();
+  if (parts.length % 2) return null;
+  const state = (mode, blob) => (/^0+$/.test(blob) ? null : `${mode}:${blob}`);
+  const out = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const m = /^:(\d{6}) (\d{6}) ([0-9a-f]{40}) ([0-9a-f]{40}) [A-Z]$/.exec(parts[i]);
+    if (!m || !parts[i + 1]) return null;
+    out.push({ path: parts[i + 1], before: state(m[1], m[3]), after: state(m[2], m[4]) });
+  }
+  return out;
+}
+
 // ── spine file claims: who else is editing what this commit carries ─────────────────────────────
 
 /** Paths in `git status --porcelain=v1 -z` output. A rename or copy names both sides; both are dirty. */

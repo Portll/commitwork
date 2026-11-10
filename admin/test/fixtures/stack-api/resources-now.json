@@ -1,0 +1,91 @@
+{
+  "ok": true,
+  "route": "/v1/resources/now",
+  "schemaVersion": 1,
+  "stamp": {
+    "verifiedAt": "2026-10-22T09:03:49.000Z",
+    "verifiedAtUnix": 1792659829,
+    "generator": "commitwork-runner · runner/api-routes.mjs",
+    "durationMs": 1
+  },
+  "sources": [
+    {
+      "id": "meter",
+      "status": "live",
+      "reason": null
+    },
+    {
+      "id": "stack-ids",
+      "status": "live",
+      "reason": null
+    }
+  ],
+  "coverage": {
+    "requested": 4,
+    "measured": 3,
+    "unknownFields": 1
+  },
+  "data": {
+    "sample": {
+      "at": "2026-10-22T09:03:49.700Z",
+      "ids": {
+        "status": "live",
+        "reason": null,
+        "rejected": []
+      },
+      "vm": {
+        "layer": "vm",
+        "state": "measured",
+        "cpuPct": 25,
+        "cpus": 2,
+        "memTotal": 26624000000,
+        "memAvailable": 20480000000,
+        "swapTotal": 1073737728,
+        "swapFree": 1073737728,
+        "load1": 1.5,
+        "load5": 0.75,
+        "load15": 0.25
+      },
+      "containers": {
+        "slot-1": {
+          "layer": "container",
+          "id": "aaaaaaaaaaaa",
+          "state": "running",
+          "cpuPct": 98.5,
+          "cpuSec": 6.97,
+          "memCurrent": 209715200,
+          "memPeak": 220200960,
+          "memMax": 6442450944,
+          "cpuQuota": 4,
+          "pids": 12,
+          "io": {
+            "rbytes": 1052672,
+            "wbytes": 2097152
+          }
+        },
+        "slot-2": {
+          "layer": "container",
+          "id": "bbbbbbbbbbbb",
+          "state": "running",
+          "cpuPct": 0,
+          "cpuSec": 0.0001,
+          "memCurrent": 1048576,
+          "memPeak": null,
+          "memMax": "max",
+          "cpuQuota": "max",
+          "pids": 1,
+          "io": {
+            "rbytes": 0,
+            "wbytes": 0
+          }
+        },
+        "egress": {
+          "layer": "container",
+          "id": "cccccccccccc",
+          "state": "unmeasured",
+          "reason": "no cgroup: the container is stopped or not started"
+        }
+      }
+    }
+  }
+}

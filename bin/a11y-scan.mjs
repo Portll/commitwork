@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { scannedGit } from './lib/git-env.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 
 const ROOT = resolve(process.argv[2] || process.cwd());
@@ -129,7 +129,7 @@ export function htmlFiles(dir) {
 export function withoutGitIgnored(dir, files) {
   if (!files.length) return files;
   const rel = files.map((f) => relative(dir, f).split('\\').join('/'));
-  const r = spawnSync('git', ['-C', dir, 'check-ignore', '--stdin'], { input: rel.join('\n') + '\n', encoding: 'utf8' });
+  const r = scannedGit(dir, ['check-ignore', '--stdin'], { input: rel.join('\n') + '\n' });
   if (r.status !== 0) return files;
   const ignored = new Set(r.stdout.split(/\r?\n/).filter(Boolean));
   return files.filter((_, i) => !ignored.has(rel[i]));

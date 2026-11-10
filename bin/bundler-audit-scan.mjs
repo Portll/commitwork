@@ -26,6 +26,7 @@ import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync, readdirSy
 import { execFileSync } from 'node:child_process';
 import { join, relative, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
+import { classifyWorktreePath } from '../monitor/worktree-paths.mjs';
 
 const [repoDir, outJson] = process.argv.slice(2);
 if (!repoDir || !outJson) { console.error('usage: bundler-audit-scan.mjs <repoDir> <outJson>'); process.exit(2); }
@@ -44,7 +45,12 @@ function findLockfiles(root, maxDepth = 6, cap = 25) {
     let entries; try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       if (found.length >= cap) return;
-      if (e.isDirectory()) { if (!SKIP.has(e.name)) walk(join(dir, e.name), depth + 1); }
+      if (e.isDirectory()) {
+        // a nested checkout's Gemfile.lock is this repository's again (monitor/worktree-paths.mjs)
+        const rel = relative(root, join(dir, e.name));
+        if (SKIP.has(e.name) || (classifyWorktreePath(`${rel}/x/y`).worktree && rel.split(/[\\/]/).length >= 2)) continue;
+        walk(join(dir, e.name), depth + 1);
+      }
       else if (e.name === 'Gemfile.lock') {
         const p = join(dir, e.name);
         if (!found.includes(p)) found.push(p);

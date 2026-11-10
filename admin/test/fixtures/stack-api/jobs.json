@@ -1,0 +1,76 @@
+{
+  "ok": true,
+  "route": "/v1/runner/jobs",
+  "schemaVersion": 1,
+  "stamp": {
+    "verifiedAt": "2026-10-22T11:06:12.000Z",
+    "verifiedAtUnix": 1792667172,
+    "generator": "commitwork-runner · runner/api-routes.mjs",
+    "durationMs": 0
+  },
+  "sources": [
+    {
+      "id": "ledger",
+      "status": "live",
+      "reason": null
+    }
+  ],
+  "coverage": {
+    "requested": 1,
+    "measured": 1,
+    "unknownFields": 0
+  },
+  "data": {
+    "since": null,
+    "jobs": [
+      {
+        "id": 2,
+        "at": "2026-10-22T09:03:47.700Z",
+        "runnerName": "cw-slot-1-1030-1792659702",
+        "repo": "example-owner/example-private",
+        "runId": 103,
+        "jobId": 1030,
+        "slotId": null,
+        "exitCode": 1,
+        "signal": null,
+        "wallSec": 125.2,
+        "cpuSec": 0.0001,
+        "memPeakBytes": null,
+        "io": {
+          "rbytes": 0,
+          "wbytes": 0
+        },
+        "leftovers": {
+          "killed": 0,
+          "left": 0
+        },
+        "mintedAt": "2026-10-22T09:01:42.500Z",
+        "claimedAt": null
+      },
+      {
+        "id": 1,
+        "at": "2026-10-22T09:00:42.500Z",
+        "runnerName": "cw-slot-1-1010-1792659600",
+        "repo": "example-owner/example-private",
+        "runId": 101,
+        "jobId": 1010,
+        "slotId": null,
+        "exitCode": 0,
+        "signal": null,
+        "wallSec": 42.5,
+        "cpuSec": 5,
+        "memPeakBytes": 220200960,
+        "io": {
+          "rbytes": 1052672,
+          "wbytes": 2097152
+        },
+        "leftovers": {
+          "killed": 0,
+          "left": 0
+        },
+        "mintedAt": "2026-10-22T09:00:00.000Z",
+        "claimedAt": null
+      }
+    ]
+  }
+}

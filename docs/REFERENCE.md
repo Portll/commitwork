@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 332 | 270 | 62 |
-| Exit codes (declared in the header) | 345 | 148 | 197 |
-| `CW_*` environment variables (described in an `env` header) | 878 | 191 | 687 |
+| Commands (a usage line in the header) | 339 | 277 | 62 |
+| Exit codes (declared in the header) | 352 | 155 | 197 |
+| `CW_*` environment variables (described in an `env` header) | 927 | 222 | 705 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -72,7 +72,7 @@ Exit codes:
 - `commitwork run`: undeclared
 - `commitwork scan`: undeclared
 - `commitwork brief`: undeclared
-- `commitwork deps`: 0 done (audit printed, gate clear, proposal made or merged, nothing to do) · 2 usage error · 21 --audit-gate: a shipped advisory at the level has an available fix · 22 not measured (no npm lockfile, npm could not run, or an advisory's fix is undetermined) · 23 the update was refused or failed, or the history could not be read · 24 proposed, but --merge was refused (declared in `bin/deps.mjs`)
+- `commitwork deps`: 0 done (audit printed, gate clear, proposal made or merged, nothing to do) · 2 usage error · 21 --audit-gate: a shipped advisory at the level has an available fix; --introduced: the update introduces an advisory at a blocking severity · 22 not measured (no npm lockfile, npm could not run, an advisory's fix is undetermined, or an --introduced graph or lookup was not measured) · 23 the update was refused or failed, or the history could not be read · 24 proposed, but --merge was refused (declared in `bin/deps.mjs`)
 - `commitwork sarif`: undeclared
 - `commitwork reindex`: undeclared
 - `commitwork doctor`: undeclared
@@ -540,7 +540,7 @@ deploy.mjs — per-area DEPLOYMENT DECLARATION → cloudflared ingress FRAGMENT.
 bin/deps.mjs — `commitwork deps`: npm package version auditing, dependency-update proposals, opt-in merges, and the update-lifecycle history.
 
 - Usage: `commitwork deps [dir] [--json] [--audit-gate [level]] [--update [--tui] [--merge] [--dry-run]] [--history [--out <file>]]`
-- Exit: 0 done (audit printed, gate clear, proposal made or merged, nothing to do) · 2 usage error · 21 --audit-gate: a shipped advisory at the level has an available fix · 22 not measured (no npm lockfile, npm could not run, or an advisory's fix is undetermined) · 23 the update was refused or failed, or the history could not be read · 24 proposed, but --merge was refused
+- Exit: 0 done (audit printed, gate clear, proposal made or merged, nothing to do) · 2 usage error · 21 --audit-gate: a shipped advisory at the level has an available fix; --introduced: the update introduces an advisory at a blocking severity · 22 not measured (no npm lockfile, npm could not run, an advisory's fix is undetermined, or an --introduced graph or lookup was not measured) · 23 the update was refused or failed, or the history could not be read · 24 proposed, but --merge was refused
 
 ### `bin/detection-falsifier.mjs`
 
@@ -579,6 +579,18 @@ bin/digest.mjs — one periodic summary over a window: severity crossings, ratch
 - Option: `--json print the JSON document instead of markdown`
 - Option: `--write also write reports/digest/digest-<end>.{json,md} and record returns, each atomically`
 - Exit: 0 every section measured · 2 usage · 20 at least one section not measured (still printed) · 21 --write: a returned warning could not be recorded in the register (the digest is still written).
+
+### `bin/disclosure-review.mjs`
+
+bin/disclosure-review.mjs — run a judge over a set of findings and emit a triaged, priority-ordered review plus a disclosure-draft stub per CONFIRMED finding.
+
+- Usage: `node bin/disclosure-review.mjs --findings findings.json --backend claude --out <dir> --lens`
+- Option: `--findings <file> JSON array of { repo,file,rule,cwe,severity,urgency,size,description,snippet,evidence }`
+- Option: `--backend claude (default) | model (model → lib/model-provider.mjs, CW_MODEL_PROVIDER)`
+- Option: `--lens also run a free-form analysis pass per finding (chain / what-fails-next)`
+- Option: `--concurrency N parallel judge calls (default 2; claude -p is heavy)`
+- Option: `--out <dir> output dir (default $CW_DISCLOSURE_OUT or ./reports/disclosure-<stamp>)`
+- Exit: 0 always on a completed run · 1 on bad input.
 
 ### `bin/disregard.mjs`
 
@@ -936,6 +948,15 @@ joern-lane — run joern-scan once per language its query bundle has queries for
 - Usage: `joern-lane.mjs <src> <reportDir> <excludeRegex>`
 - Exit: 0 all scanned · 1 any failed · 3 nothing in a covered language · 2 usage · 127 no readable joern-scan launcher.
 
+### `bin/judge.mjs`
+
+bin/judge.mjs — the judge call, runnable on its own.
+
+- Usage: `node bin/judge.mjs --finding finding.json --mode analysis --question "what chains to this?"`
+- Option: `--backend claude (default) | model model routes via lib/model-provider.mjs (CW_MODEL_PROVIDER).`
+- Option: `--mode verdict (default) | analysis verdict parses VERDICT/CONFIDENCE; analysis returns prose.`
+- Exit: 0 a reply was produced (even `undetermined`) · 1 bad input · 2 the backend errored.
+
 ### `bin/lane-fixture.mjs`
 
 bin/lane-fixture.mjs — turn a seed project into a lane-capability golden fixture, or refuse.
@@ -1168,6 +1189,14 @@ platform-support — record what a CI job's test run measured on one platform, a
 - Option: `--check: every doc must state each record as`
 - Exit: 0 written, or the docs quote the record under --check · 20 --check: a doc's statement differs from the record, or a doc states none · 21 a log, run, record or doc could not be read or parsed · 22 usage · 23 nothing measured: a job's log has no test totals, the job did not complete, no job matched, or --check found no record
 
+### `bin/pm-handoff.mjs`
+
+bin/pm-handoff.mjs — regenerate a COMPACT, reload-ready handoff from a disclosure review, for the interactive project-management session that drives the orchestrator and clears its context on a token ceiling.
+
+- Usage: `node bin/pm-handoff.mjs --review <review.json> [--top N] [--notes <file>] [--out <file>]`
+- Option: `--top N how many confirmed items to spell out (default 12); the rest are summarised as a count.`
+- Exit: 0 on success · 1 on bad input.
+
 ### `bin/pre-publish.mjs`
 
 bin/pre-publish.mjs — the one command to run before anything leaves this repository.
@@ -1302,12 +1331,20 @@ bin/release-terms.mjs — count the denied terms in a tree, the same check the r
 - Option: `--root <dir> scan a directory as it is`
 - Option: `--json print the summary as JSON`
 - Option: `--show-paths print paths unmasked; the default masks every denied term in a path`
-- Exit: 0 no denied term · 20 denied terms found · 21 cannot check (no list, an unreadable list, or no text file examined) · 22 usage
+- Exit: 0 no denied term · 20 denied terms found · 21 cannot check (no list, an unreadable list, no text file examined, or a clean count that an exception produced) · 22 usage
 
 ### `bin/releases-atom.mjs`
 
 - Usage: `releases-atom.mjs [--out <path>] [--pattern <glob>] [--limit <n>] [--self <url>] [--json]`
 - Exit: 0 wrote a feed (including a feed with no releases) · 2 could not read the tags (fail closed)
+
+### `bin/remediation-draft-pr.mjs`
+
+bin/remediation-draft-pr.mjs — open draft remediation pull requests for the advisories a remediation plan proposes (monitor/remediation-draft-pr.mjs), or record what became of the ones already open.
+
+- Usage: `node bin/remediation-draft-pr.mjs <advisories.json> [--open]`
+- Usage: `node bin/remediation-draft-pr.mjs --reconcile`
+- Exit: 0 ran · 2 usage, or the input could not be read · 3 the policy or the issue store could not be read, or a run threw
 
 ### `bin/remediation-web.mjs`
 
@@ -1429,6 +1466,13 @@ semgrep-pro-delta — the NEGATIVE delta: unsuppressed findings the OSS engine r
 
 - Usage: undocumented
 - Exit: undeclared
+
+### `bin/semgrep-retry.mjs`
+
+bin/semgrep-retry.mjs — re-run Semgrep on the files the main scan timed out on.
+
+- Usage: `node bin/semgrep-retry.mjs <lane-sarif> [--bin semgrep] [--log <file>] -- <config args…>`
+- Exit: 0 every handled state (the receipt carries the retry's outcome; the lane's exit sidecar was written before this step) · 2 usage
 
 ### `bin/session-roster.mjs`
 
@@ -1764,6 +1808,13 @@ source variables of bin/lib/wp-source.mjs: CW_WPVULN_URL, CW_WP_API_URL, CW_WP_C
 - Usage: `wp-integrity.mjs [rootDir] (default '.')`
 - Exit: 0 ran · 2 could not run
 
+### `bin/wp-posture.mjs`
+
+(catalogue path, default manifests/wp-weakness-catalogue.json), CW_WP_SKIP_DIRS (comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is listed)…
+
+- Usage: `wp-posture.mjs [rootDir] [--db <dump.sql|.gz>] [--no-db] [--catalogue <file>] (default '.')`
+- Exit: 0 ran · 2 could not run
+
 ### `bin/yara-rules.mjs`
 
 CW_TOOLS_ROOT (default ~/.commitwork/tools), CW_YARA_RULES_URL_BASE (replaces https://raw.githubusercontent.com; a file:// base reads a local mirror, which is how tests run offline)
@@ -2018,7 +2069,7 @@ monitor/egress-suggest.mjs — turn the destinations lanes dial into a SUGGESTED
 
 ### `monitor/engine-identity.mjs`
 
-monitor/engine-identity.mjs — item 4: the engines commitwork CONSUMES (local LLM hosts via manifests/llm-hosts.json, overwatch-layer's SPINE) feed the reducer verdicts and the panel state.
+monitor/engine-identity.mjs — item 4: the engines commitwork CONSUMES (local LLM hosts via manifests/llm-hosts.json, an external agent-task ledger) feed the reducer verdicts and the panel state.
 
 - Usage: `node monitor/engine-identity.mjs [--json] diff vs baseline; exit 0 ok, 1 findings, 2 grey`
 - Usage: `node monitor/engine-identity.mjs --accept pin the currently observed identities`
@@ -2342,6 +2393,13 @@ commitwork monitor — roll a scan batch up into rollup.json + a CVE-aware dashb
 - Usage: `node monitor/rollup.mjs [reportsDir] (default: the latest reports/sweep-* batch)`
 - Exit: 2 empty batch (sweep.mjs continues) · 3 another rollup holds the lock · 5 no sweep-* batch to roll. (4 is reserved for the cross-area write refusal.)
 
+### `monitor/rule-titles.mjs`
+
+monitor/rule-titles.mjs — the rule titles ShellCheck and hadolint publish, for lanes whose artifact names a rule but never describes it.
+
+- Usage: `node monitor/rule-titles.mjs <shellcheck-sitemap.html> <hadolint-README.md> [--retrieved YYYY-MM-DD]`
+- Exit: 0 written · 2 wrong arguments, an unreadable document, or a document with no rules in it
+
 ### `monitor/runtime-report.mjs`
 
 commitwork — runtime (DAST / BOLA) report.
@@ -2649,8 +2707,8 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-878 `CW_*` names read by tracked non-test sources: 760 by name, and
-118 indirect (quoted in a file that reads the environment by a computed key, so the read
+927 `CW_*` names read by tracked non-test sources: 803 by name, and
+124 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
 
@@ -2686,6 +2744,8 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_AGENT_DIR` | direct | `admin/routes/rollups.mjs` | undocumented |
 | `CW_AGENT_INSTR_MAX_BYTES` | direct | `bin/agent-instructions.mjs`, `monitor/agent-instructions-harden.mjs` | undocumented |
 | `CW_AGENT_INSTR_ROOT` | direct | `bin/agent-instructions.mjs` | undocumented |
+| `CW_AGENT_LEDGER_OWNER` | direct | `monitor/engine-identity.mjs` | its expected socket owner, per install; see extraEndpoints for why it is not in the tree |
+| `CW_AGENT_LEDGER_URL` | direct | `monitor/engine-identity.mjs` | the consumed agent-task ledger's address |
 | `CW_AGENT_MODEL` | direct | `bin/agent-tag.mjs`, `bin/issue-loop.mjs` | undocumented |
 | `CW_AGENT_PERMISSION_PROBE` | direct | `bin/agent-config.mjs` | an operator switch that runs the host-sandbox probes; laneEnv never passes it to a lane |
 | `CW_AGENT_RUNS_MAX_BYTES` | direct | `monitor/agent-run-judge.mjs` | default 256 MiB |
@@ -2739,6 +2799,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_BEARER` | indirect | `bin/bola-run.mjs` | undocumented |
 | `CW_BEARER_A` | direct | `bin/authz-bola.mjs` | undocumented |
 | `CW_BEARER_B` | direct | `bin/authz-bola.mjs` | undocumented |
+| `CW_BETTERLEAKS_ASSESSMENT` | indirect | `monitor/store-paths.mjs` | the Betterleaks assessment `bank` gives betterleaks-* jobs as context, default monitor/private/betterleaks-assessment.md; absent, they bank without it (`bin/security-work-queue.mjs`) |
 | `CW_BH_PHASE_TIMEOUT` | direct | `bin/build-health.mjs` | undocumented |
 | `CW_BIND_DECLARATIONS` | direct | `monitor/port-bind.mjs` | undocumented |
 | `CW_BIND_LISTENERS` | direct | `monitor/port-bind.mjs` | JSON fixture of collected listeners — tests run entirely on fixtures |
@@ -2779,11 +2840,12 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_CITE_DIR` | indirect | `bin/cite-reach.mjs` | documents, default evaluations |
 | `CW_CITE_MAIN` | indirect | `bin/cite-reach.mjs` | ref rewritten commits are looked up on, default main |
 | `CW_CITE_REPO` | indirect | `bin/cite-reach.mjs` | git repo, default cwd |
+| `CW_CLAIM_PORT` | direct | `runner/main.mjs` | 7090 |
 | `CW_CLAIM_STALE_MS` | direct | `bin/lib/declared-claims.mjs` | undocumented |
 | `CW_CLAUDE_BIN` | direct | `bin/daily-run.mjs` | undocumented |
 | `CW_CLAUDE_COMMANDS` | direct | `admin/lib/spine-preconditions.mjs` | undocumented |
 | `CW_CLAUDE_CONFIG` | direct | `admin/lib/usage-plan.mjs` | undocumented |
-| `CW_CLAUDE_CWD` | indirect | `bin/finding-analysis.mjs` | undocumented |
+| `CW_CLAUDE_CWD` | direct | `lib/judge.mjs` | undocumented |
 | `CW_CLAUDE_FUNCTIONS` | direct | `admin/lib/spine-preconditions.mjs`, `bin/ab-loop.mjs` | undocumented |
 | `CW_CLAUDE_GUARD_DIR` | direct | `lib/claude-spawn.mjs` | undocumented |
 | `CW_CLAUDE_JSON` | direct | `admin/lib/spine-preconditions.mjs`, `bin/agent-surface.mjs` | ~/.claude.json |
@@ -2837,6 +2899,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_CONTAINER_NAME` | direct | `bin/depscan-scan.sh`, `bin/jvm-resolve.sh`, `bin/renovate-run.sh` | undocumented |
 | `CW_CONTAINER_OWNER` | direct | `bin/commitwork.mjs`, `bin/egress-proxy.sh`, `bin/sandbox.mjs` | the owning run, &lt;pid&gt;.&lt;start ms&gt; |
 | `CW_CONTROLS` | indirect | `cra/lib.mjs` | undocumented |
+| `CW_CONTROL_SUBNET` | indirect | `runner/main.mjs` | undocumented |
 | `CW_CONVENTIONAL_TYPES` | direct | `bin/commit-phase.mjs` | undocumented |
 | `CW_CORPUS_SINCE` | direct | `bin/corpus-rotation-check.mjs` | default: the newest v* tag reachable from --ref |
 | `CW_CORRECTED_HISTORY_AREA` | direct | `monitor/corrected-history.mjs` | undocumented |
@@ -2870,6 +2933,8 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_DAILY_SKILL` | direct | `bin/daily-run.mjs` | undocumented |
 | `CW_DATA_ANCHORS` | direct | `bin/lib/verdict-journal-core.mjs` | undocumented |
 | `CW_DB` | direct | `bin/memory-query.mjs`, `bin/taxonomy-db.mjs` | default monitor/commitwork.db |
+| `CW_DB_FRESH_HOURS` | direct | `lib/db-update-lock.mjs` | undocumented |
+| `CW_DB_UPDATE_DIR` | direct | `lib/db-update-lock.mjs` | undocumented |
 | `CW_DEFECT_SIGNATURES_OUT` | direct | `monitor/defect-signature.mjs` | fleet artifact path, default &lt;reportsRoot&gt;/defect-signatures.json |
 | `CW_DEFECT_SIGNATURE_MIN_REPOS` | indirect | `monitor/defect-signature.mjs` | undocumented |
 | `CW_DEFECT_SIGNATURE_RATE` | indirect | `monitor/defect-signature.mjs` | undocumented |
@@ -2883,21 +2948,26 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_DEPSCAN_VDB_SCOPE` | direct | `bin/depscan-scan.sh` | undocumented |
 | `CW_DEPSCAN_VDB_TIME` | direct | `bin/depscan-scan.sh` | undocumented |
 | `CW_DEPSCAN_VDB_VOL` | direct | `bin/depscan-scan.sh` | undocumented |
+| `CW_DEPS_ALERT_FIX_BYPASSES_COOLDOWN` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEPS_AUTOMERGE` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEPS_COOLDOWN_DAYS` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEPS_DEV_TYPES` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEPS_INSTALL_SCRIPTS` | direct | `bin/deps-content.mjs` | audit-list benign hooks |
+| `CW_DEPS_INTRODUCED_INCLUDE_DEV` | indirect | `monitor/settings.mjs` | undocumented |
+| `CW_DEPS_INTRODUCED_SEVERITIES` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEPS_LEDGER` | direct | `bin/lib/deps-ledger.mjs` | undocumented |
 | `CW_DEPS_LOCKFILE` | direct | `bin/deps-content.mjs` | lockfile path |
 | `CW_DEPS_PROD_TYPES` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEP_PROVENANCE` | direct | `monitor/dep-provenance.mjs` | undocumented |
 | `CW_DETECTOR_BASIS` | direct | `monitor/detector-basis.mjs` | undocumented |
+| `CW_DF_ROOT` | direct | `bin/lib/docsite-figures.mjs` | repo root; tests point it at a fixture |
 | `CW_DIFF_MAX_BYTES` | direct | `chunk-diff/generate.mjs` | undocumented |
 | `CW_DIFF_MAX_WORDS` | direct | `chunk-diff/lib/diff-ops.mjs` | undocumented |
 | `CW_DIGEST_EMAIL_TO` | indirect | `bin/digest-deliver.mjs` | comma-separated recipients |
 | `CW_DIGEST_SLACK_URL` | indirect | `bin/digest-deliver.mjs` | a Slack incoming webhook |
 | `CW_DIGEST_TIMEOUT_MS` | direct | `bin/digest-deliver.mjs` | the bound on each webhook request |
 | `CW_DIGEST_WEBHOOK_URL` | indirect | `bin/digest-deliver.mjs` | a generic JSON webhook |
+| `CW_DISCLOSURE_OUT` | direct | `bin/disclosure-review.mjs` | undocumented |
 | `CW_DISK_FAIL_PCT` | indirect | `bin/lib/disk-headroom.mjs` | undocumented |
 | `CW_DISK_MIN_FREE_MB` | indirect | `bin/lib/disk-headroom.mjs` | undocumented |
 | `CW_DISK_WARN_PCT` | indirect | `bin/lib/disk-headroom.mjs` | undocumented |
@@ -3004,6 +3074,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_GITHUB_TOKEN` | direct | `bin/advisory-index.mjs` | undocumented |
 | `CW_GITLEAKS` | direct | `bin/hook.mjs`, `lib/launchlist-checks.mjs` | undocumented |
 | `CW_GITLEAKS_CONFIG` | direct | `monitor/scan-scope.mjs` | undocumented |
+| `CW_GIT_HOST_URL` | direct | `bin/lib/create-pr-fork.mjs` | the git host repositories are cloned from and forks are pushed to; default https://github.com |
 | `CW_GIT_PID` | direct | `bin/version-stamp.mjs` | the git process the hook runs under, read to detect an amend |
 | `CW_GRADLE_CHECKSUMS` | direct | `bin/gradle-wrapper-verify.mjs` | a {sha256: version} map to check the jar against |
 | `CW_GRADLE_CONVENTION_FILES` | direct | `bin/lib/gradle-conventions.mjs` | undocumented |
@@ -3097,6 +3168,8 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_LEDGER_MAX_BYTES` | direct | `bin/lib/touch-ledger-append.mjs`, `bin/spine-ledger.mjs` | undocumented |
 | `CW_LEGIT_PACKAGES` | direct | `monitor/forensics.mjs` | declared-legitimate package list; unset ⇒ lookalike off |
 | `CW_LIBRARY_ROOTS` | direct | `monitor/discover.mjs` | undocumented |
+| `CW_LICENSE_DPKG` | direct | `container/licenses.mjs` | a file of dpkg-query output to read instead of running dpkg-query |
+| `CW_LICENSE_ROOT` | direct | `container/licenses.mjs` | the filesystem root the image paths are read under |
 | `CW_LIVENESS_PLIST` | direct | `bin/adjudication-sampler.mjs` | undocumented |
 | `CW_LIVE_LLM` | direct | `monitor/envelope-witness.mjs` | undocumented |
 | `CW_LLM_HOSTS` | direct | `monitor/llm-hosts.mjs` | undocumented |
@@ -3166,7 +3239,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_MONOREPO_CHILD_DIRS` | direct | `bin/races.mjs` | undocumented |
 | `CW_NONDET_HOT` | direct | `monitor/nondeterministic-store.mjs` | undocumented |
 | `CW_NONDET_STORE` | indirect | `bin/test-run.mjs`, `monitor/store-paths.mjs` | undocumented |
-| `CW_NOW` | direct | `admin/routes/comments.mjs`, `admin/routes/fleet-overview.mjs`, `admin/routes/posture.mjs`, `admin/routes/remediation.mjs`, `admin/routes/rollups.mjs`, `admin/routes/scan-config.mjs` and 80 more | authored-at override, tests |
+| `CW_NOW` | direct | `admin/routes/comments.mjs`, `admin/routes/fleet-overview.mjs`, `admin/routes/posture.mjs`, `admin/routes/remediation.mjs`, `admin/routes/rollups.mjs`, `admin/routes/scan-config.mjs` and 82 more | authored-at override, tests |
 | `CW_NO_COLOR` | direct | `bin/lib/theme.mjs` | undocumented |
 | `CW_NPM` | direct | `bin/lib/npm-update.mjs`, `bin/lib/npm-versions.mjs` | the npm binary |
 | `CW_NPM_BIN` | indirect | `monitor/package-inventory.mjs` | undocumented |
@@ -3202,6 +3275,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_OPENAPI_DRIFT_SCRIPTS` | direct | `bin/quality-gates.mjs` | undocumented |
 | `CW_OSASCRIPT` | direct | `admin/routes/remediation.mjs`, `monitor/images.mjs` | undocumented |
 | `CW_OSV_FIXED` | indirect | `monitor/remediation-source.mjs` | undocumented |
+| `CW_OSV_URL` | direct | `bin/lib/osv-advisories.mjs` | default https://api.osv.dev |
 | `CW_OS_BUILD` | indirect | `monitor/update-vulns.mjs` | undocumented |
 | `CW_OS_VERSION` | indirect | `monitor/update-vulns.mjs` | undocumented |
 | `CW_OVERWATCH_WATCH_HOST` | direct | `admin/routes/remediation.mjs` | undocumented |
@@ -3322,8 +3396,12 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_ROSTER_MAX_FEED_LAG_MS` | direct | `bin/session-roster.mjs` | undocumented |
 | `CW_ROSTER_MIN_SPAN_MS` | direct | `bin/session-roster.mjs` | undocumented |
 | `CW_ROSTER_STALE_MS` | direct | `bin/session-roster.mjs` | undocumented |
+| `CW_RULE_TITLES` | direct | `monitor/rule-titles.mjs` | the table's path, default monitor/data/rule-titles.json |
+| `CW_RUNNER_CONFIG` | direct | `runner/config.mjs` | else &lt;private dir&gt;/runner.json |
 | `CW_RUNNER_DISK_GB` | direct | `bin/hermetic-test.mjs` | default 14 |
-| `CW_SANDBOX` | direct | `bin/commitwork.mjs` | undocumented |
+| `CW_RUNNER_LEDGER` | direct | `runner/ledger.mjs` | else &lt;private dir&gt;/runner-ledger.db |
+| `CW_RUNNER_TOKEN_FILE` | indirect | `runner/main.mjs` | undocumented |
+| `CW_SANDBOX` | direct | `bin/commitwork.mjs`, `container/runner/supervisor.mjs` | undocumented |
 | `CW_SANDBOX_COVERAGE_MANIFESTS` | direct | `monitor/sandbox-coverage.mjs` | undocumented |
 | `CW_SANDBOX_COVERAGE_ROOT` | direct | `monitor/sandbox-coverage.mjs` | reports root |
 | `CW_SBOM_PROVENANCE` | direct | `monitor/sbom-provenance.mjs` | undocumented |
@@ -3349,6 +3427,10 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SECURITY_BASELINE` | indirect | `monitor/package-inventory.mjs` | undocumented |
 | `CW_SELFDIR` | direct | `bin/boot-harness.sh`, `bin/lockfile-synth.sh` | undocumented |
 | `CW_SELF_SWEEP_DEADLINE_MIN` | direct | `monitor/sweep.mjs` | undocumented |
+| `CW_SEMGREP_RETRY` | direct | `bin/semgrep-retry.mjs` | 0 or off switches the retry off and the main scan's timeouts stand as reduced coverage |
+| `CW_SEMGREP_RETRY_BUDGET_SEC` | direct | `bin/semgrep-retry.mjs` | wall-clock seconds for the whole retry, default 600; past it the retry is killed and the SARIF is left untouched |
+| `CW_SEMGREP_RETRY_MAX_FILES` | direct | `bin/semgrep-retry.mjs` | most files one retry scans, default 50; the rest are named in the receipt as not retried |
+| `CW_SEMGREP_RETRY_TIMEOUT` | direct | `bin/semgrep-retry.mjs` | seconds Semgrep may spend per rule on one file in the retry, default 60 |
 | `CW_SESSION_ROSTER` | direct | `bin/session-roster.mjs`, `bin/session-start-roster.mjs` | undocumented |
 | `CW_SESSION_STORE` | direct | `admin/sessions.mjs` | undocumented |
 | `CW_SETTINGS` | direct | `bin/agent-surface.mjs`, `monitor/settings.mjs` | repo .claude/settings.json |
@@ -3356,6 +3438,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SETUP_ARCH` | direct | `bin/setup.mjs` | the architecture to plan for |
 | `CW_SETUP_BIN_DIR` | direct | `bin/setup.mjs` | where release binaries go |
 | `CW_SETUP_JOURNEY` | indirect | `monitor/settings.mjs` | undocumented |
+| `CW_SETUP_LICENSE_DIR` | direct | `bin/setup.mjs` | when set, each release archive's licence files go to &lt;dir&gt;/&lt;tool&gt;/ |
 | `CW_SETUP_PLATFORM` | direct | `bin/setup.mjs` | the platform to plan for |
 | `CW_SETUP_RELEASE_BASE` | direct | `bin/setup.mjs` | the release download origin |
 | `CW_SETUP_UID` | direct | `bin/setup.mjs` | the uid to plan for; a root test suite still reaches the non-root path |
@@ -3369,18 +3452,37 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SLICE` | direct | `monitor/containers.mjs` | undocumented |
 | `CW_SLOP_SPINE_ROOT` | direct | `admin/routes/comments.mjs` | undocumented |
 | `CW_SLOP_SWEEP_LOG` | direct | `admin/routes/comments.mjs` | undocumented |
+| `CW_SLOT_ACTORS` | direct | `container/runner/job-started.mjs` | undocumented |
+| `CW_SLOT_CLAIM_URL` | direct | `container/runner/supervisor.mjs` | undocumented |
+| `CW_SLOT_ID` | direct | `container/runner/supervisor.mjs` | undocumented |
+| `CW_SLOT_REPO` | direct | `container/runner/job-started.mjs` | undocumented |
+| `CW_SLOT_SECRET` | direct | `container/runner/supervisor.mjs` | removed from this process's env on read |
+| `CW_SLOT_SECRETS_FILE` | indirect | `runner/main.mjs` | undocumented |
+| `CW_SLOT_WORK` | direct | `container/runner/supervisor.mjs` | default /work |
 | `CW_SLUG_MAP` | indirect | `monitor/remediation-plan.mjs`, `monitor/remediation-source.mjs` | undocumented |
 | `CW_SMOKE_TIMEOUT_MS` | direct | `bin/smoke.mjs` | undocumented |
 | `CW_SNYK_KEY` | indirect | `admin/integrations.mjs` | undocumented |
 | `CW_SOFTWAREUPDATE_BIN` | indirect | `monitor/package-inventory.mjs` | undocumented |
 | `CW_SOFTWAREUPDATE_LIST` | indirect | `monitor/package-inventory.mjs`, `monitor/update-vulns.mjs` | undocumented |
 | `CW_SONATYPE_KEY` | indirect | `admin/integrations.mjs` | undocumented |
+| `CW_SOURCES_CODELOAD` | direct | `container/sources.mjs` | the GitHub tarball origin |
+| `CW_SOURCES_DOCKER` | direct | `container/sources.mjs` | the docker binary |
+| `CW_SOURCES_GITHUB_API` | direct | `container/sources.mjs` | the GitHub API origin |
+| `CW_SOURCES_GOPROXY` | direct | `container/sources.mjs` | the Go module proxy |
+| `CW_SOURCES_PYPI` | direct | `container/sources.mjs` | the PyPI origin |
 | `CW_SPINE_DIR` | direct | `bin/commit-phase.mjs` | undocumented |
 | `CW_SPINE_LEDGER` | direct | `bin/spine-reconcile.mjs`, `bin/spine-replay.mjs` | undocumented |
 | `CW_SPINE_MIN_EDITS` | direct | `bin/gate-spine.mjs` | undocumented |
 | `CW_SPINE_OUTAGE_MS` | direct | `bin/gate-spine.mjs` | undocumented |
 | `CW_SPINE_ROOT` | direct | `bin/security-work-queue.mjs` | undocumented |
 | `CW_SSE_CAP` | direct | `admin/lib/jobs.mjs` | undocumented |
+| `CW_STACK_API_PORT` | direct | `runner/main.mjs` | 7091 |
+| `CW_STACK_API_TOKEN_FILE` | direct | `lib/stack-client.mjs` | else api-token in CW_STACK_STATE, else in ~/.config/portll-stack |
+| `CW_STACK_API_URL` | direct | `lib/stack-client.mjs` | else http://127.0.0.1:17990 |
+| `CW_STACK_IDS` | direct | `runner/meter.mjs` | the service → container-id map bin/stack up writes |
+| `CW_STACK_SPINE_URL` | direct | `runner/api-routes.mjs` | undocumented |
+| `CW_STACK_STATE` | direct | `lib/stack-client.mjs` | undocumented |
+| `CW_STACK_VELD_URL` | direct | `runner/api-routes.mjs` | undocumented |
 | `CW_STATE_DIR` | direct | `monitor/store-paths.mjs` | the state root for this tree: its operator records live at &lt;state root&gt;/monitor/private, &lt;state root&gt;/reports and &lt;state root&gt;/.claude/store |
 | `CW_STORE_DIR` | direct | `admin/lib/session-view.mjs`, `bin/session-start-roster.mjs` | undocumented |
 | `CW_STPA_APPLY_PATH` | direct | `monitor/stpa-sweep.mjs` | undocumented |
@@ -3465,6 +3567,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_TUNNEL_CONFIG` | direct | `bin/tls-headers-scan.mjs` | undocumented |
 | `CW_TURN_TAIL_BYTES` | direct | `admin/lib/session-view.mjs` | undocumented |
 | `CW_TURN_TEXT_CHARS` | direct | `admin/lib/session-view.mjs` | undocumented |
+| `CW_UIC_ROOT` | direct | `bin/lib/ui-conformity.mjs` | repo root; tests point it at a fixture |
 | `CW_UNATTENDED_HOURS` | direct | `monitor/host-role.mjs` | undocumented |
 | `CW_UNATTENDED_POSTURE` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_UNKNOWN_RATE_HISTORY` | direct | `admin/routes/correlations.mjs`, `monitor/unknown-rate.mjs` | undocumented |
@@ -3477,6 +3580,8 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_UPSTREAM_MANIFEST` | direct | `bin/upstream-fetch.mjs` | undocumented |
 | `CW_USAGE_FRESH_MS` | direct | `admin/lib/usage-plan.mjs` | undocumented |
 | `CW_VAULT_PEERS` | direct | `lib/vault-peers.mjs` | undocumented |
+| `CW_VELD_CONTENT_MAX` | direct | `lib/memory-layer-client.mjs` | undocumented |
+| `CW_VELD_MEMORY_TYPES` | direct | `lib/memory-layer-client.mjs` | undocumented |
 | `CW_VELD_PROJECT` | direct | `lib/memory-layer-client.mjs` | undocumented |
 | `CW_VELD_URL` | direct | `bin/daily-run.mjs` | undocumented |
 | `CW_VELD_USER` | direct | `bin/daily-run.mjs` | undocumented |
@@ -3520,10 +3625,12 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_WPVULN_URL` | indirect | `bin/lib/wp-source.mjs` | www.wpvulnerability.net: core, plugin and theme advisories Each takes an http(s) base or a file:// directory laid out as `core/checksums/1.0/&lt;v&gt;-&lt;locale&gt;.json`, `core/stable-check/1.0.json`, `plugin-checksums/&lt;slug&gt;/&lt;ve… |
 | `CW_WP_API_URL` | indirect | `bin/lib/wp-source.mjs` | api.wordpress.org: core checksums and the core release status list |
 | `CW_WP_CACHE` | indirect | `bin/lib/wp-source.mjs` | the cache directory (default ~/.commitwork/cache/wordpress; `off` disables) |
+| `CW_WP_DB` | direct | `bin/wp-posture.mjs` | dump path; `none` disables the join |
 | `CW_WP_DOWNLOADS_URL` | indirect | `bin/lib/wp-source.mjs` | downloads.wordpress.org: plugin checksums |
-| `CW_WP_MAX_DEPTH` | direct | `bin/wp-integrity.mjs` | how deep an install is looked for, default 4 |
+| `CW_WP_MAX_DEPTH` | direct | `bin/wp-integrity.mjs`, `bin/wp-posture.mjs` | how deep an install is looked for, default 4 |
 | `CW_WP_OFFLINE` | indirect | `bin/lib/wp-source.mjs` | `1`: never open a connection; answer from the cache or say why not |
-| `CW_WP_SKIP_DIRS` | direct | `bin/wp-integrity.mjs` | comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is listed |
+| `CW_WP_POSTURE_CATALOGUE` | direct | `bin/wp-posture.mjs` | catalogue path, default manifests/wp-weakness-catalogue.json |
+| `CW_WP_SKIP_DIRS` | direct | `bin/wp-integrity.mjs`, `bin/wp-posture.mjs` | comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is listed |
 | `CW_WP_TIMEOUT_MS` | indirect | `bin/lib/wp-source.mjs` | per request (default 20000) |
 | `CW_WRANGLER` | direct | `bin/docsite-publish.mjs` | undocumented |
 | `CW_XCODEBUILD` | direct | `bin/codeql-swift-build.sh` | undocumented |
@@ -3551,7 +3658,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `aliasOf` | 2 | This check reports into another check's category. |
 | `appliesIfExists` | 53 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
 | `appliesIfGit` | 5 | During `scan`, only run this check if the target is a git repo. |
-| `appliesIfSourceExt` | 20 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
+| `appliesIfSourceExt` | 21 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
 | `containment` | 3 | A lane's exclusion from a group, declared as DATA rather than argued in prose. |
 | `containment.excludedFrom` | 3 | Groups this check is deliberately held OUT of. |
 | `containment.reason` | 3 | Why the exclusion exists, in terms a reader can check. |

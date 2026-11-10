@@ -114,7 +114,7 @@ const summary = [
 await store({
   content: summary,
   tags: ['commitwork', 'audit-rollup', 'sweep-summary'],
-  memory_type: 'Episodic',
+  memory_type: 'Observation',
   // Keeps the stamp: a sweep summary is episodic; per-repo state below is semantic (one record).
   external_id: `commitwork:sweep:${generated}`,
 });
@@ -176,7 +176,7 @@ for (const repo of rollup.repos || []) {
   await store({
     content,
     tags: ['commitwork', 'audit-rollup', `project:${repo.name}`, `worst:${repo.worst || 'unknown'}`],
-    memory_type: 'Episodic',
+    memory_type: 'Observation',
     // Identity, not occurrence — the stamp lives in the content/tags; the key names what the
     // record is ABOUT. Never key an identity on time.
     external_id: `commitwork:rollup:${areaKey}:${repo.name}`,
@@ -203,7 +203,7 @@ if (rollup.sliceId) {
     await store({
       content,
       tags: ['commitwork', 'remediation-ledger', `project:${e.repo}`, `tier:${e.evidence.tier}`],
-      memory_type: 'Episodic',
+      memory_type: 'Observation',
       external_id: `commitwork:ledger:${e.resolvedSlice}:${e.key}`,
     });
     await sleep(300);

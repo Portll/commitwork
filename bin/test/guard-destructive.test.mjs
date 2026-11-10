@@ -145,6 +145,10 @@ const MUST_ALLOW = [
   ['git pull --rebase', 'pull is not push'],
   ['rm /tmp/one-file.txt', 'a non-recursive delete'],
   ['rm -r /tmp/dir', '-r without -f is not the force case'],
+  // A run cleaning up after itself. The names are mkdtemp's and mktemp's; bin/test/guard-posture.test.mjs
+  // holds the boundary, including the shared /tmp names this must never reach.
+  ['rm -rf /tmp/cw-claude-Ab3kQ9', 'the scratch directory lib/claude-spawn.mjs made for this run'],
+  ['rm -rf /tmp/tmp.k3Jd9Xa1', 'what `mktemp -d` with no template names one'],
 
   // Talking ABOUT the dangerous thing — the single largest false-positive source in this repo,
   // because its commit messages are long and discuss exactly these verbs.

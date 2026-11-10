@@ -1,6 +1,6 @@
 # Scope: what commitwork supports, refuses and does not measure
 
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-22 1ac07fea -->
 
 This is the 1.0 scope statement. It says which lanes and platforms commitwork supports, what it
 refuses to do, what it does not measure, and what it does not do at all. As of 2026-10-08, every
@@ -261,7 +261,10 @@ From [THREAT-MODEL.md](THREAT-MODEL.md), "Controls that exist", unless another f
 - **Changing a scanned repository on its own authority.** Remediation output is prompts,
   hand-offs and diffs for a person to apply (README, "What this is NOT"). The one path that edits a
   scanned repository is `bin/issue-loop.mjs --apply`. An operator starts it by hand; without
-  `--apply` it is a dry run. It runs an editing agent there (THREAT-MODEL R10).
+  `--apply` it is a dry run. It runs an editing agent there (THREAT-MODEL R10). Separately,
+  `bin/remediation-draft-pr.mjs --open` opens draft pull requests that bump a Go dependency, but
+  only when the operator has set the remediation policy file's mode to `draft-pr` or above; it
+  pushes a `commitwork/` branch and never merges ([docs/DRAFT-REMEDIATION-PRS.md](DRAFT-REMEDIATION-PRS.md)).
 - **Holding deployment credentials.** `bin/deploy.mjs` emits a tunnel ingress fragment and verifies
   it against the live config. It holds no Cloudflare credentials, changes no DNS and restarts no
   tunnel; applying stays a human step.

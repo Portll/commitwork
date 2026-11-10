@@ -18,12 +18,32 @@
 # comma) is med: the classic injection shape. Placeholder generation ({placeholders}, $${i},
 # ids.map(() => '?')) is binding, not injection, and is excluded. Neither tier establishes an
 # attacker-controlled source, so neither is high. Test, bench and fuzz code is out of scope: it
-# assembles SQL constantly and is not attack surface.
+# assembles SQL constantly and is not attack surface (the path list, a #[cfg(test)] module under
+# any name, and #[test] functions).
 #
-# Known blind spot, measured: Semgrep does not parse a macro nested in another macro's arguments,
-# so vec![format!("SELECT ...")] is never seen. A statement bound with let first is.
+# The Rust rules also leave alone an interpolation that is fixed by construction. By its own
+# spelling: an ALL_CAPS constant ({COLUMNS}), a placeholder list ({placeholders}, {marks}, {binds}),
+# a numbered placeholder (?{n}, ${n}). By how the enclosing function bound the name, each tied to the
+# interpolated name by a back-reference and each ending at the format! that uses it, so a guard on one
+# name never clears another: an assert!/debug_assert! of matches!(name, ...); a match whose arms are all
+# string literals (ASC/DESC); a binding that starts from an ALL_CAPS constant; a clause joined from
+# fragments or a (clause, params) pair, in a function that binds with params_from_iter; a quoted list of
+# .as_str() labels from a Type::fn(..) call (an enum's fixed set). None of that proves the value is
+# safe: a name guarded for one use and reused for another, a type that is not an enum, or a clause whose
+# binding sits in a callee is not seen. The same statement with a function argument, a request field or
+# an unbound clause in that position still reports.
 #
-# The regexes repeat one statement grammar in four places; change them together. Every case in
+# Semgrep reads a format! call as a call only when its arguments are plain: names, fields,
+# references, literals. A format! nested in another macro's arguments (vec![format!(...)], json!,
+# a logging macro), or one with a call, method, operator, named argument or trailing comma among
+# its arguments, never matches format!($FMT, ...), let-bound or not. The two -nested rules cover
+# those: the same grammar with its wildcards bounded to the string literal, run as pattern-regex,
+# kept to code by pattern-inside $E (comments drop out) and suppressed inside any format! the
+# parser did read, so a line is judged by one tier pair, never both. They keep the test-module
+# exclusions. Still unseen: format! inside a macro_rules! body (not an expression) and raw-string
+# format literals (r"..."). Read in error: format!("SELECT ...") written inside a raw string.
+#
+# The regexes repeat one statement grammar in six places; change them together. Every case in
 # fixtures/semgrep-classes/ is asserted both ways by monitor/test/semgrep-classes.test.mjs.
 
 rules:
@@ -64,7 +84,7 @@ rules:
                   regex: '(?s)^"\s*(?:SELECT\b.*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b.*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()'
               - metavariable-regex:
                   metavariable: $FMT
-                  regex: '(?s)^.*?(?<!\{)\{(?!\{)[^{}]*\}'
+                  regex: '(?s)^.*?(?<![{$?])\{(?!\{)(?!\s*(?:[A-Z][A-Z0-9_]*|\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?))\s*(?::[^{}]*)?\})[^{}]*\}'
           - patterns:
               - pattern-either:
                   - pattern: |
@@ -85,8 +105,19 @@ rules:
                   metavariable: $X
                   patterns:
                     - pattern-not: '"..."'
-      - pattern-not-inside: 'mod tests { ... }'
-      - pattern-not-inside: 'mod test { ... }'
+      # A name an assert (or debug_assert) restricts to a fixed set with matches!.
+      - pattern-not-regex: &guard-asserted '(?s)(?:debug_)?assert!\(\s*matches!\(\s*&?(\w+)\s*,[^;]*;(?:(?!\bformat!)(?!\n {0,4}\}).)*?\bformat!\s*\(\s*"(?:\\.|[^"\\])*?\{\1\}(?:\\.|[^"\\])*"(?:,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*)?\s*\)'
+      # A name bound by a match whose every arm is a string literal (ASC/DESC).
+      - pattern-not-regex: &guard-literal-match '(?s)let\s+(?:mut\s+)?(\w+)\s*=\s*match\s[^{;]*\{(?:\s*[^=;{}]*=>\s*"[^"]*"\s*,)+\s*\}\s*;(?:(?!\bformat!)(?!\n {0,4}\}).)*?\bformat!\s*\(\s*"(?:\\.|[^"\\])*?\{\1\}(?:\\.|[^"\\])*"(?:,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*)?\s*\)'
+      # A name derived from an ALL_CAPS constant.
+      - pattern-not-regex: &guard-from-constant '(?s)let\s+(?:mut\s+)?(\w+)\s*=\s*[A-Z][A-Z0-9_]*\b[^;]*;(?:(?!\bformat!)(?!\n {0,4}\}).)*?\bformat!\s*\(\s*"(?:\\.|[^"\\])*?\{\1\}(?:\\.|[^"\\])*"(?:,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*)?\s*\)'
+      # A clause joined from fragments, in a function that binds its values with params_from_iter.
+      - pattern-not-regex: &guard-joined-fragments '(?s)let\s+(?:mut\s+)?(\w+)\s*=\s*\w+\.join\(\s*"(?: AND | OR |, )"\s*\)\s*;(?=(?:(?!\n {0,4}\}).)*?params_from_iter\()(?:(?!\bformat!)(?!\n {0,4}\}).)*?\bformat!\s*\(\s*"(?:\\.|[^"\\])*?\{\1\}(?:\\.|[^"\\])*"(?:,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*)?\s*\)'
+      # A (clause, params) pair from a builder, in a function that binds with params_from_iter.
+      - pattern-not-regex: &guard-clause-and-params '(?s)let\s*\(\s*(\w+)\s*,\s*(?:mut\s+)?\w*(?:params|args|binds?)\w*\s*\)\s*=\s*\w+\([^;]*;(?=(?:(?!\n {0,4}\}).)*?params_from_iter\()(?:(?!\bformat!)(?!\n {0,4}\}).)*?\bformat!\s*\(\s*"(?:\\.|[^"\\])*?\{\1\}(?:\\.|[^"\\])*"(?:,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*)?\s*\)'
+      # A quoted list of .as_str() labels from a Type::fn(..) call (an enum's fixed set).
+      - pattern-not-regex: &guard-enum-labels '(?s)let\s+(?:mut\s+)?(\w+)\s*=\s*[A-Z]\w*::\w+\([^;]*?\.as_str\(\)[^;]*?\.join\([^;]*;(?:(?!\bformat!)(?!\n {0,4}\}).)*?\bformat!\s*\(\s*"(?:\\.|[^"\\])*?\{\1\}(?:\\.|[^"\\])*"(?:,(?:[^()]|\((?:[^()]|\([^()]*\))*\))*)?\s*\)'
+      - pattern-not-regex: &cfg-test-module '(?sm)^[ \t]*#\[cfg\((?:all\()?test\b[^\]]*\][ \t]*\n(?:[ \t]*#\[[^\n]*\][ \t]*\n)*[ \t]*(?:pub(?:\([^)]*\))?\s+)?mod\s+\w+\s*\{.*?^\}'
       - pattern-not-inside: |
           #[test]
           fn $F(...) { ... }
@@ -125,8 +156,19 @@ rules:
       - metavariable-regex:
           metavariable: $FMT
           regex: '(?s)^"\s*(?:SELECT\b.*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+\S+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+\S+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b.*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+\S+\s+set\b|delete\s+from\b|declare\s+\S+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()(?:(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*''(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*'')*?(?:(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*''(?:\{\{|\}\}|\\.|[^''"{}\\]|\$\{[^{}]*\})*?(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\}|(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*?(?:=|<>|!=|<=|>=|<|>|\b(?i:LIKE)|\b(?i:IN)\s*\()\s*(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\}|.*?\b(?i:VALUES)\s*\((?:[^)"{]|\{\{|\$\{[^{}]*\})*?(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\})'
-      - pattern-not-inside: 'mod tests { ... }'
-      - pattern-not-inside: 'mod test { ... }'
+      # A name an assert (or debug_assert) restricts to a fixed set with matches!.
+      - pattern-not-regex: *guard-asserted
+      # A name bound by a match whose every arm is a string literal (ASC/DESC).
+      - pattern-not-regex: *guard-literal-match
+      # A name derived from an ALL_CAPS constant.
+      - pattern-not-regex: *guard-from-constant
+      # A clause joined from fragments, in a function that binds its values with params_from_iter.
+      - pattern-not-regex: *guard-joined-fragments
+      # A (clause, params) pair from a builder, in a function that binds with params_from_iter.
+      - pattern-not-regex: *guard-clause-and-params
+      # A quoted list of .as_str() labels from a Type::fn(..) call (an enum's fixed set).
+      - pattern-not-regex: *guard-enum-labels
+      - pattern-not-regex: *cfg-test-module
       - pattern-not-inside: |
           #[test]
           fn $F(...) { ... }
@@ -221,3 +263,107 @@ rules:
               patterns:
                 - pattern-not: '"..."'
                 - pattern-not: "'...'"
+
+  # Fallbacks for the format! calls the two Rust rules at the top cannot see (see the header).
+  # $E keeps the text match to code; the parsed-format! exclusion leaves every site those rules
+  # can judge to them, so no line is reported twice.
+  - id: cw-sql-text-assembled-rust-nested
+    languages: [rust]
+    severity: INFO
+    message: >-
+      SQL statement text is assembled at run time, in a format! call that Semgrep does not parse
+      as a call (it sits inside another macro, or has a non-trivial argument). When every
+      interpolated piece is a constant or an allow-listed identifier this is safe; confirm that,
+      or bind the value as a parameter.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ['CWE-89: Improper Neutralization of Special Elements used in an SQL Command']
+      confidence: LOW
+      class: sql-text-assembled
+    paths:
+      exclude:
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '*.test.*'
+        - '*.spec.*'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/_tests/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/bench/**'
+        - '**/fuzz/**'
+        - '**/fuzzer/**'
+    patterns:
+      - pattern-regex: '(?s)\bformat!\s*\(\s*"(?=(?:\\.|[^"\\])*?(?<![{$?])\{(?!\{)(?!\s*(?:[A-Z][A-Z0-9_]*|\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?))\s*(?::[^{}]*)?\})[^{}]*\})\s*(?:SELECT\b(?:\\.|[^"\\])*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+(?:\\.|[^\s"\\])+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+(?:\\.|[^\s"\\])+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b(?:\\.|[^"\\])*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+(?:\\.|[^\s"\\])+\s+set\b|delete\s+from\b|declare\s+(?:\\.|[^\s"\\])+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()'
+      - pattern-inside: $E
+      - pattern-not-inside: format!($FMT, ...)
+      # A name an assert (or debug_assert) restricts to a fixed set with matches!.
+      - pattern-not-regex: *guard-asserted
+      # A name bound by a match whose every arm is a string literal (ASC/DESC).
+      - pattern-not-regex: *guard-literal-match
+      # A name derived from an ALL_CAPS constant.
+      - pattern-not-regex: *guard-from-constant
+      # A clause joined from fragments, in a function that binds its values with params_from_iter.
+      - pattern-not-regex: *guard-joined-fragments
+      # A (clause, params) pair from a builder, in a function that binds with params_from_iter.
+      - pattern-not-regex: *guard-clause-and-params
+      # A quoted list of .as_str() labels from a Type::fn(..) call (an enum's fixed set).
+      - pattern-not-regex: *guard-enum-labels
+      - pattern-not-regex: *cfg-test-module
+      - pattern-not-inside: |
+          #[test]
+          fn $F(...) { ... }
+
+  - id: cw-sql-value-interpolated-rust-nested
+    languages: [rust]
+    severity: WARNING
+    message: >-
+      A value is interpolated into a value position of an SQL statement (inside quotes, or after a
+      comparison, IN, VALUES or a list separator), in a format! call that Semgrep does not parse
+      as a call. Whatever reaches it can change the statement. Bind it as a parameter.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ['CWE-89: Improper Neutralization of Special Elements used in an SQL Command']
+      confidence: MEDIUM
+      class: sql-text-assembled
+    paths:
+      exclude:
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '*.test.*'
+        - '*.spec.*'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/_tests/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/bench/**'
+        - '**/fuzz/**'
+        - '**/fuzzer/**'
+    patterns:
+      - pattern-regex: '(?s)\bformat!\s*\(\s*"\s*(?:SELECT\b(?:\\.|[^"\\])*?\bFROM\b|INSERT\s+(?:OR\s+\w+\s+)?INTO\b|(?:REPLACE|MERGE|UPSERT)\s+INTO\b|UPDATE\s+(?:\\.|[^\s"\\])+\s+SET\b|DELETE\s+FROM\b|DECLARE\s+(?:\\.|[^\s"\\])+\s+(?:NO\s+)?(?:SCROLL\s+)?CURSOR\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:(?:TEMP|TEMPORARY|UNIQUE)\s+)?(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:DROP|ALTER)\s+(?:TABLE|VIEW|INDEX|SCHEMA|DATABASE|FUNCTION|PROCEDURE|TRIGGER)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|TRUNCATE\s+TABLE\b|WITH\s+\w+\s+AS\s*\(|select\b(?:\\.|[^"\\])*?\bfrom\b|insert\s+(?:or\s+\w+\s+)?into\b|(?:replace|merge|upsert)\s+into\b|update\s+(?:\\.|[^\s"\\])+\s+set\b|delete\s+from\b|declare\s+(?:\\.|[^\s"\\])+\s+(?:no\s+)?(?:scroll\s+)?cursor\b|create\s+(?:or\s+replace\s+)?(?:(?:temp|temporary|unique)\s+)?(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|(?:drop|alter)\s+(?:table|view|index|schema|database|function|procedure|trigger)\s+(?:if\s+(?:not\s+)?exists\s+)?`?[\w."\[\]{}$\\]+`?(?=[\s(;"''`]|$)|truncate\s+table\b|with\s+\w+\s+as\s*\()(?:(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*''(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*'')*?(?:(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*''(?:\{\{|\}\}|\\.|[^''"{}\\]|\$\{[^{}]*\})*?(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\}|(?:\{\{|\}\}|\{[^{}]*\}|\\.|[^''"{}\\])*?(?:=|<>|!=|<=|>=|<|>|\b(?i:LIKE)|\b(?i:IN)\s*\()\s*(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\}|(?:\\.|[^"\\])*?\b(?i:VALUES)\s*\((?:[^)"{]|\{\{|\$\{[^{}]*\})*?(?<![{$])\{(?!\{)(?!\s*\w*(?:[Pp]laceholders?|[Mm]arks|[Bb]inds?)\s*\})(?!\s*[A-Z][A-Z0-9_]*\s*\})[^{}]*\})'
+      - pattern-inside: $E
+      - pattern-not-inside: format!($FMT, ...)
+      # A name an assert (or debug_assert) restricts to a fixed set with matches!.
+      - pattern-not-regex: *guard-asserted
+      # A name bound by a match whose every arm is a string literal (ASC/DESC).
+      - pattern-not-regex: *guard-literal-match
+      # A name derived from an ALL_CAPS constant.
+      - pattern-not-regex: *guard-from-constant
+      # A clause joined from fragments, in a function that binds its values with params_from_iter.
+      - pattern-not-regex: *guard-joined-fragments
+      # A (clause, params) pair from a builder, in a function that binds with params_from_iter.
+      - pattern-not-regex: *guard-clause-and-params
+      # A quoted list of .as_str() labels from a Type::fn(..) call (an enum's fixed set).
+      - pattern-not-regex: *guard-enum-labels
+      - pattern-not-regex: *cfg-test-module
+      - pattern-not-inside: |
+          #[test]
+          fn $F(...) { ... }

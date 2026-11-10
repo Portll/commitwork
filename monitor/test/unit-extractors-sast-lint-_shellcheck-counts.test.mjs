@@ -6,6 +6,10 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+// These tests are about counting, so they read no rule-title table; titles are tested against a
+// synthetic one in non-sarif-rule-titles.test.mjs.
+process.env.CW_RULE_TITLES = join(mkdtempSync(join(tmpdir(), 'no-rule-titles-')), 'absent.json');
+
 test('returns null when the file does not exist', () => {
   const dir = mkdtempSync(join(tmpdir(), '_shellcheckCounts-'));
   try {

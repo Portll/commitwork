@@ -5,10 +5,11 @@
 // writes: JSON to stdout {tool, summary:{findings, byRule, filesScanned, filesSkipped, ...voids}, findings:[{rule, path, sev, cwe, detail}]}
 //
 // fact: every detail is counts, code points, line numbers, paths, variable names and hosts — never a quoted line / an instruction file is addressed to the model that will read the report (expiry: never, prev: not built)
-import { readFileSync, readdirSync, statSync, realpathSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync, realpathSync } from 'node:fs';
 import { join, relative, resolve, dirname, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirExcluder } from './scan-exclusions.mjs';
+import { linkPolicy } from './lib/walk-links.mjs';
 import { HIDDEN_TEXT } from './minify-detect.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 
@@ -349,26 +350,42 @@ export function scanTree(rootArg) {
   let filesScanned = 0, selfCanary = 0;
   const cap = maxBytes();
   const rel = (p) => relative(root, p).split('\\').join('/');
+  const links = linkPolicy(root);
+  const visit = (p, st) => {
+    if (st.isSymbolicLink()) {
+      const notFollowed = links.link(p);
+      if (notFollowed) filesSkipped.push({ path: rel(p), reason: notFollowed });
+      return;
+    }
+    if (st.isDirectory()) { walk(p); return; }
+    const r = rel(p);
+    if (!isInstructionFile(r)) return;
+    if (selfScan && r.startsWith(SELF_CANARY_DIR)) { selfCanary++; return; }
+    if (st.size > cap) { filesSkipped.push({ path: r, reason: 'oversize', bytes: st.size }); return; }
+    if (!links.first(p)) return;
+    let text;
+    try { text = readFileSync(p, 'utf8'); } catch (e) { filesSkipped.push({ path: r, reason: e.code || 'unreadable' }); return; }
+    filesScanned++;
+    texts.set(r, text);
+    findings.push(...scanText(r, text));
+  };
   const walk = (dir) => {
+    if (!links.first(dir)) return;
     let entries;
     try { entries = readdirSync(dir); } catch (e) { filesSkipped.push({ path: rel(dir) || '.', reason: e.code || 'readdir-error' }); return; }
     for (const name of entries.sort()) {
       const p = join(dir, name);
       if (skipDir(rel(p))) continue;
-      let st; try { st = statSync(p); } catch (e) { filesSkipped.push({ path: rel(p), reason: e.code || 'stat-error' }); continue; }
-      if (st.isDirectory()) { walk(p); continue; }
-      const r = rel(p);
-      if (!isInstructionFile(r)) continue;
-      if (selfScan && r.startsWith(SELF_CANARY_DIR)) { selfCanary++; continue; }
-      if (st.size > cap) { filesSkipped.push({ path: r, reason: 'oversize', bytes: st.size }); continue; }
-      let text;
-      try { text = readFileSync(p, 'utf8'); } catch (e) { filesSkipped.push({ path: r, reason: e.code || 'unreadable' }); continue; }
-      filesScanned++;
-      texts.set(r, text);
-      findings.push(...scanText(r, text));
+      let st; try { st = lstatSync(p); } catch (e) { filesSkipped.push({ path: rel(p), reason: e.code || 'stat-error' }); continue; }
+      visit(p, st);
     }
   };
   walk(root);
+  for (const { path: p, target } of links.drain()) {
+    if (skipDir(target)) continue;
+    let st; try { st = statSync(p); } catch (e) { filesSkipped.push({ path: rel(p), reason: e.code || 'stat-error' }); continue; }
+    visit(p, st);
+  }
   findings.push(...crossFileFindings(texts));
   findings.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : a.rule < b.rule ? -1 : a.rule > b.rule ? 1 : 0));
   const byRule = {};

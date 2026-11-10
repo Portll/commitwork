@@ -1,0 +1,85 @@
+# Class rules: a method chosen by a name that arrives as data.
+#
+# When the name of the function to call comes from a file or a request, every attribute of the
+# target object is callable, including inherited and private ones, unless an allow-list is checked
+# on every path to the call. A check that runs only inside a loop over the inputs is skipped when
+# there are none. In JavaScript the prototype adds `constructor`, `__proto__`, `toString` and the
+# rest, and a `typeof ... === 'function'` test lets all of them through.
+
+rules:
+  - id: cw-dispatch-by-data-name-py
+    languages: [python]
+    severity: WARNING
+    message: >-
+      `getattr(obj, name)(...)` calls whatever attribute `name` selects. If `name` comes from a
+      document or a request, any public or private method of `obj` is reachable. Check `name`
+      against an explicit allow-list immediately before the call, on every path that reaches it.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-470: Use of Externally-Controlled Input to Select Classes or Code"]
+      confidence: LOW
+      class: dispatch-by-data-name
+    patterns:
+      - pattern: getattr($OBJ, $NAME)(...)
+      - pattern-not: getattr($OBJ, "...")(...)
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: '^(?!f?r?["\x27][A-Za-z_])(?!["\x27][A-Za-z_]\w*["\x27]\s*\+)'
+      - pattern-not-inside: |
+          if $NAME in $ALLOWED:
+              ...
+      - pattern-not-inside: |
+          if $NAME not in $ALLOWED:
+              ...
+          ...
+
+  - id: cw-computed-method-call-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      `obj[key](...)` calls whatever property `key` selects, including inherited ones such as
+      `constructor` and `__proto__`. If `key` comes from a request or a file, check it with
+      `Object.hasOwn(obj, key)` or look it up in a `Map` before calling; `typeof obj[key] ===
+      'function'` admits the inherited methods too. A table declared as `Record<Union, ...>` with
+      a key type narrower than `string` is a closed dispatch table and is not reported; dispatch
+      into a module namespace, `globalThis`, `this`, an imported object or a `Record<string, ...>`
+      still is.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-470: Use of Externally-Controlled Input to Select Classes or Code"]
+      confidence: LOW
+      class: dispatch-by-data-name
+    patterns:
+      - pattern: $OBJ[$KEY](...)
+      # A `Record<Union, ...>` table is closed by its key type. The regex is the only way found to
+      # tell `Record<string, ...>` from a union: metavariable-regex on a type argument bound inside
+      # a pattern-inside never matches, and the `string` type pattern matches a union of literals.
+      - pattern-not-inside:
+          patterns:
+            - pattern: |
+                const $OBJ: Record<$T, $V> = {...};
+                ...
+            - pattern-not-regex: 'Record<\s*(string|number|symbol|PropertyKey|any)\s*,'
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: '^(?![\x27"`\d])(?!(i|j|k|n|idx|index)$)'
+      - pattern-not-inside: |
+          if (<... Object.hasOwn($OBJ, $KEY) ...>) { ... }
+      - pattern-not-inside: |
+          if (<... $OBJ.hasOwnProperty($KEY) ...>) { ... }
+      - pattern-not-inside: |
+          if (<... Object.prototype.hasOwnProperty.call($OBJ, $KEY) ...>) { ... }
+      - pattern-not-inside: |
+          if (!Object.hasOwn($OBJ, $KEY)) { ... }
+          ...
+      - pattern-not-inside: |
+          if (!Object.hasOwn($OBJ, $KEY)) $STMT;
+          ...
+      - pattern-not-inside: |
+          if (!$OBJ.hasOwnProperty($KEY)) $STMT;
+          ...
+      - pattern-not-inside: |
+          if (!$OBJ.hasOwnProperty($KEY)) { ... }
+          ...

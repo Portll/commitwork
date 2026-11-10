@@ -124,6 +124,7 @@ export function ingestSarif(path, { repo = '' } = {}) {
     // Zero results with no invocation record cannot certify the tool ran; carried, never read as clean.
     unwitnessedZero: r.unwitnessedZero,
     extractionErrors: r.extractionErrors,
+    partialAnalysis: r.partialAnalysis,
   };
 }
 

@@ -1,0 +1,416 @@
+# Class rules: a Rust request URL or an HTML response body assembled at run time.
+#
+# The registry's Rust SSRF and XSS rules pair a web-framework source with a specific crate sink, so a
+# program with its own HTTP or HTML layer gives them nothing to match. These rules key on what the
+# text is and where it goes, whatever produced it.
+#
+# cw-ssrf-url-assembled-rust: a URL built by format! (or +) from a value that is not a literal, an
+# ALL_CAPS constant or env!, handed to an HTTP client: reqwest/ureq/surf free functions, a hyper or
+# http Request/Uri builder, or a get/post/... call that continues to .send(), .call(), .header(), etc.
+# (in the same expression, or later on the builder it was bound to). A bare .get() on a receiver
+# named like a client counts only when the URL starts with a scheme, because a key/value client's
+# .get(format!("{}/{}", ns, k)) has the same shape.
+#
+# cw-html-assembled-rust: HTML markup text (a closing tag, a tag with an attribute, a doctype, or an
+# unambiguous lowercase opening tag such as <div or <script) assembled by format!, write!, push_str
+# or + from a value that is not a literal, a constant, or the result of anything named
+# escape/encode/sanitize, and given to a response body: axum Html, rocket RawHtml, warp reply::html,
+# a Response/HttpResponse builder's .body, Response::new/from_string, or a write to a stream. Text
+# returned from a helper function, or written to a file, is not followed: whether a returned string
+# becomes a response cannot be decided without following calls, so the rule keeps to sinks it sees.
+#
+# A URL that is nothing but a fixed prefix and a path is not assembled from data. Two shapes read as
+# that. `format!("{}{path}", self.base)`: the whole string is two interpolations and the prefix is
+# a field of self, set once when the client was built. `format!("{base}/models")` inside a function
+# that bound `base` (or base_url, origin) with its own `let`: the prefix is a local the function
+# chose, not a value the caller handed in. A prefix that is a parameter of the function, or any other
+# name (`{url}`, `{host}`), and any `self.base_url` followed by a literal path still read as
+# assembled: those are the shapes where the caller or a request can pick the host. Whether the field
+# or the local holds a fixed host is not decided here.
+#
+# Neither rule establishes that the value is attacker-controlled, so both are audit-tier. Both report
+# at the argument the sink receives. Test, bench and fuzz code is out of scope.
+#
+# The format string is read as TEXT, not as Semgrep's parsed arguments: Semgrep 1.180 leaves a
+# format!/write! whose arguments contain a call, a nested macro or a tuple index as an unparsed
+# token tree, so `format!($FMT, ...)` never matches `format!("{}/x", self.base())`. The regexes
+# repeat one literal grammar (normal and raw strings) and one constant grammar; change them together.
+#
+# Known blind spots, measured: a request whose builder is chosen in a match
+# (`match m { "GET" => c.get(&u), .. }`), a URL or page built in another function, an in-house
+# wrapper around the client, a hand-written response helper (`http_response(200, "text/html", &body)`),
+# a variable rebound to itself (`let u = format!(..); let u = u.parse::<Uri>()`), and Url::join or
+# set_path. A write! into a buffer is linked to the buffer that reaches the sink only by being in the
+# same function after its declaration. A URL whose every part is a literal chosen at run time (a match
+# over string literals) still reads as assembled.
+#
+# Every case in fixtures/semgrep-classes/ is asserted both ways by
+# monitor/test/semgrep-classes.test.mjs.
+
+rules:
+  - id: cw-ssrf-url-assembled-rust
+    languages: [rust]
+    severity: INFO
+    message: >-
+      An outbound HTTP request's URL is assembled at run time from a value that is not a constant.
+      If that value can come from a request, a file or another service, it can send the request to
+      another host or path. Confirm where it comes from, or check it against an allow-list.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ['CWE-918: Server-Side Request Forgery (SSRF)']
+      confidence: LOW
+      class: ssrf-url-assembled
+    paths:
+      exclude: &test-paths
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '*.test.*'
+        - '*.spec.*'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/_tests/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/bench/**'
+        - '**/fuzz/**'
+        - '**/fuzzer/**'
+    patterns:
+      - pattern-either:
+          # A sink that is an HTTP request by name; the URL may start with a variable base.
+          - patterns:
+              - pattern-either: &request-sinks
+                  - patterns:
+                      - pattern: $P::$F($X)
+                      - metavariable-regex:
+                          metavariable: $P
+                          regex: '^(?:reqwest(?:::blocking)?|ureq|surf|(?:\w+::)*Request)$'
+                      - metavariable-regex:
+                          metavariable: $F
+                          regex: '^(?:get|post|put|patch|delete|head|options|connect|trace)$'
+                  - patterns:
+                      - pattern: $P::request($METHOD, $X)
+                      - metavariable-regex:
+                          metavariable: $P
+                          regex: '^(?:ureq|surf)$'
+                  - patterns:
+                      - pattern: $P::new($METHOD, $X)
+                      - metavariable-regex:
+                          metavariable: $P
+                          regex: '^(?:\w+::)*Request$'
+                  - pattern: $B.uri($X)
+                  - patterns:
+                      - pattern-either:
+                          - pattern: $U::from_str($X)
+                          - pattern: $U::try_from($X)
+                          - pattern: $X.parse::<$U>()
+                          - pattern: 'let $UV: $U = <... $X.parse() ...>;'
+                      - metavariable-regex:
+                          metavariable: $U
+                          regex: '^(?:\w+::)*Uri$'
+                  - patterns:
+                      - pattern-either:
+                          - pattern: $C.$M($X). ... .$T(...)
+                          - patterns:
+                              - pattern-inside: |
+                                  let $RB = $C.$M($X);
+                                  ...
+                                  <... $RB.$T(...) ...>;
+                              - pattern: $C.$M($X)
+                      - metavariable-regex:
+                          metavariable: $M
+                          regex: '^(?:get|post|put|patch|delete|head)$'
+                      - metavariable-regex:
+                          metavariable: $T
+                          regex: &confirming-calls '^(?:send|call|header|headers|bearer_auth|basic_auth|json|form|query|timeout|body|set|send_json|send_string|send_form|send_bytes|recv_string|recv_json|recv_bytes|multipart|version)$'
+                  - patterns:
+                      - pattern: $C.request($METHOD, $X). ... .$T(...)
+                      - metavariable-regex:
+                          metavariable: $T
+                          regex: *confirming-calls
+              - metavariable-regex:
+                  metavariable: $X
+                  regex: &url-format '(?s)^.*?\bformat!\(\s*(?!"\{\}\{\s*\w+\s*\}"\s*,\s*&?self\.\w+\s*\))(?=(?:"|r#{0,2}")\s*(?:(?:https?|wss?)://|\{[^{}]*\}(?:/|\?|://|\{)))(?:(?:"(?:[^"\\]|\\.)*?|r"[^"]*?|r#"(?:[^"]|"(?!#))*?|r##"(?:[^"]|"(?!##))*?)(?<!\{)\{(?!\{)\s*(?![A-Z][A-Z0-9_]*\s*[:}])[A-Za-z_]\w*\s*[:}]|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)\s*,(?:\s*(?:[&*]\s*)?(?:(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\s*\))*|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)|-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?|(?:env|option_env|concat|stringify)!\((?:[^()]|\([^()]*\))*\))\s*,)*(?!\s*(?:[&*]\s*)?(?:(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\s*\))*|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)|-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?|(?:env|option_env|concat|stringify)!\((?:[^()]|\([^()]*\))*\))\s*[,)])\s*[^\s,)])'
+          - patterns:
+              - pattern-either: *request-sinks
+              - metavariable-pattern:
+                  metavariable: $X
+                  patterns: &url-concatenated
+                    - pattern-either:
+                        - patterns:
+                            - pattern: $L + $R
+                            - metavariable-regex:
+                                metavariable: $R
+                                regex: '^&?(?:r#*)?"(?:/|\?)'
+                            - metavariable-pattern:
+                                metavariable: $L
+                                patterns: &not-constant
+                                  - pattern-not: '"..."'
+                                  - pattern-not-regex: '^[&*]?\s*(?:[A-Za-z_]\w*::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\))*$'
+                                  - pattern-not-regex: '^-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?$'
+                        - patterns:
+                            - pattern: $L + $R
+                            - metavariable-regex:
+                                metavariable: $L
+                                regex: '(?s)^.*"(?:(?:https?|wss?)://|/|\?)'
+                            - metavariable-pattern:
+                                metavariable: $R
+                                patterns: *not-constant
+          # ... or the URL is bound to a variable first.
+          - patterns:
+              - pattern-either: *request-sinks
+              - pattern-inside: |
+                  let $V = $E;
+                  ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-regex:
+                  metavariable: $E
+                  regex: *url-format
+          - patterns:
+              - pattern-either: *request-sinks
+              - pattern-inside: |
+                  let $V = $E;
+                  ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-pattern:
+                  metavariable: $E
+                  patterns: *url-concatenated
+          # A bare get/post on a receiver named like a client: only a URL that starts with a scheme.
+          - patterns:
+              - pattern-either: &client-calls
+                  - patterns:
+                      - pattern: $C.$M($X)
+                      - metavariable-regex:
+                          metavariable: $M
+                          regex: '^(?:get|post|put|patch|delete|head)$'
+                      - metavariable-regex:
+                          metavariable: $C
+                          regex: &client-name '(?i)^.*(?:client|http|agent)\w*$'
+                  - patterns:
+                      - pattern: $C.request($METHOD, $X)
+                      - metavariable-regex:
+                          metavariable: $C
+                          regex: *client-name
+              - metavariable-regex:
+                  metavariable: $X
+                  regex: &scheme-format '(?s)^.*?\bformat!\(\s*(?=(?:"|r#{0,2}")\s*(?:https?|wss?)://)(?:(?:"(?:[^"\\]|\\.)*?|r"[^"]*?|r#"(?:[^"]|"(?!#))*?|r##"(?:[^"]|"(?!##))*?)(?<!\{)\{(?!\{)\s*(?![A-Z][A-Z0-9_]*\s*[:}])[A-Za-z_]\w*\s*[:}]|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)\s*,(?:\s*(?:[&*]\s*)?(?:(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\s*\))*|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)|-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?|(?:env|option_env|concat|stringify)!\((?:[^()]|\([^()]*\))*\))\s*,)*(?!\s*(?:[&*]\s*)?(?:(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\s*\))*|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)|-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?|(?:env|option_env|concat|stringify)!\((?:[^()]|\([^()]*\))*\))\s*[,)])\s*[^\s,)])'
+          - patterns:
+              - pattern-either: *client-calls
+              - pattern-inside: |
+                  let $V = $E;
+                  ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-regex:
+                  metavariable: $E
+                  regex: *scheme-format
+      # A local `base` the function chose itself, as the prefix of an inline URL (see the header).
+      - pattern-not:
+          patterns:
+            - pattern-either: *request-sinks
+            - metavariable-regex:
+                metavariable: $X
+                regex: '(?s)^&?\s*format!\(\s*"\{\s*(?:\w*_)?(?:base|base_url|origin)\s*\}[^{}]*"\s*\)$'
+            - pattern-inside: |
+                let $B = $E;
+                ...
+            - metavariable-regex:
+                metavariable: $B
+                regex: '^(?:\w*_)?(?:base|base_url|origin)$'
+      - focus-metavariable: $X
+      - pattern-not-inside: &test-fn |
+          #[test]
+          fn $F(...) { ... }
+      - pattern-not-inside: &async-test-fn |
+          #[$RUNTIME::test]
+          async fn $F(...) { ... }
+      # A #[cfg(test)] module is found by text, from the attribute to the first closing brace in
+      # column 0 (rustfmt's module end). pattern-not-inside 'mod tests { ... }' is not used: it
+      # cannot bind the module name, and on large files it costs several times the rule's own match.
+      - pattern-not-regex: &cfg-test-module '(?sm)^[ \t]*#\[cfg\((?:all\()?test\b[^\]]*\][ \t]*\n(?:[ \t]*#\[[^\n]*\][ \t]*\n)*[ \t]*(?:pub(?:\([^)]*\))?\s+)?mod\s+\w+\s*\{.*?^\}'
+
+  - id: cw-html-assembled-rust
+    languages: [rust]
+    severity: INFO
+    message: >-
+      HTML markup is assembled at run time from a value that is not a constant and has not passed
+      through an escaping function, and the text is sent as a response body. If the value can carry
+      markup, it runs in the reader's browser. Escape it (html_escape::encode_text or equivalent), or
+      render through a template engine that escapes by default.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]
+      confidence: LOW
+      class: html-assembled
+    paths:
+      exclude: *test-paths
+    patterns:
+      - pattern-either:
+          # The markup is assembled in the argument itself.
+          - patterns:
+              - pattern-either: &body-sinks
+                  - pattern: Html($X)
+                  - pattern: RawHtml($X)
+                  - patterns:
+                      - pattern-either:
+                          - pattern: $P::Html($X)
+                          - pattern: $P::RawHtml($X)
+                          - pattern: $P::html($X)
+                      - metavariable-regex:
+                          metavariable: $P
+                          regex: '^(?:\w+::)*(?:response|content|reply)$'
+                  - patterns:
+                      - pattern-either:
+                          - pattern: $R::$S(...). ... .body($X)
+                          - pattern: $R::$S($X)
+                      - metavariable-regex:
+                          metavariable: $R
+                          regex: '^(?:\w+::)*(?:Response|HttpResponse)$'
+                  - pattern: $B.content_type(...). ... .body($X)
+                  - patterns:
+                      - pattern-either:
+                          - pattern: $W.write_all($X)
+                          - pattern: $W.write($X)
+                      - metavariable-regex:
+                          metavariable: $W
+                          regex: '(?i)^(?:.*\.)?(?:\w*stream|socket|sock|conn|connection|tcp\w*|resp|response|res)$'
+              - metavariable-regex:
+                  metavariable: $X
+                  regex: &html-format '(?s)^.*?\b(?:format!\(\s*|write(?:ln)?!\(\s*[^,()]+,\s*)(?=(?:"(?:[^"\\]|\\.)*?|r"[^"]*?|r#"(?:[^"]|"(?!#))*?|r##"(?:[^"]|"(?!##))*?)(?:(?i:<!doctype\s+html)|</(?:a|abbr|b|blockquote|body|button|code|dd|div|dl|dt|em|form|h[1-6]|head|html|i|label|li|ol|option|p|pre|script|section|select|small|span|strong|style|sub|sup|svg|table|tbody|td|textarea|th|thead|title|tr|u|ul)\s*>|<[a-z][a-z0-9]*\s+[a-z][a-z0-9-]*\s*=|<(?:a|b|br|div|em|h[1-6]|hr|html|i|iframe|img|li|ol|p|pre|script|span|strong|tbody|td|th|thead|tr|ul)(?:\s[^<>]*)?/?>))(?:(?:"(?:[^"\\]|\\.)*?|r"[^"]*?|r#"(?:[^"]|"(?!#))*?|r##"(?:[^"]|"(?!##))*?)(?<!\{)\{(?!\{)\s*(?![A-Z][A-Z0-9_]*\s*[:}])(?!\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis|_esc\b))(?![Ss]afe_)[A-Za-z_]\w*\s*[:}]|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)\s*,(?:\s*(?:(?:[&*]\s*)?(?:(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\s*\))*|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)|-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?|(?:env|option_env|concat|stringify)!\((?:[^()]|\([^()]*\))*\))|(?:[&*]\s*)?(?:\w+::)*\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\s*(?:::<[^<>]*>)?\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)(?:\.\w+\(\s*\))*|(?:[&*]\s*)?[\w.]+\.(?!escape_(?:default|debug|unicode)\b)\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\(\s*\)(?:\.\w+\(\s*\))*)\s*,)*(?!\s*(?:(?:[&*]\s*)?(?:(?:\w+::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\s*\))*|(?:"(?:[^"\\]|\\.)*"|r"[^"]*"|r#"(?:[^"]|"(?!#))*"#|r##"(?:[^"]|"(?!##))*"##)|-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?|(?:env|option_env|concat|stringify)!\((?:[^()]|\([^()]*\))*\))|(?:[&*]\s*)?(?:\w+::)*\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\s*(?:::<[^<>]*>)?\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)(?:\.\w+\(\s*\))*|(?:[&*]\s*)?[\w.]+\.(?!escape_(?:default|debug|unicode)\b)\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\(\s*\)(?:\.\w+\(\s*\))*)\s*[,)])\s*[^\s,)])'
+          - patterns:
+              - pattern-either: *body-sinks
+              - metavariable-pattern:
+                  metavariable: $X
+                  patterns: &html-concatenated
+                    - pattern: $L + $R
+                    - metavariable-regex:
+                        metavariable: $L
+                        regex: &markup-text '(?s)^.*?(?:(?i:<!doctype\s+html)|</(?:a|abbr|b|blockquote|body|button|code|dd|div|dl|dt|em|form|h[1-6]|head|html|i|label|li|ol|option|p|pre|script|section|select|small|span|strong|style|sub|sup|svg|table|tbody|td|textarea|th|thead|title|tr|u|ul)\s*>|<[a-z][a-z0-9]*\s+[a-z][a-z0-9-]*\s*=|<(?:a|b|br|div|em|h[1-6]|hr|html|i|iframe|img|li|ol|p|pre|script|span|strong|tbody|td|th|thead|tr|ul)(?:\s[^<>]*)?/?>)'
+                    - metavariable-pattern:
+                        metavariable: $R
+                        patterns: &not-constant-or-escaped
+                          - pattern-not: '"..."'
+                          - pattern-not-regex: '^[&*]?\s*(?:[A-Za-z_]\w*::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\))*$'
+                          - pattern-not-regex: '^-?[0-9][0-9_]*(?:\.[0-9]+)?(?:[iuf](?:8|16|32|64|128|size))?$'
+                          - pattern-not-regex: '(?s)^[&*]?\s*(?:\w+::)*\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\s*(?:::<[^>]*>)?\(.*'
+                          - pattern-not-regex: '(?s)^.*\.(?!escape_(?:default|debug|unicode)\b)\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\(\s*\)(?:\s*\.\w+\(\s*\))*\s*$'
+          # Assembled into a variable first.
+          - patterns:
+              - pattern-either: *body-sinks
+              - pattern-inside: |
+                  let $V = $E;
+                  ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-regex:
+                  metavariable: $E
+                  regex: *html-format
+          - patterns:
+              - pattern-either: *body-sinks
+              - pattern-inside: |
+                  let $V = $E;
+                  ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-pattern:
+                  metavariable: $E
+                  patterns: *html-concatenated
+          # A buffer filled after it is declared: push_str or += of assembled markup ...
+          - patterns:
+              - pattern-either: *body-sinks
+              - pattern-either:
+                  - pattern-inside: |
+                      let mut $V = $INIT;
+                      ...
+                      $V.push_str($PART);
+                      ...
+                  - pattern-inside: |
+                      let mut $V = $INIT;
+                      ...
+                      $V += $PART;
+                      ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-regex:
+                  metavariable: $PART
+                  regex: *html-format
+          # ... or write!/writeln! of markup after the buffer is declared (not linked to the buffer by
+          # name: Semgrep cannot see inside an unparsed write!) ...
+          - patterns:
+              - pattern-either: *body-sinks
+              - pattern-either:
+                  - pattern-inside: |
+                      let mut $V = $INIT;
+                      ...
+                      $W;
+                      ...
+                  - pattern-inside: |
+                      let mut $V = $INIT;
+                      ...
+                      let _ = $W;
+                      ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-regex:
+                  metavariable: $W
+                  regex: '^\s*write(?:ln)?!\('
+              - metavariable-regex:
+                  metavariable: $W
+                  regex: *html-format
+          # ... or a raw value pushed into a buffer that already holds markup.
+          - patterns:
+              - pattern-either: *body-sinks
+              - pattern-inside: |
+                  let mut $V = $INIT;
+                  ...
+                  $V.push_str($PART);
+                  ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-regex:
+                  metavariable: $INIT
+                  regex: *markup-text
+              - metavariable-pattern:
+                  metavariable: $PART
+                  patterns: &raw-part
+                    - pattern-not: format!(...)
+                    - pattern-not: '&format!(...)'
+                    - pattern-not: '"..."'
+                    - pattern-not-regex: '^[&*]?\s*(?:[A-Za-z_]\w*::)*[A-Z][A-Z0-9_]*(?:\.(?:to_string|to_owned|clone|into|as_str)\(\))*$'
+                    - pattern-not-regex: '(?s)^[&*]?\s*(?:\w+::)*\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\s*(?:::<[^>]*>)?\(.*'
+                    - pattern-not-regex: '(?s)^.*\.(?!escape_(?:default|debug|unicode)\b)\w*(?:[Ee]scape|[Ee]ncode|[Ss]anitiz|[Ss]anitis)\w*\(\s*\)(?:\s*\.\w+\(\s*\))*\s*$'
+          - patterns:
+              - pattern-either: *body-sinks
+              - pattern-inside: |
+                  let mut $V = $INIT;
+                  ...
+                  $V.push_str($OPEN);
+                  ...
+                  $V.push_str($PART);
+                  ...
+              - metavariable-pattern:
+                  metavariable: $X
+                  pattern: <... $V ...>
+              - metavariable-regex:
+                  metavariable: $OPEN
+                  regex: *markup-text
+              - metavariable-pattern:
+                  metavariable: $PART
+                  patterns: *raw-part
+      - focus-metavariable: $X
+      - pattern-not-inside: *test-fn
+      - pattern-not-inside: *async-test-fn
+      - pattern-not-regex: *cfg-test-module

@@ -1,0 +1,102 @@
+# Class rules: memory sized by a count the input controls.
+#
+# A size or count read from a parsed message, or the length of a request body, decides how much the
+# process allocates, and nothing compares it with an upper bound first. One small input then asks
+# for gigabytes: the allocation fails and the process aborts, or it succeeds and the host swaps.
+# A zero check or an assert against the type's maximum is not a bound.
+
+rules:
+  - id: cw-alloc-from-parsed-count-cpp
+    languages: [cpp]
+    severity: WARNING
+    message: >-
+      A count read from a parsed message sizes an allocation with no upper bound checked first. A
+      message carrying a huge count makes one small input allocate without limit. Compare the count
+      with a maximum the format can legitimately need, and refuse the input above it.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-789: Memory Allocation with Excessive Size Value", "CWE-400: Uncontrolled Resource Consumption"]
+      confidence: MEDIUM
+      class: alloc-sized-by-data
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $T $N = $MSG.$GET();
+              ...
+          - pattern-inside: |
+              $T $N = $MSG->$GET();
+              ...
+          - pattern-inside: |
+              auto $N = $MSG.$GET();
+              ...
+      - metavariable-regex:
+          metavariable: $GET
+          regex: '^(?!size$|length$|capacity$|max_size$|count$|empty$)(?![a-z0-9_]*_size$)[a-z][a-z0-9_]*$'
+      - pattern-not-inside: |
+          if (<... $N > $MAX ...>) { ... }
+          ...
+      - pattern-not-inside: |
+          if (<... $N >= $MAX ...>) { ... }
+          ...
+      - pattern-not-inside: |
+          if (<... $MAX < $N ...>) { ... }
+          ...
+      - pattern-not-inside: |
+          if (<... $MAX <= $N ...>) { ... }
+          ...
+      - pattern-not-inside: |
+          $N = std::min(...);
+          ...
+      - pattern-either:
+          - pattern: $V.resize(<... $N ...>)
+          - pattern: $V.resize(<... $N ...>, $FILL)
+          - pattern: $V.reserve(<... $N ...>)
+          - pattern: $V->resize(<... $N ...>)
+          - pattern: $V->reserve(<... $N ...>)
+          - pattern: new $TY[<... $N ...>]
+          - pattern: malloc(<... $N ...>)
+          - pattern: calloc(<... $N ...>, ...)
+
+  - id: cw-request-body-uncapped-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A request body is accumulated chunk by chunk with no byte limit, so one request can hold the
+      server's memory for as long as the client keeps sending. Count the bytes as they arrive and
+      stop reading (413, then destroy the request) once they pass a limit.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-400: Uncontrolled Resource Consumption", "CWE-770: Allocation of Resources Without Limits or Throttling"]
+      confidence: MEDIUM
+      class: alloc-sized-by-data
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $REQ.on('data', ($C) => { ... })
+          - pattern: |
+              $REQ.on('data', function ($C) { ... })
+          - pattern: |
+              $REQ.on("data", ($C) => { ... })
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: '^(req|request|incoming)$'
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE > $LIMIT ...>) { ... } ... })
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE >= $LIMIT ...>) { ... } ... })
+      - pattern-not: |
+          $REQ.on($EV, function ($C) { ... if (<... $SIZE > $LIMIT ...>) { ... } ... })
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE > $LIMIT ...>) return $R; ... })
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE > $LIMIT ...>) $STMT; ... })
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE <= $LIMIT ...>) $STMT; ... })
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE < $LIMIT ...>) $STMT; ... })
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE <= $LIMIT ...>) { ... } ... })
+      - pattern-not: |
+          $REQ.on($EV, ($C) => { ... if (<... $SIZE < $LIMIT ...>) { ... } ... })

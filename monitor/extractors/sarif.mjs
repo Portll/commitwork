@@ -14,7 +14,7 @@
 // monitor/extractors.mjs re-exports both functions.
 
 import { join } from 'node:path';
-import { readSarif, ruleIndex, cweOf, isSuppressed, sarifBand, ruleTitle } from '../sarif-read.mjs';
+import { readSarif, ruleIndex, cweOf, isSuppressed, sarifBand, ruleTitle, describePartial, sortedTitles } from '../sarif-read.mjs';
 import { classifyPath } from '../fixture-paths.mjs'; // a test corpus is a different population, not a cleaner one
 import { classifyWorktreePath } from '../worktree-paths.mjs'; // a second checkout is the same population counted twice
 import { coverageForLane, coverageLicensesAZero } from '../codeql-coverage.mjs'; // an unread file cannot testify that it is empty
@@ -119,10 +119,11 @@ export function _sarifCounts(dir, file, collect, coverageOf = null, sevOf = null
     c.partialAnalysis = {
       files: partial.length, byReason, rows: partial.slice(0, PARTIAL_ROWS_MAX),
       truncated: Math.max(0, partial.length - PARTIAL_ROWS_MAX),
+      // bin/semgrep-retry.mjs: the rows above are what remains after it; this is what it did.
+      ...(r.partialRetry ? { retry: r.partialRetry } : {}),
     };
     c.coverageIncomplete = true;
-    const reasons = Object.entries(byReason).map(([k, n]) => `${n} ${k}`).join(', ');
-    const said = `${partial.length} file(s) were read only in part (${reasons}), so this count is silent about them rather than clean`;
+    const said = describePartial(partial, r.partialRetry);
     if (!c.coverage || c.coverage.state === 'covered' || c.coverage.state === 'no-language') {
       c.coverage = { state: 'partial', partialFiles: partial.length, reason: said };
     } else {
@@ -180,6 +181,6 @@ export function _sarifDetail(dir, file, key, coverageOf = null, sevOf = null) {
     });
   }, coverageOf, sevOf);
   if (!c || c.nosrc || c.unparseable || c.norules || c.neverran || c.toolfailed) return c; // absent, or a husk with nothing to detail
-  const ruleTitles = titles.size ? Object.fromEntries([...titles].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : null;
+  const ruleTitles = sortedTitles(titles);
   return { ...c, ..._detailFor(key, rows), ...(ruleTitles ? { ruleTitles } : {}) };
 }

@@ -35,10 +35,11 @@
  * the same reason. A deterministic seed in a benchmark is the correct implementation of a
  * benchmark.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative, resolve, dirname } from 'node:path';
+import { readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
+import { join, relative, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirExcluder } from './scan-exclusions.mjs';
+import { linkPolicy, LINK_DANGLING } from './lib/walk-links.mjs';
 
 const ROOT = resolve(process.argv[2] || '.');
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -166,15 +167,29 @@ function isTestPath(rel) {
 const findings = [];
 let filesScanned = 0;
 
+const links = linkPolicy(ROOT);
+const linksNotFollowed = [];
+
 function walk(dir) {
+  if (!links.first(dir)) return;
   let entries;
   try { entries = readdirSync(dir); } catch { return; }
+  walkEntries(dir, entries, lstatSync);
+}
+
+function walkEntries(dir, entries, statOf) {
   for (const name of entries) {
     const p = join(dir, name);
     if (skipDir(relative(ROOT, p))) continue;
-    let st; try { st = statSync(p); } catch { continue; }
+    let st; try { st = statOf(p); } catch { continue; }
+    if (st.isSymbolicLink()) {
+      const reason = links.link(p);
+      if (reason) linksNotFollowed.push({ path: relative(ROOT, p).split('\\').join('/'), reason });
+      continue;
+    }
     if (st.isDirectory()) { walk(p); continue; }
     if (!SCAN_EXT.test(name)) continue;
+    if (!links.first(p)) continue;
     let txt; try { txt = readFileSync(p, 'utf8'); } catch { continue; }
     filesScanned++;
     const rel = relative(ROOT, p).split('\\').join('/');
@@ -248,6 +263,15 @@ function walk(dir) {
 }
 
 walk(ROOT);
+for (const { path: p, target } of links.drain()) {
+  if (skipDir(target)) continue;
+  walkEntries(dirname(p), [basename(p)], statSync);
+}
+function reportLinksNotFollowed(tool) {
+  if (!linksNotFollowed.length) return;
+  for (const { path, reason } of linksNotFollowed) process.stderr.write(`${tool}: warning: ${path} is a link ${reason === LINK_DANGLING ? 'to nothing' : 'out of the scanned tree'}; not followed\n`);
+}
+reportLinksNotFollowed('weak-random-detect');
 
 const real = findings.filter((f) => f.context !== 'test');
 const inTests = findings.filter((f) => f.context === 'test');
@@ -261,6 +285,7 @@ const output = {
     byRule,
     filesScanned,
     testContext: inTests.length,
+    ...(linksNotFollowed.length ? { linksNotFollowed } : {}),
     note: 'A finding needs BOTH a non-cryptographic source (RNG or clock) AND evidence on the same line or the two before it that the value becomes a credential. Neither half alone is published — `Math.random()` is correct for jitter and wrong only for a value an attacker benefits from guessing. Matches in test/bench/fixture paths are counted under testContext, never as findings: a deterministic seed in a benchmark is the correct implementation of a benchmark.',
   },
   findings,

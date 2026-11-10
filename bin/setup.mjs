@@ -11,8 +11,9 @@
 // env, read at call time: CW_INSTALL_CATALOG (the catalogue to plan from), CW_SETUP_PLATFORM (the
 //       platform to plan for), CW_SETUP_ARCH (the architecture to plan for), CW_SETUP_UID (the uid
 //       to plan for; a root test suite still reaches the non-root path), CW_SETUP_RELEASE_BASE (the
-//       release download origin), CW_SETUP_BIN_DIR (where release binaries go), CW_SKIP_SETUP (1
-//       skips the first-run check)
+//       release download origin), CW_SETUP_BIN_DIR (where release binaries go),
+//       CW_SETUP_LICENSE_DIR (when set, each release archive's licence files go to <dir>/<tool>/),
+//       CW_SKIP_SETUP (1 skips the first-run check)
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, mkdtempSync, copyFileSync, chmodSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -104,6 +105,16 @@ export function releaseAsset(spec) {
 const releaseBase = () => process.env.CW_SETUP_RELEASE_BASE || 'https://github.com';
 export const releaseUrl = (spec, a) => `${releaseBase()}/${spec.repo}/releases/download/${spec.tag}/${a.asset}`;
 const releaseBinDir = () => process.env.CW_SETUP_BIN_DIR || join(homedir(), '.local', 'bin');
+export const LICENSE_FILE = /(^|\/)(LICEN[CS]E|COPYING|NOTICE)([._-][^/]*)?$/i;
+/** Copy an archive's licence files to dest; false when it holds none or they will not extract. */
+function copyLicenses(archive, dest, tmp) {
+  const list = spawnSync('tar', ['-tf', archive], { encoding: 'utf8' });
+  const names = list.status === 0 ? list.stdout.split('\n').filter((n) => LICENSE_FILE.test(n)) : [];
+  if (!names.length || spawnSync('tar', ['-xf', archive, '-C', tmp, ...names], { stdio: 'ignore' }).status !== 0) return false;
+  mkdirSync(dest, { recursive: true });
+  for (const n of names) copyFileSync(join(tmp, n), join(dest, n.split('/').pop()));
+  return true;
+}
 
 // sudo -n never prompts: without root or passwordless sudo the manager is reported, not driven.
 const uid = () => {
@@ -258,6 +269,34 @@ export function loadCatalog() {
 export const KNOWN_MANAGERS = Object.keys(MANAGERS);
 
 /**
+ * Has this package id ever been asked of its manager? 'resolves', 'unresolved' or 'unprobed' —
+ * THREE states, because two of them are measurements and the third is the absence of one.
+ *
+ * A winget id copied out of a project's install docs reads exactly like one somebody queried, and
+ * two of them (TruffleSecurity.TruffleHog, GitHub.CodeQL) resolved to no package at all: the
+ * install failed on a Windows box after the catalogue had offered it as the way to get the tool.
+ *
+ * TWO LAYERS, because the catalogue's evidence genuinely has two grains. `idChecksByManager` is a
+ * CLASS record — brew's ids were verified in one pass, winget's were transcribed from docs — and a
+ * per-tool `idChecks` entry overrides it for one id. Without the class layer every brew id would
+ * read unprobed, which is not what the catalogue measured and would bury the two ids that matter
+ * under fifty rows that do not.
+ */
+export function idState(spec, manager, byManager = {}) {
+  const rec = (spec && spec.idChecks && spec.idChecks[manager]) || byManager[manager];
+  return rec && rec.state === 'resolves' ? 'resolves' : rec && rec.state === 'unresolved' ? 'unresolved' : 'unprobed';
+}
+
+/**
+ * The managers whose id for this tool is unprobed, so a row can SAY so. Deliberately not refused:
+ * every winget and scoop id but two is unprobed, and withholding them all would leave Windows with
+ * no install path for most of the catalogue — a worse defect than the one being fixed. Only a
+ * measured 'unresolved' is withheld, because that one is known not to work.
+ */
+export const unverifiedManagers = (spec, byManager = {}) => KNOWN_MANAGERS
+  .filter((m) => spec[m] && idState(spec, m, byManager) === 'unprobed');
+
+/**
  * Why is there no argv for this tool? THREE distinct answers, and printing one sentence for all
  * three hides which one applies.
  *
@@ -268,10 +307,13 @@ export const KNOWN_MANAGERS = Object.keys(MANAGERS);
  *                     property of the machine, it is a hole in our own data, and it must not be
  *                     reported as if the platform were at fault. `opengrep` and `sobelow` are here.
  */
-export function absenceKind(spec) {
+export function absenceKind(spec, byManager = {}) {
   if (spec.manual) return 'manual';
   if (spec.providedBy) return 'provided-by';
-  const declared = KNOWN_MANAGERS.filter((m) => spec[m]);
+  // An id MEASURED not to resolve is not an installer, so it cannot make the absence read as
+  // 'needs-manager' — that message names a manager the operator could install, and installing it
+  // would not help. A tool left with nothing else is our gap, which is what 'catalog-gap' says.
+  const declared = KNOWN_MANAGERS.filter((m) => spec[m] && idState(spec, m, byManager) !== 'unresolved');
   if (!declared.length) return 'catalog-gap';
   return 'needs-manager';
 }
@@ -279,6 +321,7 @@ export function absenceKind(spec) {
 // -> [{name, why, present, manual, via, argv, url}] for the catalog (or an --only subset)
 export function toolPlan(only = []) {
   const cat = loadCatalog();
+  const byManager = cat.idChecksByManager || {};
   const managers = managersPresent();
   const gated = rootGatedManagers();
   return Object.entries(cat.tools)
@@ -286,13 +329,14 @@ export function toolPlan(only = []) {
     // bubblewrap is the Linux sandbox; reporting it missing on macOS would be a false gap.
     .filter(([, spec]) => !spec.platforms || spec.platforms.includes(platform()))
     .map(([name, spec]) => {
-      const usable = (m) => spec[m] && (!MANAGERS[m].supports || MANAGERS[m].supports(spec[m]));
+      const usable = (m) => spec[m] && idState(spec, m, byManager) !== 'unresolved'
+        && (!MANAGERS[m].supports || MANAGERS[m].supports(spec[m]));
       const via = spec.manual ? null : managers.find(usable);
       // A pinned tool is present when its pinned install verifies; PATH is not asked.
       const pinned = resolvePinnedTool(name);
       const present = pinned ? pinned.ok : hasTool(name);
       const couldUse = via ? null : KNOWN_MANAGERS.filter(usable);
-      const kind = via ? null : absenceKind(spec);
+      const kind = via ? null : absenceKind(spec, byManager);
       const needsRoot = kind === 'needs-manager' ? couldUse.find((m) => gated.includes(m)) || null : null;
       return { name, why: spec.why, present, manual: !!spec.manual, via,
         argv: via ? argvFor(via, spec[via]) : null, url: spec.url,
@@ -311,6 +355,14 @@ export function toolPlan(only = []) {
         readyWhy: spec.ready?.why || null,
         // requiresAccount: what's missing lives at a vendor — no local probe can pass.
         requiresAccount: spec.requiresAccount || null,
+        // Whether the id about to be run was ever asked of its manager. `viaUnverified` is the one
+        // a reader is about to act on; `unverifiedIds` is every unprobed id this tool declares, so
+        // a row that offers an install still says how much is known about it.
+        viaUnverified: !!via && idState(spec, via, byManager) === 'unprobed',
+        unverifiedIds: unverifiedManagers(spec, byManager),
+        // Ids measured NOT to resolve, withheld above — named so the absence is attributable to
+        // our data rather than to the operator's machine.
+        unresolvedIds: KNOWN_MANAGERS.filter((m) => spec[m] && idState(spec, m, byManager) === 'unresolved'),
         steps: spec.steps || null,
         postInstall: spec.postInstall || null };
     });
@@ -337,17 +389,29 @@ export function strandedSummary(rows, order = managerOrder()) {
 
 // one-liner for doctor: how to get a missing tool on this machine
 export function installHintFor(name) {
-  const spec = loadCatalog().tools[name];
+  const cat = loadCatalog();
+  const spec = cat.tools[name];
+  const byManager = cat.idChecksByManager || {};
   if (!spec) return null;
   if (spec.manual) return spec.url;
-  const via = managersPresent().find((m) => spec[m]);
-  if (via) return argvFor(via, spec[via]).join(' ');
+  // An id measured not to resolve is excluded everywhere below: a hint that names a command known
+  // to fail is worse than the url, because the operator runs it first.
+  const offerable = (m) => spec[m] && idState(spec, m, byManager) !== 'unresolved';
+  const via = managersPresent().find(offerable);
+  // An unprobed id is still the fastest route and is still offered — labelled, so a failure reads
+  // as this catalogue's gap and the url beside it is the next thing to try.
+  if (via) {
+    const cmd = argvFor(via, spec[via]).join(' ');
+    return idState(spec, via, byManager) === 'unprobed'
+      ? `${cmd} — the ${via} id is UNVERIFIED (nobody has queried ${via} for it); if it fails, ${spec.url}`
+      : cmd;
+  }
   // Not "here is a url" for every case. A tool whose installer needs a manager the box lacks gets
   // told WHICH manager — that is one action away, and a url is a reading assignment.
   if (spec.providedBy) return `arrives with ${spec.providedBy} — install that`;
-  const gated = rootGatedManagers().find((m) => spec[m]);
+  const gated = rootGatedManagers().find(offerable);
   if (gated) return `needs root: ${gated} is installed, but ${elevationWhy()} — ${elevatedCommand(gated, [spec[gated]])}`;
-  const could = KNOWN_MANAGERS.filter((m) => spec[m]);
+  const could = KNOWN_MANAGERS.filter(offerable);
   if (could.length) return `needs ${could.join(' or ')} — none is installed; or ${spec.url}`;
   return spec.url;
 }
@@ -422,6 +486,8 @@ async function installRelease(row) {
     writeFileSync(join(tmp, a.asset), buf);
     const x = spawnSync('tar', ['-xf', join(tmp, a.asset), '-C', tmp, bin], { stdio: 'ignore' });
     if (x.status !== 0 || !existsSync(join(tmp, bin))) { console.log(red(`  ✗ ${row.name}: ${bin} not found in ${a.asset}`)); return false; }
+    const lic = process.env.CW_SETUP_LICENSE_DIR;
+    if (lic && !copyLicenses(join(tmp, a.asset), join(lic, row.name), tmp)) { console.log(red(`  ✗ ${row.name}: no licence file in ${a.asset}`)); return false; }
     const dir = releaseBinDir();
     mkdirSync(dir, { recursive: true });
     copyFileSync(join(tmp, bin), join(dir, bin));
@@ -564,6 +630,10 @@ export async function runSetup({ yes = false, only = [] } = {}) {
             : r.absence === 'needs-manager' ? `needs ${r.couldUse.join(' or ')}, none installed — or ${r.url}`
               : `NOT IN THE CATALOG for any manager (our gap, not your machine) — ${r.url}`;
     console.log(`  ${red('✗')} ${r.name}  ${dim(`${r.why}  → ${how}`)}`);
+    // An id nobody has queried must not read like one that works: the command is still offered,
+    // and the row says which half of it is a claim rather than a measurement.
+    if (r.viaUnverified) console.log(`      ${yellow(`the ${r.via} id is UNVERIFIED — nobody has queried ${r.via} for it; if it fails, ${r.url}`)}`);
+    for (const m of r.unresolvedIds || []) console.log(dim(`      ${m} declares an id MEASURED not to resolve, so it was not offered`));
     for (const line of stepLines(r.steps)) console.log(dim(`      step: ${line}`));
     if (r.requiresAccount) {
       console.log(`      ${yellow(`installing this is NOT enough — needs a ${r.requiresAccount.vendor} account`)}`);

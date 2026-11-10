@@ -35,8 +35,13 @@ RUN --mount=type=bind,source=container/requirements.txt,target=/tmp/requirements
  && /opt/scanners/bin/pip install --require-hashes --no-deps --only-binary=:all: -r /tmp/requirements.txt \
  && for t in semgrep bandit flawfinder ruff zizmor; do ln -s "/opt/scanners/bin/$t" "/usr/local/bin/$t"; done
 
+# setup refuses trufflehog's cosign-signed release without cosign (lib/release-signing.mjs). cosign's
+# own release assets are bare binaries the release catalog cannot pin, so it comes from sigstore's
+# image, by index digest (v3.1.4, read from ghcr.io on 2026-10-22).
+COPY --from=ghcr.io/sigstore/cosign/cosign:v3.1.4@sha256:0f06154836d2de34f887a5c273506d52ca43edaa1d9e53e6510fa78a48f69c2d /ko-app/cosign /usr/local/bin/cosign
+# setup puts each release archive's licence files where container/licenses.mjs collects them.
 RUN --mount=type=bind,target=/src \
-    sh /src/bin/install.sh --from /src --dest /opt/commitwork --prefix /usr/local --release-only --scanners "$SCANNERS" \
+    CW_SETUP_LICENSE_DIR=/usr/share/licenses/commitwork sh /src/bin/install.sh --from /src --dest /opt/commitwork --prefix /usr/local --release-only --scanners "$SCANNERS" \
  && rm -rf /root/.commitwork /root/.cache /root/.npm /tmp/*
 
 # /repo is the one tree git may read under another owner; a root of many repositories needs
@@ -44,6 +49,12 @@ RUN --mount=type=bind,target=/src \
 # lane cannot do under the read-only root, so the image makes it.
 RUN git config --system --add safe.directory /repo \
  && mkdir -p /out /home/node/.semgrep && chown 1000:1000 /out /home/node/.semgrep
+
+# Every component's licence texts under one directory, with INDEX.json naming each licence and source;
+# the build fails on a component that has none. SOURCES_AT is where the source bundle is published.
+ARG SOURCES_AT=
+RUN --mount=type=bind,target=/src \
+    node /src/container/licenses.mjs --image commitwork --tree /src --sources-at "$SOURCES_AT"
 
 # A lane the sandbox cannot confine is refused as noscan, never run unconfined. No setup prompt.
 ENV CW_SANDBOX=require \

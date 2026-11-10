@@ -6,13 +6,14 @@
 // unreadability is the signal, never a skip
 // vendor-scan names the library, this lane never does
 // writes: counts and metrics only, never scanned bytes
-import { readFileSync, readdirSync, statSync, openSync, readSync, closeSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync, openSync, readSync, closeSync } from 'node:fs';
 import { join, relative, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { validateAgainstSchema } from '../monitor/registry.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 import { excludeDirs, dirExcluder } from './scan-exclusions.mjs';
+import { linkPolicy } from './lib/walk-links.mjs';
 
 const ROOT = resolve(process.argv[2] || '.');
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -316,18 +317,38 @@ function push(rule, rel, sev, capped, m, detail) {
     ...(selfRef ? { selfReference: SELF_REF_WHY } : {}) });
 }
 
+let links;
+function visit(p, name, st) {
+  if (st.isSymbolicLink()) {
+    const notFollowed = links.link(p);
+    if (notFollowed) filesSkipped.push({ path: rel(p), reason: notFollowed });
+    return;
+  }
+  if (st.isDirectory()) { if (!skipPath(rel(p))) walk(p); return; }
+  if (!SCAN_EXT.test(name) && !HTML_EXT.test(name) && !WASM_EXT.test(name) && !TEXT_FILE.test(name)) return;
+  if (!links.first(p)) return;
+  const r = readCapped(p, st.size);
+  if (!r) { filesSkipped.push({ path: rel(p), reason: 'unreadable', bytes: st.size }); return; }
+  filesScanned++;
+  classify(rel(p), r.buf, r.capped, st.size, p);
+}
 function walk(dir) {
+  if (!links.first(dir)) return;
   let entries; try { entries = readdirSync(dir); } catch (e) { filesSkipped.push({ path: rel(dir), reason: e.code || 'readdir-error' }); return; }
   for (const name of entries) {
     if (SKIP_DIRS.has(name)) continue;
     const p = join(dir, name);
+    let st; try { st = lstatSync(p); } catch { continue; }
+    visit(p, name, st);
+  }
+}
+function walkTree(root) {
+  links = linkPolicy(root);
+  walk(root);
+  for (const { path: p, target } of links.drain()) {
+    if (target.split('/').some((seg) => SKIP_DIRS.has(seg)) || skipPath(target)) continue;
     let st; try { st = statSync(p); } catch { continue; }
-    if (st.isDirectory()) { if (!skipPath(rel(p))) walk(p); continue; }
-    if (!SCAN_EXT.test(name) && !HTML_EXT.test(name) && !WASM_EXT.test(name) && !TEXT_FILE.test(name)) continue;
-    const r = readCapped(p, st.size);
-    if (!r) { filesSkipped.push({ path: rel(p), reason: 'unreadable', bytes: st.size }); continue; }
-    filesScanned++;
-    classify(rel(p), r.buf, r.capped, st.size, p);
+    visit(p, basename(p), st);
   }
 }
 const rel = (p) => relative(ROOT, p).split('\\').join('/');
@@ -395,7 +416,7 @@ function classify(relPath, buf, capped, trueSize, absPath) {
 // guarded: importing HIDDEN_TEXT must not walk the importer's cwd
 function main() {
   skipPath = dirExcluder(excludeDirs().filter((d) => d.includes('/')));
-  walk(ROOT);
+  walkTree(ROOT);
 
   // pins: identity anchors on the sink, the execution locus
   if (CFG.xfileRule && xfile.builders.length && xfile.sinks.length) {

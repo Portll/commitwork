@@ -444,12 +444,30 @@ export function ingestArea(doc, {
   }
 
   // -- auto-close table --------------------------------------------------------------------
+  // Closes an issue keyed on a worktree copy as superseded; false when the key is canonical.
+  const closeWorktreeCopy = (iss, src) => {
+    const copy = worktreeCopyOf(src.key);
+    if (!copy) return false;
+    const canonicalId = doc.byKey[copy.canonicalKey] && doc.byKey[copy.canonicalKey] !== iss.id ? doc.byKey[copy.canonicalKey] : null;
+    const detail = `describes a copy of this repository under ${copy.pattern}/${copy.name}${canonicalId ? `; duplicate of ${canonicalId}` : '; no canonical issue holds this place'}`;
+    if (dryRun) { summary.worktreeSuperseded = [...(summary.worktreeSuperseded || []), `(dry) ${iss.id}`]; return true; }
+    mutateIssue(doc, iss.id, (i) => {
+      i.state = 'closed'; i.closedAs = 'superseded'; i.claim = null; i.suspect = false;
+      if (canonicalId) i.deps.duplicateOf = canonicalId;
+      i.evidence.push({ at, tier: 'worktree-copy', sliceId: rollup.sliceId, detail });
+    }, 'issue-closed', { closedAs: 'superseded', ...(canonicalId ? { duplicateOf: canonicalId } : {}), why: 'worktree copy', auto: true }, at);
+    summary.worktreeSuperseded = [...(summary.worktreeSuperseded || []), iss.id];
+    return true;
+  };
   for (const iss of Object.values(doc.issues)) {
     if (iss.area !== areaSlug || iss.state === 'closed') continue;
     const src = iss.source || {};
     if (src.kind === 'finding' && src.key?.startsWith('f:')) {
       const raw = src.key.slice(2);
       if (openFindings.has(raw)) continue;                       // still open
+      // A copy's lockfile leaves when deps-osv stops reading copies; absent with a known fix is ledger
+      // tier medium, which closed it as FIXED. Superseded is identity, not evidence, so no A5 gate.
+      if (closeWorktreeCopy(iss, src)) continue;
       const led = ledgerEvidenceFor(ledger, raw);
       if (led && (led.evidence?.tier === 'strong' || led.evidence?.tier === 'medium')) {
         if (dryRun) { summary.closed.push(`(dry) ${iss.id}`); continue; }
@@ -508,19 +526,7 @@ export function ingestArea(doc, {
       // A copy under a worktree is a duplicate of the canonical finding, never a fix. Deleting the
       // worktree removes the file, which the anchor probe below reads as FIXED: measured 2026-10-08,
       // 42 such closures, 32 of them from one cleanup that removed five agent worktrees.
-      const copy = worktreeCopyOf(src.key);
-      if (copy) {
-        const canonicalId = doc.byKey[copy.canonicalKey] && doc.byKey[copy.canonicalKey] !== iss.id ? doc.byKey[copy.canonicalKey] : null;
-        const detail = `describes a copy of this repository under ${copy.pattern}/${copy.name}${canonicalId ? `; duplicate of ${canonicalId}` : '; no canonical issue holds this place'}`;
-        if (dryRun) { summary.worktreeSuperseded = [...(summary.worktreeSuperseded || []), `(dry) ${iss.id}`]; continue; }
-        mutateIssue(doc, iss.id, (i) => {
-          i.state = 'closed'; i.closedAs = 'superseded'; i.claim = null; i.suspect = false;
-          if (canonicalId) i.deps.duplicateOf = canonicalId;
-          i.evidence.push({ at, tier: 'worktree-copy', sliceId: rollup.sliceId, detail });
-        }, 'issue-closed', { closedAs: 'superseded', ...(canonicalId ? { duplicateOf: canonicalId } : {}), why: 'worktree copy', auto: true }, at);
-        summary.worktreeSuperseded = [...(summary.worktreeSuperseded || []), iss.id];
-        continue;
-      }
+      if (closeWorktreeCopy(iss, src)) continue;
       // The ANALYSIS changed, not the code: a row produced under one model and absent under
       // another was never compared. Treated like a tool that did not run, because that is what it
       // is — the reading that found this row has not been performed since.

@@ -34,7 +34,18 @@ test('an invalid policy is refused, including a mistyped field that would narrow
 
 test('flags override the settings field by field', () => {
   const settings = { depsProdUpdateTypes: ['patch'], depsDevUpdateTypes: ['patch'], depsAutoMergeTypes: [], depsCooldownDays: 7 };
-  assert.deepEqual(operatorPolicy({ settings, flags: { dev: ['major'], cooldown: 0 } }), { prod: ['patch'], dev: ['major'], automerge: [], cooldown: 0 });
+  assert.deepEqual(operatorPolicy({ settings, flags: { dev: ['major'], cooldown: 0 } }), { prod: ['patch'], dev: ['major'], automerge: [], cooldown: 0,
+    alertFixBypassesCooldown: false, introduced: { includeDev: true, blocking: ['critical', 'high', 'unknown'] } });
+});
+
+test('the alert-fix cooldown bypass is off and devDependencies count unless the operator says otherwise', () => {
+  const base = { depsProdUpdateTypes: ['patch'], depsDevUpdateTypes: ['patch'], depsAutoMergeTypes: [], depsCooldownDays: 7 };
+  const dflt = resolvePolicy(operatorPolicy({ settings: base }), { version: 1, cooldownDays: 3 });
+  assert.equal(dflt.alertFixBypassesCooldown, false);
+  assert.deepEqual(dflt.introduced, { includeDev: true, blocking: ['critical', 'high', 'unknown'] });
+  const set = operatorPolicy({ settings: { ...base, depsAlertFixBypassesCooldown: true, depsIntroducedIncludeDev: false, depsIntroducedSeverities: ['critical'] } });
+  assert.deepEqual([set.alertFixBypassesCooldown, set.introduced], [true, { includeDev: false, blocking: ['critical'] }]);
+  assert.equal(operatorPolicy({ settings: base, flags: { includeDev: false } }).introduced.includeDev, false, 'a run flag narrows the setting');
 });
 
 const repoPolicy = JSON.parse(readFileSync(join(CW, '.github', 'dependency-updates.json'), 'utf8'));

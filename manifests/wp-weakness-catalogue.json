@@ -1,0 +1,365 @@
+{
+  "schema": 1,
+  "name": "WordPress weakness catalogue",
+  "note": "Read by bin/wp-posture.mjs. Each entry is a predicate over the observable rows bin/lib/wp-observables.mjs produces from a tree and a database dump; a new weakness is a new entry here, not code. Verbs: exists (one finding per matching row, capped), absent (one finding when no row matches), count-gt / count-lt (one finding when the match count crosses `than`). `given` is a precondition: no match makes the entry not applicable, an unmeasured type makes it not measured. `where` is an AND over fields; a field takes a scalar, a list (membership) or an operator object: neq, in, notIn, gt, gte, lt, lte, contains, notContains, startsWith, endsWith, regex, exists. Templates in `detail` substitute {field} from the matching row, plus {count} and {than}. Rows never carry option values, hashes, emails or file contents, so no template can leak one. `enables` names routes in `routes`; `refs` names the public guideline item the entry follows. Severities follow the house scale crit / high / med / low.",
+  "routes": {
+    "admin-takeover": "an administrator session, stolen or brute-forced, reaches every option, every upload and every plugin install",
+    "sqli-credential-read": "a SQL injection in core or a plugin reads the options and users tables",
+    "backup-export-leak": "a whole-site export or backup archive is written under the web root and fetched by URL",
+    "served-log-read": "a log file under the web root is fetched by URL",
+    "db-console-export": "an in-browser database console exports tables from an administrator session",
+    "webshell-persistence": "server code written where uploads land runs as the web user",
+    "audit-blind": "the record that would show an intrusion is absent, purged or stopped",
+    "dormant-vulnerable-core": "a known-exploited core or plugin version stays in place because updates are off",
+    "mass-scan-default-surface": "automated exploitation that names default paths, tables and usernames"
+  },
+  "componentClasses": {
+    "security": { "slugs": ["all-in-one-wp-security-and-firewall", "sucuri-scanner", "wordfence", "better-wp-security", "ithemes-security-pro", "solid-security", "wp-cerber", "ninjafirewall", "malcare-security", "security-malware-firewall", "shield-security", "wp-simple-firewall", "defender-security", "bulletproof-security", "jetpack-protect", "patchstack"], "nameRegex": "wordfence|sucuri|security|firewall|patchstack" },
+    "audit": { "slugs": ["simple-history", "wp-security-audit-log", "wp-activity-log", "aryo-activity-log", "activity-log", "stream", "user-activity-log", "wp-user-activity"], "nameRegex": "activity log|audit log|simple history" },
+    "export": { "slugs": ["all-in-one-wp-migration", "all-in-one-wp-migration-unlimited-extension", "updraftplus", "duplicator", "duplicator-pro", "backwpup", "backupbuddy", "wpvivid-backuprestore", "wp-migrate-db", "wp-migrate-db-pro", "backup-backup", "xcloner-backup-and-restore", "wp-staging", "wp-staging-pro"], "nameRegex": "migration|backup|duplicator|wp staging" },
+    "db-console": { "slugs": ["wp-adminer", "adminer", "sql-executioner", "wp-phpmyadmin-extension", "wp-data-access", "database-manager", "wp-database-admin"], "nameRegex": "adminer|phpmyadmin|sql executioner|database manager|sql console|database browser|database admin" },
+    "file-manager": { "slugs": ["wp-file-manager", "wp-file-manager-pro", "file-manager-advanced", "filester", "advanced-file-manager", "file-manager"], "nameRegex": "file manager" },
+    "login-as": { "slugs": ["user-switching", "login-as-user", "login-as-customer", "wp-user-switch", "login-as-user-or-customer"], "nameRegex": "login as|user switching" },
+    "hide-login": { "slugs": ["wps-hide-login", "rename-wp-login", "hide-my-wp", "hide-my-site", "hide-login-page", "change-wp-admin-login"], "nameRegex": "hide login|rename wp-login|hide my wp|change wp-admin login" },
+    "mail-logging": { "slugs": ["wp-mail-logging", "email-log", "check-email", "wp-mail-log", "mail-logging-wp", "post-smtp"], "nameRegex": "mail log|email log|mail logging" },
+    "code-execution": { "slugs": ["insert-php", "insert-php-code-snippet", "code-snippets", "php-code-widget", "xyz-html", "custom-css-js-php", "php-everywhere", "exec-php", "wpcode", "insert-headers-and-footers", "woody-ad-snippets", "wp-php-widget"], "nameRegex": "php code|code snippets|php everywhere|exec php|insert php|wpcode" }
+  },
+  "entries": [
+    {
+      "id": "wp-secrets-in-options", "name": "Application credentials stored in the options table", "sev": "high", "cwe": "CWE-522",
+      "predicate": { "verb": "exists", "type": "wp-option", "where": { "valueClass": "credential" } },
+      "detail": "option `{key}` ({namespace}, autoload {autoload}) holds a credential-class value; a SQL injection, a database console, a backup export or an options dump reads it as plain text",
+      "enables": ["sqli-credential-read", "backup-export-leak", "db-console-export", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: protect sensitive configuration; keep secrets out of the database" },
+      "course": "Move the value to the environment or a secret store read from wp-config.php, keep only a reference in the option, and rotate the credential now: it has been readable by every route above for as long as it has been there."
+    },
+    {
+      "id": "wp-logs-under-served-path", "name": "Application logs written under the served wp-content tree", "sev": "high", "cwe": "CWE-532",
+      "predicate": { "verb": "exists", "type": "served-dir", "where": { "kind": ["logs", "other"], "logFiles": { "gt": 0 } } },
+      "detail": "`{path}` holds {logFiles} log file(s) under wp-content, which WordPress serves statically (index guard {guardIndex}, .htaccess {guardHtaccess}); an unauthenticated GET returns them unless the server denies the directory",
+      "enables": ["served-log-read"],
+      "refs": { "guideline": "OWASP WP-SIG: security logging, logs outside the document root" },
+      "course": "Write logs outside the web root, or deny the directory at the server and verify from outside; preserve the existing files as evidence, then remove them from the served tree."
+    },
+    {
+      "id": "wp-served-log-holds-credentials", "name": "A served file holds password or hash shaped text", "sev": "crit", "cwe": "CWE-532",
+      "predicate": { "verb": "exists", "type": "file", "where": { "credentialShape": true } },
+      "detail": "`{path}` ({bytes} bytes, {kind}) contains password, hash or activation-key shaped text in its first 64 KB; a file under wp-content that holds credentials is readable by URL unless the server denies it",
+      "enables": ["served-log-read", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: never log credentials" },
+      "course": "Treat every credential in the file as disclosed: reset the accounts, invalidate reset keys, then fix the code that logs them before removing the file."
+    },
+    {
+      "id": "wp-backups-under-webroot", "name": "Backup or export archives stored under the web root", "sev": "high", "cwe": "CWE-538",
+      "predicate": { "verb": "exists", "type": "served-dir", "where": { "kind": "backups", "fileCount": { "gt": 0 } } },
+      "detail": "`{path}` holds {fileCount} file(s) in a backup directory under wp-content; a full-site archive here is one guessable URL away from the whole database and wp-config.php",
+      "enables": ["backup-export-leak"],
+      "refs": { "guideline": "OWASP WP-SIG: backups stored off-site, never in the document root" },
+      "course": "Configure the backup plugin to write outside the web root or straight to remote storage, deny the directory at the server, and delete what is there after copying it to evidence."
+    },
+    {
+      "id": "wp-archive-or-dump-in-served-tree", "name": "An archive or database dump directly in the served tree", "sev": "high", "cwe": "CWE-538",
+      "predicate": { "verb": "exists", "type": "file", "where": { "kind": ["archive", "data"], "name": { "regex": "\\.(zip|tar|gz|tgz|7z|rar|wpress|sql)(\\.gz)?$" } } },
+      "detail": "`{path}` is an archive or dump sitting where the web server serves files; its name is the only thing between it and a download",
+      "enables": ["backup-export-leak"],
+      "refs": { "guideline": "OWASP WP-SIG: no backups in the document root" },
+      "course": "Move it out of the served tree now; check the access log for requests to it before deciding whether it was fetched."
+    },
+    {
+      "id": "wp-archives-under-uploads", "name": "Archives inside uploads or a custom served directory", "sev": "med", "cwe": "CWE-538",
+      "predicate": { "verb": "exists", "type": "served-dir", "where": { "kind": ["uploads", "other"], "archiveFiles": { "gt": 0 } } },
+      "detail": "`{path}` holds {archiveFiles} archive file(s), for example {archiveSample}; uploads are served by design, so an archive here is public to anyone who learns or guesses its name",
+      "enables": ["backup-export-leak"],
+      "refs": { "guideline": "OWASP WP-SIG: restrict uploads to the media the site needs" },
+      "course": "Confirm each archive is meant to be public; move exports and backups out of uploads."
+    },
+    {
+      "id": "wp-data-files-under-served-path", "name": "Tabular data files inside uploads or a custom served directory", "sev": "med", "cwe": "CWE-538",
+      "predicate": { "verb": "exists", "type": "served-dir", "where": { "kind": ["uploads", "other"], "dataFiles": { "gt": 0 } } },
+      "detail": "`{path}` holds {dataFiles} csv, xlsx or sql file(s), for example {dataSample}; a spreadsheet of customers under uploads is served to anyone with the URL, and upload URLs follow a predictable date pattern",
+      "enables": ["served-log-read"],
+      "refs": { "guideline": "OWASP WP-SIG: do not store personal data in the media library" },
+      "course": "Move the files to storage the application mediates with authentication; if any held personal information, record the exposure window from the access log."
+    },
+    {
+      "id": "wp-debug-log-present", "name": "A debug log is being written", "sev": "med", "cwe": "CWE-532",
+      "predicate": { "verb": "exists", "type": "file", "where": { "debugLog": true, "bytes": { "gt": 0 } } },
+      "detail": "`{path}` is {bytes} bytes of PHP notices and whatever plugins print to error_log, under the served tree; debug logs accumulate paths, queries and, from careless code, secrets",
+      "enables": ["served-log-read"],
+      "refs": { "guideline": "OWASP WP-SIG: WP_DEBUG off in production" },
+      "course": "Set WP_DEBUG and WP_DEBUG_LOG false in production, or point WP_DEBUG_LOG at a path outside the web root; read the existing file for secrets before deleting it."
+    },
+    {
+      "id": "wp-uploads-php-not-denied", "name": "No rule in the tree denies PHP execution under uploads", "sev": "med", "cwe": "CWE-434",
+      "predicate": { "verb": "absent", "type": "server-directive", "where": { "name": "php-denied", "value": true, "location": "uploads" }, "given": { "type": "served-dir", "where": { "kind": "uploads" } } },
+      "detail": "no .htaccess under wp-content/uploads denies PHP execution; a file that reaches uploads through any upload bug, plugin or theme runs as the web user (nginx and host-level rules are not visible in a tree, so verify at the server)",
+      "enables": ["webshell-persistence"],
+      "refs": { "guideline": "OWASP WP-SIG: disable PHP execution in wp-content/uploads" },
+      "course": "Deny execution of .php, .phtml and .phar under uploads at the server, then prove it with a harmless text file named test.php that must be served as text or refused."
+    },
+    {
+      "id": "wp-mu-plugin-present", "name": "Must-use plugin loaded on every request", "sev": "low", "cwe": "CWE-829",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "mu-plugin" } },
+      "detail": "`{path}` is a must-use plugin: active on every request, invisible to the deactivate button and verified by no checksum source (classes: {classes})",
+      "enables": ["webshell-persistence"],
+      "refs": { "guideline": "OWASP WP-SIG: know every piece of code that loads" },
+      "course": "Name each mu-plugin in the deployment's declared manifest so that an undeclared one is a finding, and review the file's purpose."
+    },
+    {
+      "id": "wp-cron-rerouted", "name": "WP-Cron depends on an external runner", "sev": "low", "cwe": "CWE-754",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "mu-plugin", "classes": { "contains": "cron-control" } } },
+      "detail": "mu-plugin `{slug}` changes how WP-Cron runs; when the external runner stops, scheduled purges, update checks, backups and the site's own daily logs stop with it and nothing in WordPress reports the silence",
+      "enables": ["audit-blind", "dormant-vulnerable-core"],
+      "refs": { "guideline": "OWASP WP-SIG: monitor scheduled tasks" },
+      "course": "Have the runner's own scheduler alarm on a missed run, and have a check outside the box confirm the newest scheduled artefact is fresh."
+    },
+    {
+      "id": "wp-config-cron-disabled", "name": "DISABLE_WP_CRON set without a visible runner", "sev": "low", "cwe": "CWE-754",
+      "predicate": { "verb": "exists", "type": "server-directive", "where": { "scope": "wp-config", "name": "DISABLE_WP_CRON", "value": true } },
+      "detail": "wp-config.php disables WP-Cron ({path}); scheduled work now depends on a system cron the tree cannot show, and a stopped runner silences purges, update checks and logs",
+      "enables": ["audit-blind"],
+      "refs": { "guideline": "OWASP WP-SIG: monitor scheduled tasks" },
+      "course": "Alarm on a missed run from the runner's side; verify the newest scheduled artefact is fresh from outside the box."
+    },
+    {
+      "id": "wp-default-admin-username", "name": "Administrator with a dictionary username", "sev": "med", "cwe": "CWE-1392",
+      "predicate": { "verb": "exists", "type": "wp-user", "where": { "admin": true, "loginIsDefault": true } },
+      "detail": "administrator `{login}` ({path}) uses a username every credential list starts with; the password alone is the control",
+      "enables": ["admin-takeover", "mass-scan-default-surface"],
+      "refs": { "guideline": "OWASP WP-SIG: no default administrator username" },
+      "course": "Create a new administrator with a non-dictionary login, transfer content, delete this one."
+    },
+    {
+      "id": "wp-many-administrators", "name": "More administrators than the site needs", "sev": "low", "cwe": "CWE-250",
+      "predicate": { "verb": "count-gt", "type": "wp-user", "where": { "admin": true }, "than": 3 },
+      "detail": "{count} administrator accounts (threshold {than}); each is a full-takeover path, a phishing target and a credential that can be brute-forced by name",
+      "enables": ["admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: least privilege for user roles" },
+      "course": "Demote everyone who does not administer the site; contractors get an editor or a time-limited account."
+    },
+    {
+      "id": "wp-admin-login-is-email", "name": "Administrator signs in with an email address as username", "sev": "low", "cwe": "CWE-200",
+      "predicate": { "verb": "exists", "type": "wp-user", "where": { "admin": true, "loginLooksEmail": true } },
+      "detail": "administrator {path} uses an email address as the login name; a known mailbox is then half of the credential, and every named-account attack starts from a username list",
+      "enables": ["admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: usernames distinct from public identifiers" },
+      "course": "Give administrators a login that is not published anywhere; keep the email for notifications only."
+    },
+    {
+      "id": "wp-admin-legacy-hash", "name": "Dormant administrator with a legacy password hash", "sev": "med", "cwe": "CWE-916",
+      "predicate": { "verb": "exists", "type": "wp-user", "where": { "admin": true, "passwordScheme": "phpass" }, "given": { "type": "wp-user", "where": { "passwordScheme": "bcrypt" } } },
+      "detail": "administrator {path} still carries a phpass hash while other accounts have been rehashed to bcrypt: it has not signed in since the site moved to bcrypt, so it is a dormant privileged account whose password is weakly hashed",
+      "enables": ["admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: remove unused accounts" },
+      "course": "Delete the account or reset its password, which rehashes it; dormant administrators are the ones nobody notices being used."
+    },
+    {
+      "id": "wp-registration-open", "name": "Anyone can register", "sev": "med", "cwe": "CWE-284",
+      "predicate": { "verb": "exists", "type": "wp-setting", "where": { "key": "users_can_register", "value": "1" } },
+      "detail": "users_can_register is on; every registration is an authenticated account, and most privilege-escalation advisories need exactly that",
+      "enables": ["admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: disable registration unless the site needs it" },
+      "course": "Turn registration off, or keep it with the default role subscriber, email verification and a rate limit."
+    },
+    {
+      "id": "wp-default-role-privileged", "name": "New users receive a privileged role", "sev": "high", "cwe": "CWE-269",
+      "predicate": { "verb": "exists", "type": "wp-setting", "where": { "key": "default_role", "value": ["administrator", "editor", "author", "contributor", "shop_manager"] } },
+      "detail": "default_role is `{value}`; whoever registers, or whoever a registration bug lets in, starts with that role",
+      "enables": ["admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: default role subscriber" },
+      "course": "Set the default role to subscriber."
+    },
+    {
+      "id": "wp-login-at-default-path", "name": "Login and XML-RPC answer at their default paths", "sev": "low", "cwe": "CWE-1188",
+      "predicate": { "verb": "absent", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "hide-login" }, "state": ["active", "unknown"] }, "given": { "type": "wp-install", "where": {} } },
+      "detail": "nothing in the tree moves wp-login.php off its default path; mass exploitation and credential stuffing name the defaults, and a moved path takes the site out of that traffic without being a control against a targeted attacker",
+      "enables": ["mass-scan-default-surface"],
+      "refs": { "guideline": "OWASP WP-SIG: brute-force prevention; optional login path change" },
+      "course": "Rate-limit and two-factor the login first; moving the path is a cheap second layer, and disabling XML-RPC removes the other password endpoint."
+    },
+    {
+      "id": "wp-core-auto-update-off", "name": "Core minor updates are not automatic", "sev": "high", "cwe": "CWE-1104",
+      "predicate": { "verb": "exists", "type": "wp-setting", "where": { "key": "auto_update_core_minor", "value": { "neq": "enabled" } } },
+      "detail": "auto_update_core_minor is `{value}`; security releases of the installed branch will not apply themselves, and a core vulnerability stays exploitable until someone updates by hand",
+      "enables": ["dormant-vulnerable-core"],
+      "refs": { "guideline": "OWASP WP-SIG: automatic updates for core security releases" },
+      "course": "Set auto_update_core_minor to enabled, and verify a check outside the box compares the installed version with the current release."
+    },
+    {
+      "id": "wp-config-updater-disabled", "name": "The automatic updater is disabled in wp-config.php", "sev": "high", "cwe": "CWE-1104",
+      "predicate": { "verb": "exists", "type": "server-directive", "where": { "scope": "wp-config", "name": ["AUTOMATIC_UPDATER_DISABLED", "DISALLOW_FILE_MODS"], "value": true } },
+      "detail": "{name} is true in {path}; no update applies without a deploy, so the deploy pipeline is now the only thing standing between a published core advisory and the site",
+      "enables": ["dormant-vulnerable-core"],
+      "refs": { "guideline": "OWASP WP-SIG: updates applied within days of release" },
+      "course": "Acceptable only where a pipeline updates core on every security release and something measures the lag; otherwise remove the constant."
+    },
+    {
+      "id": "wp-config-core-auto-update-false", "name": "WP_AUTO_UPDATE_CORE is false", "sev": "high", "cwe": "CWE-1104",
+      "predicate": { "verb": "exists", "type": "server-directive", "where": { "scope": "wp-config", "name": "WP_AUTO_UPDATE_CORE", "value": false } },
+      "detail": "WP_AUTO_UPDATE_CORE is false in {path}; minor security releases stop applying",
+      "enables": ["dormant-vulnerable-core"],
+      "refs": { "guideline": "OWASP WP-SIG: automatic updates for core security releases" },
+      "course": "Set it to minor or true."
+    },
+    {
+      "id": "wp-security-plugin-inactive", "name": "Security plugin installed but inactive", "sev": "high", "cwe": "CWE-693",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "security" }, "state": "inactive" } },
+      "detail": "`{slug}` ({name} {version}) is on disk and deactivated: its firewall, login limits and audit log stopped the moment it was switched off, and its code still answers direct requests",
+      "enables": ["audit-blind", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: WAF and security logging in place" },
+      "course": "Reactivate it or remove it; a deactivated security plugin reads as installed to anyone listing the site."
+    },
+    {
+      "id": "wp-no-active-security-plugin", "name": "No active security plugin", "sev": "med", "cwe": "CWE-693",
+      "predicate": { "verb": "absent", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "security" }, "state": "active" }, "given": { "type": "wp-setting", "where": { "key": "active_plugins_count" } } },
+      "detail": "no active plugin in the security class; brute-force limiting, firewall rules and file-change alerts depend on something else that the tree does not show",
+      "enables": ["admin-takeover", "audit-blind"],
+      "refs": { "guideline": "OWASP WP-SIG: WAF, brute-force prevention, file integrity monitoring" },
+      "course": "Either an edge WAF with login rate limits and an off-box integrity check, or an active security plugin, and record which one applies."
+    },
+    {
+      "id": "wp-no-audit-source", "name": "No audit log table", "sev": "med", "cwe": "CWE-778",
+      "predicate": { "verb": "absent", "type": "audit-source", "where": { "present": true, "kind": "table" }, "given": { "type": "wp-setting", "where": { "key": "active_plugins_count" } } },
+      "detail": "the database holds no activity or audit table; logins, plugin installs, option changes and user changes leave no record inside WordPress",
+      "enables": ["audit-blind"],
+      "refs": { "guideline": "OWASP WP-SIG: security logging" },
+      "course": "Install an activity log plugin and ship its records off the box; a log that lives in the database it describes is deleted by the same session that deleted the evidence."
+    },
+    {
+      "id": "wp-phantom-active-plugin", "name": "Plugin active in the database but absent from the tree", "sev": "high", "cwe": "CWE-506",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "state": "phantom" } },
+      "detail": "`{slug}` is listed in active_plugins but `{path}` is not in the tree: the backup omitted it, it was deleted on disk after the database was read, or it was a planted plugin whose files have been removed; the database and the tree disagree as of this backup",
+      "enables": ["webshell-persistence", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: only known plugins installed" },
+      "course": "Account for every entry: a plugin nobody installed is an intrusion artefact, and the session that activated it is in the audit log if one exists."
+    },
+    {
+      "id": "wp-inactive-plugin-on-disk", "name": "Inactive plugin left on disk", "sev": "low", "cwe": "CWE-1104",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "state": "inactive", "classes": { "notContains": "security" } } },
+      "detail": "`{slug}` ({name} {version}) is installed and inactive; its files still answer direct requests, receive no attention and get no updates",
+      "enables": ["webshell-persistence"],
+      "refs": { "guideline": "OWASP WP-SIG: remove unused plugins and themes" },
+      "course": "Delete what is not in use."
+    },
+    {
+      "id": "wp-export-plugin-installed", "name": "Whole-site export plugin installed", "sev": "med", "cwe": "CWE-538",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "export" } } },
+      "detail": "`{slug}` ({name} {version}, {state}) exports the whole site including the database and wp-config.php from any administrator session, and writes the archive under wp-content by default",
+      "enables": ["backup-export-leak", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: backups off-site and access-controlled" },
+      "course": "Keep it only if backups go straight to remote storage and the local directory is denied at the server; otherwise remove it and run backups from the host side."
+    },
+    {
+      "id": "wp-db-console-plugin-installed", "name": "In-browser database console installed", "sev": "high", "cwe": "CWE-285",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "db-console" } } },
+      "detail": "`{slug}` ({name} {version}, {state}) runs SQL and exports tables from the browser; an administrator session becomes a database export, and its use leaves no row in the activity log",
+      "enables": ["db-console-export", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: no database administration from the application" },
+      "course": "Remove it; database work goes through the host's tooling with its own audit trail."
+    },
+    {
+      "id": "wp-file-manager-plugin-installed", "name": "File manager plugin installed", "sev": "high", "cwe": "CWE-434",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "file-manager" } } },
+      "detail": "`{slug}` ({name} {version}, {state}) writes arbitrary files from the browser; file-manager plugins carry a history of unauthenticated upload advisories, and an administrator session becomes a shell",
+      "enables": ["webshell-persistence", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: no file management from the application" },
+      "course": "Remove it; use SFTP or the deploy pipeline."
+    },
+    {
+      "id": "wp-login-as-plugin-installed", "name": "Login-as-user plugin installed", "sev": "med", "cwe": "CWE-287",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "login-as" } } },
+      "detail": "`{slug}` ({name} {version}, {state}) lets an administrator become any user without that user's credential; every customer account is then reachable from one admin session",
+      "enables": ["admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: least privilege" },
+      "course": "Remove it unless support needs it, and then log every switch off the box."
+    },
+    {
+      "id": "wp-code-execution-plugin-installed", "name": "Plugin that runs PHP from the admin screen", "sev": "high", "cwe": "CWE-94",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "code-execution" }, "state": ["active", "unknown"] } },
+      "detail": "`{slug}` ({name} {version}) executes PHP entered in the admin; any administrator session, or any stored-XSS that reaches one, becomes code execution with no file written",
+      "enables": ["webshell-persistence", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: DISALLOW_FILE_EDIT and no code-execution plugins" },
+      "course": "Move the snippets into a versioned plugin deployed by the pipeline and remove the runner."
+    },
+    {
+      "id": "wp-mail-logging-active", "name": "Outgoing mail logged into the database", "sev": "med", "cwe": "CWE-532",
+      "predicate": { "verb": "exists", "type": "wp-component", "where": { "kind": "plugin", "classes": { "contains": "mail-logging" }, "state": ["active", "unknown"] } },
+      "detail": "`{slug}` ({name} {version}) stores every outgoing email, password-reset links and recipient addresses included, in the database; the mail log is then inside every export and within reach of every SQL injection",
+      "enables": ["sqli-credential-read", "backup-export-leak"],
+      "refs": { "guideline": "OWASP WP-SIG: minimise stored personal data" },
+      "course": "Disable it outside debugging windows and purge the table; if a delivery record is needed, keep it in the mail provider."
+    },
+    {
+      "id": "wp-audit-retention-short", "name": "Audit log covers a short window on an old site", "sev": "med", "cwe": "CWE-778",
+      "predicate": { "verb": "exists", "type": "audit-source", "where": { "present": true, "kind": "table", "spanDays": { "lt": 90 }, "siteAgeDays": { "gt": 180 } } },
+      "detail": "`{name}` covers {from} to {to} ({spanDays} days, {rows} rows, retention limited {retentionLimited}) on a site {siteAgeDays} days old; an intrusion older than the window cannot be reconstructed from it",
+      "enables": ["audit-blind"],
+      "refs": { "guideline": "OWASP WP-SIG: log retention long enough for incident response" },
+      "course": "Raise the retention and ship the log off the box daily; the database copy is the attacker's to purge."
+    },
+    {
+      "id": "wp-audit-coverage-gap", "name": "Gap inside an audit source's own window", "sev": "high", "cwe": "CWE-778",
+      "predicate": { "verb": "exists", "type": "audit-source", "where": { "present": true, "maxGapDays": { "gte": 30 }, "name": { "notIn": ["login_limit_fails"] } } },
+      "detail": "`{name}` has a {maxGapDays}-day gap between consecutive records inside {from} to {to} ({rows} rows); the source stopped, was purged, or the site was idle, and nothing in the record says which",
+      "enables": ["audit-blind"],
+      "refs": { "guideline": "OWASP WP-SIG: logging continuity" },
+      "course": "Find what stopped the source on the first missing day; a stopped log is the strongest signal in the record and the easiest to miss."
+    },
+    {
+      "id": "wp-config-debug-on", "name": "Debug output enabled in wp-config.php", "sev": "med", "cwe": "CWE-215",
+      "predicate": { "verb": "exists", "type": "server-directive", "where": { "scope": "wp-config", "name": ["WP_DEBUG", "WP_DEBUG_LOG", "WP_DEBUG_DISPLAY"], "value": [true, "string"] } },
+      "detail": "{name} is set in {path}; notices with file paths and query fragments go to the page or to a log under the served tree",
+      "enables": ["served-log-read"],
+      "refs": { "guideline": "OWASP WP-SIG: WP_DEBUG false in production" },
+      "course": "Set WP_DEBUG, WP_DEBUG_LOG and WP_DEBUG_DISPLAY false, or log to a path outside the web root."
+    },
+    {
+      "id": "wp-config-file-edit-allowed", "name": "Theme and plugin editor not disabled", "sev": "med", "cwe": "CWE-94",
+      "predicate": { "verb": "absent", "type": "server-directive", "where": { "scope": "wp-config", "name": "DISALLOW_FILE_EDIT", "value": true }, "given": { "type": "server-directive", "where": { "scope": "wp-config", "name": "present" } } },
+      "detail": "wp-config.php does not set DISALLOW_FILE_EDIT; the admin's theme editor writes PHP to disk, so an administrator session, or a cross-site request that rides one, becomes a web shell with no upload",
+      "enables": ["webshell-persistence", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: DISALLOW_FILE_EDIT true" },
+      "course": "Add define('DISALLOW_FILE_EDIT', true); the pipeline edits code, not the admin screen."
+    },
+    {
+      "id": "wp-config-backup-in-tree", "name": "A copy of wp-config.php left in the tree", "sev": "high", "cwe": "CWE-538",
+      "predicate": { "verb": "exists", "type": "file", "where": { "kind": "config-backup" } },
+      "detail": "`{path}` is a copy of wp-config.php under a name PHP does not execute; the server returns it as text, with the database credentials and the salts in it",
+      "enables": ["sqli-credential-read", "admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: no configuration backups in the document root" },
+      "course": "Delete it, rotate the database password and the salts, and read the access log for requests to the name."
+    },
+    {
+      "id": "wp-default-table-prefix", "name": "Default table prefix", "sev": "low", "cwe": "CWE-1188",
+      "predicate": { "verb": "exists", "type": "wp-setting", "where": { "key": "table_prefix_default", "value": true } },
+      "detail": "the table prefix is wp_; mass-injection payloads name wp_options and wp_users and succeed first time, and a non-default prefix, while no control against a targeted attacker, defeats the logged payloads that assume it",
+      "enables": ["mass-scan-default-surface", "sqli-credential-read"],
+      "refs": { "guideline": "OWASP WP-SIG: non-default table prefix" },
+      "course": "Change the prefix at the next rebuild; it is not worth a live migration on its own."
+    },
+    {
+      "id": "wp-site-not-https", "name": "Site URL is http", "sev": "high", "cwe": "CWE-319",
+      "predicate": { "verb": "exists", "type": "wp-setting", "where": { "key": ["siteurl_scheme", "home_scheme"], "value": "http" } },
+      "detail": "{key} is http; logins, cookies and the admin travel in clear text",
+      "enables": ["admin-takeover"],
+      "refs": { "guideline": "OWASP WP-SIG: HTTPS everywhere, FORCE_SSL_ADMIN" },
+      "course": "Serve https only, set both URLs to https and FORCE_SSL_ADMIN true."
+    },
+    {
+      "id": "wp-unfiltered-uploads", "name": "Unfiltered uploads allowed", "sev": "high", "cwe": "CWE-434",
+      "predicate": { "verb": "exists", "type": "server-directive", "where": { "scope": "wp-config", "name": "ALLOW_UNFILTERED_UPLOADS", "value": true } },
+      "detail": "ALLOW_UNFILTERED_UPLOADS is true in {path}; the media library accepts any file type, PHP included, from every user allowed to upload",
+      "enables": ["webshell-persistence"],
+      "refs": { "guideline": "OWASP WP-SIG: restrict upload types" },
+      "course": "Remove the constant; add the specific type the site needs through upload_mimes instead."
+    },
+    {
+      "id": "wp-directory-listing-not-disabled", "name": "Directory listing not disabled in the site .htaccess", "sev": "low", "cwe": "CWE-548",
+      "predicate": { "verb": "exists", "type": "server-directive", "where": { "scope": "htaccess", "location": "site-root", "name": "directory-listing-off", "value": false } },
+      "detail": "{path} does not set Options -Indexes; a directory without an index file lists its contents, which is how backup and log directories get found (Apache only; nginx does not read this file)",
+      "enables": ["backup-export-leak", "served-log-read"],
+      "refs": { "guideline": "OWASP WP-SIG: disable directory browsing" },
+      "course": "Add Options -Indexes, or the equivalent autoindex off in nginx."
+    }
+  ]
+}

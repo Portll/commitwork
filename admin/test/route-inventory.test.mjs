@@ -65,7 +65,9 @@ const MUST_SERVE = [
   '/api/panel/health',
 ];
 
-// Floors, set EXACTLY at the measured inventory: 200 modular + 31 inline = 231 (2026-10-08,
+// Floors, set EXACTLY at the measured inventory: 202 modular + 31 inline = 233 (2026-10-22,
+// GET /api/runner and /api/runner.html, the Actions runner page — routes/runner.mjs).
+// Raised from 200 + 31 = 231 (2026-10-08,
 // GET /api/inbox and POST /api/inbox/mark, the Inbox — routes/inbox.mjs).
 // Raised from 198 + 31 = 229 (2026-10-08,
 // POST /api/issue/pr, the Create PR proposal — routes/pull-request.mjs).
@@ -123,8 +125,8 @@ const MUST_SERVE = [
 //
 // So: exact. When routes are deliberately removed, lower these deliberately, in the same commit,
 // with the reason — that friction is the feature. Never lower one to make a red test green.
-const TOTAL_FLOOR = 231;
-const MODULAR_FLOOR = 200;
+const TOTAL_FLOOR = 233;
+const MODULAR_FLOOR = 202;
 
 test('every route whose loss would be an outage is still declared', async () => {
   const src = inlineSource();

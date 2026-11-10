@@ -10,6 +10,10 @@
 # result under the project's name — a passing grade for a certificate nobody deploys. That is the
 # unsupported-pass failure the reporting checks must prevent, so an https:// target is an error, not a warning.
 set -euo pipefail
+
+# Git Bash rewrites POSIX-looking arguments passed to native programs, so a container mount path
+# would name a host directory. Inert off Windows. See lib/posix-shell.mjs.
+export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 # No external command here: the no-probe test runs this under a PATH holding only the shell, and
 # `dirname` is not a builtin.
 here="${BASH_SOURCE[0]%/*}"; [ "$here" = "${BASH_SOURCE[0]}" ] && here=.

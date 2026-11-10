@@ -110,14 +110,14 @@ describe('scan scope is derived from the file that bounds the scan', () => {
     assert.equal(scopes.secrets.known, true);
     assert.ok(scopes.secrets.blocks.some((b) => !b.targetRules && b.paths.includes('(^|/)server/data/')),
       'the overwatch-layer server/data/ exclusion must be part of the disclosed scope');
-    // semgrep: --exclude reference --exclude reports
+    // semgrep: --exclude reference --exclude reports, then the nested-checkout roots
     assert.equal(scopes.sastSemgrep.known, true);
-    assert.deepEqual(scopes.sastSemgrep.blocks[0].paths, ['reference', 'reports']);
-    // trivy config: --skip-dirs reference,reports,fixtures/scan-canary/dirty (one flag,
+    assert.deepEqual(scopes.sastSemgrep.blocks[0].paths, ['reference', 'reports', '.claude/worktrees', '.git']);
+    // trivy config: --skip-dirs reference,reports,fixtures/scan-canary/dirty,... (one flag,
     // comma-joined). The canary tree deliberately contains vulnerable IaC and belongs to the
     // canary lane, not the production fleet count; the derived disclosure must say so.
     assert.equal(scopes.iac.known, true);
-    assert.deepEqual(scopes.iac.blocks[0].paths, ['reference', 'reports', 'fixtures/scan-canary/dirty']);
+    assert.deepEqual(scopes.iac.blocks[0].paths, ['reference', 'reports', 'fixtures/scan-canary/dirty', '.claude/worktrees', '.git']);
     // CodeQL Java: language selection + build-mode none arrive as notes, not paths
     assert.ok(scopes.sastCodeqlJava.notes.some((n) => n.includes('java')), 'the language bound must be stated');
     assert.ok(scopes.sastCodeqlJava.notes.some((n) => n.includes('build-mode none')), 'source-only analysis must be stated');

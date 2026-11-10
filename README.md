@@ -1,27 +1,30 @@
-<!-- verified-against: 2026-10-18 dab8c709 -->
+<!-- verified-against: 2026-11-04 d38ea2d5 -->
 # commitwork
 
 **Repository security scanner, local CI runner and scheduled monitor, with remediation and
 compliance-evidence tooling.**
 
-commitwork runs 88 checks over a repository (secrets, SAST, dependencies, supply chain, IaC and
-CI, runtime probes, posture, code quality), keeps running them across a fleet of repositories on a
-schedule, and turns the results into rollups, an issue tracker, remediation plans and EU CRA /
-SOC 2 evidence. It started as a way to run a repo's GitHub Actions CI locally without spending
-Actions minutes, and that runner is still the core of it. A scheduled fleet monitor, a web panel,
-an MCP server and a set of viewers sit on top.
+commitwork runs 88 checks over a repository: secrets, SAST, dependencies, supply chain, IaC and
+CI, runtime probes, posture and code quality. It runs the same checks on a schedule across a fleet
+of repositories. From the results it makes rollups, an issue tracker, remediation plans and EU CRA /
+SOC 2 evidence.
 
-Zero runtime dependencies. Runs on macOS, Linux and Windows. `package.json` declares Node ≥ 22.18
-(22 is the oldest Node.js line still maintained) and the CLI refuses an older runtime. CI runs
-Node 22 and 26: the full suite on Linux and macOS (macOS is non-blocking), and the platform-contract
-subset on Windows ([docs/SCOPE.md](docs/SCOPE.md)). Docker is optional: without it the four container lanes
-record `noscan` naming the missing tool (n/a when the daemon is installed but stopped), never a
-pass.
+commitwork started as a way to run a repository's GitHub Actions CI locally without spending
+Actions minutes. That runner is still its core. The other parts are layers over the runner: a
+scheduled fleet monitor, a web panel, an MCP server and a set of viewers.
 
-> **Licence:** AGPL-3.0-or-later, or PolyForm Internal Use 1.0.0 by written agreement, with the wire
-> layer also under Apache-2.0; see [Licensing](#licensing). **No warranty is implied or given.**
-> commitwork's runtime lanes probe live targets: point them only at systems you own or are
-> authorised to test.
+commitwork has no runtime dependencies. It runs on macOS, Linux and Windows. `package.json`
+declares Node ≥ 22.18, and the CLI refuses an older runtime. (Node 22 is the oldest Node.js line
+still maintained.) CI runs Node 22 and 26. It runs the full suite on Linux and macOS (macOS is
+non-blocking), and the platform-contract subset on Windows ([docs/SCOPE.md](docs/SCOPE.md)).
+
+Docker is optional. Without Docker, the four container lanes record `noscan` and name the missing
+tool. If the daemon is installed but stopped, they record n/a. They never record a pass.
+
+> **Licence:** AGPL-3.0-or-later, or PolyForm Internal Use 1.0.0 by written agreement. The wire
+> layer is also under Apache-2.0. See [Licensing](#licensing). **No warranty is implied or given.**
+> commitwork's runtime lanes probe live targets. Run them only against systems that you own or
+> that you are authorised to test.
 
 ---
 
@@ -30,37 +33,45 @@ pass.
 - **Runs checks.** `bin/commitwork.mjs` runs a manifest of checks against one repository or every
   git repository under a root. Each check wraps a third-party scanner or a bundled one and writes a
   normalised report. Section 2 lists the baseline.
-- **Monitors a fleet.** `monitor/sweep.mjs` runs on a schedule over declared areas, rolls each
-  sweep into a historical slice, tracks each finding from first sighting to verified remediation,
-  and files issues with SLA clocks.
+- **Monitors a fleet.** `monitor/sweep.mjs` runs on a schedule over declared areas. It aggregates
+  each sweep into a historical slice. It tracks each finding from first sighting to verified
+  remediation, and files issues with SLA clocks.
 - **Serves a panel.** `admin/serve.mjs` is a loopback-only web panel over that evidence, with its
   own authentication, reached from outside only through a declared tunnel.
-- **Drafts remediation.** Per-check triage prompts, agent hand-offs, declare-only hardeners that emit
-  a `git apply`-able diff, and an issue loop that is dry-run by default. Applying a fix stays a
-  human act.
+- **Drafts remediation.** commitwork writes per-check triage prompts and agent hand-offs.
+  Declare-only hardeners emit a `git apply`-able diff. The issue loop is dry-run by default. If the
+  operator sets the remediation policy's mode to `draft-pr`, commitwork also opens draft pull
+  requests on a repository's default branch. Each one bumps a Go dependency with a reachable
+  advisory. A human merges, and a human applies every other fix.
 - **Produces compliance evidence.** `cra/` maps the same evidence onto EU CRA Art. 14 cases,
   CycloneDX SBOM and VEX, POA&M, SOC 2 and OSCAL, all as drafts.
 
-The engineering invariants are listed in [release/CLAUDE.public.md](release/CLAUDE.public.md#house-invariants), with the test that holds up each one in [docs/INVARIANTS.md](docs/INVARIANTS.md): **fail
-closed** (a parse failure is never an empty result; only `ENOENT` means "legitimately absent"),
-**determinism** (same inputs ⇒ byte-identical outputs, atomic writes, idempotent re-runs), **never
-key a finding's identity on a line number** (code moves for reasons that have nothing to do with the
-finding), and **declaration split from authority** (tools that describe deployments never hold
-credentials or apply changes).
+[release/CLAUDE.public.md](release/CLAUDE.public.md#house-invariants) lists the engineering
+invariants. [docs/INVARIANTS.md](docs/INVARIANTS.md) names the test that enforces each one:
+
+- **Fail closed.** A parse failure is never an empty result. Only `ENOENT` means "legitimately
+  absent".
+- **Determinism.** The same inputs give byte-identical outputs. Writes are atomic, and re-runs are
+  idempotent.
+- **Never key a finding's identity on a line number.** Code moves for reasons unrelated to the
+  finding.
+- **Declaration split from authority.** Tools that describe deployments never hold credentials or
+  apply changes.
 
 ## Scope
 
-- **Lanes:** 88 checks, 82 in `all`. Four need a live URL; `authz-test` needs `--trust-repo-manifest`.
+- **Lanes:** 88 checks, 82 in `all`. Four need a live URL. `authz-test` needs `--trust-repo-manifest`.
   On `scan` and `brief`, the three lanes that build the scanned repository need `--allow-build`
-  (or `--trust-repo-manifest`), and `brief --pc` never runs them.
+  (or `--trust-repo-manifest`). `brief --pc` never runs them.
 - **Platforms:** Node >= 22.18. macOS has the `sandbox-exec` sandbox and launchd scheduling. Linux
   has a weaker `bwrap` sandbox, uses cron or systemd timers, and installs with `bin/install.sh` or
   the `container/Dockerfile` image. Windows has no host sandbox, and
   its CI does not run the full suite.
 - **Refuses:** repo-local manifests and repo-supplied scripts without consent, non-bundled
   manifests over MCP, unreadable stores.
-- **Not measured, not done:** 66 of 78 lanes have no scan-canary record, four high residual risks
-  are open; it does not change scanned repos on its own authority or hold deploy credentials.
+- **Not measured, not done:** 66 of 78 lanes have no scan-canary record. Four high residual risks
+  are open. commitwork changes a scanned repository only by opening a draft remediation pull
+  request, and only when the policy file enables it. It holds no deploy credentials.
 
 [docs/SCOPE.md](docs/SCOPE.md) gives the counts, their sources, and what is still unknown.
 
@@ -77,46 +88,52 @@ node bin/commitwork.mjs run fast --manifest security-baseline    # the fast pre-
 node bin/commitwork.mjs run all  --manifest security-baseline    # everything that's ready
 ```
 
-Scan every git repo under a root, not just one. `scan` installs nothing; run `setup` first for the
+`scan` covers every git repository under a root. It installs nothing. Run `setup` first for the
 scanners you want:
 
 ```sh
 node bin/commitwork.mjs scan --root ~/Repositories --out reports/my-scan
 ```
 
-Rank what to fix. `brief` runs the same scan over a repository, a directory of them, or every
-repository under your home directory (`--pc`), then writes `brief.html`, `brief.md` and
-`brief.json`: dependency upgrades with KEV advisories first, the other open findings, and every lane
-that did not measure. The output names local paths, so it goes to `--out`, `CW_SCAN_PATH_OUT` or
-the private sidecar, never into this checkout:
+`brief` ranks what to fix. It runs the same scan over a repository, a directory of repositories,
+or every repository under your home directory (`--pc`). It then writes `brief.html`, `brief.md`
+and `brief.json`. Each lists dependency upgrades with KEV advisories first, then the other open
+findings, then every lane that did not measure. The output names local paths. It therefore goes to
+`--out`, `CW_SCAN_PATH_OUT` or the private sidecar, never into this checkout:
 
 ```sh
 node bin/commitwork.mjs brief ~/Repositories/acme --out ~/scans/acme
 node bin/commitwork.mjs brief --pc --out ~/scans/this-machine
 ```
 
-A deployed site or a backup that is not a git repository is scanned in place with `--webroot`, so
-file permissions and timestamps survive. What the tree cannot show (no history, a CMS core missing
-from a `wp-content` backup, the web root above it) is listed under "Not measured" rather than read
-as clean. When the web root IS a git checkout updated by `git pull`, `--webroot` also turns on
-`tree-integrity`'s git-drift rules: untracked code, modified tracked files and deleted ones, compared
-with HEAD. They apply only there, because in a working repository untracked and modified files are
-the normal state:
+`--webroot` scans a deployed site, or a backup that is not a git repository, in place. File
+permissions and timestamps survive. The brief lists what the tree cannot show (no history, a CMS
+core missing from a `wp-content` backup, the web root above it) under "Not measured". It does not
+read those gaps as clean.
+
+If the web root is a git checkout updated by `git pull`, `--webroot` also enables the git-drift
+rules of `tree-integrity`. These rules compare untracked code, modified tracked files and deleted
+files with HEAD. They apply only to a web root, because untracked and modified files are normal in
+a working repository:
 
 ```sh
 node bin/commitwork.mjs brief /srv/backups/site/wp-content --webroot --out ~/scans/site
 ```
 
-On a WordPress tree two lanes ask what the files cannot say about themselves: `wp-integrity`
-compares core and every wordpress.org plugin with the checksums wordpress.org publishes and reports
-any file loose in `wp-content/plugins/`, and `wp-advisories` looks up the core, plugin and theme
-versions against wordpress.org's release list and WPVulnerability. Both send component names and
-versions to those services and cache the answers under `~/.commitwork/cache/wordpress`;
-`CW_WP_OFFLINE=1` keeps them on the cache. A premium plugin, a theme or a core missing from a
-`wp-content` backup is listed as unverifiable or unmeasured, never as clean.
+On a WordPress tree, two lanes use outside sources for what the files cannot show:
 
-Put `commitwork` on your PATH (works the same on macOS, Linux and Windows — npm generates the
-right shim for your platform):
+- `wp-integrity` compares core and every wordpress.org plugin with the checksums that
+  wordpress.org publishes. It reports any loose file in `wp-content/plugins/`.
+- `wp-advisories` checks the core, plugin and theme versions against wordpress.org's release list
+  and WPVulnerability.
+
+Both lanes send component names and versions to those services. They cache the answers under
+`~/.commitwork/cache/wordpress`. `CW_WP_OFFLINE=1` limits them to the cache. The brief lists a
+premium plugin, a theme, or a core missing from a `wp-content` backup as unverifiable or
+unmeasured, never as clean.
+
+Put `commitwork` on your PATH. This works the same on macOS, Linux and Windows, because npm
+generates the right shim for each platform:
 
 ```sh
 npm link
@@ -124,44 +141,49 @@ npm link
 
 (Unix alternative, if you'd rather not use npm link: `ln -s "$PWD/bin/commitwork.mjs" /usr/local/bin/commitwork`.)
 
-`--dry-run` prints every command without executing it. Use it before trusting anything.
+`--dry-run` prints every command without executing it. Use it before you trust a command.
 
 ### Windows
 
-The commands above run from **Windows Terminal / PowerShell**. What CI checks on Windows is the
-platform contract described at the end of this section, not the full test suite. One prerequisite
-is doing real work, so it is stated rather than assumed:
+The commands above run from **Windows Terminal / PowerShell**. On Windows, CI checks the platform
+contract described at the end of this section. It does not run the full test suite.
 
-**Git for Windows** — which you almost certainly already have, since commitwork requires `git`
-regardless. Every check in `security-baseline.json` is a POSIX shell one-liner (all 82 of them use
-`$VAR`, redirection or `$?`), so a POSIX shell is genuinely required. commitwork finds the
-`bash.exe` **inside your Git installation** rather than needing it on PATH, so a normal
-`winget install -e --id Git.Git` is sufficient and nothing else is needed:
+**Prerequisite: Git for Windows.** commitwork requires `git` on every platform, so you probably
+have it. Every check in `security-baseline.json` is a POSIX shell one-liner. All 82 of them use
+`$VAR`, redirection or `$?`, so they need a POSIX shell. commitwork finds the `bash.exe` **inside
+your Git installation**. It does not need `bash.exe` on PATH. A normal
+`winget install -e --id Git.Git` is sufficient:
 
 ```powershell
 node bin/commitwork.mjs doctor --manifest security-baseline   # reports the shell it resolved
 ```
 
-If no shell resolves, checks report **noscan with the reason** — never a failure, and never a pass.
-Set `CW_POSIX_SHELL` to a `bash.exe` path to override the search.
+If no shell resolves, checks report **noscan with the reason**. They never report a failure or a
+pass. To override the search, set `CW_POSIX_SHELL` to a `bash.exe` path.
 
-**WSL is deliberately not used**, even when present: it resolves `C:\x` as `/mnt/c/x`, so reports
-would be written inside the WSL namespace where the caller cannot read them.
+**commitwork does not use WSL**, even when WSL is present. WSL resolves `C:\x` as `/mnt/c/x`, so
+commitwork would write reports inside the WSL namespace, where the caller cannot read them.
 
-**GNU findutils, `lsof` and `ps` are not needed.** Repo discovery walks in Node, and the
-listening-port lens uses `netstat`/`tasklist`, both of which ship with Windows.
+**GNU findutils, `lsof` and `ps` are not needed.** Repository discovery walks the tree in Node. The
+listening-port lens uses `netstat` and `tasklist`, which ship with Windows.
 
-Scanner coverage is thinner on Windows than on macOS: of the 56 tools in
-[`manifests/install-catalog.json`](manifests/install-catalog.json), some are installable only
-through `pipx`, `gem` or `composer`. `commitwork setup` distinguishes *"this needs a package manager
-you do not have"* (and names it) from *"nobody has written an installer for this"*.
+Scanner coverage on Windows is thinner than on macOS. Some of the 56 tools in
+[`manifests/install-catalog.json`](manifests/install-catalog.json) install only through `pipx`,
+`gem` or `composer`. `commitwork setup` reports two cases separately:
+
+- *"this needs a package manager you do not have"*, with the name of that manager
+- *"nobody has written an installer for this"*
 
 The **Windows portability** job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on
-`windows-latest`: every module must parse, the platform-contract suites (shell resolution, the Node
-repo walk, process-tree kill, batch-shim spawning, path hazards, the listener lens, the installer's
-manager shapes) must pass, the `bin/` and `lib/` suites must leave the working tree clean, and
-`doctor` must resolve a POSIX shell from the runner's Git. The full suite does not run on Windows in
-CI yet.
+`windows-latest`. It requires these results:
+
+1. Every module parses.
+2. The platform-contract suites pass: shell resolution, the Node repository walk, process-tree
+   kill, batch-shim spawning, path hazards, the listener lens and the installer's manager shapes.
+3. The `bin/` and `lib/` suites leave the working tree clean.
+4. `doctor` resolves a POSIX shell from the runner's Git.
+
+The full suite does not run on Windows in CI yet.
 
 ### The admin panel
 
@@ -169,26 +191,35 @@ CI yet.
 node admin/serve.mjs
 ```
 
-Starts the web panel on two loopback-only ports — a published one (default `7878`, `CW_ADMIN_PORT`
-or the first argument) and an operator one (default one higher, `CW_ADMIN_LOCAL_PORT`). On first
-launch, with no operator account yet, it prints the operator URL to create one at; from there the
-published port is your normal login. The **Scanning** section of the Config page (`/config`) turns
-lanes on and off and records which scanner binaries this box may execute, written to
-`.claude/store/scan-config.json` and journalled. The panel never runs a scanner from there: approval
-is consent, and a lane held for an unapproved binary reports `noscan` rather than dropping out. The
-gate stays off until that store exists.
+This command starts the web panel on two loopback-only ports:
+
+- a published port: default `7878`, or `CW_ADMIN_PORT`, or the first argument
+- an operator port: default one higher, or `CW_ADMIN_LOCAL_PORT`
+
+On first launch there is no operator account. The panel prints the operator URL where you create
+one. After that, you log in on the published port.
+
+The **Scanning** section of the Config page (`/config`) enables and disables lanes. It also records
+which scanner binaries this machine may execute. It writes that record to
+`.claude/store/scan-config.json` and journals each change. The panel never runs a scanner from this
+page. An approval is consent only. A lane that waits for an unapproved binary reports `noscan`. It
+stays in the results. The gate is off until that store exists.
 
 ---
 
 ### How results are classified
 
-Each lane's output is normalised into crit, high, med and low findings, and three states that are
-not findings: `noscan` when a lane could not run (a missing tool, an unreadable report), `n/a`
-when it does not apply, and `undetermined` for a row the scanner's own output cannot support, such
-as a field the scanner was never given or a detector with a known defect. An undetermined row keeps
-the scanner's original claim and is never counted in a severity bucket. A detector found to be
-defective is retired with one `incorrect-scan-result` annotation that names the defect, instead of
-one suppression per file.
+commitwork normalises each lane's output into crit, high, med and low findings. It also uses three
+states that are not findings:
+
+- `noscan`: the lane could not run, for example because of a missing tool or an unreadable report.
+- `n/a`: the lane does not apply.
+- `undetermined`: the scanner's own output cannot support the row, for example a field the scanner
+  never received or a detector with a known defect.
+
+An undetermined row keeps the scanner's original claim. It never counts in a severity bucket. To
+retire a defective detector, commitwork uses one `incorrect-scan-result` annotation that names the
+defect. It does not add one suppression per file.
 
 # The feature set
 
@@ -415,6 +446,16 @@ sweep per area. Preview the resolved fleet without running anything:
 accurate, provenance-gated cut through the fleet. `monitor/ledger.mjs` keeps the ledger whose
 evidence tiers decide what counts as *cleaned*; weak evidence never does.
 
+**Dependency remediation pull requests.** `monitor/remediation-pr.mjs` plans a dependency bump for
+each Go advisory govulncheck proved reachable, and proposes one only when a probe confirms the
+advisory is still live on the upstream default branch. With the policy's mode at `draft-pr` or
+above, `bin/remediation-draft-pr.mjs --open` takes each proposal, applies the bump in a scratch clone
+of the default branch, re-runs the build and govulncheck, and opens the pull request as a draft: on
+an own repository directly, on any other through a fork. It stops on an opt-out, an existing PR or
+issue for the same fix, a cap or anything it could not read, and records the PR, or why there is
+none, on the advisory's issue. [docs/DRAFT-REMEDIATION-PRS.md](docs/DRAFT-REMEDIATION-PRS.md) has
+the rules and how to enable it.
+
 **Failure taxonomy.** The monitor ships a classification of every way an oversight system can say
 "this is fine" while being wrong — currently **edition 17, 207 classes**, held as
 [`monitor/failure-taxonomy.json`](monitor/failure-taxonomy.json) with prose renderers, because
@@ -583,8 +624,10 @@ placeholders the generated drafts carry until the registry supplies them.
   generated reports. The [GitHub Action](#on-githubs-runners-the-github-action) uploads its SARIF
   to code scanning; it posts no PR comments and opens no issues.
 - It does **not** apply fixes on its own authority. Its remediation tooling drafts — prompts,
-  hand-offs, hardener diffs, an issue loop that is dry-run by default — and applying a fix,
-  submitting a notification and mutating DNS all stay human acts by design.
+  hand-offs, hardener diffs, an issue loop that is dry-run by default. The one thing it opens is a
+  draft dependency-remediation pull request, and only when the operator has set the policy file's
+  mode to `draft-pr` or above. Merging that pull request, applying any other fix, submitting a
+  notification and mutating DNS all stay human acts by design.
 
 ---
 
@@ -644,7 +687,7 @@ versioned in a private sidecar, so this index does not list it.
 - [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) — the threat model for scanning untrusted repositories: per command (`run`, `scan`, `brief`, `doctor`, the monitor sweep, MCP `run_checks`/`run_checks_start`, the pre-commit hook and the standalone target tools), what commitwork executes, reads and reaches over the network. It covers the controls between a scanned tree and the host (`--trust-repo-manifest`, the host sandbox, container postures, lane environment allowlists, the single confined `claude` builder), the attacker model, trust boundaries, residual risks with severity, and what is not defended
 - [LICENSING.md](LICENSING.md) — the three licences and what each covers: AGPL-3.0-or-later, **or** PolyForm Internal Use 1.0.0 by written agreement, with Apache-2.0 carved out over the wire layer `manifests/wire-layer.json` lists. The grants apply to commitwork as published at github.com/Portll/commitwork. Also: when you would need the second, why this pair, PolyForm Internal Use having no SPDX identifier, and three open questions (the licensor's legal entity, hosting and redistribution, governing law)
 - [docs/AGPL-SCOPE.md](docs/AGPL-SCOPE.md) — where the copyleft boundary falls: CLI, MCP stdio and the admin API are arm's-length, `lib/` imports are not, and every artifact commitwork generates is unencumbered — the document a licensee's legal review resolves against
-- [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md) — every third-party work this repository redistributes, measured over the tracked set: IBM Plex (OFL-1.1), three.js and OrbitControls (MIT), the GitHub Advisory Database (CC-BY-4.0), NVD, MITRE CWE/CAPEC/ATT&CK, FIRST.org EPSS, and the CycloneDX, CSAF 2.0/2.1 and OpenVEX schemas in `schema/upstream/`; the mark is original work and the wordmark is live IBM Plex text. Records what could not be determined, and how the two notice conditions are met (the OFL notice travels with every artifact that inlines the faces; the MIT licence travels beside `OrbitControls.js`)
+- [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md) — every third-party work this repository redistributes, measured over the tracked set: IBM Plex (OFL-1.1), three.js and OrbitControls (MIT), the GitHub Advisory Database (CC-BY-4.0), NVD, MITRE CWE/CAPEC/ATT&CK, FIRST.org EPSS, and the CycloneDX, CSAF 2.0/2.1 and OpenVEX schemas in `schema/upstream/`, and what the two container images ship; the mark is original work and the wordmark is live IBM Plex text. Records what could not be determined, and how the two notice conditions are met (the OFL notice travels with every artifact that inlines the faces; the MIT licence travels beside `OrbitControls.js`)
 - [docs/ACTIONS-MODEL.md](docs/ACTIONS-MODEL.md) — how commitwork reads a repository's GitHub Actions workflow files with its own code: the YAML subset reader, the expression language with GitHub's coercion rules and the `format()` transform, the workflow schema as data, the model of events, jobs, steps, conditions and matrix expansion, and the oracle, GitHub's own MIT parser packages installed outside the tree and imported only by tests, that grades all of it over local corpora of public repositories. The measured agreement figures and the known limits are on the page
 - [docs/PUBLIC-REPOSITORY-BOUNDARY.md](docs/PUBLIC-REPOSITORY-BOUNDARY.md) — how the repository opens: one reviewed snapshot as the root commit of a fresh public history, what belongs permanently in the private sidecar, the snapshot acceptance steps, and the current state of the separation
 - [docs/stack/README.md](docs/stack/README.md) — draft README for the four-part distribution (overwatch-layer, spine, memory-layer, commitwork): four repositories joined by wires with overwatch-layer on top, which layers are replaceable, the licence stack (AGPL-3.0-or-later plus PolyForm Internal Use 1.0.0 by agreement, Apache-2.0 intended for the wire layer), and each component's measured publication status. Parked here until the distribution has a repository of its own
@@ -653,6 +696,7 @@ versioned in a private sidecar, so this index does not list it.
 - [docs/stack/COPYRIGHT-ASSIGNMENT.md](docs/stack/COPYRIGHT-ASSIGNMENT.md) — draft deed assigning the four components' copyright from the author to the company before the first commercial sale; South Australian deed formalities; for solicitor review under D19 item 5
 - [docs/SCOPE.md](docs/SCOPE.md) — the 1.0 scope statement: the declared lanes by group and kind with their measured trust evidence, the three platforms and each one's limits, what commitwork refuses, what it leaves unmeasured and what is out of scope, every figure cited to the file or command it came from
 - [container/README.md](container/README.md) — installing on Linux: `bin/install.sh` (a checkout's HEAD or a SHA-256-checked release tarball into a prefix, Node floor checked, then `setup` for the named scanners; idempotent, refuses to replace what it did not write) and the `container/Dockerfile` image (digest-pinned Debian 12 base, bwrap and pasta, seven scanners, non-root, `CW_SANDBOX=require`), with each `docker run` flag, what happens without it as measured, and what was not measured
+- [container/runner/README.md](container/runner/README.md) — the Actions runner slot: one job per container lifetime, the run flags and what happens without each, the job-started hook, per-slot networks and the egress proxy, which jobs admission refuses, the self-hosted-runner waiver, and what was measured and what was not
 - [docs/PLATFORM-SEAMS.md](docs/PLATFORM-SEAMS.md) — every macOS-only seam in tracked source (launchd, keychain, zsh, `/Users/` paths, Homebrew, `sandbox-exec`, macOS tools), each with its portable path or stated limit; `bin/test/platform-seams.test.mjs` fails on an unlisted one
 - [docs/THEME.md](docs/THEME.md) — the house style for every surface (panel, `/config`, docsite, generated reports, terminal): dark and light colour tokens with measured contrast, the colour-vision palettes and how the theme switch works, IBM Plex type scale and weights, spacing steps, page frame, radii, borders, elevation, motion and focus, the panel component vocabulary, the decision controls in `admin/static/theme.css`, the seal and wordmark lock-up, which generated pages follow the palette and which carry their own, and a dated list of where live surfaces depart from it
 - [docs/TOP-100.md](docs/TOP-100.md) — the commitwork Top 100: 110 vulnerability classes extending the OWASP Top 10, with OWASP as a crosswalk rather than ten of the list, every entry stated as a defect rather than an attack or outcome, and a per-class evidence column read from the check manifests — what the scheduled `all` sweep can prove, what is one install away, what is merely indicative, and what nothing looks at (per-tier counts live in the document, where they can move with the lanes) — plus the coverage plan for memory safety and mobile.
@@ -665,6 +709,8 @@ versioned in a private sidecar, so this index does not list it.
 - [docs/UPSTREAM-FINDINGS.md](docs/UPSTREAM-FINDINGS.md) — defects in third-party scanners that commitwork's own reporting checks surfaced: the four 2026-08-22 cases (TruffleHog's `Lob` detector, Prowler's `security_and_analysis` controls, GuardDog's `capability-*` rules, dep-scan's `in_triage` state), each with what was reported, what was true, the published count, the register property that found it and the upstream report or the reason there is none; plus the other upstream reports recorded in the tree with their tracker state on the day they were read
 - [admin/README.md](admin/README.md) — the :7878 panel: routes, auth model, exposure view
 - [docs/COBOLWORK-REMEDIATION.md](docs/COBOLWORK-REMEDIATION.md) — cobolwork remediation: a local model drafts line edits to one COBOL finding, `cobolwork gate` passes or fails the draft, a person applies it by fast-forward, and a later gate verifies it held
+- [docs/INTRODUCED-ADVISORIES.md](docs/INTRODUCED-ADVISORIES.md) — the introduced-advisories verdict: the advisories a dependency update's resolved lockfile graph carries that the graph before it did not, keyed on (advisory, package) so a moved version is not an introduction. devDependencies are included and unknown severity blocks by default, and a graph or lookup that could not be measured is `unmeasured`, never clear. It covers the JSON contract (`commitwork deps --introduced`, schema version 1), its settings, and where CI, the local merge and spine consume it
+- [docs/DRAFT-REMEDIATION-PRS.md](docs/DRAFT-REMEDIATION-PRS.md) — draft remediation pull requests: the `draft-pr` policy mode and its `draftPr` keys, how to enable it, and the rules as given/when/then — caps, own and upstream targets, the fork, opt-out and CLA/DCO detection, the duplicate search, the head probe, the build and advisory re-check, the PR body, and the issue-store events that record each PR and its merge or close
 - [bin/README.md](bin/README.md) — CLI scanners, deploy declaration, evidence tooling
 - [manifests/bola/SEED-PROMPT.md](manifests/bola/SEED-PROMPT.md) — generate a per-repo BOLA manifest for `bin/bola-run.mjs`
 - [monitor/README.md](monitor/README.md) — scheduled monitor: areas, sweep pipeline, slices/ledger

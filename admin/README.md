@@ -70,7 +70,7 @@ in `menus/navigation.js`, never stored beside it. The rail opens each workspace 
 
 - **All projects** (fleet scope; the picker does not apply) — Overview (`fleet`) · Rollups ·
   Project list (`projects`) · Agent follow-ups (`overwatch`) · Decisions & reviews (`verdicts`) ·
-  Reporting deadlines (`cra`). `oversight`, `stpa`, `bola`, `comments` and `spinecomments` are
+  Reporting deadlines (`cra`). `oversight`, `stpa`, `bola`, `comments` and `commentquality` are
   fleet-scoped too and reached by path or from the strip while a fleet page is open.
 
   **Fleet** (All projects → Overview) is where a bare `/` with no project and a cleared project

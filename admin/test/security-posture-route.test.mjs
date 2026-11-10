@@ -63,7 +63,7 @@ test('GET: every setting at its default, with its declaration and an approval qu
   assert.deepEqual(Object.keys(r.payload.settings), POSTURE_KEYS);
   const v = Object.fromEntries(POSTURE_KEYS.map((k) => [k, [r.payload.settings[k].value, r.payload.settings[k].source]]));
   assert.deepEqual(v, {
-    unattendedPosture: ['A', 'default'], bypassCountsAsUnattended: [false, 'default'], missingModeIsUnattended: [true, 'default'],
+    unattendedPosture: ['A', 'default'], bypassCountsAsUnattended: [true, 'default'], missingModeIsUnattended: [true, 'default'],
     humanCommitMessagesOnly: [false, 'default'], runChecksRoots: [[], 'default'], runChecksRepoCode: ['opt-in', 'default'],
     runChecksRepoCodeRepos: [[], 'default'], runChecksRootsReviewDays: [30, 'default'],
   });

@@ -89,6 +89,7 @@ const ALLOWED = {
   'monitor/coincidence.mjs': [1, OWN],
   'monitor/defect-classify.mjs': [1, OWN],
   'monitor/history-chain.mjs': [3, 'the chain-anchor store in commitwork\'s sidecar'],
+  'monitor/draft-pr-live.mjs': [1, 'a clone into a fresh directory, with SCANNED_GIT_CONFIG and gitChildEnv already: no repository exists yet for scannedGit to take as -C'],
   'monitor/install-git-hook.mjs': [1, OWN],
 };
 

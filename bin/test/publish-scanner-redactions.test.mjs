@@ -5,6 +5,11 @@
 // is wrong today" but "someone rewords the example in six months and the redaction quietly stops
 // matching, with every test still green and a vendor's name back on a public page". So the
 // no-longer-matches case is asserted as a THROW, and the shipped map is asserted to still apply.
+//
+// Since edition 18 the register itself names no scanner: the tracked register ships publicly, so
+// the originals moved to the private prose overlay and the shipped map had nothing left to redact.
+// Its absence is how this module says "no redactions". The mechanism is still exercised, against a
+// roster built from live register text, so no assertion here passes vacuously on an empty map.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
@@ -24,15 +29,41 @@ const tmp = (name, body) => {
   writeFileSync(p, typeof body === 'string' ? body : JSON.stringify(body));
   return p;
 };
+const fixture = () => {
+  const c = load().classes.find((x) => (x.example || '').length > 80);
+  const roster = { note: 'fixture', redactions: [{ class: c.id, field: 'example', from: c.example.slice(0, 40), to: 'a redacted phrase' }] };
+  return { CW_PUBLISH_SCANNER_REDACTIONS: tmp('fixture.json', roster) };
+};
 
-test('the roster is non-empty — an empty map would make every assertion below vacuous', () => {
-  assert.ok(loadScannerRedactions().length > 0, 'no redactions configured; nothing here proves anything');
+// The catalogue names each approach by its tool. A first word that is ordinary English or an
+// ecosystem is not a vendor's name, so it is not held against the register.
+const NOT_A_TOOL = new Set(['npm', 'Socket', 'Gate', 'Agent', 'Commit', 'Model', 'Log', 'Tree', 'Actions',
+  'Dependency', 'OWASP', 'OpenSSF', 'WordPress', 'deno', 'clippy', 'rustfmt', 'Webshells', 'Bearer']);
+const scannerNames = () => {
+  const { approaches } = JSON.parse(readFileSync(resolve(REPO, 'monitor', 'approach-taxonomy.json'), 'utf8'));
+  const firstWords = approaches.map((a) => a.name || '').filter((n) => n.includes(' — ')).map((n) => n.split(' — ')[0].split(' ')[0]);
+  return [...new Set(firstWords)].filter((n) => !NOT_A_TOOL.has(n));
+};
+
+test('the register names no catalogued scanner in any field a page renders', () => {
+  const names = scannerNames();
+  assert.ok(names.length > 20, `the catalogue yielded ${names.length} tool names; this check would pass vacuously`);
+  const offenders = [];
+  for (const c of redactScannersForPublish(load()).classes) {
+    for (const field of ['name', 'description', 'predicate', 'example', 'analogy', 'scoreBasis']) {
+      for (const n of names) {
+        if (new RegExp(`(^|[^\\w-])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`).test(c[field] || '')) offenders.push(`${c.id}.${field}: ${n}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], `name the scanner's kind instead, and keep the original in the private prose overlay:\n  ${offenders.join('\n  ')}`);
 });
 
-test('every shipped redaction still matches its record, and the published text carries the replacement', () => {
-  const out = redactScannersForPublish(load());
+test('every redaction still matches its record, and the published text carries the replacement', () => {
+  const env = fixture();
+  const out = redactScannersForPublish(load(), env);
   const byId = new Map(out.classes.map((c) => [c.id, c]));
-  for (const r of loadScannerRedactions()) {
+  for (const r of loadScannerRedactions(env)) {
     const text = byId.get(r.class)[r.field];
     assert.ok(!text.includes(r.from), `${r.class}: the original still appears after redaction`);
     assert.ok(text.includes(r.to), `${r.class}: the replacement is missing`);
@@ -40,11 +71,12 @@ test('every shipped redaction still matches its record, and the published text c
 });
 
 test('THE DRIFT GUARD: a redaction whose text was reworded THROWS, it does not quietly no-op', () => {
+  const env = fixture();
   const doc = load();
-  const r = loadScannerRedactions()[0];
+  const r = loadScannerRedactions(env)[0];
   const cls = doc.classes.find((c) => c.id === r.class);
   cls[r.field] = 'reworded text that no longer contains the redacted phrase';
-  assert.throws(() => redactScannersForPublish(doc), /no longer occurs/);
+  assert.throws(() => redactScannersForPublish(doc, env), /no longer occurs/);
 });
 
 test('every SHIPPED redaction names a class that exists — a typo redacts nothing, silently', () => {
@@ -61,9 +93,10 @@ test('a registry that lacks the record is a SKIP, not a throw — fixtures and C
 });
 
 test('a record NOT named is untouched — the same scanner stays where it names our own defect', () => {
+  const env = fixture();
   const before = load();
-  const after = redactScannersForPublish(before);
-  const named = new Set(loadScannerRedactions().map((r) => r.class));
+  const after = redactScannersForPublish(before, env);
+  const named = new Set(loadScannerRedactions(env).map((r) => r.class));
   for (const c of after.classes) {
     if (named.has(c.id)) continue;
     const was = before.classes.find((x) => x.id === c.id);
@@ -72,12 +105,13 @@ test('a record NOT named is untouched — the same scanner stays where it names 
 });
 
 test('the REGISTER is not mutated — redaction returns a new document', () => {
+  const env = fixture();
   const doc = load();
-  const r = loadScannerRedactions()[0];
+  const r = loadScannerRedactions(env)[0];
   const original = doc.classes.find((c) => c.id === r.class)[r.field];
-  redactScannersForPublish(doc);
+  redactScannersForPublish(doc, env);
   assert.equal(doc.classes.find((c) => c.id === r.class)[r.field], original,
-    'the private register lost the real name — it is supposed to keep it');
+    'the register lost the original text — redaction is supposed to return a new document');
 });
 
 test('a malformed map FAILS CLOSED rather than publishing unredacted', () => {

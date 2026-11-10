@@ -1,0 +1,166 @@
+# Class rules: a path segment taken from data reaches a filesystem operation unconfined.
+#
+# The shape is a field read from a parsed document, a request or scanner output, joined onto a base
+# directory and used as a file path with no check that the result still lies under that base. A
+# segment such as `../../x` or an absolute path moves the operation anywhere the process can reach.
+# The fix is the same in every language: resolve the joined path, then refuse it unless it is
+# inside the resolved base (`lexically_relative`/`weakly_canonical` in C++, `relative`/`startsWith`
+# on resolved paths in JavaScript), or reduce the segment to a basename.
+
+rules:
+  - id: cw-path-from-document-field-cpp
+    languages: [cpp]
+    severity: WARNING
+    message: >-
+      A string field read from a parsed document is joined onto a directory path. A field holding
+      `..` segments or an absolute path makes the result point outside that directory. Resolve the
+      joined path and refuse it unless it is inside the base, before any filesystem operation.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory"]
+      confidence: MEDIUM
+      class: data-path-unconfined
+    pattern-either:
+      - pattern: $BASE / $DOC->$GET(...)
+      - pattern: $BASE / $DOC.$GET(...)
+    metavariable-regex:
+      metavariable: $GET
+      regex: '^(getString|GetString|get_string|asString|AsString|string_value|getPath|GetPath)$'
+
+  - id: cw-joined-path-to-write-cpp
+    languages: [cpp]
+    severity: WARNING
+    message: >-
+      A path built by joining a relative component onto a base directory is created, written,
+      copied to or removed with no confinement check in between. If the component comes from a
+      caller or a document, the operation can land outside the base. Compare the resolved path with
+      the resolved base (`lexically_relative`, `weakly_canonical`) and refuse an escape first.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory"]
+      confidence: MEDIUM
+      class: data-path-unconfined
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              auto $P = $BASE / $REL;
+              ...
+          - pattern-inside: |
+              std::filesystem::path $P = $BASE / $REL;
+              ...
+          - pattern-inside: |
+              $P = $BASE / $REL;
+              ...
+      - pattern-not-inside: |
+          $P = $BASE / $REL;
+          ...
+          if (<... $P.lexically_relative(...) ...>) { ... }
+          ...
+      - pattern-not-inside: |
+          $P = $BASE / $REL;
+          ...
+          if (<... weakly_canonical(...) ...>) { ... }
+          ...
+      - pattern-not-inside: |
+          $P = $BASE / $REL;
+          ...
+          if (<... std::filesystem::weakly_canonical(...) ...>) { ... }
+          ...
+      - pattern-either:
+          - pattern: std::ofstream $S($P, $MODE);
+          - pattern: std::ofstream $S($P);
+          - pattern: std::fstream $S($P, $MODE);
+          - pattern: create_directories(<... $P ...>)
+          - pattern: std::filesystem::create_directories(<... $P ...>)
+          - pattern: std::filesystem::copy($SRC, $P, ...)
+          - pattern: std::filesystem::copy_file($SRC, $P, ...)
+          - pattern: std::filesystem::rename($SRC, $P)
+          - pattern: std::filesystem::remove($P, ...)
+          - pattern: std::filesystem::remove_all($P, ...)
+          - pattern: remove($P, ...)
+          - pattern: remove_all($P, ...)
+
+  - id: cw-path-from-request-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A value from an HTTP request or from scanner output reaches a filesystem call as a path. A
+      value holding `..` segments or an absolute path reads, writes or deletes outside the directory
+      the code intends. Resolve the path and refuse it unless `relative(base, resolved)` neither
+      starts with `..` nor is absolute, or reduce the value to `basename(...)`. A check that
+      refuses a value containing the two characters `..` (`seg.includes("..")`) is accepted for a
+      segment later passed to `join`: traversal needs that substring whatever the separator, so
+      it holds for `/` and for a Windows `\` alike, provided it runs on the decoded value. It
+      does not stop an absolute path handed to `resolve`, so such a segment still needs the
+      `relative` check. A membership test against an allow-list (`ALLOWED.includes(seg)`) is
+      accepted as well.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory"]
+      confidence: MEDIUM
+      class: data-path-unconfined
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.url
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: '^(req|request|incoming)$'
+      - pattern: $LOC.artifactLocation.uri
+    pattern-sanitizers:
+      - pattern: basename(...)
+      - pattern: $PATH.basename(...)
+      - pattern: parseInt(...)
+      - pattern: Number(...)
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: '(?i)(confine|safe_?join|inside|within|contained|underRoot|resolveUnder)'
+      - by-side-effect: true
+        patterns:
+          - pattern: relative($BASE, $X)
+          - focus-metavariable: $X
+      - by-side-effect: true
+        patterns:
+          - pattern: $PATH.relative($BASE, $X)
+          - focus-metavariable: $X
+      # by-side-effect does not survive an `||` chain: the check on one operand is not seen after
+      # the `if`, so a guard is recognised by position instead, as a use that follows it.
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $X.includes("..") ...>) { ... }
+              ...
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $LIST.includes($X) ...>) { ... }
+              ...
+          - metavariable-regex:
+              metavariable: $LIST
+              regex: '^[A-Z][A-Z0-9_]*$'
+      - by-side-effect: true
+        patterns:
+          - pattern: $X.startsWith(...)
+          - metavariable-pattern:
+              metavariable: $X
+              patterns:
+                - pattern-not: $F(...)
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $FS.$OP($P, ...)
+              - pattern: $OP($P, ...)
+          - metavariable-regex:
+              metavariable: $OP
+              regex: '^(readFileSync|readFile|writeFileSync|writeFile|appendFileSync|appendFile|createReadStream|createWriteStream|rmSync|rm|unlinkSync|unlink|rmdirSync|mkdirSync|renameSync|rename|copyFileSync|copyFile|cpSync|cp|openSync|open|readdirSync|readdir)$'
+          - focus-metavariable: $P

@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-345 commands: 148 declared, 12 prose, 185 undeclared. Of the declared, 117 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 31 declare a code of 20 or above.
+349 commands: 152 declared, 12 prose, 185 undeclared. Of the declared, 121 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 31 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -20,8 +20,8 @@ Declared in `bin/deps.mjs` (`runDeps`).
 |---:|---|
 | 0 | done (audit printed, gate clear, proposal made or merged, nothing to do) |
 | 2 | usage error |
-| 21 | --audit-gate: a shipped advisory at the level has an available fix |
-| 22 | not measured (no npm lockfile, npm could not run, or an advisory's fix is undetermined) |
+| 21 | --audit-gate: a shipped advisory at the level has an available fix; --introduced: the update introduces an advisory at a blocking severity |
+| 22 | not measured (no npm lockfile, npm could not run, an advisory's fix is undetermined, or an --introduced graph or lookup was not measured) |
 | 23 | the update was refused or failed, or the history could not be read |
 | 24 | proposed, but --merge was refused |
 
@@ -308,8 +308,8 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 |---:|---|
 | 0 | done (audit printed, gate clear, proposal made or merged, nothing to do) |
 | 2 | usage error |
-| 21 | --audit-gate: a shipped advisory at the level has an available fix |
-| 22 | not measured (no npm lockfile, npm could not run, or an advisory's fix is undetermined) |
+| 21 | --audit-gate: a shipped advisory at the level has an available fix; --introduced: the update introduces an advisory at a blocking severity |
+| 22 | not measured (no npm lockfile, npm could not run, an advisory's fix is undetermined, or an --introduced graph or lookup was not measured) |
 | 23 | the update was refused or failed, or the history could not be read |
 | 24 | proposed, but --merge was refused |
 
@@ -738,7 +738,7 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 |---:|---|
 | 0 | no denied term |
 | 20 | denied terms found |
-| 21 | cannot check (no list, an unreadable list, or no text file examined) |
+| 21 | cannot check (no list, an unreadable list, no text file examined, or a clean count that an exception produced) |
 | 22 | usage |
 
 ### `bin/releases-atom.mjs`
@@ -747,6 +747,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 |---:|---|
 | 0 | wrote a feed (including a feed with no releases) |
 | 2 | could not read the tags (fail closed) |
+
+### `bin/remediation-draft-pr.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | ran |
+| 2 | usage, or the input could not be read |
+| 3 | the policy or the issue store could not be read, or a run threw |
 
 ### `bin/sbom-enrich.mjs`
 
@@ -771,6 +779,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | clean |
 | 1 | findings |
 | 2 | scan failure (unreadable input / missing named path / bad usage) A run with any scan failure exits 2 even if it also found secrets, and can never exit 0. |
+
+### `bin/semgrep-retry.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | every handled state (the receipt carries the retry's outcome; the lane's exit sidecar was written before this step) |
+| 2 | usage |
 
 ### `bin/setup.mjs`
 
@@ -910,6 +925,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 2 | could not run |
 
 ### `bin/wp-integrity.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | ran |
+| 2 | could not run |
+
+### `bin/wp-posture.mjs`
 
 | Exit | Meaning |
 |---:|---|
@@ -1109,6 +1131,13 @@ Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-g
 | 2 | empty batch (sweep.mjs continues) |
 | 3 | another rollup holds the lock |
 | 5 | no sweep-* batch to roll. (4 is reserved for the cross-area write refusal.) |
+
+### `monitor/rule-titles.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | written |
+| 2 | wrong arguments, an unreadable document, or a document with no rules in it |
 
 ### `monitor/sandbox-coverage.mjs`
 

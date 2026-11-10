@@ -1,0 +1,73 @@
+# Class rules: C and C++ memory-safety shapes that a token search does not see.
+#
+# A pointer taken into a container that is still growing dangles as soon as the container
+# reallocates. A bounds check written `offset + size <= length` on unsigned operands wraps when the
+# offset is near the type's maximum, and then passes for an offset that is far out of range; the
+# subtraction form `size <= length - offset`, after `offset <= length`, cannot wrap.
+
+rules:
+  - id: cw-pointer-into-growing-vector-cpp
+    languages: [cpp]
+    severity: WARNING
+    message: >-
+      A loop appends to a vector and keeps a pointer to one of its elements. The next append can
+      reallocate the vector and leave every stored pointer dangling. Reserve the final capacity
+      before the loop (not `resize`, which appends after the existing elements), store indices, or
+      use a container whose elements do not move, such as `std::deque` or `std::list`.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-416: Use After Free", "CWE-825: Expired Pointer Dereference"]
+      confidence: MEDIUM
+      class: pointer-into-growing-container
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              for (...) { ... $V.push_back(...); ... }
+          - pattern-inside: |
+              for (...) { ... $V.emplace_back(...); ... }
+          - pattern-inside: |
+              while (...) { ... $V.push_back(...); ... }
+          - pattern-inside: |
+              while (...) { ... $V.emplace_back(...); ... }
+      - pattern-not-inside: |
+          $V.reserve(...);
+          ...
+      - pattern-either:
+          - pattern: $T *$P = &($V[$I]);
+          - pattern: $T *$P = &$V[$I];
+          - pattern: $T *$P = &($V.back());
+          - pattern: $T *$P = &$V.back();
+          - pattern: $T *$P = $V.data();
+          - pattern: auto *$P = &($V[$I]);
+          - pattern: auto *$P = &$V.back();
+
+  - id: cw-bounds-check-sum-overflow
+    languages: [generic]
+    paths:
+      include: ["*.h", "*.hh", "*.hpp", "*.hxx", "*.c", "*.cc", "*.cpp", "*.cxx"]
+    severity: WARNING
+    message: >-
+      A bounds check adds an offset to a size before comparing with a length. When both are
+      unsigned and the offset comes from input, the sum wraps past zero and the check passes for an
+      offset far beyond the buffer. Check `offset <= length && size <= length - offset` instead.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-190: Integer Overflow or Wraparound", "CWE-125: Out-of-bounds Read"]
+      confidence: LOW
+      class: bounds-check-sum-overflow
+    patterns:
+      - pattern-either:
+          - pattern: $OFF + $SZ <= $LEN
+          - pattern: $OFF + $SZ < $LEN
+          - pattern: $OFF + $SZ > $LEN
+          - pattern: $OFF + $SZ >= $LEN
+          - pattern: $LEN >= $OFF + $SZ
+          - pattern: $LEN < $OFF + $SZ
+      - metavariable-regex:
+          metavariable: $OFF
+          regex: '(?i)^(?:[a-z_]*_)?(index|idx|offset|off|pos|position|start|begin|cursor)$'
+      - metavariable-regex:
+          metavariable: $SZ
+          regex: '(?i)^(?:[a-z_]*_)?(size|len|length|count|nbytes|bytes|sizeinbytes|width)$'

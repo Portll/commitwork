@@ -65,6 +65,42 @@ describe('a zero is clean only when something witnessed the run', () => {
   });
 });
 
+// MEASURED, osv-scanner 2.6.0 / osv-scalibr 0.5.2, on a tree whose only lockfile is a v4
+// deno.lock: "1 dirs visited, 2 inodes visited, 0 Extract calls", "No package sources found",
+// exit 128, and a ZERO-BYTE sarif on stdout. deno.lock is in deps-osv's appliesIfExists, so the
+// lane fires on it and the scanner has no extractor for it.
+//
+// The lane's own command treats 128 as survivable (`[ $rc -gt 1 ] && [ $rc -ne 128 ]`) and exits 0,
+// so the shell says the lane succeeded. What must not follow is a clean severity: the one thing
+// standing between an unextractable lockfile and a published green is the exit sidecar, read here.
+describe('deps-osv over a lockfile the scanner has no extractor for', () => {
+  const run128 = ({ exit = 128, body = '' } = {}) => {
+    const d = dir();
+    writeFileSync(join(d, 'osv.sarif'), body);
+    if (exit !== null) writeFileSync(join(d, 'osv.sarif.exit'), `${exit}\n`);
+    try { return classifyReport(CHECK, d, d); } finally { rmSync(d, { recursive: true, force: true }); }
+  };
+
+  test('an empty report with exit 128 is a void, never a clean dependency scan', () => {
+    assert.equal(run128().sev, 'noscan');
+  });
+
+  test('the same empty report with exit 0 is ALSO a void — the emptiness alone carries no pass', () => {
+    // Asserted separately because it is the direction that would lie: if a 0-byte artifact could
+    // pass on a zero exit, every lane whose tool dies before writing would publish clean.
+    assert.equal(run128({ exit: 0 }).sev, 'noscan');
+    assert.equal(run128({ exit: null }).sev, 'noscan');
+  });
+
+  test('the control: a real osv report over a lockfile it CAN extract still reports its findings', () => {
+    // Without this the three above would pass over a classifier that returned noscan for
+    // everything, and deps-osv would be grey across the fleet with nothing saying so.
+    const real = JSON.stringify({ version: '2.1.0', runs: [{ tool: { driver: { name: 'osv-scanner', rules: [] } },
+      results: [{ ruleId: 'CVE-2020-28500', level: 'warning' }] }] });
+    assert.notEqual(run128({ exit: 1, body: real }).sev, 'noscan');
+  });
+});
+
 describe('shellcheck: advisory-only output exits 1 and is a result, not a failure', () => {
   const SC = { id: 'shell-lint', report: { file: 'shellcheck.json', format: 'shellcheck' } };
   const runSc = ({ exit, comments }) => {

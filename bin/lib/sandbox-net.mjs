@@ -65,14 +65,33 @@ export function defaultRouteIfaces({ route = '', route6 = '' } = {}) {
   return { v4, v6 };
 }
 
+const routeIp = (hex) => [6, 4, 2, 0].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
+/**
+ * With no default route, as on a Docker `internal: true` network, pasta finds no external interface
+ * and refuses. The one on-link IPv4 route names the interface; its subnet's first address serves as
+ * the namespace's gateway, which pasta only uses as a next hop because it terminates every
+ * connection itself. Null unless exactly one such route exists.
+ */
+export function onLinkIface({ route = '' } = {}) {
+  const links = route.split('\n').slice(1).map((l) => l.trim().split(/\s+/))
+    .filter((f) => f.length >= 8 && f[0] !== 'lo' && f[1] !== '00000000' && f[2] === '00000000' && /^[0-9A-Fa-f]{8}$/.test(f[1]));
+  if (links.length !== 1) return null;
+  const net = routeIp(links[0][1]);
+  net[3] += 1;
+  return { iface: links[0][0], gateway: net.join('.') };
+}
+
 /** pasta's argv: attach to `pid`, forward nothing in, forward to host loopback only the declared ports. */
-export function pastaArgs({ pid, loopback = [], v4 = null, v6 = null, pidFile }) {
+export function pastaArgs({ pid, loopback = [], v4 = null, v6 = null, link = null, pidFile }) {
+  const out4 = v4 || link?.iface || null;
   return [
     '--config-net', '--quiet', '--foreground', '--no-map-gw',
     '--tcp-ports', 'none', '--udp-ports', 'none',
     '--tcp-ns', loopback.length ? loopback.join(',') : 'none', '--udp-ns', 'none',
     '--dns-forward', DNS_FORWARD,
-    ...(v4 ? ['--outbound-if4', v4] : []), ...(v6 ? ['--outbound-if6', v6] : []),
+    ...(link && !v4 ? ['-i', link.iface, '-g', link.gateway] : []),
+    ...(out4 ? ['--outbound-if4', out4] : []), ...(v6 ? ['--outbound-if6', v6] : []),
     '--pid', pidFile, String(pid),
   ];
 }
@@ -114,7 +133,9 @@ function main() {
     const m = /"child-pid"\s*:\s*(\d+)/.exec(info);
     if (!m || pasta) return;
     child = Number(m[1]);
-    const ifs = defaultRouteIfaces({ route: readOr('/proc/net/route'), route6: readOr('/proc/net/ipv6_route') });
+    const route = readOr('/proc/net/route');
+    const ifs = defaultRouteIfaces({ route, route6: readOr('/proc/net/ipv6_route') });
+    if (!ifs.v4 && !ifs.v6) ifs.link = onLinkIface({ route });
     let err = '';
     pasta = spawn('pasta', pastaArgs({ pid: child, loopback: opts.loopback, ...ifs, pidFile }), { stdio: ['ignore', 'ignore', 'pipe'] });
     pasta.stderr.on('data', (x) => { err += x; });

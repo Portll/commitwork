@@ -98,6 +98,7 @@ test('with a commit ahead: HEAD is pushed to the commitwork/ branch, main is unt
   assert.ok(create, 'gh pr create ran');
   assert.deepEqual(create.a.slice(2, 6), ['--head', BRANCH, '--base', 'main']);
   assert.ok(create.a.includes('--body-file') && create.a.includes(BODY));
+  assert.ok(!create.a.includes('--draft'), 'a PR is a draft only when asked for');
   assert.equal(create.token, TOKEN, 'the token reached gh through the environment');
 });
 

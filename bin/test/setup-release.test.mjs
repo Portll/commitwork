@@ -18,7 +18,7 @@ const POSIX = process.platform !== 'win32';
 
 // signing: undefined (no block) | 'none' | { cosign: 'ok' | 'fail' | 'absent', signedSha?: string }
 // platform: the CW_SETUP_PLATFORM the catalogue pins for; win32 ships a zip holding zz-leaks.exe
-async function rig(t, { tamper = false, signing, platform = 'linux', brew = false } = {}) {
+async function rig(t, { tamper = false, signing, platform = 'linux', brew = false, licenses = null } = {}) {
   const d = mkdtempSync(join(tmpdir(), 'cw-setup-release-'));
   t.after(() => rmSync(d, { recursive: true, force: true }));
   const pkg = join(d, 'pkg');
@@ -26,9 +26,12 @@ async function rig(t, { tamper = false, signing, platform = 'linux', brew = fals
   const bin = platform === 'win32' ? 'zz-leaks.exe' : 'zz-leaks';
   writeFileSync(join(pkg, bin), '#!/bin/sh\necho zz-leaks 1.0.0\n', { mode: 0o755 });
   writeFileSync(join(pkg, 'README.md'), 'not installed');
+  const members = [bin, 'README.md', ...(licenses ? ['LICENSE'] : [])];
+  if (licenses === 'shipped') writeFileSync(join(pkg, 'LICENSE'), 'MIT licence text');
+  if (licenses === 'missing') members.pop();
   const ASSET = platform === 'win32' ? 'zz-leaks_1.0.0_windows.zip' : `zz-leaks_1.0.0_${platform}.tar.gz`;
   if (platform === 'win32') execFileSync('zip', ['-qj', join(d, ASSET), join(pkg, bin), join(pkg, 'README.md')]);
-  else execFileSync('tar', ['-czf', join(d, ASSET), '-C', pkg, bin, 'README.md']);
+  else execFileSync('tar', ['-czf', join(d, ASSET), '-C', pkg, ...members]);
   const body = readFileSync(join(d, ASSET));
   const sha256 = createHash('sha256').update(tamper ? Buffer.concat([body, Buffer.from('x')]) : body).digest('hex');
   const files = { [ASSET]: body };
@@ -59,6 +62,7 @@ async function rig(t, { tamper = false, signing, platform = 'linux', brew = fals
     const child = spawn(process.execPath, [SETUP, ...args], { env: {
       PATH: `${stubs}:/usr/bin:/bin`, HOME: join(d, 'home'), CW_INSTALL_CATALOG: join(d, 'catalog.json'), CW_SETUP_PLATFORM: platform,
       CW_SETUP_RELEASE_BASE: `http://127.0.0.1:${server.address().port}`, CW_SETUP_BIN_DIR: binDir, CW_COSIGN_BIN: 'cosign', CW_TOOL_PROVENANCE: join(d, 'provenance.json'),
+      ...(licenses ? { CW_SETUP_LICENSE_DIR: join(d, 'licenses') } : {}),
     } });
     let out = '';
     child.stdout.on('data', (b) => { out += b; });
@@ -66,7 +70,7 @@ async function rig(t, { tamper = false, signing, platform = 'linux', brew = fals
     child.on('close', (code) => ok({ code, out }));
   });
   const provenance = () => (existsSync(join(d, 'provenance.json')) ? JSON.parse(readFileSync(join(d, 'provenance.json'), 'utf8')).tools : null);
-  return { binDir, run, provenance, brewLog: () => (existsSync(join(d, 'brew.log')) ? readFileSync(join(d, 'brew.log'), 'utf8') : '') };
+  return { binDir, licenseDir: join(d, 'licenses'), run, provenance, brewLog: () => (existsSync(join(d, 'brew.log')) ? readFileSync(join(d, 'brew.log'), 'utf8') : '') };
 }
 
 test('a successful release install records its channel and signature tier for doctor to read', { skip: !POSIX && 'tar archives and sh stubs' }, async (t) => {
@@ -165,5 +169,20 @@ test('a cosign-signed release on a box without cosign is refused, not installed 
   const { binDir, run } = await rig(t, { signing: { cosign: 'absent' } });
   const { out } = await run(['--yes']);
   assert.match(out, /zz-leaks REFUSED — release is cosign-signed and cosign is not installed \(brew install cosign/);
+  assert.equal(existsSync(join(binDir, 'zz-leaks')), false);
+});
+
+test('with CW_SETUP_LICENSE_DIR, the archive\x27s licence file goes to <dir>/<tool>/ and nothing else does', { skip: !POSIX && 'tar archives and sh stubs' }, async (t) => {
+  const { binDir, licenseDir, run } = await rig(t, { signing: 'none', licenses: 'shipped' });
+  const { out } = await run(['--yes']);
+  assert.ok(existsSync(join(binDir, 'zz-leaks')), out);
+  assert.equal(readFileSync(join(licenseDir, 'zz-leaks', 'LICENSE'), 'utf8'), 'MIT licence text');
+  assert.equal(existsSync(join(licenseDir, 'zz-leaks', 'README.md')), false);
+});
+
+test('with CW_SETUP_LICENSE_DIR, an archive holding no licence file is refused and its binary not installed', { skip: !POSIX && 'tar archives and sh stubs' }, async (t) => {
+  const { binDir, run } = await rig(t, { signing: 'none', licenses: 'missing' });
+  const { out } = await run(['--yes']);
+  assert.match(out, /zz-leaks: no licence file in zz-leaks_1\.0\.0_linux\.tar\.gz/);
   assert.equal(existsSync(join(binDir, 'zz-leaks')), false);
 });

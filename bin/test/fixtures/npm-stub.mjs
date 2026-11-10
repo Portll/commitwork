@@ -3,7 +3,7 @@
 // package-lock.json the way npm would for a flat tree. Every call is appended to CW_NPM_STUB_LOG.
 //
 // Registry fixture: { packages: { <name>: { versions: { <v>: <iso publish time> }, deprecated?: { <v>: msg },
-//   dependencies?: { <v>: { <dep>: <version> } } } }, advisories: [{ name, range, severity, title, fixedIn }],
+//   dependencies?: { <v>: { <dep>: <version> } } } }, advisories: [{ id?, name, range, severity, title, fixedIn }],
 //   test?: { exit } }
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -50,7 +50,7 @@ if (cmd === 'view') {
     const v = lock.packages[node]?.version;
     if (!v || !inRange(v, a.range)) continue;
     vulnerabilities[a.name] = { name: a.name, severity: a.severity, isDirect: !!readPkg().devDependencies?.[a.name] || !!readPkg().dependencies?.[a.name],
-      via: [{ title: a.title, url: `https://example.invalid/${a.name}`, range: a.range, severity: a.severity }], nodes: [node], fixAvailable: !!a.fixedIn };
+      via: [{ title: a.title, url: `https://example.invalid/${a.id || a.name}`, range: a.range, severity: a.severity }], nodes: [node], fixAvailable: !!a.fixedIn };
   }
   out({ vulnerabilities, metadata: {} });
   process.exit(Object.keys(vulnerabilities).length ? 1 : 0);
@@ -61,7 +61,8 @@ if (cmd === 'view') {
     const node = `node_modules/${a.name}`;
     const e = lock.packages[node];
     if (!e || !inRange(e.version, a.range)) continue;
-    if (a.fixedIn) setVersion(lock, a.name, a.fixedIn, e.dev); else left++;
+    const fixAt = Date.parse(reg.packages[a.name]?.versions?.[a.fixedIn] ?? '');
+    if (a.fixedIn && !(fixAt > before())) setVersion(lock, a.name, a.fixedIn, e.dev); else left++;
   }
   write(lock);
   process.exit(left ? 1 : 0);

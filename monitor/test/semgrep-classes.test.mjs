@@ -44,7 +44,10 @@ describe('semgrep class rules', () => {
     const ids = [];
     for (const f of ruleFiles()) {
       const src = readFileSync(f, 'utf8');
-      assert.doesNotMatch(src, /^\s*mode:\s*taint/m, `${basename(f)}: taint rules that need the Pro engine belong in manifests/semgrep-taint/`);
+      // Intra-procedural taint runs on the free engine, and the fixture run below proves it does;
+      // what only the Pro engine evaluates is cross-file analysis and module-name binding.
+      assert.doesNotMatch(src, /^\s*interfile:\s*true/m, `${basename(f)}: cross-file taint needs the Pro engine; it belongs in manifests/semgrep-taint/`);
+      assert.doesNotMatch(src, /^\s*-?\s*metavariable-name:/m, `${basename(f)}: metavariable-name needs the Pro engine`);
       const own = ruleIds(src);
       assert.equal([...src.matchAll(/^\s*class:\s*\S+/gm)].length, own.length, `${basename(f)}: every rule names the class it covers`);
       assert.equal([...src.matchAll(/^\s*cwe:\s*\[/gm)].length, own.length, `${basename(f)}: every rule names its CWE`);

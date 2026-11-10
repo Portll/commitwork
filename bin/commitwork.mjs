@@ -28,7 +28,7 @@ import { findGitRepos } from '../lib/repo-walk.mjs'; // GNU `find` is not on Win
 import { homedir, tmpdir, cpus, loadavg, totalmem } from 'node:os';
 import { ensureFirstRunSetup, runSetup, parseSetupArgs, installHintFor, setupExitCode, loadCatalog } from './setup.mjs';
 import { runInit, parseInitArgs } from './init.mjs';
-import { withheldCredentials, scannerEnv, laneEnv, laneCredentialEnv, laneJavaEnv } from './lib/scanner-env.mjs';
+import { withheldCredentials, scannerEnv, laneEnv, laneCredentialEnv, laneJavaEnv, laneWindowsEnv } from './lib/scanner-env.mjs';
 import { egressMode, startProxy, proxyEnv, recordObservation, upstreamProxy, containerised } from './lib/egress-observe.mjs';
 import { scannedGit } from './lib/git-env.mjs';
 import { cargoLaneEnv } from './lib/cargo-target.mjs'; // a sweep's cargo lanes build in their own folder, never the shared target-dir
@@ -83,7 +83,8 @@ import { bold, dim, mut, acc, heading, STATUS, colorEnabled, crit, live, part, h
 // The two axes a check is described with, declared once in monitor/check-vocabulary.mjs. bin/
 // already imports monitor/ (deploy.mjs, races.mjs), so this is not a layering violation.
 import { CHECK_STATUS, SEVERITY, isCheckStatus, isSeverity, toWireStatus } from '../monitor/check-vocabulary.mjs';
-import { readSarif, ruleIndex } from '../monitor/sarif-read.mjs';
+import { readSarif, ruleIndex, describePartial } from '../monitor/sarif-read.mjs';
+import { classifyWorktreePath } from '../monitor/worktree-paths.mjs';
 import { coverageForLane } from '../monitor/codeql-coverage.mjs';
 import { SCANNER_SPECS } from '../monitor/extractors.mjs'; // the publishing reader, as a findings-exit witness
 import { parseSarif } from './lib/report-parsers/sarif.mjs';
@@ -963,7 +964,10 @@ function runLocalCommands(check, repoPath, dryRun, secretEnv) {
   const lockDir = process.env.CW_LOCKFILE_DIR ? null : sidecarLockDir(repoPath);
   // The run path never scans a web root, so the mode is pinned rather than inherited: an exported
   // CW_TARGET_MODE=webroot would otherwise turn on tree-integrity's git-drift rules across the fleet.
+  // laneWindowsEnv goes here rather than in hostSandboxFor, which returns before it on Windows:
+  // the host sandbox is darwin/linux only, so anything assembled there never reaches a Windows lane.
   const env = { ...(secretEnv || {}), ...cargo.env, CW_CONTAINER_NAME: containerPrefix, CW_TARGET_MODE: 'repo',
+    ...laneWindowsEnv(check, process.env, { container: isContainerLane(check) }),
     ...(lockDir && existsSync(lockDir) ? { CW_LOCKFILE_DIR: lockDir } : {}) };
   for (const cmd of cmds) {
     console.log(dim(`  $ ${cmd}`));
@@ -1870,12 +1874,16 @@ export function laneCoverage(check, repoDir) {
   const shortfall = ratio.state === 'partial'
     ? `extracted ${ratio.extracted} of ${ratio.expected} ${check.id.includes('codeql') ? 'files CodeQL expected' : 'expected files'} (${Math.round(ratio.ratio * 100)}%)`
     : null;
-  if (!failed.length && !shortfall) return base;
+  // Files the tool timed out on or parsed in part: warning-level notices under an exit 0, so neither
+  // the exit code nor the error filter sees them. Worktree copies are left out, as the extractor does.
+  const partial = (r.partialAnalysis || []).filter((p) => !classifyWorktreePath(p.uri).worktree);
+  if (!failed.length && !shortfall && !partial.length) return base;
   const shown = failed.slice(0, 5).map((f) => `${f.uri}${f.line ? `:${f.line}` : ''} (${String(f.error).slice(0, 60)})`);
   const perFile = [
     failed.length ? `${failed.length} file${failed.length === 1 ? '' : 's'} failed extraction and were not analysed — `
       + `${shown.join(', ')}${failed.length > shown.length ? `, +${failed.length - shown.length} more` : ''}` : null,
     shortfall,
+    partial.length ? describePartial(partial, r.partialRetry, { show: 5 }) : null,
   ].filter(Boolean).join('; ');
   return reduceCoverage(base, perFile, 'per-file');
 }
@@ -2204,7 +2212,8 @@ function cmdScan(manifest, opts) {
         // fact: a keychain-resolved secret reaches the declaring command here as on the run path / without it the scan applies socket and runs it tokenless, "requires a Socket API token" (expiry: never, prev: missing)
         // CW_TARGET_MODE tells a lane what the target IS: a deployed web root (--webroot) or a repository.
         // Set on every scan, never inherited, because only a web root may report git drift as a finding.
-        const r = runShell(cmd, repo, { ...(ap.secretEnv || {}), ...(ap.toolEnv || {}), ...cargo.env, CW_REPORT_DIR: repoDir, PWD: repo, CW_TARGET_URL: repoUrl, CW_OPENAPI: openapiFile, CW_CONTAINER_NAME: scanPrefix, CW_TARGET_MODE: opts.webroot ? 'webroot' : 'repo' }, scanBound);
+        const r = runShell(cmd, repo, { ...(ap.secretEnv || {}), ...(ap.toolEnv || {}), ...cargo.env, CW_REPORT_DIR: repoDir, PWD: repo, CW_TARGET_URL: repoUrl, CW_OPENAPI: openapiFile, CW_CONTAINER_NAME: scanPrefix, CW_TARGET_MODE: opts.webroot ? 'webroot' : 'repo',
+          ...laneWindowsEnv(check, process.env, { container: isContainerLane(check) }) }, scanBound);
         if (r.timedOut) { killed = r; break; }
         if (r.refused) { refused = r.refused; break; }
         if (r.noShell) { noShell = r; break; }
@@ -2545,14 +2554,18 @@ async function cmdBrief(manifest, opts, positional) {
     if (!rows.length) die(`${runDir} holds no repository's reports: it is not a commitwork scan or sweep run, so its brief is unknown, not empty`);
     target = { mode: 'from', runDir };
   } else {
+    const named = positional[0] || opts.roots?.[0];
+    // The flags are judged before the output store is resolved: a public checkout holds no private
+    // records, and a caller there must still be told the flags are wrong rather than be told about a
+    // store the run would never have reached. The store's refusal below stands for every call whose
+    // arguments are usable.
+    if (opts.webroot && (opts.pc || !named)) die('--webroot scans one named directory in place: commitwork brief <dir> --webroot');
     const outPath = opts.out ? (isAbsolute(opts.out) ? opts.out : resolve(process.cwd(), opts.out)) : null;
     const sidecar = scanOutDir();
     if (!outPath && !sidecar.ok) die(sidecar.error);
     // The sidecar is guarded even when --out names somewhere else: it holds every earlier report.
     const out = { base: [sidecar.ok ? sidecar.base : null, outPath].filter(Boolean), dir: outPath || sidecar.dir };
     const skip = opts.skip || [];
-    const named = positional[0] || opts.roots?.[0];
-    if (opts.webroot && (opts.pc || !named)) die('--webroot scans one named directory in place: commitwork brief <dir> --webroot');
     let choice = opts.pc ? { mode: 'pc' }
       : named ? { mode: opts.webroot ? 'webroot' : 'path', resolved: resolveScanPath(isAbsolute(named) ? named : resolve(process.cwd(), named), { outBase: out.base }) }
         : await chooseTarget(process.cwd(), out, skip);

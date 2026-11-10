@@ -140,7 +140,7 @@ finding into N rows or counts.
 |---|---|---|---|
 | UCA1 | attribution **provided** from an ancestor CWE | the ancestor is a generalisation — says nothing about *this* finding | H1 |
 | UCA2 | attribution **not provided**, rendered blank | blank reads as "checked, nothing found" | H2 |
-| UCA5 | attribution provided as **one row per technique** | one CWE reaches up to 59 CAPECs and 27 ATT&CK techniques (4.1 on average, for a CWE that reaches any), so per-technique rows silently inflate every count | H5 |
+| UCA5 | attribution provided as **one row per technique** | one CWE reaches up to 59 CAPECs, and those carry 27 per-technique rows over 26 distinct techniques (4.1 rows per CWE that reaches any ATT&CK), so per-technique rows silently inflate every count | H5 |
 | UCA7 | attribution **applied too long** — snapshot never re-derived | mapping drifts from upstream with nothing measuring the drift | H3 |
 | UCA8 | attribution provided by **inverting** ATT&CK→CAPEC | the published mapping is one-way; the inverse is unasserted | H1, H4 |
 
@@ -260,7 +260,10 @@ CAPEC/ATT&CK enrichment, and every figure is measured here over the tracked data
 `monitor/failure-taxonomy.json`'s `stpaVocabulary`. The CWE and CAPEC figures are measured over
 `monitor/data/cwe-graph.json` and `monitor/data/capec-graph.json` as fetched from MITRE on
 2026-08-23 (ATT&CK ids are the ones CAPEC itself records): 969 CWEs, 558 live CAPEC patterns plus 57
-deprecated ones the graph records as dropped. The guide-word ↔ UCA
+deprecated ones the graph records as dropped. Each of those figures is registered in
+`bin/lib/docsite-figures.mjs` with the expression that computes it, and
+`bin/test/docsite-figures.test.mjs` recomputes all of them and fails on a figure stated here that no
+longer reproduces, or on a new numeral this page states that nothing computes. The guide-word ↔ UCA
 cross-reference is this page's own synthesis, stated as a reading rather than a repo-declared
 mapping. The two `proposed` guide words, `++ CONFABULATED` and `++ HIJACKED`, are this page's own
 proposal for LLM-development boundaries — not sourced from any repo document, and not yet adopted

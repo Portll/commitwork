@@ -5,8 +5,9 @@
 // writes: a unified diff to stdout and NOTHING to the target tree — no write, no push, no fork, no PR
 //
 // fact: a hardener that changes nothing refuses, so an empty diff cannot be applied as evidence of a repair (expiry: never, prev: not built)
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { linkPolicy } from '../bin/lib/walk-links.mjs';
 import { dirExcluder } from '../bin/scan-exclusions.mjs';
 import { HIDDEN_TEXT } from '../bin/minify-detect.mjs';
 import { isInstructionFile } from '../bin/agent-instructions.mjs';
@@ -73,19 +74,36 @@ export function hardenAgentInstructions({ repoDir = '.' } = {}) {
   const skipDir = dirExcluder();
   const cap = maxBytes();
   const files = [];
+  const links = linkPolicy(root);
+  const linksNotFollowed = [];
+  const visit = (p, st) => {
+    const rel = relative(root, p).split('\\').join('/');
+    if (st.isSymbolicLink()) {
+      const reason = links.link(p);
+      if (reason) linksNotFollowed.push({ path: rel, reason });
+      return;
+    }
+    if (st.isDirectory()) { walk(p); return; }
+    if (isInstructionFile(rel) && st.size <= cap && links.first(p)) files.push(rel);
+  };
   const walk = (dir) => {
+    if (!links.first(dir)) return;
     let entries; try { entries = readdirSync(dir); } catch { return; }
     for (const name of entries.sort()) {
       const p = join(dir, name);
       if (skipDir(relative(root, p))) continue;
-      let st; try { st = statSync(p); } catch { continue; }
-      if (st.isDirectory()) { walk(p); continue; }
-      const rel = relative(root, p).split('\\').join('/');
-      if (isInstructionFile(rel) && st.size <= cap) files.push(rel);
+      let st; try { st = lstatSync(p); } catch { continue; }
+      visit(p, st);
     }
   };
   walk(root);
-  if (!files.length) return { ok: false, code: 2, reason: `no instruction files under ${root} — nothing to harden`, files };
+  for (const { path: p, target } of links.drain()) {
+    if (skipDir(target)) continue;
+    let st; try { st = statSync(p); } catch { continue; }
+    visit(p, st);
+  }
+  const linkNote = linksNotFollowed.length ? { linksNotFollowed } : {};
+  if (!files.length) return { ok: false, code: 2, reason: `no instruction files under ${root} — nothing to harden`, files, ...linkNote };
   const changed = [];
   const diffs = [];
   for (const rel of files) {
@@ -95,8 +113,8 @@ export function hardenAgentInstructions({ repoDir = '.' } = {}) {
     changed.push({ file: rel, removed: s.removed, count: s.count });
     diffs.push(unifiedDiff(rel, orig, s.text));
   }
-  if (!diffs.length) return { ok: false, code: 3, reason: `nothing to change — ${files.length} instruction file(s) carry no hidden character`, files };
-  return { ok: true, code: 0, files, changed, diff: diffs.join(''),
+  if (!diffs.length) return { ok: false, code: 3, reason: `nothing to change — ${files.length} instruction file(s) carry no hidden character`, files, ...linkNote };
+  return { ok: true, code: 0, files, changed, diff: diffs.join(''), ...linkNote,
     note: 'DRY RUN by construction — nothing was written; apply the diff with `git apply` after a human has read it' };
 }
 
@@ -105,6 +123,7 @@ if (isMainModule(import.meta.url)) {
   const out = hardenAgentInstructions({ repoDir: args.find((a) => !a.startsWith('--')) || '.' });
   if (args.includes('--json')) process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
   else if (out.ok) process.stdout.write(out.diff);
+  for (const { path, reason } of out.linksNotFollowed || []) process.stderr.write(`agent-instructions-harden: warning: ${path} (${reason}) not followed\n`);
   process.stderr.write(out.ok
     ? `agent-instructions-harden: ${out.changed.length} of ${out.files.length} file(s) would change (dry run, nothing written)\n`
     : `agent-instructions-harden: REFUSED — ${out.reason}\n`);

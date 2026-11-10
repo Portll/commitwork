@@ -1,0 +1,21 @@
+{
+  "total_count": 4,
+  "runners": [
+    {
+      "id": 23, "name": "cw-slot-1-399444400-1792659000", "os": "Linux", "status": "offline", "busy": false, "ephemeral": true,
+      "labels": [{ "id": 1, "name": "self-hosted", "type": "custom" }, { "id": 2, "name": "commitwork", "type": "custom" }]
+    },
+    {
+      "id": 24, "name": "cw-slot-2-399444401-1792659900", "os": "Linux", "status": "online", "busy": false, "ephemeral": true,
+      "labels": [{ "id": 1, "name": "self-hosted", "type": "custom" }, { "id": 2, "name": "commitwork", "type": "custom" }]
+    },
+    {
+      "id": 25, "name": "cw-slot-3-399444402-1792659000", "os": "Linux", "status": "online", "busy": true, "ephemeral": true,
+      "labels": [{ "id": 1, "name": "self-hosted", "type": "custom" }, { "id": 2, "name": "commitwork", "type": "custom" }]
+    },
+    {
+      "id": 26, "name": "example-mac", "os": "macOS", "status": "offline", "busy": false, "ephemeral": false,
+      "labels": [{ "id": 1, "name": "self-hosted", "type": "read-only" }, { "id": 3, "name": "lmstudio", "type": "custom" }]
+    }
+  ]
+}

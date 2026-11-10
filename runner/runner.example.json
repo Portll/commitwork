@@ -1,0 +1,13 @@
+{
+  "repos": [
+    { "repo": "example-owner/example-private" },
+    { "repo": "example-owner/example-public", "labels": ["self-hosted", "linux", "arm64", "commitwork", "scan"] }
+  ],
+  "labels": ["self-hosted", "linux", "arm64", "commitwork"],
+  "slots": [
+    { "id": "slot-1", "cpus": 4, "memGb": 6 },
+    { "id": "slot-2", "cpus": 4, "memGb": 6 }
+  ],
+  "pollSec": 30,
+  "staleRunnerSec": 600
+}

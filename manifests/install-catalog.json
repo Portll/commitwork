@@ -1,5 +1,19 @@
 {
-  "note": "Scanner install catalog for `commitwork setup` (bin/setup.mjs). Per tool: a short `why`, one package id per supported manager (brew = macOS/Linux, winget/scoop = Windows, pipx = anywhere Python is), and a `url` fallback printed when no manager is available or an install fails. `manual: true` tools are checked and reported but never auto-installed. brew ids verified 2026-07-24; winget/scoop ids are from each project's install docs and are re-probed after install, so a stale id degrades to the url fallback rather than a silent failure. Every tool declared in security-baseline.json requires.tools has an entry here, and bin/test/install-catalog-covers-manifest.test.mjs fails if the two files disagree: a tool missing here can never be installed by `commitwork setup`, and its lane skips forever with `n/a — tool:x`, which reads exactly like correct language gating. overwatch-layer-spine is not a scanner but the one catalogued thing that is configuration rather than a binary: its `steps` are keyed by the check ids admin/lib/spine-preconditions.mjs reports, so the Overwatch tab can name the exact step that is absent. Two entry SHAPES exist: brew/winget/scoop/pipx/npm carry a PACKAGE ID, while cargo/gem/composer/go carry a WHOLE COMMAND STRING, and bin/setup.mjs drives both. cargo-audit, brakeman, bundle-audit, psalm and phpcs-security-audit have no other installer. An entry no manager can act on is worse than a missing one: the missing one is a gap somebody can see. `providedBy` (mix<-elixir, cargo-clippy<-cargo) names the tool that brings another with it. Ids a manager can be queried for are VERIFIED ON THE BOX rather than copied from docs: zizmor.zizmor and GolangCI.golangci-lint resolve in `winget search`, and the two `go install` lines run and their binaries resolve on PATH. opengrep and sobelow have no installer and are REPORTED as a catalog gap rather than as a platform limitation. Every `release` entry carries a `signing` block recording what publisher signature it was MEASURED to have — `cosign-checksums` (goreleaser checksums file signed keyless; the identity regexp is the certificate SAN read from the real release, and lib/release-signing.mjs refuses the install unless cosign verifies it AND the signed digest equals the pin) or `none` with a checkedAt. trufflehog v3.99.0 verified; gitleaks v8.30.1 ships no signature and no attestation, so its pin stands alone and says so. bin/test/install-catalog-managers.test.mjs refuses a release entry without the block.",
+  "note": "Scanner install catalog for `commitwork setup` (bin/setup.mjs). Per tool: a short `why`, one package id per supported manager (brew = macOS/Linux, winget/scoop = Windows, pipx = anywhere Python is), and a `url` fallback printed when no manager is available or an install fails. `manual: true` tools are checked and reported but never auto-installed. brew ids verified 2026-07-24; winget/scoop ids are from each project's install docs and are re-probed after install, so a stale id degrades to the url fallback rather than a silent failure. Every tool declared in security-baseline.json requires.tools has an entry here, and bin/test/install-catalog-covers-manifest.test.mjs fails if the two files disagree: a tool missing here can never be installed by `commitwork setup`, and its lane skips forever with `n/a — tool:x`, which reads exactly like correct language gating. overwatch-layer-spine is not a scanner but the one catalogued thing that is configuration rather than a binary: its `steps` are keyed by the check ids admin/lib/spine-preconditions.mjs reports, so the Overwatch tab can name the exact step that is absent. Two entry SHAPES exist: brew/winget/scoop/pipx/npm carry a PACKAGE ID, while cargo/gem/composer/go carry a WHOLE COMMAND STRING, and bin/setup.mjs drives both. cargo-audit, brakeman, bundle-audit, psalm and phpcs-security-audit have no other installer. An entry no manager can act on is worse than a missing one: the missing one is a gap somebody can see. `providedBy` (mix<-elixir, cargo-clippy<-cargo) names the tool that brings another with it. Whether an id was ever PROBED is a per-id FIELD, not a sentence here: `idChecks.<manager>` carries `state` (`resolves` or `unresolved`), `checkedAt` and `how`, and bin/setup.mjs reads it at call time. The two states are measurements; the absence of an entry is the third state and means nobody has checked, which bin/setup.mjs says on the row rather than hiding — an id nobody probed must not read like one that works. An `unresolved` id is never offered as an install path at all: it degrades to the next manager, or to the `url` fallback. Two winget ids copied from upstream docs (TruffleSecurity.TruffleHog, GitHub.CodeQL) resolve to no package and are recorded `unresolved`. The two `go install` lines run and their binaries resolve on PATH. opengrep and sobelow have no installer and are REPORTED as a catalog gap rather than as a platform limitation. Every `release` entry carries a `signing` block recording what publisher signature it was MEASURED to have — `cosign-checksums` (goreleaser checksums file signed keyless; the identity regexp is the certificate SAN read from the real release, and lib/release-signing.mjs refuses the install unless cosign verifies it AND the signed digest equals the pin) or `none` with a checkedAt. trufflehog v3.99.0 verified; gitleaks v8.30.1 ships no signature and no attestation, so its pin stands alone and says so. bin/test/install-catalog-managers.test.mjs refuses a release entry without the block.",
+  "idChecksByManager": {
+    "release": { "state": "resolves", "checkedAt": null, "how": "a release entry is not a package id: it is a per-platform asset name and SHA-256 pin, and lib/release-signing.mjs refuses the install unless the publisher signature verifies AND the signed digest equals the pin. The pin IS the probe." },
+    "brew": { "state": "resolves", "checkedAt": "2026-07-24", "how": "every brew id in this catalogue was verified in one pass on macOS. A CLASS measurement, not a per-id one: an id added after that pass is covered by this claim and by no probe of its own, and a per-id idChecks entry is how one gets a stronger record." },
+    "go": { "state": "resolves", "checkedAt": null, "how": "both `go install` lines were RUN and their binaries resolve on PATH." },
+    "winget": { "state": "unprobed", "checkedAt": null, "how": "ids come from each project's install documentation. Only the ids carrying their own idChecks entry have been queried on a Windows box, and two of those turned out to name no package." },
+    "scoop": { "state": "unprobed", "checkedAt": null, "how": "ids come from each project's install documentation; no scoop bucket has been queried for any of them." },
+    "pipx": { "state": "unprobed", "checkedAt": null, "how": "ids come from each project's install documentation." },
+    "npm": { "state": "unprobed", "checkedAt": null, "how": "ids come from each project's install documentation." },
+    "cargo": { "state": "unprobed", "checkedAt": null, "how": "command strings come from each project's install documentation." },
+    "gem": { "state": "unprobed", "checkedAt": null, "how": "command strings come from each project's install documentation." },
+    "composer": { "state": "unprobed", "checkedAt": null, "how": "command strings come from each project's install documentation." },
+    "apt": { "state": "unprobed", "checkedAt": null, "how": "ids come from each distribution's package index and no apt cache has been queried for them." },
+    "dnf": { "state": "unprobed", "checkedAt": null, "how": "ids come from each distribution's package index and no dnf repo has been queried for them." }
+  },
   "tools": {
     "cargo-audit": {
       "why": "RustSec advisories for resolved Cargo graphs (deps-rust-audit second-opinion lane)",
@@ -23,6 +37,13 @@
       "brew": "trufflehog",
       "winget": "TruffleSecurity.TruffleHog",
       "scoop": "trufflehog",
+      "idChecks": {
+        "winget": {
+          "state": "unresolved",
+          "checkedAt": "2026-10-22",
+          "how": "operator report from a Windows box: no winget package by this id. Not re-probed here — no winget on the machine that recorded it. The id came from TruffleHog's install docs and no probe ever backed it."
+        }
+      },
       "release": {
         "repo": "trufflesecurity/trufflehog",
         "tag": "v3.99.2",
@@ -185,6 +206,13 @@
       "brew": "codeql",
       "winget": "GitHub.CodeQL",
       "scoop": "codeql",
+      "idChecks": {
+        "winget": {
+          "state": "unresolved",
+          "checkedAt": "2026-10-22",
+          "how": "operator report from a Windows box: no winget package by this id. Not re-probed here — no winget on the machine that recorded it. GitHub publishes the CodeQL CLI as a release asset, not a winget package."
+        }
+      },
       "url": "https://github.com/github/codeql-action/releases",
       "postInstall": [
         [
@@ -355,6 +383,13 @@
       "brew": "golangci-lint",
       "winget": "GolangCI.golangci-lint",
       "scoop": "golangci-lint",
+      "idChecks": {
+        "winget": {
+          "state": "resolves",
+          "checkedAt": null,
+          "how": "`winget search` returned this id on a Windows box. Transcribed from this catalogue's own note, which recorded the probe and not its date — null is the date nobody wrote down, never a probe that did not happen."
+        }
+      },
       "url": "https://golangci-lint.run/welcome/install/"
     },
     "pmd": {
@@ -393,6 +428,13 @@
       "winget": "zizmor.zizmor",
       "scoop": null,
       "pipx": "zizmor",
+      "idChecks": {
+        "winget": {
+          "state": "resolves",
+          "checkedAt": null,
+          "how": "`winget search` returned this id on a Windows box. Transcribed from this catalogue's own note, which recorded the probe and not its date — null is the date nobody wrote down, never a probe that did not happen."
+        }
+      },
       "url": "https://docs.zizmor.sh/installation/"
     },
     "rustfmt": {

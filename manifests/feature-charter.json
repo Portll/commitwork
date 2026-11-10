@@ -39,10 +39,10 @@
     "agents": { "label": "Agent controls", "why": "agent dispatch and follow-ups, local model runtime, transcript grading, comment review and learning mode routes" },
     "launchlist": { "label": "Launch checklist", "why": "the publication-readiness board" },
     "memory-view": { "label": "Memory record viewer", "why": "memory-view routes; not mounted today" },
-    "feed": { "label": "Findings feed", "why": "admin/routes/feed.mjs and admin/static/panel-feed.js: one grouped feed over the project rollup joined to the issue store, beside the per-check tabs it does not replace yet", "views": ["feed"] },
+    "feed": { "label": "Findings feed", "why": "admin/routes/feed.mjs and admin/static/panel-feed.js: one grouped feed over the project rollup joined to the issue store, beside the per-check tabs it does not replace yet" },
     "palette": { "label": "Command palette", "why": "admin/routes/palette.mjs and admin/static/panel-palette.js: Cmd/Ctrl+K search over views, checks, projects and actions, plus G-then-key chords" },
-    "journey": { "label": "Guided setup", "why": "admin/routes/journey.mjs and admin/static/panel-journey.js: the nine-step setup checklist whose state is read from the records each step is about", "views": ["journey"] },
-    "inbox": { "label": "Inbox", "why": "admin/routes/inbox.mjs, monitor/inbox.mjs and admin/static/panel-inbox.js: what changed in one area since its last sweep, with per-operator read and snooze state", "views": ["inbox"] },
+    "journey": { "label": "Guided setup", "why": "admin/routes/journey.mjs and admin/static/panel-journey.js: the nine-step setup checklist whose state is read from the records each step is about" },
+    "inbox": { "label": "Inbox", "why": "admin/routes/inbox.mjs, monitor/inbox.mjs and admin/static/panel-inbox.js: what changed in one area since its last sweep, with per-operator read and snooze state" },
     "pull-request": { "label": "Create pull request", "why": "admin/routes/pull-request.mjs and bin/create-pr.mjs: push a registered repository's HEAD to a commitwork/ branch and open a pull request from the feed; operator port only, and merging stays human" }
   },
   "groups": [
@@ -109,6 +109,10 @@
     { "id": "http.agents", "surface": "http-route", "keys": ["overwatch-layer", "llm", "turns", "learning", "comments"], "class": "ring-outward", "experimental": true, "flag": "agents", "views": ["overwatch"], "why": "agent dispatch, model runtime and transcript grading: an adjacent audience with its own stores" },
     { "id": "http.offbox", "surface": "http-route", "keys": ["offbox"], "class": "ring-outward", "experimental": true, "flag": "offbox", "why": "off-host attestation ingest, same reason as its job" },
     { "id": "http.launchlist", "surface": "http-route", "keys": ["launchlist"], "class": "ring-outward", "experimental": true, "flag": "launchlist", "why": "a publication-readiness board for this product's own release; not a feature of scanning a repository" },
-    { "id": "http.memory", "surface": "http-route", "keys": ["memory-view", "memory-view.html"], "class": "ring-outward", "experimental": true, "flag": "memory-view", "why": "visualises how a memory record was stored — an adjacent debugging audience" }
+    { "id": "http.memory", "surface": "http-route", "keys": ["memory-view", "memory-view.html"], "class": "ring-outward", "experimental": true, "flag": "memory-view", "why": "visualises how a memory record was stored — an adjacent debugging audience" },
+    { "id": "http.feed", "surface": "http-route", "keys": ["feed"], "class": "ring-outward", "experimental": true, "flag": "feed", "views": ["feed"], "why": "a second reading of findings the per-check tabs already serve; core does not depend on it" },
+    { "id": "http.inbox", "surface": "http-route", "keys": ["inbox"], "class": "ring-outward", "experimental": true, "flag": "inbox", "views": ["inbox"], "why": "per-operator read and snooze state over what changed since the last sweep: a reviewer's workflow beside the scan, not part of it" },
+    { "id": "http.journey", "surface": "http-route", "keys": ["journey"], "class": "ring-outward", "experimental": true, "flag": "journey", "views": ["journey"], "why": "a guided setup checklist for a new operator; the panel and the CLI work without it" },
+    { "id": "http.palette", "surface": "http-route", "keys": ["palette"], "class": "ring-outward", "experimental": true, "flag": "palette", "why": "a keyboard search over surfaces that all remain reachable from the navigation without it" }
   ]
 }

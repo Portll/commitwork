@@ -1,0 +1,132 @@
+# Class rules: content fetched from a location named in configuration, then run or deserialised,
+# with no digest compared in between.
+#
+# Loading a pickle, or running a script, is an ordinary trust decision when the file is one the
+# operator chose. The decision changes when the code downloads the file itself from a URL taken from
+# a config key or a dataset option: whoever controls that location, or the path to it, now chooses
+# what runs. The control is a pinned digest checked after the download and before the load.
+
+rules:
+  - id: cw-fetched-then-unpickled-py
+    languages: [python]
+    severity: WARNING
+    message: >-
+      A file downloaded in this function is deserialised with a loader that can run code, and no
+      digest is compared in between. Whoever controls the download location chooses what the
+      loader executes. Pin a SHA-256 for the file and refuse it on mismatch before loading, or use a
+      data-only format.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-494: Download of Code Without Integrity Check", "CWE-502: Deserialization of Untrusted Data"]
+      confidence: MEDIUM
+      class: fetch-then-load
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $L = $DL(...)
+              ...
+          - pattern-inside: |
+              $L, $H = $DL(...)
+              ...
+      - metavariable-regex:
+          metavariable: $DL
+          regex: '^(?:[\w.]+\.)?(get_local_path|urlretrieve|hf_hub_download|download_url|download_file|download|cached_path|cached_download|fetch|fetch_file|get_file)$'
+      - pattern-not-inside: |
+          $L = $DL(...)
+          ...
+          $D = <... hashlib.$ALG(...) ...>
+          ...
+      - pattern-not-inside: |
+          $L = $DL(...)
+          ...
+          hashlib.file_digest(...)
+          ...
+      - pattern-not-inside: |
+          $L = $DL(...)
+          ...
+          check_integrity(...)
+          ...
+      - pattern-not-inside: |
+          $L = $DL(...)
+          ...
+          verify_checksum(...)
+          ...
+      - pattern-not-inside: |
+          $L = $DL(...)
+          ...
+          verify_sha256(...)
+          ...
+      - pattern-either:
+          - pattern: pickle.load(open($L, ...))
+          - pattern: torch.load($L, ...)
+          - pattern: joblib.load($L, ...)
+          - pattern: dill.load(open($L, ...))
+          - patterns:
+              - pattern-inside: |
+                  with open($L, ...) as $FH:
+                      ...
+              - pattern-either:
+                  - pattern: pickle.load($FH, ...)
+                  - pattern: dill.load($FH, ...)
+                  - pattern: cloudpickle.load($FH, ...)
+                  - pattern: marshal.load($FH)
+
+  - id: cw-download-run-without-digest-sh
+    languages: [bash]
+    severity: WARNING
+    message: >-
+      A script downloads content and runs it, with no digest compared first. Whoever controls the
+      URL, or the network path to it, chooses what runs on this host. Download to a file, compare
+      its SHA-256 with a pinned value, and run it only on a match.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-494: Download of Code Without Integrity Check"]
+      confidence: MEDIUM
+      class: fetch-then-load
+    pattern-either:
+      - pattern: curl ... | sh
+      - pattern: curl ... | bash
+      - pattern: curl ... | sudo sh
+      - pattern: curl ... | sudo bash
+      - pattern: wget ... | sh
+      - pattern: wget ... | bash
+      - pattern: sh <(curl ...)
+      - pattern: bash <(curl ...)
+      - pattern: bash -c "$(curl ...)"
+      - pattern: sh -c "$(curl ...)"
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  curl ... -o $F ...
+                  ...
+              - pattern-inside: |
+                  wget ... -O $F ...
+                  ...
+          - pattern-not-inside: |
+              $DL ... $F ...
+              ...
+              echo ... | shasum ...
+              ...
+          - pattern-not-inside: |
+              $DL ... $F ...
+              ...
+              echo ... | sha256sum ...
+              ...
+          - pattern-not-inside: |
+              $DL ... $F ...
+              ...
+              shasum ...
+              ...
+          - pattern-not-inside: |
+              $DL ... $F ...
+              ...
+              sha256sum ...
+              ...
+          - pattern-either:
+              - pattern: chmod +x $F
+              - pattern: tar ... $F ...
+              - pattern: unzip ... $F ...
+              - pattern: sh $F ...
+              - pattern: bash $F ...

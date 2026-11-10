@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "route": "/v1/runner/jobs",
+  "schemaVersion": 1,
+  "stamp": {
+    "verifiedAt": "2026-10-22T11:06:12.000Z",
+    "verifiedAtUnix": 1792667172,
+    "generator": "commitwork-runner · runner/api-routes.mjs",
+    "durationMs": 0
+  },
+  "sources": [
+    {
+      "id": "ledger",
+      "status": "unavailable",
+      "reason": "no ledger configured"
+    }
+  ],
+  "coverage": {
+    "requested": 1,
+    "measured": 0,
+    "unknownFields": 0
+  },
+  "data": {
+    "since": null,
+    "jobs": null
+  }
+}

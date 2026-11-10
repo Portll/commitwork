@@ -24,8 +24,8 @@
     {
       "port": 7980,
       "iface": "loopback",
-      "purpose": "external overwatch SPINE (consumed by commitwork; not this repo's process)",
-      "owner": "overwatch",
+      "purpose": "external agent-task ledger (consumed by commitwork; not this repo's process)",
+      "owner": "agent-ledger",
       "entryMatch": null,
       "auth": null,
       "probePath": null,

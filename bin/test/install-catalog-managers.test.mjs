@@ -31,8 +31,9 @@ const CMD_MANAGERS = ['cargo', 'gem', 'composer', 'go'];
 test('EVERY manager key used in the catalogue is one bin/setup.mjs can actually drive', () => {
   // The check that would have caught the original defect the day it was introduced.
   // `steps` is a manual entry's instructions for a person, keyed by the checks that report them.
+  // `idChecks` is keyed BY manager and is not one: it records whether each id was ever queried.
   const NON_MANAGER = new Set(['why', 'url', 'manual', 'ready', 'requiresAccount', 'requiredBy',
-    'postInstall', 'providedBy', 'steps', 'platforms']);
+    'postInstall', 'providedBy', 'steps', 'platforms', 'idChecks']);
   const unknown = new Map();
   for (const [name, spec] of Object.entries(CATALOG.tools)) {
     for (const key of Object.keys(spec)) {
@@ -202,8 +203,14 @@ test('WINDOWS — every id added in the 2026-09-04 pass is one that was VERIFIED
   assert.equal(CATALOG.tools['golangci-lint'].winget, 'GolangCI.golangci-lint');
   assert.equal(CATALOG.tools.gosec.go, 'go install github.com/securego/gosec/v2/cmd/gosec@latest');
   assert.equal(CATALOG.tools.govulncheck.go, 'go install golang.org/x/vuln/cmd/govulncheck@latest');
-  assert.match(loadCatalog().note, /VERIFIED ON THE BOX/,
-    'the catalogue note must keep recording that ids are checked rather than copied');
+  // The record of HAVING been verified is the per-id field: a sentence in the note names the ids it
+  // remembers, and the ids it does not name read identically.
+  for (const name of ['zizmor', 'golangci-lint']) {
+    assert.equal(CATALOG.tools[name].idChecks.winget.state, 'resolves',
+      `${name}'s winget id was probed, and the record of that must survive an edit to the note`);
+  }
+  assert.match(loadCatalog().note, /idChecks/,
+    'the note must keep pointing a reader at the field that carries the verification state');
 });
 
 test('every release entry pins an upstream repo, a tag and a SHA-256 per platform and architecture', () => {

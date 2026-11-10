@@ -406,12 +406,23 @@ export function normaliseWrappers(cmd, segs = lex(maskHeredocs(String(cmd ?? '')
 
 // ── ASK IS NOT A GATE IN AN UNATTENDED SESSION ───────────────────────────────
 //
-// In a NON-INTERACTIVE session a command judged `ask` runs unstopped, while one judged `deny` is
-// refused with the reason shown. So `deny` is enforced everywhere and `ask` degrades to `allow`
-// wherever nothing can be asked: the default that keeps real work moving keeps it moving in exactly
-// the sessions where no human is watching, which are the ones that most need a gate. A liveness
-// probe must use the verdict that CANNOT be auto-approved, or it measures the permission mode
-// rather than the gate.
+// `deny` is enforced everywhere. `ask` is answered by WHOEVER IS ANSWERING PROMPTS, which is not
+// always a person: the default that keeps real work moving keeps it moving in exactly the sessions
+// where no human is watching, which are the ones that most need a gate. A liveness probe must use
+// the verdict that CANNOT be auto-approved, or it measures the permission mode rather than the gate.
+//
+// WHAT AN ANSWERED ASK ACTUALLY DOES, measured rather than assumed, on the installed Claude Code
+// 2.1.289 (2026-10-24, a hook returning `ask` over a `touch` whose marker file is the evidence):
+//   · a bare `claude -p` (so `--permission-prompts host` with no SDK host to be the host) REFUSES
+//     it, under permission_mode `default` and under `dontAsk` alike. The marker was never created.
+//     So the harness already fails closed for that shape, and this comment used to claim the
+//     opposite — "an ask runs unstopped" — which was never measured here.
+//   · a run that HAS a prompt answerer does not: `--permission-prompt-tool` (the substrate runner
+//     uses `stdio`), an SDK host, or an interactive session whose mode answers for the person. There
+//     the hook's own verdict is the only thing that can refuse, which is why the posture reads
+//     permission_mode as well as CW_GUARD_UNATTENDED.
+//   · `bypassPermissions` was NOT measured: spawning one was refused by this host's auto-mode
+//     classifier. It is taken from the documented enum, not from a run.
 //
 // What an ask becomes is the operator's unattended posture (lib/security-posture.mjs askOutcome):
 // every ask site names its class, and settle() runs each ask through the posture once. The module
@@ -510,9 +521,99 @@ const recursiveDelete = (lead = 'Recursive force-delete.') => ask(
   + 'routinely carries 100+ dirty files belonging to other sessions.\n'
   + '  · gitignored live state (.claude/store, reports/, evaluations/) has no copy in the '
   + 'repository at all.\n'
-  + '  · If this is a scratch directory under /tmp, say so and it is a one-word approval.',
+  + '  · A run deleting its OWN scratch directory is already allowed and never reaches this: a '
+  + 'literal, unquoted path under /tmp or $TMPDIR named the way mkdtemp and mktemp name one '
+  + '(`tmp.XXXXXXXX`, `cw-…`, `commitwork-…`, with a random tail). This path is not one of those, '
+  + 'so say what it is.',
   'recursive-delete',
 );
+
+// ── the one carve-out: a run deleting its own scratch directory ──────────────
+//
+// Posture A refuses every ask in an unattended run, and an `rm -rf` of the temp directory the run
+// itself made is the one shape where that refuses real work rather than preventing it. A gate that
+// refuses cleanup gets removed, and a removed gate protects nothing.
+//
+// IT IS NARROW BY CONSTRUCTION, because the hook sees text and cannot ask the filesystem who owns a
+// path. All of these must hold, or the delete is the ordinary `recursive-delete` ask:
+//   · the target is spelled as a LITERAL absolute path — no `$VAR` (the hook cannot know the child
+//     shell's TMPDIR), no glob, no `~`, no backslash, no `.` or `..` segment;
+//   · it sits at least one segment BELOW a temp root, so a root itself is never a target;
+//   · the first segment below that root is named like a directory mkdtemp(3) or mktemp(1) made —
+//     a recognised prefix AND a random tail. That is what keeps the shared, stable names out:
+//     `/tmp/cc-socks` (every session's peer sockets) and `/tmp/scratch-dir` stay gated.
+// scrub() has already collapsed quoted strings, so a QUOTED path is not visible here and is not
+// carved out either. That is the fail-closed direction and it is deliberate.
+//
+// WHAT IT STILL PERMITS, stated rather than discovered: the name says "a scratch directory", not
+// "YOURS". A lexical gate cannot tell one run's mkdtemp from another's, so a session can delete a
+// PEER's `cw-…`/`tmp.…` directory under the same temp root. That costs the peer its run and no
+// durable record — those directories hold a child's cwd and are removed at the end of it anyway —
+// and it is the price of the carve-out. Nothing durable lives under a name this matches.
+//
+// fact: an agent's own cleanup is `rm -rf` of a mkdtemp/mktemp name / mktemp(1) with no template
+// makes `tmp.XXXXXXXX` and lib/claude-spawn.mjs's scratch is `cw-claude-XXXXXX`, so both forms occur
+// (expiry: when a scratch directory is named some other way, prev: missing)
+const SCRATCH_SEGMENT = /^(?:tmp\.[A-Za-z0-9]{6,}|(?:cw|commitwork)[-_][\w.-]*[A-Za-z0-9]{6,})$/;
+
+// POSIX PATHS ONLY, and that is a declared limit rather than an oversight: every path form this
+// hook reasons about (`/`, `~`, `$HOME`) is POSIX, so on Windows no root matches, nothing is carved
+// out, and an `rm -rf` keeps its ask. Fail-closed, at the cost of a Windows run that cannot clean
+// up unattended.
+// TMPDIR is trusted here because it is the HOOK process's own, handed down by the harness from the
+// session's environment. A gated agent cannot set it: an `export` in its Bash call reaches that
+// subprocess, not the harness that spawns this hook.
+/** The temp roots a scratch path may sit under, read at CALL time, with the macOS /private twins. */
+function tempRoots(env = process.env) {
+  const out = new Set();
+  for (const raw of [env.TMPDIR, tmpdir(), '/tmp']) {
+    if (typeof raw !== 'string') continue;
+    const p = raw.replace(/\/+$/, '');
+    if (!p.startsWith('/') || p.length < 2) continue;   // '' and '/' are not a scratch root
+    out.add(p);
+    if (p.startsWith('/private/')) out.add(p.slice('/private'.length));
+    else out.add(`/private${p}`);
+  }
+  return [...out];
+}
+
+/** Is this token a literal path inside a scratch directory a run of ours made? */
+function isOwnScratchPath(token, env = process.env) {
+  if (typeof token !== 'string' || !token.startsWith('/')) return false;
+  if (/[*?[\]{}$`~\\'"!]/.test(token)) return false;     // an expansion or a glob is not a literal path
+  // A TRAILING SLASH IS REFUSED, and it is the one form worth naming. `rm -rf link/` follows the
+  // symlink on BSD, so a same-uid process that plants /tmp/cw-x-abc123 -> a real tree turns a
+  // carved-out cleanup into a delete of that tree. Nothing deleting its own mkdtemp directory needs
+  // the slash, so this costs a spelling and removes the shape.
+  if (token.endsWith('/')) return false;
+  const path = token.replace(/\/+$/, '');
+  for (const root of tempRoots(env)) {
+    if (!path.startsWith(`${root}/`)) continue;
+    const segs = path.slice(root.length + 1).split('/').filter(Boolean);
+    if (!segs.length || segs.some((s) => s === '.' || s === '..')) return false;
+    return SCRATCH_SEGMENT.test(segs[0]);
+  }
+  return false;
+}
+
+/** The non-flag words of one `rm`'s argument text, in order. `--` ends the flags. */
+function rmTargets(args) {
+  const words = String(args).trim().split(/\s+/).filter(Boolean);
+  const out = [];
+  let flags = true;
+  for (const w of words) {
+    if (flags && w === '--') { flags = false; continue; }
+    if (flags && w.startsWith('-')) continue;
+    out.push(w);
+  }
+  return out;
+}
+
+/** True only when this `rm` names at least one target and EVERY one is our own scratch. */
+function deletesOnlyOwnScratch(args, env = process.env) {
+  const targets = rmTargets(args);
+  return targets.length > 0 && targets.every((t) => isOwnScratchPath(t, env));
+}
 
 // A word boundary that a path in interpreter code also has: `open("/x/.ssh/id_rsa")`.
 const SECRETS = [
@@ -611,6 +712,11 @@ const RULES = [
       if (!recursiveForce) continue;
       const c = CATASTROPHIC.find((x) => x.re.test(a));
       if (c) return catastrophic(c.what);
+      // The carve-out, and it is checked AFTER the catastrophic list so no scratch-shaped name can
+      // smuggle `/` or `$HOME` past it. A `sudo`/`env` prefix is NOT excluded here: normaliseWrappers
+      // has already split it into its own segment, so a test for it would fire on some spellings and
+      // not others, and a uid does not change which path a verified scratch name names.
+      if (deletesOnlyOwnScratch(m[1])) continue;
       hit = true;
     }
     return hit ? recursiveDelete() : null;

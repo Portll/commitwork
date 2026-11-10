@@ -106,6 +106,10 @@
               "fix-disputed",
               "fp-reinvestigated",
               "reopened-contradiction",
+              "remediation-pr-opened",
+              "remediation-pr-not-opened",
+              "remediation-pr-merged",
+              "remediation-pr-closed",
               "paged"
             ]
           },

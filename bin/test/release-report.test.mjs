@@ -145,12 +145,12 @@ describe('report and exit codes', () => {
     assert.deepEqual(r.report.not_covered.find((u) => u.sha === A).remote_hosts, ['esm.sh']);
     assert.equal(r.report.second_opinion.performed, true);
     assert.deepEqual(r.report.second_opinion.disagreements, []);
-    const html = readFileSync(join(r.o, 'audiencedirect-site', 'index.html'), 'utf8');
+    const html = readFileSync(join(r.o, 'example-site', 'index.html'), 'utf8');
     assert.match(html, /prefers-color-scheme:dark/);
     assert.match(html, /id="not-covered"/);
     assert.match(html, /id="report-data"/);
     assert.doesNotMatch(html, /(?:src|href)="https?:/, 'file:// safe, nothing fetched');
-    assert.deepEqual(JSON.parse(readFileSync(join(r.o, 'audiencedirect-site', 'report.json'), 'utf8')), r.report);
+    assert.deepEqual(JSON.parse(readFileSync(join(r.o, 'example-site', 'report.json'), 'utf8')), r.report);
   });
 
   test('serving release blocked: exit 1', async () => {
@@ -180,7 +180,7 @@ describe('report and exit codes', () => {
     assert.equal(r.code, 4);
     assert.equal(r.report.evidence.stale, true);
     assert.equal(r.report.evidence.age_hours, 40);
-    assert.match(readFileSync(join(r.o, 'audiencedirect-site', 'index.html'), 'utf8'), /stale/);
+    assert.match(readFileSync(join(r.o, 'example-site', 'index.html'), 'utf8'), /stale/);
   });
 
   test('stale or missing KEV: exit 4, no agreement claimed; a known-bad serving release still exits 1', async () => {
@@ -243,21 +243,21 @@ describe('judgement under the declared policy', () => {
 });
 
 describe('fetching', () => {
-  const src = { product: 'audiencedirect-site', ssh: 'deploy@box.example', key: '/k/id' };
+  const src = { product: 'example-site', ssh: 'deploy@box.example', key: '/k/id' };
   const good = readFileSync(fx('clean'), 'utf8');
 
   test('ssh is invoked non-interactively with no remote command', async () => {
     let seen;
     const r = await fetchSource(src, async (args) => { seen = args; return { err: null, stdout: good, stderr: '' }; });
     assert.deepEqual(seen, ['-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-i', '/k/id', 'deploy@box.example']);
-    assert.equal(r.doc.product, 'audiencedirect-site');
+    assert.equal(r.doc.product, 'example-site');
   });
 
   test('a failed ssh, an invalid document and a document for another product are errors, never documents', async () => {
     const fail = await fetchSource(src, async () => ({ err: Object.assign(new Error('x'), { code: 255 }), stdout: '', stderr: 'Permission denied\n' }));
     assert.match(fail.error, /ssh failed \(255\): Permission denied/);
     assert.match((await fetchSource(src, async () => ({ err: null, stdout: '{"schema":1}', stderr: '' }))).error, /schema|required/);
-    assert.match((await fetchSource({ ...src, product: 'other' }, async () => ({ err: null, stdout: good, stderr: '' }))).error, /document for audiencedirect-site/);
+    assert.match((await fetchSource({ ...src, product: 'other' }, async () => ({ err: null, stdout: good, stderr: '' }))).error, /document for example-site/);
   });
 
   test('sources are checked: no option smuggling through ssh, no path escape through product', () => {
@@ -287,12 +287,12 @@ describe('fetching', () => {
     delete process.env.CW_RELEASE_SOURCES;
     assert.equal(code, 2);
     assert.match(err, /fetch failed: broken-site/);
-    const stored = readdirSync(join(process.env.CW_RELEASES_DIR, 'audiencedirect-site'));
+    const stored = readdirSync(join(process.env.CW_RELEASES_DIR, 'example-site'));
     assert.equal(stored.length, 1);
     assert.match(stored[0], /^20261022T120000Z\.json$/);
-    assert.equal(readFileSync(join(process.env.CW_RELEASES_DIR, 'audiencedirect-site', stored[0]), 'utf8'), good);
+    assert.equal(readFileSync(join(process.env.CW_RELEASES_DIR, 'example-site', stored[0]), 'utf8'), good);
     assert.equal(existsSync(join(process.env.CW_RELEASES_DIR, 'broken-site')), false);
-    assert.ok(existsSync(join(o, 'audiencedirect-site', 'index.html')));
+    assert.ok(existsSync(join(o, 'example-site', 'index.html')));
     assert.equal(existsSync(join(o, 'broken-site')), false);
     assert.equal(out, '');
   });
@@ -309,7 +309,7 @@ describe('command line', () => {
     const r = cli(['--evidence', fx('serving-blocked'), '--out', o, '--json']);
     assert.equal(r.status, 1, r.stderr);
     assert.equal(JSON.parse(r.stdout).serving.sha, A);
-    assert.ok(existsSync(join(o, 'audiencedirect-site', 'report.json')));
+    assert.ok(existsSync(join(o, 'example-site', 'report.json')));
   });
 
   test('usage error is 2', () => {

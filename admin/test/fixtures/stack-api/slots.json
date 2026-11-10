@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "route": "/v1/runner/slots",
+  "schemaVersion": 1,
+  "stamp": {
+    "verifiedAt": "2026-10-22T11:06:12.000Z",
+    "verifiedAtUnix": 1792667172,
+    "generator": "commitwork-runner · runner/api-routes.mjs",
+    "durationMs": 0
+  },
+  "sources": [
+    {
+      "id": "slots",
+      "status": "live",
+      "reason": null
+    }
+  ],
+  "coverage": {
+    "requested": 1,
+    "measured": 1,
+    "unknownFields": 0
+  },
+  "data": {
+    "slots": [
+      {
+        "id": "slot-1",
+        "state": "idle",
+        "since": "2026-10-22T09:03:47.700Z",
+        "job": null
+      },
+      {
+        "id": "slot-2",
+        "state": "running",
+        "since": "2026-10-22T09:01:42.500Z",
+        "job": {
+          "name": "cw-slot-2-1040-1792659702",
+          "repo": "example-owner/example-private",
+          "jobId": 1040,
+          "runId": 104
+        }
+      }
+    ]
+  }
+}

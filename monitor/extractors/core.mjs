@@ -6,7 +6,8 @@
 // Three groups, together because they answer one question — what shape does a finding leave an
 // extractor in:
 //   - `_zero`, the empty count block every lane starts from;
-//   - the DETAIL cap and row builders, which bound and whitelist every drill-down row;
+//   - the DETAIL cap and row builders, which bound and whitelist every drill-down row, and
+//     `_titled`, the rule-title map beside them;
 //   - `capMessage` and `stampUnknown`, which bound third-party text and stamp the shared unknown
 //     predicate BESIDE a lane's own word for it rather than over the top of it.
 //
@@ -21,6 +22,7 @@ import { rowsFor } from '../detail-schema.mjs';
 import { unknownReasonOf } from '../unknown.mjs'; // ONE predicate; lanes name a reason, not a new adjective
 import { ecosystemOf } from '../advisory-reach.mjs'; // a name collision is not an installed package
 import { classifyWorktreePath } from '../worktree-paths.mjs'; // an agent worktree is this repo counted twice
+import { sortedTitles } from '../sarif-read.mjs';
 
 export const _zero = () => ({ crit: 0, high: 0, med: 0, low: 0, total: 0 });
 // fact: an empty artifact beside an exit above 1 is a tool that died before writing, not a repo with nothing to scan / otherwise a tool that cannot start publishes no-subject on a repo holding a lockfile (expiry: never, prev: wrong)
@@ -54,6 +56,9 @@ export const _detail = (rows, cmp) => { rows.sort(cmp); return _cap(rows); };
 // format change; a construction cannot. Sorting comes from the schema, so byte-identity holds
 // without per-extractor comparators. No schema returns {} — counts only: say less, never guess.
 export const _detailFor = (key, items) => { const rows = rowsFor(key, items); return rows ? _cap(rows) : {}; };
+// Rule titles ride beside the rows as one sorted {rule: title} map, as _sarifDetail returns them
+// (./sarif.mjs), never as a row field. Spread into a lane's result; {} when no rule has a title.
+export const _titled = (titles) => { const t = sortedTitles(titles); return t ? { ruleTitles: t } : {}; };
 
 // The set-aside _minifyCounts does, shared by every lane: severity kept, enumerable, out of the totals.
 export const _wtBucket = () => ({ crit: 0, high: 0, med: 0, low: 0, total: 0, byPattern: {}, byName: {}, rows: [] });

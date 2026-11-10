@@ -52,7 +52,8 @@
         { "version": 1, "fingerprint": "sha256:1670ee55a1813caf7c94e409f65eac871099c69520db1d045ae1eeca14b17fc8", "release": "0.1.499", "change": "initial", "note": "Pinned when the format freeze began." },
         { "version": 1, "fingerprint": "sha256:110523afe5a4facc739e0b3658726363910409aa74bd95ebbd70bf09ffdce3dd", "release": "0.1.504", "change": "additive", "note": "llm.engine accepts anthropic and openai-compatible; optional llm.host names the server that answered." },
         { "version": 1, "fingerprint": "sha256:1d5e63385e4f9823b9fb9d653aab7006f9b461499019c082da5d9cda3f8a7535", "release": "0.5.4", "change": "additive", "note": "Event types issue-snoozed and issue-unsnoozed; optional nullable snoozedUntil on an open issue (feed triage, 42e78dd6). Classified from the diff: the enum only gains values and the field is optional, so every earlier store still validates." },
-        { "version": 1, "fingerprint": "sha256:07882a902efc0abcda96697d268c23b44113de5c7c4ac26346df763d8aac5951", "release": "0.6.50", "change": "additive", "note": "Optional source.ruleTitle (the rule's own description, rule-level metadata) and evidence tier worktree-copy (an issue keyed on a worktree copy closed as superseded). Classified from the diff: a new optional property and an enum that only gains a value, so every earlier store still validates." }
+        { "version": 1, "fingerprint": "sha256:07882a902efc0abcda96697d268c23b44113de5c7c4ac26346df763d8aac5951", "release": "0.6.50", "change": "additive", "note": "Optional source.ruleTitle (the rule's own description, rule-level metadata) and evidence tier worktree-copy (an issue keyed on a worktree copy closed as superseded). Classified from the diff: a new optional property and an enum that only gains a value, so every earlier store still validates." },
+        { "version": 1, "fingerprint": "sha256:ae267fa85f73b718d0198f061c13ee2f7ef52f76f0b8c4ec880ae94f2dfbacdb", "release": "0.6.126", "change": "additive", "note": "Event types remediation-pr-opened, remediation-pr-not-opened, remediation-pr-merged and remediation-pr-closed (draft remediation pull requests, ea17bc2e). Classified from the diff: the enum only gains values, so every earlier store still validates." }
       ]
     },
     {
@@ -239,6 +240,18 @@
       ]
     },
     {
+      "id": "remediation",
+      "status": "frozen",
+      "summary": "remediation.json: per finding, the fix candidates proposed and whether each held when its lane re-ran.",
+      "versionField": "schema",
+      "version": "commitwork.remediation/1",
+      "schema": "schema/remediation.schema.json",
+      "writer": { "module": "lib/remediation-contract.mjs", "export": "REMEDIATION_SCHEMA" },
+      "history": [
+        { "version": "commitwork.remediation/1", "fingerprint": "sha256:262b6c0f7bf97d54b4335244aed34b95b6345dcc469b49c04ca4d2ef7c66019e", "release": "0.6.186", "change": "initial", "note": "Pinned when the contract was written from lib/remediation-contract.mjs; the status rules beyond the schema are that module's validateRemediation." }
+      ]
+    },
+    {
       "id": "cra-refresh-status",
       "status": "frozen",
       "summary": "refresh-status.json: how the last CRA evidence refresh ended.",
@@ -286,6 +299,16 @@
       "history": [
         { "version": "commitwork.mcp-jobs/1", "fingerprint": "sha256:ceae95dbab063b388bbc77a6a9886aa738fd5797c7290fcbad47b3c14bbd92a7", "release": "0.5.17", "change": "initial", "note": "Pinned when restart survival was written." }
       ]
+    },
+    {
+      "id": "release-report",
+      "status": "unschematized",
+      "summary": "report.json: what a deploy box served, the findings it blocks, and its exposure history.",
+      "versionField": "schema",
+      "version": "commitwork.release-report/1",
+      "schema": null,
+      "writer": { "source": "bin/release-report.mjs", "match": "schema: 'commitwork.release-report/1'" },
+      "gap": "No schema file. bin/release-report.mjs stamps the version and validates the evidence it reads, but the report it writes is described only by its own construction."
     },
     {
       "id": "inbox-state",

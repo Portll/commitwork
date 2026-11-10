@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "commitwork.remediation/1",
+  "title": "remediation",
+  "description": "remediation.json: for each finding of one repository's scan, the fix candidates proposed for it, each applied in a scratch copy and re-run against the lane that raised the finding. One document per repository, later projected into SARIF fixes[]. lib/remediation-contract.mjs builds and validates it; validateRemediation adds the status rules this schema cannot state. A finding has no line field: identity and occurrence are the line-free pair sarif-export hashes into partialFingerprints, so a remediation row joins its SARIF result without a line number.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generatedAt", "tool", "repository", "commit", "findings", "undetermined", "notMeasured"],
+  "properties": {
+    "schema": { "const": "commitwork.remediation/1" },
+    "generatedAt": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$",
+      "description": "ISO-8601, passed in by the caller; the library never reads the clock."
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "commitwork" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "repository": { "type": "string", "minLength": 1, "description": "The scan's repo slug." },
+    "commit": { "type": ["string", "null"], "minLength": 1, "description": "The commit the candidates were made against, or null when the scan named none." },
+    "findings": {
+      "type": "array",
+      "description": "Sorted by identity, then occurrence.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["identity", "occurrence", "ruleId", "lane", "file", "severity", "candidates", "actions"],
+        "properties": {
+          "identity": {
+            "type": "string",
+            "pattern": "^(sc|f)\\|",
+            "description": "The line-free identity: sc|<category>|... for a scanner row, f|<tool>|<advisory>|<package>|<path> for a dependency."
+          },
+          "occurrence": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The :<n> ordinal SARIF appends to the identity's hash, telling repeated occurrences of one identity apart without a line."
+          },
+          "ruleId": { "type": "string", "minLength": 1 },
+          "lane": { "type": "string", "minLength": 1 },
+          "file": { "type": ["string", "null"], "description": "The touched file, or null when the finding is not placed in one." },
+          "severity": { "enum": ["crit", "high", "med", "low"] },
+          "candidates": {
+            "type": "array",
+            "description": "Sorted by tier order (deterministic, rule, codemod, llm), then id.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "tier", "provenance", "patch", "cached", "verification"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{16}$",
+                  "description": "First 16 hex of sha256 over the identity, the tier and the patch ('' when the patch is null)."
+                },
+                "tier": { "enum": ["deterministic", "rule", "codemod", "llm"] },
+                "provenance": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["tool", "model", "version"],
+                  "properties": {
+                    "tool": { "type": ["string", "null"] },
+                    "model": { "type": ["string", "null"] },
+                    "version": { "type": ["string", "null"] }
+                  }
+                },
+                "patch": { "type": ["string", "null"], "description": "A unified diff, or null for a candidate with no code change." },
+                "cached": { "type": "boolean", "description": "false for an LLM result that was not served from the content-hash cache." },
+                "verification": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["status", "witness", "newFindings", "tests", "reason"],
+                  "properties": {
+                    "status": { "enum": ["verified", "failed", "unverified", "undetermined"] },
+                    "witness": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["lanes", "before", "after", "digest"],
+                      "properties": {
+                        "lanes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "The lanes that re-ran over the patched copy." },
+                        "before": { "type": "integer", "minimum": 0, "description": "The lane's finding count in the touched files before the patch." },
+                        "after": { "type": ["integer", "null"], "minimum": 0, "description": "That count after the patch, or null when the lane could not measure." },
+                        "digest": { "type": ["string", "null"] }
+                      }
+                    },
+                    "newFindings": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "Identities that appeared in the touched files after the patch." },
+                    "tests": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["command", "status"],
+                      "properties": {
+                        "command": { "type": ["string", "null"] },
+                        "status": { "enum": ["passed", "failed", "notDeclared", "notRun"] }
+                      }
+                    },
+                    "reason": { "type": ["string", "null"], "description": "Why the status is what it is; required text for failed and undetermined." }
+                  }
+                }
+              }
+            }
+          },
+          "actions": {
+            "type": "array",
+            "description": "What a person does about the finding regardless of any candidate.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "text"],
+              "properties": {
+                "kind": { "enum": ["rotate-secret", "change-setting", "bump-dependency", "other"] },
+                "text": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "undetermined": {
+      "type": "array",
+      "description": "Rows that claimed a severity nobody could measure; they never render as findings.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["identity", "ruleId", "lane", "claimedSeverity", "reason"],
+        "properties": {
+          "identity": { "type": "string", "pattern": "^(sc|f)\\|" },
+          "ruleId": { "type": "string", "minLength": 1 },
+          "lane": { "type": "string", "minLength": 1 },
+          "claimedSeverity": { "type": ["string", "null"] },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "notMeasured": {
+      "type": "array",
+      "description": "Lanes that did not run, so their findings are a floor.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lane", "reason"],
+        "properties": {
+          "lane": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

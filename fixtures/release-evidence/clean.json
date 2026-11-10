@@ -1,10 +1,10 @@
 {
   "schema": "commitwork.release-evidence/1",
-  "product": "audiencedirect-site",
+  "product": "example-site",
   "generated_at": "2026-10-22T10:00:00Z",
-  "source": "ad-site-deploy@0123456789ab",
+  "source": "example-deploy@0123456789ab",
   "policy": {
-    "name": "ad-release-gate",
+    "name": "example-release-gate",
     "kev": true,
     "critical": true,
     "high_epss_min": 0.1,

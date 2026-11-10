@@ -56,6 +56,7 @@ export function advisoryFromRow(row, { osvFixed, slugFor }) {
       reachable: true,               // proven by the govulncheck lane
       bump: null,                    // direct-parent resolution is the probe step's job
       upstream: { repo: slug, defaultBranch: '' },
+      repo: row.repo,                // the scanned repository; remediation-draft-pr finds its issue by it
     },
   };
 }

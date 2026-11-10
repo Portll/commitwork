@@ -1,4 +1,5 @@
 import { readSarif, isSuppressed } from '../../../monitor/sarif-read.mjs';
+import { classifyWorktreePath } from '../../../monitor/worktree-paths.mjs';
 import { sarifMalicious } from './common.mjs';
 
 export function parseSarif(path) {
@@ -37,9 +38,14 @@ export function parseSarif(path) {
   const mal = sarifMalicious(r.runs);
   const sev = (mal.hits || levels.error) ? 'high' : live.length ? 'med' : 'ok';
   const unparsed = r.extractionErrors.length;
+  // Same population as laneCoverage and the extractor: worktree copies are not this repo's files.
+  const partial = r.partialAnalysis.filter((p) => !classifyWorktreePath(p.uri).worktree).length;
+  const recovered = r.partialRetry ? r.partialRetry.recovered.length : 0;
   const detail = (live.length
     ? `${live.length} (${levels.error}e/${levels.warning}w${mal.hits ? `, ${mal.hits} MALICIOUS` : ''})`
-    : '0') + (suppressed ? ` · ${suppressed} suppressed in source` : '') + (unparsed ? ` — ${unparsed} file(s) failed extraction` : '');
+    : '0') + (suppressed ? ` · ${suppressed} suppressed in source` : '') + (unparsed ? ` — ${unparsed} file(s) failed extraction` : '')
+    + (partial ? ` — ${partial} file(s) read only in part` : '')
+    + (recovered ? ` — ${recovered} file(s) recovered on retry` : '');
   // A zero nothing witnessed. Carried, not acted on: the grade stays as measured, because
   // promoting it here would fail many stored SARIFs that are truly clean.
   // The consumer that holds the exit witness decides; one that holds none must not read it clean.

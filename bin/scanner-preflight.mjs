@@ -26,7 +26,9 @@
 //      as every other absence in this repo.
 //
 // usage: scanner-preflight.mjs            check and report (exit 1 if any scanner is UNTRUSTED)
-//        scanner-preflight.mjs --update   refresh databases + re-install unstamped Go tools first
+//        scanner-preflight.mjs --update   refresh databases + re-install unstamped Go tools first; a
+//                                         database refreshed in the last CW_DB_FRESH_HOURS (6), or
+//                                         being refreshed by another process, is left alone
 //        scanner-preflight.mjs --json     machine-readable
 //
 // Intended to run BEFORE the nightly sweep, so the pass is made with current data rather than
@@ -35,6 +37,7 @@
 import { spawnSync } from 'node:child_process';
 import { safeSpawnSync, resolveWindowsExecutable } from '../lib/win-spawn.mjs'; // npm-installed scanners are .cmd shims on Windows
 import { probeToolVersion, binFor } from '../monitor/tool-version.mjs';
+import { clearGrypeStaging, updateOnce } from '../lib/db-update-lock.mjs';
 
 const UPDATE = process.argv.includes('--update');
 const JSON_OUT = process.argv.includes('--json');
@@ -87,8 +90,9 @@ for (const s of SCANNERS) {
   if (!where) { results.push({ id: s.id, state: 'MISSING', version: null, path: null }); continue; }
 
   if (UPDATE && s.update) {
-    const u = sh(s.update[0], s.update[1], { timeout: 600_000 });
-    if (u.status !== 0) console.error(`  ${s.id}: database update exited ${u.status}`);
+    const u = updateOnce(s.id, () => sh(s.update[0], s.update[1], { timeout: 600_000 }), { after: s.id === 'grype' ? () => clearGrypeStaging() : null });
+    if (!u.ran) console.error(`  ${s.id}: database update skipped: ${u.why}`);
+    else if (u.status !== 0) console.error(`  ${s.id}: database update exited ${u.status}`);
   }
 
   const probe = probeToolVersion(s.id);

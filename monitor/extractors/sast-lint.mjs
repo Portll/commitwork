@@ -20,8 +20,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { safeParseFile } from '../safe-parse.mjs';
-import { _zero, _emptyArtifact, _detailFor, capMessage } from './core.mjs';
+import { _zero, _emptyArtifact, _detailFor, _titled, capMessage } from './core.mjs';
 import { classifyPath } from '../fixture-paths.mjs';
+import { ruleTitleText } from '../sarif-read.mjs';
+import { publishedTitles, publishedTitle } from '../rule-titles.mjs'; // the rule lists ShellCheck publishes
 
 // A lane that is DECLARED but whose output shape nobody here has seen gets a stub: an absent
 // artifact is absent, and a PRESENT one is `unparseable` until a parser is written against real
@@ -327,17 +329,26 @@ export function _banditCounts(dir, file) {
   const map = { HIGH: 'high', MEDIUM: 'med', LOW: 'low' };
   const c = { ..._zero(), ran: true };
   const rows = [];
+  // The title is `test_name`, the plugin's own name for its test (B603
+  // subprocess_without_shell_equals_true), shown with spaces. Never issue_text: it names the module
+  // or call that matched, so it differs between hits of one test. Every blacklist test (B3xx, B4xx)
+  // has the test_name `blacklist`, a class rather than a title, so those stay untitled.
+  const titles = new Map();
   for (const r of j.results) {
     const b = map[String(r.issue_severity || '').toUpperCase()]; if (!b) continue;
     c[b]++; c.total++;
     const conf = String(r.issue_confidence || '').toUpperCase();
+    const rule = String(r.test_id || '');
     rows.push({
-      rule: String(r.test_id || ''), file: String(r.filename || ''), line: Number(r.line_number) || 0,
+      rule, file: String(r.filename || ''), line: Number(r.line_number) || 0,
       sev: b, message: capMessage(String(r.issue_text || '') + (conf ? ` (confidence: ${conf})` : '')),
       cwe: r.issue_cwe && r.issue_cwe.id ? `CWE-${r.issue_cwe.id}` : '',
     });
+    const name = typeof r.test_name === 'string' ? r.test_name : '';
+    const title = rule && name && name !== 'blacklist' ? ruleTitleText(name.replace(/_/g, ' '), rule) : null;
+    if (title && !titles.has(rule)) titles.set(rule, title);
   }
-  return { ...c, ..._detailFor('sastPython', rows) };
+  return { ...c, ..._detailFor('sastPython', rows), ..._titled(titles) };
 }
 // brakeman's parser, written against a REAL run (5.4.1, against a fixture Rails app: SQL
 // injection, dangerous eval, XSS, CSRF and EOL-Rails findings). Native JSON, not SARIF:
@@ -356,17 +367,28 @@ export function _brakemanCounts(dir, file) {
   const map = { High: 'high', Medium: 'med', Weak: 'low' };
   const c = { ..._zero(), ran: true };
   const rows = [];
+  // The title is `warning_type` (SQL Injection, Dangerous Eval), Brakeman's documented type for the
+  // warning, never `message`, which describes the matched code. A check whose rows carry more than
+  // one type in this report gets no title: a title must hold for every hit of the rule.
+  const types = new Map();
   for (const w of j.warnings) {
     const b = map[String(w.confidence || '')]; if (!b) continue;
     c[b]++; c.total++;
     const cwe = Array.isArray(w.cwe_id) ? w.cwe_id.map((n) => `CWE-${n}`).join(', ') : '';
+    const rule = String(w.check_name || '');
     rows.push({
-      rule: String(w.check_name || ''), file: String(w.file || ''), line: Number(w.line) || 0,
+      rule, file: String(w.file || ''), line: Number(w.line) || 0,
       sev: b, message: capMessage(`${String(w.message || '')} (confidence: ${w.confidence || 'unknown'})`),
       cwe,
     });
+    if (rule) (types.get(rule) || types.set(rule, new Set()).get(rule)).add(typeof w.warning_type === 'string' ? w.warning_type : '');
   }
-  return { ...c, ..._detailFor('sastBrakeman', rows) };
+  const titles = new Map();
+  for (const [rule, set] of types) {
+    const title = set.size === 1 ? ruleTitleText([...set][0], rule) : null;
+    if (title) titles.set(rule, title);
+  }
+  return { ...c, ..._detailFor('sastBrakeman', rows), ..._titled(titles) };
 }
 // phpcs's parser, written against a REAL run (PHP_CodeSniffer 4.0.4 + the pheromone/phpcs-security-
 // audit ruleset, against a fixture with mysqli/eval/echo-XSS patterns). --report=json shape:
@@ -451,12 +473,19 @@ export function _shellcheckCounts(dir, file) {
   if (!Array.isArray(j && j.comments)) return { ..._zero(), ran: true, unparseable: true };
   const c = { ..._zero(), ran: true }, map = { error: 'high', warning: 'med', info: 'low', style: 'low' };
   const rows = [];
+  // Titles come from the list ShellCheck publishes, one line per code (../rule-titles.mjs), never
+  // from `message`: ShellCheck formats names and paths into it, so it differs between hits of a code.
+  const published = publishedTitles('shellcheck');
+  const titles = new Map();
   for (const f of j.comments) {
     const b = map[String((f && f.level) || '').toLowerCase()] || 'low';
     c[b]++; c.total++;
-    rows.push({ rule: f && f.code ? `SC${f.code}` : '', file: f && f.file, line: f && f.line, sev: b, message: f && f.message });
+    const rule = f && f.code ? `SC${f.code}` : '';
+    rows.push({ rule, file: f && f.file, line: f && f.line, sev: b, message: f && f.message });
+    const title = titles.has(rule) ? null : publishedTitle(published, rule);
+    if (title) titles.set(rule, title);
   }
-  return { ...c, ..._detailFor('shellLint', rows) };
+  return { ...c, ..._detailFor('shellLint', rows), ..._titled(titles) };
 }
 // actionlint has no SARIF mode and no severity field of its own. The lane's manifest wraps its bare
 // array in `{tool, ran:true, findings}` using actionlint's own Go template, because the tool exits
@@ -671,7 +700,16 @@ export function _cobolworkCounts(dir, file) {
       set: String((x && x.set) || ''), kind: String((x && x.kind) || ''), why: capMessage(String((x && x.why) || '')),
     }));
   }
-  return { ...c, ..._detailFor('sastCobol', rows) };
+  // `ruleText` is cobolwork's one line per rule, beside ruleImpact and ruleRemedy; `detail` is the
+  // finding's own sentence and never a title. An older cobolwork without the map gives no titles.
+  const text = j.ruleText && typeof j.ruleText === 'object' && !Array.isArray(j.ruleText) ? j.ruleText : {};
+  const titles = new Map();
+  for (const r of rows) {
+    if (titles.has(r.rule) || !Object.hasOwn(text, r.rule) || typeof text[r.rule] !== 'string') continue;
+    const title = ruleTitleText(text[r.rule], r.rule);
+    if (title) titles.set(r.rule, title);
+  }
+  return { ...c, ..._detailFor('sastCobol', rows), ..._titled(titles) };
 }
 
 // cobolwork inventory writes coverage, never vulnerabilities — every row here is a fact about what

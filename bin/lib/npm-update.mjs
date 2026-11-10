@@ -12,8 +12,9 @@
 //   lockfile    transitive packages refreshed within their declared ranges (npm update)
 //   advisories  npm audit fix, without --force
 // The direct and lockfile steps resolve with --before=<now − cooldown>, so a refresh cannot pull a
-// release younger than its cooldown in transitively; advisory fixes are exempt. A step whose
-// changes the policy does not permit is undone as a whole and named.
+// release younger than its cooldown in transitively. The advisories step does too unless the
+// operator's depsAlertFixBypassesCooldown is on. A step whose changes the policy does not permit is
+// undone as a whole and named.
 //
 // A proposal is identified by its base commit, project path and selection: running the same
 // selection on the same commit again finds the branch and changes nothing.
@@ -22,7 +23,8 @@
 //   1. the repository's commitwork.json `ci` group, through `commitwork run`
 //   2. npm ci, then npm test
 //   3. nothing — no gate means no merge, recorded as undetermined, never as a pass
-// Rungs 1 and 2 execute the repository's code, so --merge needs --trust-repo-manifest.
+// Rungs 1 and 2 execute the repository's code, so --merge needs --trust-repo-manifest. Before the
+// gate, the introduced-advisories verdict (bin/lib/introduced-verdict.mjs) must be clear.
 import { mkdtempSync, readFileSync, writeFileSync, rmSync, existsSync, realpathSync } from 'node:fs';
 import { join, relative, resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -33,6 +35,8 @@ import { scannedGit, scannedGitEnv } from './git-env.mjs';
 import { auditProject, runNpm, npmView, npmAudit, chooseUpdate, cmpVersion, updateType, UPDATE_TYPES, AUDIT_LEVELS } from './npm-versions.mjs';
 import { POLICY_FILE, parseRepoPolicy, exposureOfKind, allows } from './update-policy.mjs';
 import { snapshotOf } from './deps-ledger.mjs';
+import { introducedVerdict } from './introduced-run.mjs';
+import { auditLookup } from './npm-audit-findings.mjs';
 
 const CW_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DAY_MS = 86_400_000;
@@ -130,8 +134,6 @@ function runGate({ wt, wtPkg, npmEnv, run = spawnSync }) {
   }
   return { rung: 'none', result: 'undetermined', detail: 'no commitwork.json ci group and no npm test script: nothing to merge on' };
 }
-
-const shipped = (adv) => (adv && !adv.error ? (adv.prod.critical || 0) + (adv.prod.high || 0) : null);
 
 /** Where `branch` is checked out, if anywhere. */
 function checkedOutAt(top, branch) {
@@ -250,7 +252,8 @@ export async function proposeUpdates({
       }
     }
     if (sel.advisories) {
-      const r = await runStep('advisories', ['audit', 'fix', '--package-lock-only', '--ignore-scripts', '--no-fund'],
+      const cd = policy.alertFixBypassesCooldown ? 0 : Math.max(policy.cooldown.patch, policy.cooldown.minor);
+      const r = await runStep('advisories', ['audit', 'fix', '--package-lock-only', '--ignore-scripts', '--no-fund', ...beforeFlag(cd, nowMs)],
         (c) => allows(policy, 'update', c.exposure, 'advisories'));
       if (r.error) return { state: 'error', reason: r.error, ...loc, ...plan };
     }
@@ -265,6 +268,12 @@ export async function proposeUpdates({
     if (policy.zeroRuntimeDependencies && Object.keys(pkgAfter.dependencies || {}).length) return refuse('the repository declares zeroRuntimeDependencies and this update would add one');
 
     const after = await auditProject(wtPkg, { cooldown: policy.cooldown, nowMs, trustRepo, view, audit });
+    const afterLock = lockOf(wtPkg);
+    const scope = policy.introduced || {};
+    const introduced = await introducedVerdict({ before: { text: JSON.stringify(baseLock) }, after: { text: JSON.stringify(afterLock) },
+      lookupBefore: auditLookup(before.advisories, baseLock), lookupAfter: auditLookup(after.advisories, afterLock), source: 'npm-audit',
+      includeDev: scope.includeDev ?? true, ...(scope.blocking ? { blocking: scope.blocking } : {}), nowMs,
+      subject: { repo: top, path: pkgPath, before: { ref: base }, after: { ref: null } } });
     const msg = commitMessage({ id, pkgPath, sel, changes, after, notes });
     const rel = (f) => (pkgPath === '.' ? f : `${pkgPath}/${f}`);
     for (const args of [['checkout', '-q', '-b', branch], ['add', '--', rel('package.json'), rel('package-lock.json')], ['commit', '-q', '-m', msg]]) {
@@ -276,13 +285,13 @@ export async function proposeUpdates({
     record({ at: at(), event: 'proposed', repo: top, pkgPath, base, baseBranch, head, proposal: id, branch,
       changes: changes.map(({ name, path, from, to, type, exposure, step }) => ({ name, path, from, to, type, exposure, step,
         publishedAt: sel.direct.find((d) => d.name === name && path === `node_modules/${name}`)?.publishedAt ?? null })),
-      advisoriesBefore: summary(before), advisoriesAfter: summary(after), notes });
+      advisoriesBefore: summary(before), advisoriesAfter: summary(after), introduced: { state: introduced.state, counts: introduced.counts }, notes });
     const superseded = supersede({ top, pkgPath, keep: branch, baseBranch });
     for (const s of superseded) record({ at: at(), event: 'superseded', repo: top, pkgPath, proposal: s.proposal, branch: s.branch, by: id });
-    const result = { state: 'proposed', ...loc, ...plan, head, changes, auditAfter: after, notes, superseded };
+    const result = { state: 'proposed', ...loc, ...plan, head, changes, auditAfter: after, introduced, notes, superseded };
     if (!merge) return result;
 
-    const why = mergeRefusal({ policy, changes, sel, trustRepo, baseBranch, before, after });
+    const why = mergeRefusal({ policy, changes, sel, trustRepo, baseBranch, introduced });
     if (why) { record({ at: at(), event: 'refused', repo: top, pkgPath, base, proposal: id, reason: `merge: ${why}` }); return { ...result, mergeRefused: why }; }
     const g = gate({ wt, wtPkg, npmEnv });
     if (g.result !== 'pass') {
@@ -333,7 +342,7 @@ export function resolveSelection(selection, report) {
   return { direct, lockfile: !!selection.lockfile, advisories: !!selection.advisories };
 }
 
-function mergeRefusal({ policy, changes, sel, trustRepo, baseBranch, before, after }) {
+function mergeRefusal({ policy, changes, sel, trustRepo, baseBranch, introduced }) {
   if (!baseBranch) return 'HEAD is detached: there is no branch to merge into';
   // A chosen direct update is judged by its type; packages that moved only because it required them
   // ride with it, and the lockfile and advisories steps are judged as those kinds.
@@ -341,10 +350,11 @@ function mergeRefusal({ policy, changes, sel, trustRepo, baseBranch, before, aft
   const not = changes.filter((c) => kindOf(c) !== null && !allows(policy, 'automerge', c.exposure, kindOf(c)));
   if (not.length) return `automerge does not permit ${not.slice(0, 3).map((c) => `${c.name} ${c.from ?? '∅'} → ${c.to ?? '∅'} (${kindOf(c)}, ${c.exposure})`).join(', ')}${not.length > 3 ? ` and ${not.length - 3} more` : ''}`;
   if (!trustRepo) return 'the merge gate runs the repository\'s own code; pass --trust-repo-manifest';
-  const b = shipped(before.advisories);
-  const a = shipped(after.advisories);
-  if (a === null) return 'the advisories after the update could not be measured';
-  if (b !== null && a > b) return `shipped critical/high advisories rose from ${b} to ${a}`;
+  if (introduced.state === 'unmeasured') return `the advisories this update introduces could not be measured: ${introduced.reasons.join('; ')}`;
+  if (introduced.state !== 'clear') {
+    const hit = introduced.introduced.filter((i) => i.blocking);
+    return `the update introduces ${hit.length} advisor${hit.length === 1 ? 'y' : 'ies'} at ${introduced.scope.blocking.join('/')}: ${hit.slice(0, 3).map((i) => `${i.advisory} on ${i.package}@${i.versions.join(',')} (${i.severity})`).join(', ')}`;
+  }
   return null;
 }
 

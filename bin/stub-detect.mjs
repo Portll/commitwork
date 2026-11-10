@@ -6,9 +6,10 @@
  * Emits JSON to stdout, shape mirrors bin/authz-bola.mjs:
  *   {tool:'stub-detect', summary:{findings, byMarker, filesScanned}, findings:[{type,marker,severity,path,line,detail}]}
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
 import { join, relative, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { linkPolicy, LINK_DANGLING } from './lib/walk-links.mjs';
 
 import { validateAgainstSchema } from '../monitor/registry.mjs';
 import { stubAllowlistPathFor } from '../monitor/store-paths.mjs';
@@ -189,13 +190,26 @@ function isAllowed(relPath, marker) {
 const findings = [];
 let filesScanned = 0;
 
+const links = linkPolicy(ROOT);
+const linksNotFollowed = [];
+
 function walk(dir) {
+  if (!links.first(dir)) return;
   let entries;
   try { entries = readdirSync(dir); } catch { return; }
+  walkEntries(dir, entries, lstatSync);
+}
+
+function walkEntries(dir, entries, statOf) {
   for (const name of entries) {
     if (SKIP_DIRS.has(name)) continue;
     const p = join(dir, name);
-    let st; try { st = statSync(p); } catch { continue; }
+    let st; try { st = statOf(p); } catch { continue; }
+    if (st.isSymbolicLink()) {
+      const reason = links.link(p);
+      if (reason) linksNotFollowed.push({ path: relative(ROOT, p).split('\\').join('/'), reason });
+      continue;
+    }
     if (st.isDirectory()) {
       // skip .claude/worktrees specifically (but allow the rest of .claude if ever walked)
       if (name === 'worktrees' && /(^|\/)\.claude$/.test(dir)) continue;
@@ -203,6 +217,7 @@ function walk(dir) {
       continue;
     }
     if (!SCAN_EXT.test(name)) continue;
+    if (!links.first(p)) continue;
     let txt; try { txt = readFileSync(p, 'utf8'); } catch { continue; }
     filesScanned++;
     const rel = relative(ROOT, p).split('\\').join('/');
@@ -235,6 +250,15 @@ function walk(dir) {
 }
 
 walk(ROOT);
+for (const { path: p, target } of links.drain()) {
+  if (target.split('/').some((seg) => SKIP_DIRS.has(seg)) || /(^|\/)\.claude\/worktrees(\/|$)/.test(target)) continue;
+  walkEntries(dirname(p), [basename(p)], statSync);
+}
+function reportLinksNotFollowed(tool) {
+  if (!linksNotFollowed.length) return;
+  for (const { path, reason } of linksNotFollowed) process.stderr.write(`${tool}: warning: ${path} is a link ${reason === LINK_DANGLING ? 'to nothing' : 'out of the scanned tree'}; not followed\n`);
+}
+reportLinksNotFollowed('stub-detect');
 
 // `findings` is the note-to-self count; `codeContext` is the word-appeared-in-code count. Both are
 // published, and every row is still in `findings[]` with its `context` — the split is in how they
@@ -252,6 +276,7 @@ const summary = {
   filesScanned,
   codeContext: inCode.length,
   byMarkerCodeContext: byMarkerCode,
+  ...(linksNotFollowed.length ? { linksNotFollowed } : {}),
   contextNote: 'findings/byMarker count markers written in a COMMENT — a note somebody left. codeContext counts the same words appearing in code (an identifier, a string, a JSX prop), which dominates in a repository that ships a to-do feature. Every row is present in findings[] either way, tagged with `context`.',
 };
 const output = { tool: 'stub-detect', summary, findings };

@@ -313,6 +313,9 @@ export const approvalQueuePathFor = privateRecord('CW_APPROVAL_QUEUE', 'approval
 /** Dependency-update lifecycle events, one JSON line each (bin/lib/deps-ledger.mjs). CW_DEPS_LEDGER. Absent = nothing recorded yet. */
 export const depsLedgerPathFor = privateRecord('CW_DEPS_LEDGER', 'deps-ledger.jsonl');
 
+/** The Betterleaks integration assessment banked as task context (bin/security-work-queue.mjs). CW_BETTERLEAKS_ASSESSMENT. Absent = banked without it. */
+export const betterleaksAssessmentPathFor = privateRecord('CW_BETTERLEAKS_ASSESSMENT', 'betterleaks-assessment.md');
+
 /**
  * The nondeterministic store (monitor/nondeterministic-store.mjs). Its divergence subjects name a
  * fleet repository and file, and it must stay outside the reports root the rollup enumerates.

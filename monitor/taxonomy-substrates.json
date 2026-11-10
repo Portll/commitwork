@@ -176,7 +176,7 @@
         "ART"
       ],
       "tier": "T1",
-      "predicate": "One detector or rule accounts for a disproportionate share of one severity bucket. STATISTICAL — the TruffleHog-Lob signature."
+      "predicate": "One detector or rule accounts for a disproportionate share of one severity bucket. STATISTICAL — the signature of the secret-scanner detector in A16 that produced 1,311 of 1,314 published CRITICALs."
     },
     "A11": {
       "substrate": [
@@ -412,7 +412,7 @@
         "HIST"
       ],
       "tier": "T1",
-      "predicate": "A bare `git commit` with no pathspec and no private GIT_INDEX_FILE."
+      "predicate": "A bare `git commit` with no pathspec and no private index file."
     },
     "P3": {
       "substrate": [
@@ -1006,7 +1006,7 @@
         "ART"
       ],
       "tier": "T1",
-      "predicate": "A queue where item age correlates positively with priority. COMPUTABLE from vscode-skills task records today."
+      "predicate": "A queue where item age correlates positively with priority. COMPUTABLE from a task store's records today."
     },
     "K1": {
       "substrate": [
@@ -1510,11 +1510,11 @@
     }
   },
   "mapVerifiedAgainst": {
-    "at": "2026-09-18",
-    "registryVersion": 17,
+    "at": "2026-10-29",
+    "registryVersion": 18,
     "registryClasses": 207,
     "mapped": 201,
     "unmapped": 6,
-    "note": "Re-derived against the registry, never restated: bin/test/taxonomy-registry-coverage.test.mjs recomputes registryClasses, mapped and unmapped and fails on a stale claim. Every mapped class carries a substrate, a tier, and the predicate the REGISTRY declares, copied verbatim, because a second wording here would be two declarations of one concept in the file whose subject is what decides a class; a copy that drifts from its source is the stale-count defect in prose. Family XI is the first that is mostly T4: actor-to-actor coordination is judged, not parsed, and no recorder closes it. bin/pattern-scan.mjs computes reach from the registry rather than from this number, so a gap here narrows the map, never the scan. Tier distribution as of 2026-09-18: T1 109, T2 43, T3 27, T4 22. The 6 unmapped (A23, C28, C29, M20, K12, L8) arrived at v11 and remain explicit rather than silently inferred."
+    "note": "Re-derived against the registry, never restated: bin/test/taxonomy-registry-coverage.test.mjs recomputes registryClasses, mapped and unmapped and fails on a stale claim. Every mapped class carries a substrate, a tier, and the predicate the REGISTRY declares, copied verbatim, because a second wording here would be two declarations of one concept in the file whose subject is what decides a class; a copy that drifts from its source is the stale-count defect in prose. Family XI is the first that is mostly T4: actor-to-actor coordination is judged, not parsed, and no recorder closes it. bin/pattern-scan.mjs computes reach from the registry rather than from this number, so a gap here narrows the map, never the scan. Tier distribution as of 2026-10-29: T1 109, T2 43, T3 27, T4 22. The 6 unmapped (A23, C28, C29, M20, K12, L8) arrived at v11 and remain explicit rather than silently inferred."
   }
 }

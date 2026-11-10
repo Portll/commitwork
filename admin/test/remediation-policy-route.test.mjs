@@ -63,7 +63,7 @@ test('POST: create → 200 + hash; GET round-trips; 409 stale · 400 invalid · 
 // A session cookie is not an authority step — escalation stays a deliberate human edit of the file.
 test('POST refuses to ESCALATE the mode over the API (403), and says where to do it instead', () => {
   rmSync(POLICY, { force: true });
-  for (const mode of ['hitl-agentic', 'full-agentic']) {
+  for (const mode of ['draft-pr', 'hitl-agentic', 'full-agentic']) {
     const r = invoke(route('POST', '/api/remediation-policy'), { session: SESSION, body: { policy: { mode }, baseHash: null } });
     assert.equal(r.code, 403, `${mode} must not be settable over the API: ${JSON.stringify(r.body)}`);
     assert.match(r.body.error, /monitor\/remediation-policy\.json/, 'the refusal must name where the change belongs');
@@ -78,6 +78,20 @@ test('POST refuses m3.autoMerge=true over the API (403) — authoring is not mer
     body: { policy: { mode: 'hitl-item', m3: { autoMerge: true } }, baseHash: null },
   });
   assert.equal(r.code, 403, JSON.stringify(r.body));
+});
+
+test('POST refuses a draftPr change over the API (403); a round-trip of the stored draftPr is accepted', () => {
+  rmSync(POLICY, { force: true });
+  const widen = invoke(route('POST', '/api/remediation-policy'), {
+    session: SESSION, body: { policy: { mode: 'report', draftPr: { targets: ['own', 'upstream'], ready: 'own-only' } }, baseHash: null },
+  });
+  assert.equal(widen.code, 403, JSON.stringify(widen.body));
+  assert.match(widen.body.error, /monitor\/remediation-policy\.json/);
+  const { body } = invoke(route('GET', '/api/remediation-policy'), { session: SESSION });
+  const same = invoke(route('POST', '/api/remediation-policy'), {
+    session: SESSION, body: { policy: { mode: 'hitl-item', draftPr: body.policy.draftPr }, baseHash: body.hash },
+  });
+  assert.equal(same.code, 200, JSON.stringify(same.body));
 });
 
 test('a mode that is not a mode is MALFORMED (400), not forbidden (403)', () => {

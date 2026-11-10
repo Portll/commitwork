@@ -134,6 +134,34 @@ test('a CONNECT with an impossible port is a 400, and the proxy keeps serving', 
   }
 });
 
+test('a CONNECT to :80 is recorded and dialled as 80, not as the URL parser\'s http default dropped to 443', async (c) => {
+  assert.deepEqual(connectTarget('192.168.1.1:80'), { host: '192.168.1.1', port: 80 });
+  assert.deepEqual([connectTarget('h.example:443').port, connectTarget('h.example').port, connectTarget('[::1]:80').port], [443, 443, 80]);
+  const p = await proxy(c, { mode: 'observe' });
+  assert.equal(await connectVia(p.port, 'cw-egress-canary.invalid:80'), 502);
+  assert.equal((await viaProxy(p.port, 'http://cw-egress-canary.invalid:443/')).status, 502);
+  assert.equal((await viaProxy(p.port, 'ftp://cw-egress-canary.invalid/')).status, 400, 'a scheme whose default port is neither 80 nor 443');
+  assert.deepEqual(p.ledger().destinations.map((d) => `${d.host}:${d.port}`), ['cw-egress-canary.invalid:80', 'cw-egress-canary.invalid:443']);
+});
+
+test('--host and --port choose the listener; a host beyond loopback is refused without --deny-private', { timeout: 20_000 }, async (t) => {
+  assert.throws(() => createProxy({ host: '0.0.0.0' }), /--deny-private/);
+  assert.throws(() => createProxy({ host: '172.18.0.2', mode: 'observe' }), /--deny-private/);
+  const free = await new Promise((r) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => r(port)); }); });
+  const d = mkdtempSync(join(tmpdir(), 'cw-egress-host-')); t.after(() => rmSync(d, { recursive: true, force: true }));
+  const run = (args, portFile) => spawn(process.execPath, [TOOL, '--ledger', join(d, 'l.json'), '--port-file', portFile, ...args], { stdio: ['pipe', 'pipe', 'pipe'] });
+  const ok = run(['--host', '127.0.0.1', '--port', String(free), '--deny-private'], join(d, 'ok'));
+  t.after(() => ok.kill());
+  const started = Date.now();
+  while (!existsSync(join(d, 'ok')) && Date.now() - started < 5000) await new Promise((r) => setTimeout(r, 20));
+  assert.equal(readFileSync(join(d, 'ok'), 'utf8').trim(), String(free));
+  for (const [name, args, why] of [['wide', ['--host', '0.0.0.0'], /--deny-private/], ['badport', ['--port', '99999'], /--port/], ['badhost', ['--host', 'eth0'], /--host/]]) {
+    const bad = run(args, join(d, name));
+    assert.equal(await new Promise((r) => bad.on('exit', r)), EXIT.failed, name);
+    assert.match(readFileSync(join(d, name), 'utf8'), why, name);
+  }
+});
+
 test('close ends an open CONNECT tunnel rather than waiting for it', async (c) => {
   const t = await target(); c.after(() => t.close());
   const p = await createProxy({ mode: 'observe', isLocal: () => false });

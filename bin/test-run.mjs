@@ -46,7 +46,7 @@ const CW = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const TEST_GLOBS = [
   'admin/**/*.test.mjs', 'bin/**/*.test.mjs', 'lib/**/*.test.mjs', 'monitor/**/*.test.mjs',
   'sitemap/**/*.test.mjs', 'cra/**/*.test.mjs', 'map/**/*.test.mjs', 'chunk-diff/**/*.test.mjs',
-  'flow/**/*.test.mjs', 'mcp/**/*.test.mjs', 'codegraph/**/*.test.mjs',
+  'flow/**/*.test.mjs', 'mcp/**/*.test.mjs', 'codegraph/**/*.test.mjs', 'runner/**/*.test.mjs',
 ];
 
 /**
@@ -79,6 +79,8 @@ export const AMBIENT_OUTPUTS = [
   // has not scored; in the shared checkout the private dir is the sidecar.
   { env: 'CW_EPSS_DETAIL', live: join(CW, 'monitor', 'private', 'epss-detail.json'), as: 'file' },
   // A booted panel's CodeQL pipeline appends a divergence row per stage-1 pair; private dir, as above.
+  // mcp/server.mjs persists every run_checks job here; the MCP tests spawn the server with none set.
+  { env: 'CW_MCP_JOB_STORE', live: join(CW, 'reports', 'mcp-jobs'), as: 'dir', files: /\.json$/ },
   { env: 'CW_NONDET_STORE', live: join(CW, 'monitor', 'private', 'nondeterministic', 'divergence'), as: 'dir', files: /\.jsonl$/ },
 ];
 

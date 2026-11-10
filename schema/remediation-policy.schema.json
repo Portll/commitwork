@@ -47,6 +47,17 @@
           }
         }
       }
+    },
+    "draftPr": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What mode=draft-pr (and every mode above it) may open. Values checked against DRAFT_PR_TARGETS and DRAFT_PR_READY in remediation-policy.mjs; the caps' range is enforced there too.",
+      "properties": {
+        "targets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "ready": { "type": "string" },
+        "maxOpenPerRepo": { "type": "integer" },
+        "maxOpenPerDay": { "type": "integer" }
+      }
     }
   }
 }

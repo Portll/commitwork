@@ -158,14 +158,63 @@ test('posture off: asks stay asks, and the guard\'s own floor still refuses secr
   }
 });
 
-test('bypassCountsAsUnattended decides a bypassPermissions or dontAsk session', () => {
+// Posture A's second signal, and the one that reaches a session nothing else marks: a substrate
+// runner dispatch runs --dangerously-skip-permissions and never sets CW_GUARD_UNATTENDED, so the
+// permission mode is the only thing that says nobody is being asked.
+test('bypassCountsAsUnattended, on by default, refuses an ask in a bypassPermissions or dontAsk session', () => {
   for (const mode of ['bypassPermissions', 'dontAsk']) {
-    assert.equal(decision(DELETE, { mode }), 'ask', `${mode}, setting off`);
-    const out = bash(DELETE, { mode, env: { CW_BYPASS_IS_UNATTENDED: '1' } });
-    assert.equal(out.permissionDecision, 'deny', `${mode}, setting on`);
-    assert.match(out.permissionDecisionReason, new RegExp(`permission_mode ${mode}`));
+    const out = bash(DELETE, { mode });
+    assert.equal(out.permissionDecision, 'deny', `${mode}, setting at its default`);
+    assert.match(out.permissionDecisionReason, new RegExp(`permission_mode ${mode}; bypassCountsAsUnattended=true \\(default\\)`));
+    assert.equal(decision(DELETE, { mode, env: { CW_BYPASS_IS_UNATTENDED: '0' } }), 'ask', `${mode}, setting off`);
   }
-  assert.equal(decision(DELETE, { mode: 'default', env: { CW_BYPASS_IS_UNATTENDED: '1' } }), 'ask');
+  assert.equal(decision(DELETE, { mode: 'default' }), 'ask', 'a mode where a person IS asked is untouched');
+  assert.equal(decision(DELETE, { mode: 'acceptEdits' }), 'ask');
+});
+
+// The one carve-out in posture A, asserted in BOTH directions, because only one of them lies to
+// you: a cleanup that is refused is loud and gets the gate removed, and a delete that is wrongly
+// allowed is silent. The must-NOT-fire list is the longer one, and every entry is a real path.
+test('a run deleting its own scratch directory is allowed, unattended and attended alike', () => {
+  const T = (process.env.TMPDIR || '/tmp').replace(/\/+$/, '');
+  const own = [
+    'rm -rf /tmp/cw-claude-Ab3kQ9',
+    'rm -rf /tmp/cw-claude-Ab3kQ9/reports',
+    'rm -rf /tmp/tmp.k3Jd9Xa1',
+    'rm -rf /private/tmp/commitwork-scan-9fQ2bz',
+    `rm -rf ${T}/cw-claude-Ab3kQ9`,
+    'rm -fr /tmp/cw-claude-Ab3kQ9',
+    'rm -rf -- /tmp/cw-claude-Ab3kQ9',
+    'rm --recursive --force /tmp/cw-claude-Ab3kQ9',
+  ];
+  for (const cmd of own) {
+    assert.equal(decision(cmd, { env: UNATTENDED }), null, `${cmd} was gated unattended`);
+    assert.equal(decision(cmd, { mode: 'default' }), null, `${cmd} was gated attended`);
+  }
+});
+
+test('the carve-out does not reach a shared temp path, a temp root, an expansion or a quoted path', () => {
+  const gated = [
+    ['rm -rf /tmp', 'a temp root itself is never a scratch directory'],
+    ['rm -rf /tmp/', 'nor with a trailing slash'],
+    ['rm -rf /tmp/cc-socks', "every session's peer sockets: a stable shared name, not a scratch one"],
+    ['rm -rf /tmp/scratch-dir', 'a hand-made name under /tmp carries no random tail'],
+    ['rm -rf /tmp/cw-x', 'the right prefix is not enough without the random tail'],
+    ['rm -rf /tmp/com.google.Keystone', 'a random-looking shared name with no scratch prefix'],
+    ['rm -rf $TMPDIR/cw-claude-Ab3kQ9', 'the hook cannot know the child shell\'s TMPDIR'],
+    ['rm -rf /tmp/cw-claude-Ab3kQ9/*', 'a glob is not a literal path'],
+    ['rm -rf /tmp/cw-claude-Ab3kQ9/', 'a trailing slash follows a planted symlink on BSD'],
+    ["rm -rf '/tmp/cw-claude-Ab3kQ9'", 'scrub() has collapsed the quoted path, so it is not visible here'],
+    ['rm -rf /tmp/cw-claude-Ab3kQ9/../../Users', 'a .. segment leaves the scratch directory'],
+    ['rm -rf /tmp/cw-claude-Ab3kQ9 /etc/hosts', 'one target outside scratch gates the whole command'],
+    ['rm -rf', 'no target at all is not a carve-out'],
+  ];
+  for (const [cmd, why] of gated) {
+    assert.equal(decision(cmd, { mode: 'default' }), 'ask', `${cmd} (${why}) was not gated attended`);
+    assert.equal(decision(cmd, { env: UNATTENDED }), 'deny', `${cmd} (${why}) was not refused unattended`);
+  }
+  // the catastrophic tier is checked first, so a scratch-shaped parent cannot shelter a .git
+  assert.equal(decision('rm -rf /tmp/cw-claude-Ab3kQ9/.git', { mode: 'default' }), 'deny');
 });
 
 test('missingModeIsUnattended, on by default, reads a payload with no permission_mode as unattended, and only that payload', () => {

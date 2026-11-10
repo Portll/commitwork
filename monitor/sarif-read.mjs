@@ -114,13 +114,15 @@ export function readSarif(path) {
   // Consumers holding a second witness (the .exit sidecar) resolve it; consumers without one must
   // not read the zero as clean.
   const unwitnessedZero = results.length === 0 && invocations.length === 0;
+  const partial = partialLedger(invocations);
   return {
     state: 'ok', runs: j.runs, results, resultCount: results.length, tool, ruleCount,
     version: typeof j.version === 'string' ? j.version : null,
     norules: j.runs.length > 0 && ruleCount === 0 && results.length === 0,
     unwitnessedZero,
     extractionErrors,
-    partialAnalysis: partialAnalysis(invocations),
+    partialAnalysis: partial.rows,
+    partialRetry: partial.retry,
     ruleFailures: ruleFailures(invocations),
     bytes, reason: null,
   };
@@ -140,29 +142,88 @@ const FILE_PARTIAL_IDS = Object.freeze({
   // bin/base-images.mjs: an image Trivy could not scan, or whose OS is past end of support.
   'Image not scanned': 'image-not-scanned',
 });
-const FILE_OF = [/ on (.+?):\s*$/s, /^(?:Other )?(?:Syntax|Lexical) error at line (.+?):\d+:/];
+// The third shape is Semgrep giving up on a whole file: "Timeout at line <file>:<line>:", no rule.
+const FILE_OF = [/ on (.+?):\s*$/s, /^(?:Other )?(?:Syntax|Lexical) error at line (.+?):\d+:/, /^Timeout at line (.+?):\d+:/];
 const SNIPPET = /When parsing a snippet as/;
 const RULE_OF = [/when running (\S+) on /, /in rule '([^']+)'/];
 
 const notices = (invocations) => (invocations || []).flatMap((i) => (i && i.toolExecutionNotifications) || []);
 const byUriThenRule = (a, b) => (a.uri ?? a.rule) < (b.uri ?? b.rule) ? -1 : (a.uri ?? a.rule) > (b.uri ?? b.rule) ? 1 : 0;
 
-/** Files a run read only in part, one row per file: {uri, reasons, notices}. Sorted by uri. */
-export function partialAnalysis(invocations) {
+/** {uri, reason} for a notice about a file read only in part, else null. */
+function fileNotice(n) {
+  const reason = FILE_PARTIAL_IDS[(n && n.descriptor && n.descriptor.id) || ''];
+  const text = (n && n.message && n.message.text) || '';
+  if (!reason || SNIPPET.test(text)) return null;
+  const loc = (((n.locations || [])[0] || {}).physicalLocation || {}).artifactLocation;
+  const uri = (loc && loc.uri) || FILE_OF.map((re) => re.exec(text)).find(Boolean)?.[1] || null;
+  return uri ? { uri, reason } : null;
+}
+
+function rowsOf(facts) {
   const byUri = new Map();
-  for (const n of notices(invocations)) {
-    const reason = FILE_PARTIAL_IDS[(n && n.descriptor && n.descriptor.id) || ''];
-    const text = (n && n.message && n.message.text) || '';
-    if (!reason || SNIPPET.test(text)) continue;
-    const loc = (((n.locations || [])[0] || {}).physicalLocation || {}).artifactLocation;
-    const uri = (loc && loc.uri) || FILE_OF.map((re) => re.exec(text)).find(Boolean)?.[1] || null;
-    if (!uri) continue;
+  for (const { uri, reason } of facts) {
     const row = byUri.get(uri) || { uri, reasons: [], notices: 0 };
     if (!row.reasons.includes(reason)) row.reasons.push(reason);
     row.notices++;
     byUri.set(uri, row);
   }
   return [...byUri.values()].map((r) => ({ ...r, reasons: r.reasons.sort() })).sort(byUriThenRule);
+}
+
+// bin/semgrep-retry.mjs re-scans the files a run timed out on and appends that pass as a further
+// invocation carrying properties.commitworkRetry {files, timeoutSec}. The first invocation keeps its
+// Timeout notices, so the original claim stays in the document and the subtraction is made here,
+// once: a file's timeout leaves its row only when the retry targeted the file and did not time out
+// on it again. Its other reasons stand, because the retry re-measures time, not parsing. A file the
+// retry never reached stays as measured.
+const isRetry = (i) => !!(i && i.properties && i.properties.commitworkRetry);
+
+function partialLedger(invocations) {
+  const list = invocations || [];
+  const retries = list.filter(isRetry);
+  const facts = notices(list.filter((i) => !isRetry(i))).map(fileNotice).filter(Boolean);
+  if (!retries.length) return { rows: rowsOf(facts), retry: null };
+  const spec = (i) => i.properties.commitworkRetry;
+  const targeted = new Set(retries.flatMap((i) => (Array.isArray(spec(i).files) ? spec(i).files : [])));
+  const again = new Set(notices(retries).map(fileNotice).filter((f) => f && f.reason === 'timeout').map((f) => f.uri));
+  const tried = [...new Set(facts.filter((f) => f.reason === 'timeout' && targeted.has(f.uri)).map((f) => f.uri))].sort();
+  const recovered = tried.filter((u) => !again.has(u));
+  const gone = new Set(recovered);
+  const timeoutSec = retries.map((i) => spec(i).timeoutSec).filter((s) => s != null).pop() ?? null;
+  return {
+    rows: rowsOf(facts.filter((f) => !(f.reason === 'timeout' && gone.has(f.uri)))),
+    retry: { files: [...targeted].sort(), timeoutSec, recovered, stillTimedOut: tried.filter((u) => again.has(u)) },
+  };
+}
+
+/** Files a run read only in part, one row per file: {uri, reasons, notices}. Sorted by uri. A
+ *  commitworkRetry invocation removes the timeout of each file it recovered (partialLedger). */
+export function partialAnalysis(invocations) {
+  return partialLedger(invocations).rows;
+}
+
+/** What a retry pass did: {files, timeoutSec, recovered, stillTimedOut}, or null when none ran. */
+export function partialRetry(invocations) {
+  return partialLedger(invocations).retry;
+}
+
+/** The sentence every consumer prints for a non-empty partialAnalysis list. `show` names up to that
+ *  many files, for a consumer whose reason is the only carrier of the rows. */
+export function describePartial(rows, retry = null, { show = 0 } = {}) {
+  const byReason = {};
+  for (const p of rows) for (const why of p.reasons) byReason[why] = (byReason[why] || 0) + 1;
+  const reasons = Object.entries(byReason).map(([k, n]) => `${n} ${k}`).join(', ');
+  const named = show ? rows.slice(0, show).map((p) => p.uri) : [];
+  const more = show && rows.length > named.length ? `, +${rows.length - named.length} more` : '';
+  return `${rows.length} file(s) were read only in part (${reasons}), so this count is silent about them rather than clean`
+    + (named.length ? ` — ${named.join(', ')}${more}` : '')
+    + (retry ? `; ${describeRetry(retry)}` : '');
+}
+
+/** One clause for a retry pass, shared by every consumer that reports one. */
+export function describeRetry(retry) {
+  return `a retry at ${retry.timeoutSec ?? '?'}s per rule covered ${retry.files.length} file(s) and recovered ${retry.recovered.length}`;
 }
 
 /** Rules the engine could not evaluate, one row per rule: {rule, notices, reason}. Sorted by rule. */
@@ -182,6 +243,17 @@ export function ruleFailures(invocations) {
 }
 
 const RULE_TITLE_MAX = 100;
+const GENERIC_TITLE = /^(misconfiguration|vulnerability|finding|issue|warning|error)$/i;
+
+/** One candidate title, cleaned to one line and capped, or null when it is empty, restates the id
+ *  or names a generic class. Shared by ruleTitle and the lanes that read a rule-level field of
+ *  their own (monitor/extractors/), so every title is cleaned and capped the same way. */
+export function ruleTitleText(text, id = '') {
+  const rid = String(id || '');
+  const t = String(text || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t || t === rid || (rid && t.includes(rid)) || GENERIC_TITLE.test(t)) return null;
+  return t.length <= RULE_TITLE_MAX ? t : `${t.slice(0, RULE_TITLE_MAX - 1).trimEnd()}…`;
+}
 
 /** A rule's own one-line description, or null. Rule-level metadata, the same for every hit, so it
  *  is a structured field rather than message text (issue titles take structured fields only).
@@ -190,17 +262,22 @@ const RULE_TITLE_MAX = 100;
 export function ruleTitle(rule) {
   if (!rule || typeof rule !== 'object') return null;
   const id = String(rule.id || '');
-  const generic = /^(misconfiguration|vulnerability|finding|issue|warning|error)$/i;
   // Semgrep's short description and name both restate the id; its full description is the rule's
   // message template, the same for every hit, so its first sentence is the title.
   const full = rule.fullDescription && typeof rule.fullDescription.text === 'string'
     ? (rule.fullDescription.text.trim().match(/^[\s\S]*?[.!?](?=\s|$)/) || [rule.fullDescription.text])[0] : null;
   for (const cand of [rule.shortDescription && rule.shortDescription.text, rule.name, full]) {
-    const t = String(cand || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
-    if (!t || t === id || (id && t.includes(id)) || generic.test(t)) continue;
-    return t.length <= RULE_TITLE_MAX ? t : `${t.slice(0, RULE_TITLE_MAX - 1).trimEnd()}…`;
+    const t = ruleTitleText(cand, id);
+    if (t) return t;
   }
   return null;
+}
+
+/** A {rule: title} map with keys sorted, or null when it is empty — the shape every lane returns
+ *  beside its rows as `ruleTitles`. */
+export function sortedTitles(titles) {
+  if (!titles || !titles.size) return null;
+  return Object.fromEntries([...titles].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
 const EXTRACTION_ERROR_ID = /\/diagnostics\/extraction-errors$/;

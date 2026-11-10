@@ -1,0 +1,39 @@
+# Class rule: a parse of untrusted input that can throw where nothing catches it.
+#
+# Inside a request's 'end' listener, or a server's request handler, an exception has no caller to
+# return to: Node raises it as uncaught and the process exits, so one malformed body stops the
+# server for every client. The parse needs its own try/catch that answers 400.
+
+rules:
+  - id: cw-parse-in-handler-uncaught-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      `JSON.parse` runs on request data inside an event listener or server handler with no
+      try/catch around it. A malformed body throws an exception no caller catches, and Node exits
+      the process. Parse inside `try`, and answer 400 from the `catch`.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-755: Improper Handling of Exceptional Conditions", "CWE-248: Uncaught Exception"]
+      confidence: MEDIUM
+      class: boundary-throw-uncaught
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $REQ.on('end', (...) => { ... })
+          - pattern-inside: |
+              $REQ.on('end', function (...) { ... })
+          - pattern-inside: |
+              $REQ.on("end", (...) => { ... })
+          - pattern-inside: |
+              $HTTP.createServer((...) => { ... })
+          - pattern-inside: |
+              $HTTP.createServer(function (...) { ... })
+          - pattern-inside: |
+              createServer((...) => { ... })
+      - pattern-not-inside: |
+          try { ... } catch ($E) { ... }
+      - pattern-not-inside: |
+          try { ... } catch { ... }
+      - pattern: JSON.parse(...)

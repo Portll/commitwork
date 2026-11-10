@@ -18,10 +18,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { safeParseFile } from '../safe-parse.mjs';
-import { readSarif, ruleIndex } from '../sarif-read.mjs';
+import { readSarif, ruleIndex, ruleTitle, ruleTitleText } from '../sarif-read.mjs';
 import { classifyPath } from '../fixture-paths.mjs'; // a test corpus is a different population, not a cleaner one
 import { classify as classifyReach, NOTE as REACH_NOTE } from '../advisory-reach.mjs'; // a name collision is not an installed package
-import { _zero, _emptyArtifact, _detailFor, _ecosystemOf, capMessage, _wtBucket, _setAsideWorktree, _worktreesOf } from './core.mjs';
+import { _zero, _emptyArtifact, _detailFor, _titled, _ecosystemOf, capMessage, _wtBucket, _setAsideWorktree, _worktreesOf } from './core.mjs';
 import { _sarifCounts } from './sarif.mjs';
 
 // cargo-audit's parser, written against REAL output (a 719-dependency Rust workspace). SEVERITY IS
@@ -44,6 +44,7 @@ export function _cargoAuditCounts(dir, file) {
   if (!v || typeof v !== 'object' || !('count' in v)) return { ..._zero(), ran: true, unparseable: true };
   const c = { ..._zero(), ran: true };
   const rows = [];
+  const titles = new Map();
   for (const item of Array.isArray(v.list) ? v.list : []) {
     const a = (item && item.advisory) || {};
     const pkg = (item && item.package) || {};
@@ -55,13 +56,22 @@ export function _cargoAuditCounts(dir, file) {
       sev: '',                              // undetermined by design — the vector is not a score
       message: capMessage(`${a.title || ''}${a.cvss ? ` [${a.cvss}]` : ''}${item && item.versions && Array.isArray(item.versions.patched) && item.versions.patched.length ? ` — patched: ${item.versions.patched.join(', ')}` : ''}`),
     });
+    _advisoryTitle(titles, a.id, a.title);
   }
   c.undetermined = c.total;
   const w = j.warnings;
   if (w && typeof w === 'object') {
     c.warned = Object.values(w).reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0);
   }
-  return { ...c, ..._detailFor('depsRustAudit', rows) };
+  return { ...c, ..._detailFor('depsRustAudit', rows), ..._titled(titles) };
+}
+// An advisory's `title` is the advisory database's own, one per id, so it titles the rule both
+// audit lanes key on. No title without an id: a row keyed on a placeholder is not that advisory.
+function _advisoryTitle(titles, id, title) {
+  const rule = typeof id === 'string' ? id : '';
+  if (!rule || titles.has(rule) || typeof title !== 'string') return;
+  const t = ruleTitleText(title, rule);
+  if (t) titles.set(rule, t);
 }
 // bundler-audit's parser, written against a REAL run (0.9.3, a 2-gem fixture Gemfile.lock via
 // ruby-advisory-db). Same shape as cargo-audit's lane above and the
@@ -77,6 +87,7 @@ export function _bundlerAuditCounts(dir, file) {
   const map = { low: 'low', medium: 'med', high: 'high', critical: 'crit' };
   const c = { ..._zero(), ran: true };
   const rows = [];
+  const titles = new Map();
   for (const r of j.results) {
     // insecure_source / unpatched_ruby are declared by bundler-audit's own docs but not exercised
     // by the fixture run — parsed only when a real one is observed (absent is absent; a shape
@@ -92,8 +103,9 @@ export function _bundlerAuditCounts(dir, file) {
       rule: String(adv.id || ''), package: String(gem.name || ''), version: String(gem.version || ''),
       sev: b || '', message: capMessage(`${String(adv.title || '')}${patched}`),
     });
+    _advisoryTitle(titles, adv.id, adv.title);
   }
-  return { ...c, ..._detailFor('depsBundlerAudit', rows) };
+  return { ...c, ..._detailFor('depsBundlerAudit', rows), ..._titled(titles) };
 }
 export function _trivyCounts(dir, file) {
   const p = join(dir, file); if (!existsSync(p)) return null;
@@ -345,9 +357,15 @@ export function _depscanCounts(dir, file) {
 // GuardDog's SARIF declares no structured package field, so package@version is recovered from the
 // message when the text carries one and stays '' otherwise — the rule + message are the payload
 // either way, and '' is honest, never a guess.
+// The title is the rule's own description (ruleTitle in ../sarif-read.mjs). GuardDog's short
+// description restates the id, so it is the first sentence of the full one; the message never is.
 export function _guarddogCounts(dir, file) {
   const rows = [];
+  const titles = new Map();
   const c = _sarifCounts(dir, file, (res, rule) => {
+    const id = String(res.ruleId || (rule && rule.id) || '');
+    const title = id && !titles.has(id) ? ruleTitle(rule) : null;
+    if (title) titles.set(id, title);
     const msg = String((res.message && res.message.text) || '').trim();
     // THREE forms, and the third is the one GuardDog actually writes: its messages open
     // `On package: <name> version: <ver>`, which neither `name@version` pattern matches. The two
@@ -388,7 +406,7 @@ export function _guarddogCounts(dir, file) {
   }
   // No per-row `kind`: the rule prefix already determines the family, and declaring it as a field
   // would put one fact in two columns. The split that matters is in the counts above.
-  return { ...c, ..._detailFor('supplyChainHeuristic', rows) };
+  return { ...c, ..._detailFor('supplyChainHeuristic', rows), ..._titled(titles) };
 }
 
 // retire.js identifies a library BY THE CONTENT OF A FILE, which is why this is not the same

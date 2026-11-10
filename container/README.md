@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-24 2bc3c0ef -->
 # Installing commitwork on Linux: the installer and the container
 
 Two ways to put commitwork on a Linux machine, and what each one does and does not give you.
@@ -164,6 +164,43 @@ docker run --rm -v "$PWD:/src" -w /src node:22.23.3-bookworm-slim@sha256:c3de60b
 
 pip-tools is the one unpinned tool in that command; it writes the lock, and the lock is what gets
 reviewed. pip-compile keeps the versions already in the lock unless given `--upgrade`.
+
+### Licences and source
+
+The image carries every component's licence texts in `/usr/share/licenses/commitwork`. `INDEX.json`
+there names each component, its licence, the files that carry it and its source. `SOURCES.md` is the
+offer of source. The build's last step, `container/licenses.mjs`, builds the directory from what is
+installed and from `container/licenses.json`, which names everything dpkg and the venv do not. The
+build fails on a component with no licence text, a copyleft component with no source, or anything in
+`/opt` or `/usr/local/bin` the manifest does not name. setup copies a release archive's licence files
+when `CW_SETUP_LICENSE_DIR` is set. A text that no artefact in the image carries is vendored under
+`container/licenses/` from the upstream at the pinned tag and checked by SHA-256 at build time.
+[docs/THIRD-PARTY-NOTICES.md](../docs/THIRD-PARTY-NOTICES.md#6-the-container-images) has the
+inventory, and `bin/test/container-licenses.test.mjs` holds the manifest to the Dockerfiles' pins.
+
+The source bundle is made from a built image and published beside it:
+
+```sh
+docker build -f container/Dockerfile --build-arg SOURCES_AT=<SOURCE-BUNDLE-LOCATION> -t commitwork:<sha> -
+node container/sources.mjs --image commitwork:<sha> --out /tmp/cw-sources-<sha>
+```
+
+It writes `commitwork-sources-<12 hex>.tar` and `SOURCES.json` beside it. The name is the first 12 hex
+digits of the SHA-256 of the image's `INDEX.json`, which is how a reader matches a bundle to an
+image. The bundle holds every Debian source package in the image, from the image's own snapshot and
+checked by apt against the snapshot's signed index. It also holds the PyPI sdists and GitHub tag
+tarballs `INDEX.json` names, and the Go modules trufflehog requires, each checked against its
+`go.sum`. Fetched sources stay out of the tree. The script needs docker and HTTPS to
+snapshot.debian.org, pypi.org, api.github.com, codeload.github.com and proxy.golang.org;
+`GITHUB_TOKEN` raises the API rate limit. Exit 1 names any source it could not fetch or check.
+
+**Where the bundle goes.** Publish the tar and `SOURCES.json` at `<SOURCE-BUNDLE-LOCATION>`, which is
+from the same place as the image and stays up for as long as the image is offered. For example, use
+the same registry repository as an artifact that refers to the image's digest, or the same release
+page. The location is the operator's to choose, and it is not yet chosen. Pass it as `SOURCES_AT`
+when building the image you distribute. Without it, the image's `SOURCES.md` reads
+`<SOURCE-BUNDLE-LOCATION>`, a placeholder. `SOURCES_AT` changes `SOURCES.md` only, so the bundle's
+name does not change.
 
 ### Building and running
 

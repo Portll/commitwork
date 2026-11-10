@@ -10,7 +10,7 @@ export const KIND_ORDER = Object.freeze(['view', 'check', 'project', 'action', '
 
 // Views the rail does not list, with the scope navigation.js VIEW_SCOPE declares for them. The
 // test cross-checks this table against that declaration, so a drift fails loudly.
-const SCOPE_NOT_ON_RAIL = Object.freeze({ oversight: 'fleet', correlations: 'fleet', graph: 'fleet', stpa: 'fleet', bola: 'fleet', comments: 'fleet', spinecomments: 'fleet', profile: 'account' });
+const SCOPE_NOT_ON_RAIL = Object.freeze({ oversight: 'fleet', correlations: 'fleet', graph: 'fleet', stpa: 'fleet', bola: 'fleet', comments: 'fleet', commentquality: 'fleet', profile: 'account' });
 
 // Actions reachable from the palette. `operatorOnly` mirrors the route's own gate; the client renders
 // such an action disabled off the operator port with the reason, it never hides it.

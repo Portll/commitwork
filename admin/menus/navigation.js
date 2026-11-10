@@ -20,7 +20,7 @@
 // The rail, breadcrumb, header, URL, run controls and picker redirect all read this one table;
 // separate lists drift, and a page kept open with no project must never be labelled with one.
 const VIEW_SCOPE=Object.freeze({fleet:'fleet',projects:'fleet',rollups:'fleet',remfleet:'fleet',verdicts:'fleet',oversight:'fleet',correlations:'fleet',graph:'fleet',
-  overwatch:'fleet',cra:'fleet',stpa:'fleet',bola:'fleet',comments:'fleet',spinecomments:'fleet',
+  overwatch:'fleet',cra:'fleet',stpa:'fleet',bola:'fleet',comments:'fleet',commentquality:'fleet',
   settings:'fleet',perf:'fleet',held:'fleet',journey:'fleet',profile:'account'});
 const scopeOf=(v)=>Object.prototype.hasOwnProperty.call(VIEW_SCOPE,v)?VIEW_SCOPE[v]:'project';
 const TAB_GROUPS=Object.freeze({
@@ -48,7 +48,7 @@ const TAB_GROUPS=Object.freeze({
   // checker in the roster.
   denotypes:'types',
   // the Slop Bucket is quality by the same rule as the rest of this row: it is readability, not a vulnerability.
-  comments:'quality',spinecomments:'quality',
+  comments:'quality',commentquality:'quality',
   overwatch:'act',
   // need something running to answer
   dast:'dynamic', bola:'dynamic', stpa:'dynamic', tls:'dynamic', apifuzz:'dynamic', runtime:'dynamic',

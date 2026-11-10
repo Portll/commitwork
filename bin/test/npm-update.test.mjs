@@ -81,8 +81,8 @@ test('a proposal branch carries the chosen updates, the advisory fix and the tra
   assert.deepEqual(r.direct.map((d) => `${d.name} ${d.version} ${d.type}`), ['alpha 1.1.0 minor', 'hb 4.7.9 patch', 'tiny 1.0.2 patch']);
   const pk = lockAt(dir, r.branch);
   assert.equal(pk['node_modules/alpha'].version, '1.1.0');
-  assert.equal(pk['node_modules/hb'].version, '4.7.10', 'the advisory fix raises the chosen 4.7.9, cooldown or not');
-  assert.equal(r.changes.find((c) => c.name === 'hb').step, 'advisories');
+  assert.equal(pk['node_modules/hb'].version, '4.7.9', 'the advisory fix 4.7.10 is a day old and the cooldown holds it by default');
+  assert.equal(r.introduced.state, 'clear', 'hb keeps the advisory it had: moved, not introduced');
   assert.equal(pk['node_modules/beta'].version, '2.0.0', 'beta 2.0.1 is three days old and stays held');
   const msg = git(dir, 'log', '-1', '--format=%B', r.branch);
   assert.match(msg, /^chore\(deps\): update \d+ npm packages/);
@@ -92,6 +92,26 @@ test('a proposal branch carries the chosen updates, the advisory fix and the tra
   assert.equal(git(dir, 'worktree', 'list').split('\n').length, 1, 'the scratch worktree is gone');
   const ev = readLedger().events.map((e) => e.event);
   assert.deepEqual(ev, ['audit', 'proposed']);
+});
+
+test('with depsAlertFixBypassesCooldown on, the advisory fix takes the release inside the cooldown', { skip }, async () => {
+  env();
+  const r = await proposeUpdates({ dir: repo(), policy: policy({ alertFixBypassesCooldown: true }), nowMs: NOW });
+  assert.equal(r.state, 'proposed', r.reason);
+  assert.equal(lockAt(r.top, r.branch)['node_modules/hb'].version, '4.7.10');
+  assert.equal(r.changes.find((c) => c.name === 'hb').step, 'advisories');
+  const fix = readFileSync(process.env.CW_NPM_STUB_LOG, 'utf8').trim().split('\n').map((l) => JSON.parse(l).args).find((a) => a[0] === 'audit' && a[1] === 'fix');
+  assert.ok(!fix.some((a) => a.startsWith('--before=')), JSON.stringify(fix));
+});
+
+test('a merge is refused when the update swaps one shipped high for another: the count holds, the verdict does not', { skip }, async () => {
+  env({ advisories: [{ id: 'GHSA-oldf-law0-0000', name: 'alpha', range: '<1.1.0', severity: 'high', title: 'old flaw' },
+    { id: 'GHSA-newf-law0-0000', name: 'alpha', range: '>=1.1.0 <1.2.0', severity: 'high', title: 'new flaw' }] });
+  const r = await proposeUpdates({ dir: repo(), policy: policy(), merge: true, trustRepo: true, nowMs: NOW });
+  assert.equal(r.state, 'proposed', r.reason);
+  assert.equal(r.introduced.state, 'introduces');
+  assert.deepEqual(r.introduced.resolved.map((i) => i.advisory), ['https://example.invalid/GHSA-oldf-law0-0000']);
+  assert.match(r.mergeRefused, /introduces 1 advisory at critical\/high\/unknown: https:\/\/example\.invalid\/GHSA-newf-law0-0000 on alpha@1\.1\.0 \(high\)/);
 });
 
 test('the same selection on the same commit is proposed once', { skip }, async () => {

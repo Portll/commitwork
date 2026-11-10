@@ -1,18 +1,25 @@
 // Renders a plain-text digest summary with per-destination status lines (bin/digest-deliver.mjs renderText).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderText } from '../digest-deliver.mjs';
+import { renderText, DESTINATIONS } from '../digest-deliver.mjs';
 
-test('renders not-configured outcome with both env vars', () => {
+test('renders not-configured outcome naming every destination env var', () => {
   const r = {
     digestId: 'abcdef1234567890',
     digest: 'daily',
     outcome: 'not-configured',
     results: []
   };
+  // The line is pinned, not assembled from DESTINATIONS: a derived expectation renders whatever the
+  // list holds and asserts nothing about the text an operator reads. The pin is kept honest by the
+  // separate check that the list is still exactly these three, which fails on a fourth destination
+  // with the reason rather than leaving the pin to rot.
+  assert.deepEqual(DESTINATIONS.map((d) => d.env),
+    ['CW_DIGEST_SLACK_URL', 'CW_DIGEST_WEBHOOK_URL', 'CW_DIGEST_EMAIL_TO'],
+    'a destination was added, renamed or reordered \u2014 name it in the pinned line below');
   const expected = [
     'digest abcdef123456\u2026 (daily)',
-    '  no destination configured: set CW_DIGEST_SLACK_URL and/or CW_DIGEST_WEBHOOK_URL; nothing sent',
+    '  no destination configured: set CW_DIGEST_SLACK_URL and/or CW_DIGEST_WEBHOOK_URL and/or CW_DIGEST_EMAIL_TO; nothing sent',
     ''
   ].join('\n');
   assert.equal(renderText(r), expected);

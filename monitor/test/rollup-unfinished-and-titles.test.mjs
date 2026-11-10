@@ -31,6 +31,10 @@ const trivySarif = { runs: [{
 }] };
 const checksRow = (check) => ({ check, status: 'pass', durationMs: 5, at: '2026-10-01T12:00:01.000Z' });
 
+// bandit writes JSON, not SARIF; its title is the test's own name (extractors/sast-lint.mjs)
+const banditJson = { errors: [], results: [{ filename: 'app/run.py', line_number: 7, test_id: 'B602', test_name: 'subprocess_popen_with_shell_equals_true',
+  issue_text: 'subprocess call with shell=True identified, security issue.', issue_severity: 'HIGH', issue_confidence: 'HIGH' }] };
+
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), 'cw-unfinished-'));
   const areas = [{ slug: 'primary-area', label: 'primary', out: 'primary-area', primary: true }, { slug: 'u-area', label: 'u', out: 'u-area', members: ['alpha'] }];
@@ -46,7 +50,8 @@ function fixture() {
   }));
   writeFileSync(join(batch, 'alpha', 'semgrep.sarif'), JSON.stringify(semgrepSarif));
   writeFileSync(join(batch, 'alpha', 'trivy-config.sarif'), JSON.stringify(trivySarif));
-  writeFileSync(join(batch, 'alpha', 'checks-status.json'), JSON.stringify(['sast', 'iac-config'].map(checksRow)));
+  writeFileSync(join(batch, 'alpha', 'bandit.json'), JSON.stringify(banditJson));
+  writeFileSync(join(batch, 'alpha', 'checks-status.json'), JSON.stringify(['sast', 'iac-config', 'sast-python-bandit'].map(checksRow)));
   return { batch, regPath, out: join(root, 'reports', 'u-area') };
 }
 
@@ -70,4 +75,7 @@ test('unfinished work and rule titles reach the fleet blocks; the per-repo copie
   const plan = readFileSync(join(out, 'REMEDIATION.md'), 'utf8');
   assert.match(plan, /\| High \| posture \| Image user should not be 'root' \(`DS-0002`\) \| iac \| 1 \| alpha \| `Dockerfile` \|/,
     'a high configuration finding is listed in the plan by its title');
+  assert.deepEqual(rollup.scannerRuleTitles.sastPython, { B602: 'subprocess popen with shell equals true' },
+    'a lane that does not emit SARIF reaches the same map');
+  assert.match(plan, /\| High \| vulnerability \| subprocess popen with shell equals true \(`B602`\) \| sastPython \| 1 \| alpha \| `app\/run.py` \|/);
 });

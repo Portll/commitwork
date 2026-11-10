@@ -14,6 +14,9 @@
 //   5. update-ref <ref> <new> <head0>   ← compare-and-swap; git refuses if HEAD moved   (R1-c)
 //   6. reset -q HEAD -- <declared>      ← repair the SHARED index (docs/TRAPS.md cost #1)
 //   7. the checkout's package.json → HEAD's, or left and named when another writer's edit conflicts
+//   8. every OTHER checkout of <ref> (a land from a sibling worktree with --ref) → each landed path
+//      whose index entry and file hold only the parent's or the commit's content takes the commit's;
+//      any other content is named and left. Without it that checkout reads the land as staged in reverse.
 //
 // Step 5 is why this is not check-then-act. A pre-flight `if (head === head0)` leaves the gap
 // another writer lands in; `update-ref <ref> <new> <old>` is atomic in git and fails loudly
@@ -90,14 +93,14 @@
 
 import { isMainModule } from '../lib/is-main.mjs';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, unlinkSync, statSync, readFileSync, writeFileSync, renameSync, chmodSync, mkdtempSync, rmSync, realpathSync } from 'node:fs';
+import { existsSync, unlinkSync, statSync, lstatSync, readlinkSync, readFileSync, writeFileSync, renameSync, chmodSync, mkdtempSync, rmSync, realpathSync } from 'node:fs';
 import { resolve, join, dirname, basename } from 'node:path';
 import { tmpdir, homedir } from 'node:os';
 
 import {
   sessionKey, privateIndexPath, landVerdict, sharedIndexRepair, replayVerdict,
   VERSION_FILE, readVersion, versionStamp, replayStamps, versionFileCollides, worktreeAction,
-  porcelainPaths, claimVerdict, claimHolder,
+  followAction, checkoutsOf, parseDiffTree, porcelainPaths, claimVerdict, claimHolder,
 } from './commit-phase-core.mjs';
 import { touchAppender } from './lib/touch-ledger-append.mjs';
 import { validateConventional, formatErrors, rulesFor, DEFAULT_TYPES, SUBJECT_MAX } from './lib/conventional-commit.mjs';
@@ -444,6 +447,121 @@ function syncVersionFile({ before, after, landed, taken }) {
     }
   } else if (staged !== after.blob) {
     console.error(`commit-phase: WARNING — the shared index holds a staged ${VERSION_FILE} (${staged ? staged.slice(0, 7) : 'absent or unreadable'}) that is neither the parent's nor HEAD's; left as it is.`);
+  }
+}
+
+/** git inside another checkout. A GIT_DIR or GIT_INDEX_FILE inherited from a hook would override `-C`. */
+function gitIn(dir, args, input) {
+  const env = { ...process.env };
+  for (const k of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_PREFIX']) delete env[k];
+  try {
+    return execFileSync('git', ['-C', dir, '--literal-pathspecs', ...args], {
+      encoding: 'utf8', env, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'], ...(input === undefined ? {} : { input }),
+    });
+  } catch (e) {
+    return { _error: (e.stderr || e.message || '').toString().trim() };
+  }
+}
+
+const UNREADABLE = 'unreadable';
+
+function indexStateIn(dir, path) {
+  const out = gitIn(dir, ['ls-files', '--stage', '-z', '--', path]);
+  if (typeof out !== 'string') return UNREADABLE;
+  const entries = out.split('\0').filter(Boolean).map((e) => /^(\d{6}) ([0-9a-f]{40}) (\d)\t/.exec(e));
+  if (!entries.length) return null;
+  if (entries.length !== 1 || !entries[0] || entries[0][3] !== '0') return UNREADABLE;
+  return `${entries[0][1]}:${entries[0][2]}`;
+}
+
+function fileStateIn(dir, path) {
+  const file = join(dir, path);
+  let st;
+  try { st = lstatSync(file); } catch (e) { return e.code === 'ENOENT' ? null : UNREADABLE; }
+  let blob;
+  if (st.isSymbolicLink()) blob = gitIn(dir, ['hash-object', '--stdin'], readlinkSync(file));
+  else if (st.isFile()) blob = gitIn(dir, ['hash-object', '--', path]);
+  else return UNREADABLE;
+  if (typeof blob !== 'string' || !/^[0-9a-f]{40}$/.test(blob.trim())) return UNREADABLE;
+  const mode = st.isSymbolicLink() ? '120000' : (st.mode & 0o111 ? '100755' : '100644');
+  return `${mode}:${blob.trim()}`;
+}
+
+/**
+ * Step 8: every OTHER checkout that has `ref` checked out follows the land. Moving a ref from a
+ * sibling worktree leaves that checkout's index and files at the parent, where each landed path
+ * reads as staged in reverse and the next pathspec commit there reverts it. A landed path is
+ * written only while its index entry and its file each hold the parent's or the commit's content;
+ * anything else belongs to another writer and is named, never touched. The commit has landed
+ * whatever happens here, so nothing in this step changes the exit status.
+ */
+function followRef({ ref, parent, commit }) {
+  const top = git(['rev-parse', '--show-toplevel'], { allowFail: true });
+  const real = (p) => { try { return realpathSync(p); } catch { return p; } };
+  const here = typeof top === 'string' ? real(top) : null;
+  const listed = git(['worktree', 'list', '--porcelain'], { allowFail: true });
+  if (typeof listed !== 'string') {
+    console.error(`commit-phase: WARNING — worktrees could not be listed, so a checkout elsewhere with ${ref} checked out may now be behind it.\n  ${listed._error}`);
+    return;
+  }
+  const others = checkoutsOf(listed, ref).filter((p) => existsSync(p) && real(p) !== here);
+  if (!others.length) return;
+  const diff = git(['diff-tree', '-r', '-z', '--no-renames', '--no-commit-id', parent, commit], { allowFail: true, raw: true });
+  const changes = typeof diff === 'string' ? parseDiffTree(diff) : null;
+  for (const dir of others) {
+    if (!changes) {
+      console.error(`commit-phase: WARNING — ${dir} has ${ref} checked out and was NOT brought along: the landed paths could not be read. Check it with: git -C ${dir} status`);
+      continue;
+    }
+    followOne(dir, ref, commit, changes);
+  }
+}
+
+function followOne(dir, ref, commit, changes) {
+  const at = gitIn(dir, ['rev-parse', 'HEAD']);
+  if (typeof at !== 'string' || at.trim() !== commit) {
+    console.error(`commit-phase: WARNING — ${dir} has ${ref} checked out but its HEAD is ${typeof at === 'string' ? at.trim().slice(0, 7) : 'unreadable'}, not ${commit.slice(0, 7)}; it was not brought along.`);
+    return;
+  }
+  const decide = (c) => followAction({ index: indexStateIn(dir, c.path), worktree: fileStateIn(dir, c.path), before: c.before, after: c.after });
+  const left = [];
+  const ready = [];
+  for (const c of changes) {
+    const action = decide(c);
+    if (action === 'left') left.push(c.path);
+    else if (action === 'fast-forward') ready.push(c);
+  }
+  // Re-read at the last moment: a path another writer touched since the first read keeps their write.
+  const go = [];
+  for (const c of ready) {
+    if (decide(c) === 'left') left.push(c.path);
+    else go.push(c);
+  }
+  const write = go.filter((c) => c.after !== null).map((c) => c.path);
+  const remove = go.filter((c) => c.after === null).map((c) => c.path);
+  const failed = [];
+  if (write.length) {
+    const r = gitIn(dir, ['checkout', commit, '--pathspec-from-file=-', '--pathspec-file-nul'], write.join('\0'));
+    if (typeof r !== 'string') failed.push({ paths: write, why: r._error });
+  }
+  if (remove.length) {
+    const r = gitIn(dir, ['rm', '-q', '-f', '--cached', '--ignore-unmatch', '--pathspec-from-file=-', '--pathspec-file-nul'], remove.join('\0'));
+    if (typeof r !== 'string') failed.push({ paths: remove, why: r._error });
+    else for (const p of remove) { try { unlinkSync(join(dir, p)); } catch (e) { if (e.code !== 'ENOENT') failed.push({ paths: [p], why: e.code || e.message }); } }
+  }
+  const failedPaths = new Set(failed.flatMap((f) => f.paths));
+  const brought = go.length - failedPaths.size;
+  if (brought > 0) console.log(`commit-phase: ${dir} has ${ref} checked out — brought ${brought} landed path(s) along`);
+  for (const f of failed) {
+    console.error(`commit-phase: LANDED, but ${dir} (${ref} checked out) was NOT brought along on ${f.paths.length} path(s); they read as staged in reverse until repaired.\n  ${f.why}`);
+    console.error(`  Repair: git -C ${dir} checkout HEAD -- ${f.paths.join(' ')}`);
+  }
+  if (left.length) {
+    const shown = left.slice(0, 20);
+    console.error(`commit-phase: WARNING — ${dir} has ${ref} checked out and holds other content on ${left.length} landed path(s); left as they are. Each reads as a staged revert of this commit until merged:`);
+    for (const p of shown) console.error(`  ${p}`);
+    if (left.length > shown.length) console.error(`  … and ${left.length - shown.length} more`);
+    console.error(`  Inspect: git -C ${dir} diff HEAD -- <path>`);
   }
 }
 
@@ -1033,6 +1151,8 @@ function main() {
       taken: authorVf && !authorVf.absent ? authorVf.text : undefined,
     });
   }
+  // 8. Any other checkout of the ref that moved follows it, or names what it left.
+  followRef({ ref, parent: head0, commit });
   console.log('commit-phase: closure over the change set is a SEPARATE gate — bin/test/tracked-imports.test.mjs reads HEAD.');
   return 0;
 }

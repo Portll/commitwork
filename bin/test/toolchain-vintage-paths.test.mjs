@@ -16,24 +16,41 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { toolchainVintage, porcelainPaths } from '../commitwork.mjs';
 
-const g = (dir, args, input) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', input }).trim();
+// The fixture's own identity, on every call: commit-tree below refuses without one, and a fixture
+// that takes it from the operator's ~/.gitconfig builds here and refuses on any runner that has no
+// identity to lend — an identity-free CI container, or the release candidate's gates, which run
+// with GIT_CONFIG_NOSYSTEM and an empty HOME.
+const IDENTITY = ['-c', 'user.name=commitwork fixture', '-c', 'user.email=fixture@commitwork.invalid'];
+const g = (dir, args, input, env = process.env) => execFileSync('git', ['-C', dir, ...IDENTITY, ...args], { encoding: 'utf8', input, env }).trim();
 
 /** A repo with admin/a.md and bin/b.mjs committed, then both dirtied in the worktree only. */
-function fixture() {
+function fixture(env = process.env) {
   const dir = mkdtempSync(join(tmpdir(), 'cw-vintage-'));
   mkdirSync(join(dir, 'admin'), { recursive: true });
   mkdirSync(join(dir, 'bin'), { recursive: true });
   writeFileSync(join(dir, 'admin', 'a.md'), 'committed admin\n');
   writeFileSync(join(dir, 'bin', 'b.mjs'), 'export const b = 0;\n');
-  g(dir, ['init', '-q']);
-  g(dir, ['add', '-A']);
-  const c = g(dir, ['commit-tree', g(dir, ['write-tree'])], 'fixture\n');
-  g(dir, ['update-ref', 'refs/heads/main', c]);
-  g(dir, ['symbolic-ref', 'HEAD', 'refs/heads/main']);
+  g(dir, ['init', '-q'], undefined, env);
+  g(dir, ['add', '-A'], undefined, env);
+  const c = g(dir, ['commit-tree', g(dir, ['write-tree'], undefined, env)], 'fixture\n', env);
+  g(dir, ['update-ref', 'refs/heads/main', c], undefined, env);
+  g(dir, ['symbolic-ref', 'HEAD', 'refs/heads/main'], undefined, env);
   writeFileSync(join(dir, 'admin', 'a.md'), 'dirty ONE\n');
   writeFileSync(join(dir, 'bin', 'b.mjs'), 'export const b = 1;\n');
   return dir;
 }
+
+// The identity above is a marker; this is its effect, and it is the property that was silently
+// false. Every case below builds the fixture in the ambient environment, so on a machine with a
+// ~/.gitconfig they pass whether the helper carries an identity or not. This one hands the fixture
+// an environment with none, which is where the refusal actually lands.
+test('the fixture builds with no ambient git identity to borrow', () => {
+  const home = mkdtempSync(join(tmpdir(), 'cw-vintage-home-'));
+  const bare = { ...process.env, HOME: home, USERPROFILE: home, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: join(home, 'absent-gitconfig') };
+  for (const k of ['GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL', 'EMAIL']) delete bare[k];
+  const dir = fixture(bare);
+  assert.deepEqual(toolchainVintage(dir).sourceDirty, ['admin/a.md', 'bin/b.mjs']);
+});
 
 test('every path in the receipt is the real path, and exists on disk', () => {
   const dir = fixture();

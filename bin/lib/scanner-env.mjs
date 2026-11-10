@@ -1,3 +1,5 @@
+import { msysPathconvEnv } from '../../lib/posix-shell.mjs'; // the Git Bash facts live there, not here
+
 // guard: harness credentials never reach a scanner
 export const HARNESS_ENV = /^(CLAUDE_|ANTHROPIC_|VELD_|SUBSTRATE_|SPINE_|MCP_)/;
 export const GH_STORE = '~/.config/gh';
@@ -89,6 +91,37 @@ export function laneJavaEnv(check, env, resolveJavaHome) {
   if (!(check.requires?.tools || []).includes('java') || env.JAVA_HOME) return {};
   const home = resolveJavaHome();
   return home ? { JAVA_HOME: home } : {};
+}
+
+// Tools whose entry point is a CPython script, MEASURED by reading the installed shebang rather
+// than inferred from the installer (ruff and zizmor ship via pipx and are native binaries, so a
+// pipx entry proves nothing). A tool absent from this set carries no claim either way.
+const CPYTHON_TOOLS = new Set(['semgrep', 'bandit', 'flawfinder', 'prowler', 'schemathesis']);
+
+/**
+ * Env a lane needs on Windows and nowhere else. `platform` and `container` are parameters, not
+ * reads, so the win32 behaviour is decidable on a host that is not Windows.
+ *
+ * PYTHONUTF8: Python on Windows defaults its I/O encoding to the ANSI code page (cp1252), and a
+ * CPython scanner printing a non-ASCII path or a non-ASCII match dies on the encode. UTF-8 mode
+ * fixes it for the child only. An inherited value wins, as it does for JAVA_HOME above: the
+ * operator's choice outranks ours.
+ *
+ * MSYS_NO_PATHCONV / MSYS2_ARG_CONV_EXCL: on Windows the lane's shell is the bash.exe inside Git
+ * for Windows (lib/posix-shell.mjs), whose MSYS runtime rewrites any argument that looks like a
+ * POSIX path when it spawns a NATIVE program. `docker run -v C:/src:/src:ro` and
+ * `node bin/sandbox.mjs --mount-source "$PWD:/src:ro"` both carry a container-internal path in
+ * that position, and MSYS rewrites it to a host path under the Git install — the mount lands
+ * somewhere the container does not expect, and docker either refuses or mounts the wrong tree.
+ * Only a lane that hands a container a path needs this, so the switch is the container predicate
+ * the runner already computes (bin/commitwork.mjs isContainerLane) rather than a second one here.
+ */
+export function laneWindowsEnv(check, env, { platform = process.platform, container = false } = {}) {
+  if (platform !== 'win32') return {};
+  const out = {};
+  if ((check?.requires?.tools || []).some((t) => CPYTHON_TOOLS.has(t)) && !env.PYTHONUTF8) out.PYTHONUTF8 = '1';
+  if (container) Object.assign(out, msysPathconvEnv(platform));
+  return out;
 }
 
 // guard: a headless model keeps only its own key

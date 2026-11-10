@@ -143,12 +143,26 @@ export function buildCensus({ inventory, charter, now = censusNow() }) {
       declared.set(id, g);
     }
   }
+  // A PANEL VIEW NAMED BY `views` OUTRANKS ITS NAV SECTION. `keys` for a ui-view group are nav
+  // sections, so a view sitting in a core section is filed core by default — which made the census
+  // call `feed`, `inbox` and `journey` core while the panel was labelling them experimental and the
+  // route dispatcher was answering 404 for them. Two sources disagreeing about one feature's class
+  // is worse than either answer: the launchlist's feat.ring row is ticked off THIS census, so the
+  // disagreement read as "nothing to gate". `views` is a separate key space from nav sections, so a
+  // future view sharing a section's name cannot collide with one.
+  const declaredView = new Map();
+  for (const g of charter.groups) {
+    for (const v of g.views || []) {
+      if (declaredView.has(v)) throw new Error(`feature-census: charter claims view ${v} twice (${declaredView.get(v).id} and ${g.id}) — a feature cannot be in two classes`);
+      declaredView.set(v, g);
+    }
+  }
 
   const rows = [];
   for (const f of inventory.features) {
     if (!population.has(f.surface)) continue;
     const key = groupKey(f);
-    const g = declared.get(`${f.surface}\u0000${key}`) || null;
+    const g = (f.surface === 'ui-view' ? declaredView.get(f.name) : null) || declared.get(`${f.surface}\u0000${key}`) || null;
     const orphan = orphanReason(f);
     const fragment = orphan ? null : fragmentReason(f);
     const doc = documented(f);

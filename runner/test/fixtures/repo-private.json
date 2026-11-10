@@ -1,0 +1,14 @@
+{
+  "id": 700000002,
+  "node_id": "R_kgDOExample2",
+  "name": "example-private",
+  "full_name": "example-owner/example-private",
+  "private": true,
+  "visibility": "private",
+  "owner": { "login": "example-owner", "id": 9000001, "type": "User" },
+  "html_url": "https://github.com/example-owner/example-private",
+  "fork": false,
+  "archived": false,
+  "disabled": false,
+  "default_branch": "main"
+}

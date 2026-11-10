@@ -10,10 +10,14 @@
  *
  *   node bin/guard-jackson-caseinsensitive.mjs [rootDir]   (default: the current directory)
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
+import { join, relative, dirname, basename } from 'node:path';
+import { classifyWorktreePath } from '../monitor/worktree-paths.mjs';
+import { linkPolicy, LINK_DANGLING } from './lib/walk-links.mjs';
 
 const ROOT = process.argv[2] || process.cwd();
+// A nested checkout is this repository again (monitor/worktree-paths.mjs): its config is a copy.
+const isNestedCheckout = (p) => { const rel = relative(ROOT, p); return rel.split(/[\\/]/).length >= 2 && classifyWorktreePath(`${rel}/x/y`).worktree; };
 
 // Enablement patterns (case-insensitive-properties turned ON). Disabling / mere mention is fine.
 const JAVA_ON = [
@@ -31,15 +35,28 @@ let scanned = 0;
 // fix: every read failure was a silent skip, so a 000 config that enabled the feature reported OK.
 // Only ENOENT (gone between readdir and stat) is legitimately absent.
 const unread = (p, e) => { if (e?.code !== 'ENOENT') unreadable.push(`${p}: ${e?.code || e?.message || e}`); };
+const SKIP_NAMES = new Set(['node_modules', 'build', '.git', 'out']);
+const links = linkPolicy(ROOT);
+const linksNotFollowed = [];
 function walk(dir) {
+  if (!links.first(dir)) return;
   let entries;
   try { entries = readdirSync(dir); } catch (e) { unread(dir, e); return; }
+  walkEntries(dir, entries, lstatSync);
+}
+function walkEntries(dir, entries, statOf) {
   for (const name of entries) {
-    if (name === 'node_modules' || name === 'build' || name === '.git' || name === 'out') continue;
+    if (SKIP_NAMES.has(name)) continue;
     const p = join(dir, name);
-    let st; try { st = statSync(p); } catch (e) { unread(p, e); continue; }
-    if (st.isDirectory()) { walk(p); continue; }
+    let st; try { st = statOf(p); } catch (e) { unread(p, e); continue; }
+    if (st.isSymbolicLink()) {
+      const reason = links.link(p);
+      if (reason) linksNotFollowed.push(`${p}: ${reason === LINK_DANGLING ? 'link to nothing' : 'link out of the scanned tree'}`);
+      continue;
+    }
+    if (st.isDirectory()) { if (!isNestedCheckout(p)) walk(p); continue; }
     if (!/\.(java|ya?ml|properties)$/.test(name)) continue;
+    if (!links.first(p)) continue;
     let txt; try { txt = readFileSync(p, 'utf8'); } catch (e) { unread(p, e); continue; }
     scanned++;
     const pats = name.endsWith('.java') ? JAVA_ON : CONFIG_ON;
@@ -54,6 +71,14 @@ try { statSync(ROOT); } catch (e) {
   process.exit(2);
 }
 walk(ROOT);
+for (const { path: p, target } of links.drain()) {
+  if (target.split('/').some((seg) => SKIP_NAMES.has(seg))) continue;
+  walkEntries(dirname(p), [basename(p)], statSync);
+}
+if (linksNotFollowed.length) {
+  console.error(`guard-jackson-caseinsensitive: warning: ${linksNotFollowed.length} link(s) not followed; whatever they point at was not checked:`);
+  linksNotFollowed.forEach(l => console.error('  ' + l));
+}
 
 if (violations.length) {
   console.error('GUARD FAILED — ACCEPT_CASE_INSENSITIVE_PROPERTIES enabled (opens jackson CVE-2026-54515):');

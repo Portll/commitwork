@@ -8,6 +8,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { partialAnalysis, ruleFailures, ruleTitle } from '../sarif-read.mjs';
 import { _sarifCounts, _sarifDetail } from '../extractors/sarif.mjs';
+import { ingestSarif } from '../sarif-ingest.mjs';
+import { laneCoverage } from '../../bin/commitwork.mjs';
+import { parseSarif } from '../../bin/lib/report-parsers/sarif.mjs';
 
 const note = (id, text) => ({ descriptor: { id }, level: 'warning', message: { text } });
 const NOTES = [
@@ -109,4 +112,48 @@ test('a clean run carries none of the three fields', () => {
   assert.equal(c.partialAnalysis, undefined);
   assert.equal(c.rulesNotEvaluated, undefined);
   assert.equal(c.worktrees, undefined);
+});
+
+test('Semgrep giving up on a whole file names the file and no rule; a located notice takes its location', () => {
+  const whole = note('Timeout', 'Timeout at line diffusion/ops/fused.py:1:\n Match_rules.timeout_function:5');
+  assert.deepEqual(partialAnalysis([{ toolExecutionNotifications: [whole] }]), [{ uri: 'diffusion/ops/fused.py', reasons: ['timeout'], notices: 1 }]);
+  const located = { ...NOTES[0], locations: [{ physicalLocation: { artifactLocation: { uri: 'from-location.rs' } } }] };
+  assert.deepEqual(partialAnalysis([{ toolExecutionNotifications: [located] }]).map((r) => r.uri), ['from-location.rs']);
+});
+
+// The runner row, the CLI summary and the ingest record read the same rows the extractor does.
+// Each case is a twin differing in the notices alone.
+function semgrepDir(notifications) {
+  const dir = mkdtempSync(join(tmpdir(), 'cw-sarif-sg-'));
+  writeFileSync(join(dir, 'semgrep.sarif'), JSON.stringify({ version: '2.1.0', runs: [{
+    tool: { driver: { name: 'Semgrep OSS', rules: [{ id: 'r' }] } },
+    invocations: [{ executionSuccessful: true, toolExecutionNotifications: notifications }],
+    results: [],
+  }] }));
+  writeFileSync(join(dir, 'semgrep.sarif.exit'), '0\n');
+  return dir;
+}
+const SAST = { id: 'sast', report: { file: 'semgrep.sarif', format: 'sarif' } };
+const timedOut = (file) => note('Timeout', `Timeout when running r on ${file}:\n `);
+
+test('laneCoverage moves a full row to reduced on a per-file basis and names the files; the twin stays full', () => {
+  const v = laneCoverage(SAST, semgrepDir(NOTES));
+  assert.equal(v.coverage, 'reduced');
+  assert.equal(v.coverageBasis, 'per-file');
+  assert.match(v.coverageReason, /^2 file\(s\) were read only in part \(1 timeout, 1 syntax-error\)/);
+  assert.match(v.coverageReason, /crates\/rt\/src\/sql\/run\.rs, tools\/bench\.sh$/, 'the worktree copy is left out, as the extractor leaves it out');
+  assert.equal(laneCoverage(SAST, semgrepDir([])).coverage, 'full');
+  const many = laneCoverage(SAST, semgrepDir(Array.from({ length: 8 }, (_, i) => timedOut(`src/f${i}.js`))));
+  assert.match(many.coverageReason, /^8 file\(s\)/);
+  assert.match(many.coverageReason, /src\/f4\.js, \+3 more$/);
+});
+
+test('parseSarif names the partly read files beside an unchanged grade; ingestSarif carries the rows', () => {
+  const p = parseSarif(join(semgrepDir(NOTES), 'semgrep.sarif'));
+  assert.equal(p.sev, 'ok', 'the grade is what was measured; coverage is the carrier');
+  assert.match(p.summary, / — 2 file\(s\) read only in part$/);
+  assert.doesNotMatch(parseSarif(join(semgrepDir([]), 'semgrep.sarif')).summary, /in part/);
+  const rec = ingestSarif(join(semgrepDir(NOTES), 'semgrep.sarif'), { repo: 'r' });
+  assert.deepEqual(rec.partialAnalysis.map((r) => r.uri), ['.claude/worktrees/agent-x/src/big.rs', 'crates/rt/src/sql/run.rs', 'tools/bench.sh']);
+  assert.deepEqual(ingestSarif(join(semgrepDir([]), 'semgrep.sarif'), { repo: 'r' }).partialAnalysis, []);
 });

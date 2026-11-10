@@ -217,3 +217,33 @@ test('an unknown single-segment path is a 404, not a soft catch-all', async () =
   const r = await hit('/definitely-not-a-view/');
   assert.equal(r.status, 404, 'a typo that serves the panel reads as a page that exists');
 });
+
+// ── a RENAMED view id, asserted as an effect on the route ──────────────────────────────────────
+// The comment-quality view was renamed off a private tool's name, with NO alias for the old id by
+// decision. Membership in PANEL_VIEWS proves nothing about the route: the server and the client
+// hold the view set separately, so the half-renamed state that actually ships is a 200 from the
+// server for a name the client's VALID_VIEWS no longer knows — the panel then paints Overview or
+// nothing, which reads to an operator as a page that exists and is empty. These three assertions
+// are the two halves plus the absence: the new path serves a document that carries the tab, the
+// old path fails loudly, and the retired spelling survives nowhere in what is served.
+test('the renamed comment-quality view resolves, and the retired id fails loudly', async () => {
+  for (const p of ['/commentquality', '/commentquality/']) {
+    const r = await hit(p);
+    assert.equal(r.status, 200, p);
+    assert.match(r.type, /text\/html/, p);
+    assert.match(r.body, /data-v="commentquality"/, `${p} served no document carrying the tab the client must paint`);
+  }
+  const old = await hit('/spinecomments/');
+  assert.equal(old.status, 404,
+    'the retired id still serves the panel; with no VIEW_ALIAS for it the client renders nothing, '
+    + 'so the operator sees an empty page instead of a dead link');
+});
+
+test('no wiring still spells the comment-quality view the old way', () => {
+  const src = panelSource('index.html');
+  assert.doesNotMatch(src, /spinecomments/, 'the panel document or a client script still carries the retired id');
+  assert.doesNotMatch(serverSource(), /spinecomments/, 'serve.mjs still carries the retired id');
+  assert.ok(clientViews().has('commentquality'), 'the client view set lost the view in the rename');
+  assert.ok(serverViews().has('commentquality'), 'PANEL_VIEWS lost the view in the rename');
+  assert.ok(!clientAliases().has('spinecomments'), 'an alias was added for the retired id; the decision was no redirect');
+});

@@ -6,10 +6,10 @@
 # `reports`, `map/data`, `sitemap/vendor` and `evaluations` are this repository's own generated and
 # evidence trees. They are applied to every scanned repo in the fleet regardless of language, which
 # is the over-exclusion risk already stated below, now multiplied by seven. What is NOT here is any
-# per-language build output: a python lane indexes `target/debug/build/**` and `.claude/worktrees/**`
-# when a repository has them, because nothing in this file names them. Adding them is a real
-# improvement and a real risk in the same edit, so it needs its own measurement rather than a guess:
-# an exclude that removes a genuine source directory is a false clean.
+# per-language build output: a python lane indexes `target/debug/build/**` when a repository has it,
+# because nothing in this file names it. Adding it is a real improvement and a real risk in the same
+# edit, so it needs its own measurement rather than a guess: an exclude that removes a genuine source
+# directory is a false clean. Nested checkouts are at the end of this file, measured.
 #
 # WHY THIS EXISTS. When CodeQL scans commitwork itself it indexes commitwork's own generated output:
 # every generated dashboard.html / runtime.html / timeline*.html under reports/ and map/data/ carries
@@ -87,3 +87,10 @@ exclude:sitemap/vendor
 
 # Evaluation corpora and cycle artifacts: JSON/markdown evidence, never executed.
 exclude:evaluations
+
+# Nested checkouts: this repository again (monitor/worktree-paths.mjs SCAN_EXCLUDE_ROOTS). Measured on
+# a synthetic repo holding a copy under each, CodeQL 2.27.2: the python extractor indexed all three
+# copies and the rust extractor two; with these lines each indexed only the canonical file. The
+# javascript extractor already skipped both.
+exclude:.claude/worktrees
+exclude:.git

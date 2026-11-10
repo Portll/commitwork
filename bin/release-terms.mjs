@@ -10,15 +10,15 @@
 //
 // env: CW_RELEASE_TERMS · CW_SIDECAR · CW_RELEASE_NAMES_SIDECAR_REF
 //
-// exit: 0 no denied term · 20 denied terms found · 21 cannot check (no list, an unreadable list, or no
-//   text file examined) · 22 usage
+// exit: 0 no denied term · 20 denied terms found · 21 cannot check (no list, an unreadable list, no
+//   text file examined, or a clean count that an exception produced) · 22 usage
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';
-import { loadTerms, scanTree, summarise } from './lib/release-terms.mjs';
+import { loadTerms, scanTree, summarise, termsVerdict } from './lib/release-terms.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const EXIT = Object.freeze({ CLEAN: 0, FOUND: 20, CANNOT_CHECK: 21, USAGE: 22 });
@@ -56,16 +56,19 @@ export function main(argv = process.argv.slice(2), { load = loadTerms, out = con
   if (!list) { err('release-terms: no denied-term list; set CW_RELEASE_TERMS or commit monitor/release-terms.json to the sidecar'); return EXIT.CANNOT_CHECK; }
   const root = o.root ? resolve(o.root) : exportRef(o.ref || 'HEAD');
   let s;
-  try { s = summarise(scanTree(root, list), o.showPaths ? { rules: [] } : list); }
+  try { s = summarise(scanTree(root, list), list, { mask: !o.showPaths }); }
   finally { if (!o.root) rmSync(root, { recursive: true, force: true }); }
   if (o.json) out(JSON.stringify({ list: list.fingerprint, target: o.root ? root : `ref:${o.ref || 'HEAD'}`, ...s }, null, 2));
   else {
     out(`release-terms: ${s.hitCount} denied term(s) in ${s.offendingFiles} file(s); ${s.examined} text file(s) examined, ${s.skipped.binary} binary, ${s.skipped.link} link(s) read by path only`);
+    out(`  withheld by exception: ${s.withheldCount} of ${s.grossHitCount} (${s.exceptions.length} declared, ${s.exceptions.filter((e) => e.stale).length} withholding less than measured)`);
     for (const [id, r] of Object.entries(s.byRule)) out(`  rule ${id}: ${r.hits} in ${r.files} file(s)`);
     for (const [dir, r] of Object.entries(s.byDir)) out(`  dir  ${dir}: ${r.hits} in ${r.files} file(s)`);
+    for (const e of s.exceptions) out(`  except ${e.term || e.rule} ${e.path}: withheld ${e.withheld} of ${e.allowed === null ? 'the whole file (no measured count)' : e.allowed}${e.stale ? ' — STALE' : ''}`);
   }
-  if (!s.examined) { err('release-terms: no text file was examined; an empty tree is not a clean one'); return EXIT.CANNOT_CHECK; }
-  return s.hitCount ? EXIT.FOUND : EXIT.CLEAN;
+  const v = termsVerdict(s);
+  if (v.status === 'cannot-check') { err(`release-terms: ${v.error}`); return EXIT.CANNOT_CHECK; }
+  return v.status === 'fail' ? EXIT.FOUND : EXIT.CLEAN;
 }
 
 if (isMainModule(import.meta.url)) process.exitCode = main();

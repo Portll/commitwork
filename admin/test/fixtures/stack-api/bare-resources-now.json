@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "route": "/v1/resources/now",
+  "schemaVersion": 1,
+  "stamp": {
+    "verifiedAt": "2026-10-22T11:06:12.000Z",
+    "verifiedAtUnix": 1792667172,
+    "generator": "commitwork-runner · runner/api-routes.mjs",
+    "durationMs": 1
+  },
+  "sources": [
+    {
+      "id": "meter",
+      "status": "unavailable",
+      "reason": "no meter configured"
+    },
+    {
+      "id": "stack-ids",
+      "status": "unavailable",
+      "reason": "no sample"
+    }
+  ],
+  "coverage": {
+    "requested": 0,
+    "measured": 0,
+    "unknownFields": 0
+  },
+  "data": {
+    "sample": null
+  }
+}

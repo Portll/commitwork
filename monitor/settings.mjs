@@ -201,6 +201,16 @@ const pathListFromEnv = (name) => (s) => {
   return err ? { ok: false, error: `${name}=${JSON.stringify(s)} is invalid: ${err}` } : { ok: true, value: v };
 };
 const rootsFromEnv = pathListFromEnv('CW_MCP_REPO_ROOTS');
+const VERDICT_SEVERITIES = ['critical', 'high', 'moderate', 'low', 'unknown'];
+function validSeverities(v) {
+  if (!Array.isArray(v) || !v.every((s) => VERDICT_SEVERITIES.includes(s))) return `must be a list drawn from ${VERDICT_SEVERITIES.join(', ')} (got ${show(v)})`;
+  return new Set(v).size === v.length ? null : 'a severity is listed more than once';
+}
+function severitiesFromEnv(s) {
+  const v = s.split(',').map((x) => x.trim()).filter(Boolean);
+  const err = validSeverities(v);
+  return err ? { ok: false, error: `CW_DEPS_INTRODUCED_SEVERITIES=${JSON.stringify(s)} is invalid: ${err}` } : { ok: true, value: v };
+}
 const MAX_REVIEW_DAYS = 3650;
 const validReviewDays = (v) => (Number.isInteger(v) && v >= 0 && v <= MAX_REVIEW_DAYS ? null : `must be a whole number of days from 0 to ${MAX_REVIEW_DAYS} (got ${show(v)})`);
 function reviewDaysFromEnv(s) {
@@ -487,11 +497,11 @@ export const SETTING_KEYS = {
   bypassCountsAsUnattended: {
     key: 'bypassCountsAsUnattended',
     label: 'Bypass and dontAsk count as unattended',
-    description: 'When on, a session in bypassPermissions or dontAsk mode is treated as unattended even with a person at the keyboard, because in those modes nobody is asked. Off by default.',
+    description: 'When on, the default, a session in bypassPermissions or dontAsk mode is treated as unattended even with a person at the keyboard, because in those modes nobody is asked. It is the second half of posture A\'s detection: a substrate-runner dispatch into this tree runs --dangerously-skip-permissions without CW_GUARD_UNATTENDED, so with this off the posture reads it as attended and its asks run unasked. Measured on the installed Claude Code 2.1.289 (2026-10-24): a dontAsk session sends permission_mode: dontAsk in the PreToolUse payload. bypassPermissions was NOT measured — the probe spawn was refused by this host\'s auto-mode classifier — and is read from the documented enum. Turn it off to let such a session answer its own asks.',
     unit: 'on|off',
     envVar: 'CW_BYPASS_IS_UNATTENDED',
     parseEnv: boolFromEnv('CW_BYPASS_IS_UNATTENDED'),
-    default: false,
+    default: true,
     nullable: false,
     consumers: ['lib/security-posture.mjs', 'admin/routes/security-posture.mjs'],
     validate: isBool,
@@ -499,7 +509,7 @@ export const SETTING_KEYS = {
   missingModeIsUnattended: {
     key: 'missingModeIsUnattended',
     label: 'A missing permission mode counts as unattended',
-    description: 'When on, the default, a hook payload without permission_mode is treated as unattended. Claude Code 2.1.296 was measured sending the field in default and dontAsk sessions (2026-10-19), so a payload without it comes from an older version or another harness, which the posture cannot read. Turn it off only to run such a harness attended: under it, every ask is refused.',
+    description: 'When on, the default, a hook payload without permission_mode is treated as unattended. Claude Code 2.1.296 was measured sending the field in default and dontAsk sessions (2026-10-19), and the installed 2.1.289 was re-measured sending it under default, under dontAsk and under --permission-prompts none (2026-10-24), so a payload without it comes from an older version or another harness, which the posture cannot read. Turn it off only to run such a harness attended: under it, every ask is refused.',
     unit: 'on|off',
     envVar: 'CW_MISSING_MODE_IS_UNATTENDED',
     parseEnv: boolFromEnv('CW_MISSING_MODE_IS_UNATTENDED'),
@@ -630,6 +640,49 @@ export const SETTING_KEYS = {
     nullable: false,
     consumers: ['bin/deps.mjs'],
     validate: (v) => validateCooldown(v, 'depsCooldownDays'),
+  },
+  depsAlertFixBypassesCooldown: {
+    key: 'depsAlertFixBypassesCooldown',
+    label: 'Dependency updates: advisory fixes skip the cooldown',
+    description: 'When on, the advisories step of `commitwork deps --update` (npm audit fix) may take a release younger than the cooldown. Off, the default, holds an advisory fix to the same cooldown as every other update. An open operator decision (2026-10-29): a known vulnerability against the window in which a compromised release is still live.',
+    unit: 'on|off',
+    envVar: 'CW_DEPS_ALERT_FIX_BYPASSES_COOLDOWN',
+    parseEnv: boolFromEnv('CW_DEPS_ALERT_FIX_BYPASSES_COOLDOWN'),
+    default: false,
+    nullable: false,
+    consumers: ['bin/deps.mjs'],
+    validate: isBool,
+  },
+  depsIntroducedIncludeDev: {
+    key: 'depsIntroducedIncludeDev',
+    label: 'Introduced advisories: count devDependencies',
+    description: 'When on, the default, the introduced-advisories verdict (`commitwork deps --introduced`, and the merge rule of `commitwork deps --update --merge`) counts packages reachable only through devDependencies. Operator ruling 2026-10-21 has no dev-dependency carve-out. Off, it judges only what a production install ships.',
+    unit: 'on|off',
+    envVar: 'CW_DEPS_INTRODUCED_INCLUDE_DEV',
+    parseEnv: boolFromEnv('CW_DEPS_INTRODUCED_INCLUDE_DEV'),
+    default: true,
+    nullable: false,
+    consumers: ['bin/deps.mjs'],
+    validate: isBool,
+  },
+  depsIntroducedSeverities: {
+    key: 'depsIntroducedSeverities',
+    label: 'Introduced advisories: blocking severities',
+    description: 'An introduced advisory at one of these severities makes the verdict `introduces`, which holds a merge. unknown is an advisory with no rating, or one whose record could not be read. Operator ruling 2026-10-21: never auto-merge an update that introduces a high or critical.',
+    unit: 'severities',
+    options: [
+      { id: 'critical', label: 'critical' },
+      { id: 'high', label: 'high' },
+      { id: 'moderate', label: 'moderate' },
+      { id: 'low', label: 'low' },
+      { id: 'unknown', label: 'unknown', note: 'no rating, or the record could not be read' },
+    ],
+    envVar: 'CW_DEPS_INTRODUCED_SEVERITIES',
+    parseEnv: severitiesFromEnv,
+    default: ['critical', 'high', 'unknown'],
+    nullable: false,
+    consumers: ['bin/deps.mjs'],
+    validate: validSeverities,
   },
 };
 

@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 // Operator CLI for a dedicated Spine queue. Credentials and run artefacts stay outside the tree.
+//
+// env: CW_BETTERLEAKS_ASSESSMENT — the Betterleaks assessment `bank` gives betterleaks-* jobs as
+//      context, default monitor/private/betterleaks-assessment.md; absent, they bank without it
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir, tmpdir } from 'node:os';
@@ -9,6 +12,7 @@ import { PLAN_ID, ROUTE, QUEUE, CORE_PHASES, readyJob, completionText } from './
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { scannedGitOut } from './lib/git-env.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
+import { betterleaksAssessmentPathFor } from '../monitor/store-paths.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
@@ -23,6 +27,22 @@ const betterleaksProducerContext = {
   'betterleaks-scoped-sources': ['lib/secrets.mjs', 'bin/lib/sandbox.mjs', 'monitor/secret-verify.mjs', 'monitor/extractors/secrets.mjs'],
 };
 const producerContextForBetterleaks = key => betterleaksProducerContext[key] || [];
+
+export const BETTERLEAKS_CONTEXT_TITLE = 'Betterleaks integration assessment';
+
+/**
+ * The assessment as a task-context entry, read at call time from its private-store path.
+ * `context` is null only on ENOENT; any other read failure throws.
+ */
+export function loadBetterleaksContext(repoRoot = root) {
+  const path = betterleaksAssessmentPathFor(repoRoot);
+  try {
+    return { path, context: { title: BETTERLEAKS_CONTEXT_TITLE, text: readFileSync(path, 'utf8') } };
+  } catch (e) {
+    if (e.code === 'ENOENT') return { path, context: null };
+    throw new Error(`cannot read the Betterleaks assessment at ${path}: ${e.code || e.message}`, { cause: e });
+  }
+}
 const integration = {
   'betterleaks-wire': ['bin/betterleaks-run.mjs', 'bin/commitwork.mjs', 'bin/lib/report-parsers/secrets.mjs', 'manifests/betterleaks.toml', 'manifests/install-catalog.json', 'manifests/tool-pins.json', 'bin/scanner-preflight.mjs', 'manifests/security-baseline.json', 'monitor/extractors.mjs', 'monitor/extractors/secrets.mjs', 'monitor/scanner-checks.mjs', 'monitor/rollup.mjs', 'bin/test/security-betterleaks-wire.test.mjs'],
   'betterleaks-scoped-sources': ['bin/betterleaks-sources.mjs', 'bin/betterleaks-run.mjs', 'bin/test/security-betterleaks-scoped-sources.test.mjs'],
@@ -209,10 +229,11 @@ async function main() {
   }
   const ctx = await runtime();
   if (cmd === 'bank') {
+    const { path: assessmentPath, context: betterleaksContext } = loadBetterleaksContext();
+    if (!betterleaksContext) console.warn(`Betterleaks assessment not found at ${assessmentPath}; banking betterleaks-* jobs without it (place it there or set CW_BETTERLEAKS_ASSESSMENT)`);
     const { ensurePlan, bankJob } = await load('lane/bank.mjs');
     ensurePlan(ctx.db, PLAN_ID, 'CommitWork: measured defensive security', { project: 'commitwork', cwd: ctx.repo.path });
     const base = git(ctx.repo.path, 'rev-parse', 'HEAD');
-    const betterleaksContext = { title: 'Betterleaks integration assessment', text: readFileSync(join(root, 'docs/BETTERLEAKS-SUPPORT.md'), 'utf8') };
     let made = 0;
     for (const q of QUEUE) {
       const targets = q.module ? [q.module, q.test] : integration[q.key];
@@ -220,7 +241,7 @@ async function main() {
         try { git(ctx.repo.path, 'cat-file', '-e', `${base}:${file}`); return true; }
         catch { return false; }
       }).map(file => ({ file }));
-      if (q.key.startsWith('betterleaks-')) context.push(betterleaksContext);
+      if (q.key.startsWith('betterleaks-') && betterleaksContext) context.push(betterleaksContext);
       if (q.key === 'machine-history-feed') {
         for (const file of ['monitor/timeline2.mjs','monitor/runtime-report.mjs','monitor/scanner-delta.mjs']) context.push({ file, max: 18000 });
       }
@@ -262,11 +283,12 @@ async function main() {
         job.spec = q.spec;
         job.acceptance = q.spec;
         if (integration[q.key]) job.targets = integration[q.key];
-        job.context = (job.context || []).filter(c => c.file !== 'docs/BETTERLEAKS-SUPPORT.md' && c.title !== betterleaksContext.title);
+        // Betterleaks jobs take no docs/ file as context; the assessment arrives by title.
+        job.context = (job.context || []).filter(c => c.title !== BETTERLEAKS_CONTEXT_TITLE && !String(c.file || '').startsWith('docs/'));
         for (const file of producerContextForBetterleaks(q.key)) {
           if (!job.context.some(c => c.file === file)) job.context.push({ file, max: 22000 });
         }
-        job.context.push(betterleaksContext);
+        if (betterleaksContext) job.context.push(betterleaksContext);
       }
       ctx.dbApi.updateTask(ctx.db, PLAN_ID, t.id, { statePatch: { job, buildOrderRevision: '2026-10-05-core-order-v1' } });
     }

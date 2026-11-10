@@ -63,8 +63,9 @@ function main(argv) {
   };
 
   const out = planFromSlice(slice, seams);
+  // advisories + headStates make the artifact bin/remediation-draft-pr.mjs's input as it stands
   const doc = JSON.stringify({
-    plan: out.plan, coverage: out.coverage,
+    plan: out.plan, coverage: out.coverage, advisories: out.advisories, headStates: out.headStates,
     note: 'PREPARED, NOT APPLIED. commitwork declares; a human submits.',
   }, null, 2);
 

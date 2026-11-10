@@ -62,7 +62,10 @@ test('every required tool is listed from PATH; the missing one says so and point
   ], 'tools sorted, each once, then the services');
   assert.match(r.out, / {2}✗ cwfx-absent-tool {2}\(not on PATH\)\n/);
   assert.match(r.out, /→ `commitwork setup` installs the missing scanners/);
-  assert.match(r.out, /services:\n {2}✓ Node\.js \S+ {2}\(package\.json requires >=\S+\)\n {2}✓ docker daemon\n {2}[✓✗] host sandbox {2}\(.+\)\n {2}✓ POSIX shell {2}\(\S*sh\)\n/);
+  // The optional indented lines after the host-sandbox mark are cmdDoctor's own: an unavailable
+  // sandbox names which lanes that costs, and pinning the POSIX shell line as the next one made
+  // this case fail on the mark it deliberately accepts either way one line above.
+  assert.match(r.out, /services:\n {2}✓ Node\.js \S+ {2}\(package\.json requires >=\S+\)\n {2}✓ docker daemon\n {2}[✓✗] host sandbox {2}\(.+\)\n(?: {6}\S.*\n)* {2}✓ POSIX shell {2}\(\S*sh\)\n/);
   assert.ok(r.out.includes(`target repo: ${s.repo} (exists)`), r.out);
   assert.equal(existsSync(join(s.dir, 'docker-config')), false, 'an inherited DOCKER_CONFIG wins; nothing is created');
 });
@@ -80,7 +83,13 @@ test('with every required tool present there is no setup pointer', { skip: !POSI
   writeFileSync(join(s.bin, 'cwfx-absent-tool'), '#!/bin/sh\nexit 0\n'); chmodSync(join(s.bin, 'cwfx-absent-tool'), 0o755);
   const r = doctor(s, ['--manifest', s.manifest, '--repo', s.repo]);
   assert.equal(r.code, 0, r.err);
-  assert.doesNotMatch(r.out, /✗/);
+  // The host-sandbox mark is this machine's, not the fixture's: probeHostSandbox runs a real
+  // sandbox-exec, and a probe that is refused or runs out of time crosses the line for a reason
+  // this fixture does not control. Asserted either way, as the first case in this file does, and
+  // held out of the blanket check below — which is a claim about the fixture's own tools.
+  assert.match(r.out, / {2}[✓✗] host sandbox {2}\(.+\)\n/);
+  const fixtureLines = r.out.split('\n').filter((l) => !/host sandbox|noscan|isolation: none|CW_SANDBOX/.test(l));
+  assert.doesNotMatch(fixtureLines.join('\n'), /✗/);
   assert.doesNotMatch(r.out, /commitwork setup/);
 });
 

@@ -326,6 +326,7 @@ var CW_THEME_MEDIA={auto:'(prefers-color-scheme: light)',light:'all',dark:'not a
 <button type="button" class="rail-link" data-route="journey" id="rail-journey" title="The guided setup: nine steps, each read from its own record; hidden once complete or dismissed.">Get set up</button>
 <a class="rail-link" href="/config">Configuration</a>
 <a class="rail-link" href="/api/memory-view.html" title="How a memory record was actually stored: byte counts, hashes, tags, field names and the gate reason for anything refused. Never the stored text.">Memory records</a>
+<a class="rail-link" href="/api/runner.html" title="The self-hosted Actions runner stack: slots, admission decisions, jobs and resource use, read from its stack API.">Actions runner</a>
 <details class="rail-operations"><summary>Service operations</summary>
 <div class="pop-h" role="presentation">Panel</div>
       <div id="panel-health" class="sect">
@@ -360,7 +361,7 @@ var CW_THEME_MEDIA={auto:'(prefers-color-scheme: light)',light:'all',dark:'not a
     <button type="button" data-v="socket" class="vtab" title="Supply-chain alerts for package behaviour, such as install scripts and network access, distinct from malicious verdicts. Uses Socket.">Package behaviour<span class="vn" id="vn-socket"></span></button>
     <button type="button" data-v="stubs" class="vtab" title="TODO and FIXME markers, which are hygiene issues excluded from headline vulnerability totals.">Unfinished code<span class="vn" id="vn-stubs"></span></button>
     <button type="button" data-v="comments" class="vtab" title="Shows long comment blocks and suggests shorter replacements for you to review and edit.">Comment quality<span class="vn" id="vn-comments"></span></button>
-    <button type="button" data-v="spinecomments" class="vtab" title="Shows long or grammatically incorrect comments in the main repository for review.">Internal comment quality<span class="vn" id="vn-spinecomments"></span></button>
+    <button type="button" data-v="commentquality" class="vtab" title="Shows long or grammatically incorrect comments in the main repository for review.">Internal comment quality<span class="vn" id="vn-commentquality"></span></button>
     <button type="button" data-v="denolint" class="vtab" title="Shows code style issues found by the Deno linter, kept separate from security scans. Uses Deno.">Code style<span class="vn" id="vn-denolint"></span></button>
     <button type="button" data-v="denotypes" class="vtab" title="Shows type checking failures in Deno code, measuring the code itself rather than its imports. Uses Deno.">Type errors<span class="vn" id="vn-denotypes"></span></button>
     <button type="button" data-v="secretshistory" class="vtab" title="Finds credentials that were committed in the past, even if deleted from current files. Uses TruffleHog.">Credentials in history<span class="vn" id="vn-secretshistory"></span></button>
@@ -675,8 +676,8 @@ var CW_THEME_MEDIA={auto:'(prefers-color-scheme: light)',light:'all',dark:'not a
     <!-- SOURCE STATES FIRST, and they are never folded into the tables below. Three independent
          sources answer this tab; one being unreachable must not blank the others, and must never
          render as that source having nothing to say. -->
-    <div class="hd"><h2>Overwatch</h2><span class="n" id="sb-n">—</span>
-      <span class="mut hd-note">the overwatch layer's plans and tasks, who is holding them, and starting one</span></div>
+    <div class="hd"><h2>Agent follow-ups</h2><span class="n" id="sb-n">—</span>
+      <span class="mut hd-note">the agent-task ledger's plans and tasks, who is holding them, and starting one</span></div>
     <div id="sb-sources" class="chiprow" aria-live="polite"></div>
     <!-- The dispatch gate states itself BEFORE any control is drawn. A disabled button with no
          reason is its own defect; on a published hostname this says which port to use and why. -->
@@ -948,7 +949,7 @@ var CW_THEME_MEDIA={auto:'(prefers-color-scheme: light)',light:'all',dark:'not a
   <section data-pc-overview>
     <div class="hd"><h2>Scanner performance</h2><span class="n" id="perf-n">—</span>
       <span class="mut hd-note">resolved live · nothing on this page is in force until Apply</span></div>
-    <div id="perf-warn" class="pk-err" style="display:none"></div>
+    <div id="perf-warn" class="pk-err jshide"></div>
     <div class="kvs" id="perf-knobs">
       <div class="set-row">
         <div class="set-lbl"><b>Hardware profile</b>
@@ -1036,7 +1037,7 @@ var CW_THEME_MEDIA={auto:'(prefers-color-scheme: light)',light:'all',dark:'not a
   <section data-pc-overview>
     <div class="hd"><h3>What each check has actually cost</h3><span class="n" id="lt-n">—</span>
       <span class="mut hd-note">measured from the run records — not the projection above</span></div>
-    <div id="lt-warn" class="pk-err" style="display:none"></div>
+    <div id="lt-warn" class="pk-err jshide"></div>
     <div class="tw"><table>
       <thead><tr><th>lane</th><th>runs</th><th>median</th><th>p95</th><th>slowest</th>
         <th>over time (daily median)</th><th>not run</th></tr></thead>
@@ -1638,7 +1639,7 @@ var CW_THEME_MEDIA={auto:'(prefers-color-scheme: light)',light:'all',dark:'not a
 // The rail, breadcrumb, header, URL, run controls and picker redirect all read this one table;
 // separate lists drift, and a page kept open with no project must never be labelled with one.
 const VIEW_SCOPE=Object.freeze({fleet:'fleet',projects:'fleet',rollups:'fleet',remfleet:'fleet',verdicts:'fleet',oversight:'fleet',correlations:'fleet',graph:'fleet',
-  overwatch:'fleet',cra:'fleet',stpa:'fleet',bola:'fleet',comments:'fleet',spinecomments:'fleet',
+  overwatch:'fleet',cra:'fleet',stpa:'fleet',bola:'fleet',comments:'fleet',commentquality:'fleet',
   settings:'fleet',perf:'fleet',held:'fleet',journey:'fleet',profile:'account'});
 const scopeOf=(v)=>Object.prototype.hasOwnProperty.call(VIEW_SCOPE,v)?VIEW_SCOPE[v]:'project';
 const TAB_GROUPS=Object.freeze({
@@ -1666,7 +1667,7 @@ const TAB_GROUPS=Object.freeze({
   // checker in the roster.
   denotypes:'types',
   // the Slop Bucket is quality by the same rule as the rest of this row: it is readability, not a vulnerability.
-  comments:'quality',spinecomments:'quality',
+  comments:'quality',commentquality:'quality',
   overwatch:'act',
   // need something running to answer
   dast:'dynamic', bola:'dynamic', stpa:'dynamic', tls:'dynamic', apifuzz:'dynamic', runtime:'dynamic',

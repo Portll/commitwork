@@ -21,6 +21,7 @@
 import { readFileSync, writeFileSync, existsSync, rmSync, appendFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { readSarif } from '../monitor/sarif-read.mjs';
+import { SCAN_EXCLUDE_ROOTS } from '../monitor/worktree-paths.mjs';
 
 const arg = (name, dflt = null) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -57,8 +58,12 @@ if (TOOL === 'bandit') {
   // where a tool's chatter ends, and the next release moves that boundary. A separate channel has
   // no boundary to guess.
   const outTmp = `${OUT}.raw`;
+  // bandit fnmatches -x against the walked path, so under `-r .` a bare name matches nothing
+  // (bandit 1.9.4, measured: `.git` left `./.git/parked/app.py` in). The nested-checkout roots are
+  // globbed; the bare names before them are unchanged and still match nothing.
+  const nested = SCAN_EXCLUDE_ROOTS.map((d) => `*/${d}/*`).join(',');
   const r = spawnSync('bandit',
-    ['-r', ROOT, '-f', 'json', '-o', outTmp, '-x', '.git,__pycache__,.tox,.eggs,venv,.venv,node_modules'],
+    ['-r', ROOT, '-f', 'json', '-o', outTmp, '-x', `.git,__pycache__,.tox,.eggs,venv,.venv,node_modules,${nested}`],
     { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: TIMEOUT_MS });
   if (r.error) { log(`REFUSING: bandit could not run (${r.error.code || r.error.message}) — not installed, or timed out.`); try { if (existsSync(OUT)) rmSync(OUT); } catch {} process.exit(1); }
   if (r.stderr) log(r.stderr.trim().split('\n').slice(0, 12).join('\n'));
@@ -92,7 +97,8 @@ if (TOOL === 'bandit') {
 // --no-cache: the host sandbox denies writes to the scanned tree, and ruff's default .ruff_cache
 // there makes it exit 2 with no output on any clone that has not already got one.
 const r = spawnSync('ruff',
-  ['check', ROOT, '--no-cache', '--output-format', 'sarif', '--select', 'E,F,W,C90', '--ignore', 'S'],
+  ['check', ROOT, '--no-cache', '--output-format', 'sarif', '--select', 'E,F,W,C90', '--ignore', 'S',
+    ...SCAN_EXCLUDE_ROOTS.flatMap((d) => ['--extend-exclude', d])],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: TIMEOUT_MS });
 if (r.error) { log(`REFUSING: ruff could not run (${r.error.code || r.error.message}) — not installed, or timed out.`); try { if (existsSync(OUT)) rmSync(OUT); } catch {} process.exit(1); }
 if (r.stderr) log(r.stderr.trim().split('\n').slice(0, 12).join('\n'));

@@ -8,7 +8,7 @@ import { mkdtempSync, writeFileSync, chmodSync, rmSync, existsSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseArgs, defaultRouteIfaces, pastaArgs, resolvConf, DNS_FORWARD, NOT_RUN } from '../lib/sandbox-net.mjs';
+import { parseArgs, defaultRouteIfaces, onLinkIface, pastaArgs, resolvConf, DNS_FORWARD, NOT_RUN } from '../lib/sandbox-net.mjs';
 
 const SELF = join(dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'sandbox-net.mjs');
 const BW = ['/usr/bin/bwrap', '--unshare-net', '--info-fd', '3', '--block-fd', '4', '--', 'sh', '-c', 'true'];
@@ -64,6 +64,29 @@ describe('defaultRouteIfaces', () => {
   test('absent or empty tables give null, not a guess', () => {
     assert.deepEqual(defaultRouteIfaces(), { v4: null, v6: null });
     assert.deepEqual(defaultRouteIfaces({ route: hdr }), { v4: null, v6: null });
+  });
+});
+
+// measured 2026-10-22 in a slot on a Docker internal network: one on-link route, no default route
+const INTERNAL = 'Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT\neth0\t00001BAC\t00000000\t0001\t0\t0\t0\t0000FFFF\t0\t0\t0\n';
+
+describe('onLinkIface', () => {
+  test('a network with no default route yields its interface and the subnet\'s first address', () => {
+    assert.deepEqual(onLinkIface({ route: INTERNAL }), { iface: 'eth0', gateway: '172.27.0.1' });
+  });
+  test('two on-link routes, none, or only loopback is ambiguous and yields null', () => {
+    const two = INTERNAL + 'eth1\t000A0A0A\t00000000\t0001\t0\t0\t0\t00FFFFFF\t0\t0\t0\n';
+    assert.equal(onLinkIface({ route: two }), null);
+    assert.equal(onLinkIface({ route: INTERNAL.split('\n')[0] }), null);
+    assert.equal(onLinkIface({ route: INTERNAL.replace('eth0', 'lo') }), null);
+    assert.equal(onLinkIface(), null);
+  });
+  test('pastaArgs names the interface and gateway only when no default route chose one', () => {
+    const a = pastaArgs({ pid: 9, link: { iface: 'eth0', gateway: '172.27.0.1' }, pidFile: '/t/p' });
+    assert.deepEqual(a.slice(a.indexOf('-i'), a.indexOf('-i') + 6), ['-i', 'eth0', '-g', '172.27.0.1', '--outbound-if4', 'eth0']);
+    const b = pastaArgs({ pid: 9, v4: 'ens3', link: { iface: 'eth0', gateway: '172.27.0.1' }, pidFile: '/t/p' });
+    assert.equal(b.includes('-i'), false);
+    assert.deepEqual(b.slice(b.indexOf('--outbound-if4'), b.indexOf('--outbound-if4') + 2), ['--outbound-if4', 'ens3']);
   });
 });
 

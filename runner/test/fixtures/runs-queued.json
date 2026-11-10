@@ -1,0 +1,46 @@
+{
+  "total_count": 1,
+  "workflow_runs": [
+    {
+      "id": 30433642,
+      "name": "CI",
+      "node_id": "WFR_kwLOExampleRun",
+      "head_branch": "main",
+      "head_sha": "4ad5e3e9b1a9f4c2b8d7e6f5a4b3c2d1e0f9a8b7",
+      "path": ".github/workflows/ci.yml",
+      "display_title": "Example change",
+      "run_number": 42,
+      "event": "push",
+      "status": "queued",
+      "conclusion": null,
+      "workflow_id": 161335,
+      "url": "https://api.github.com/repos/example-owner/example-private/actions/runs/30433642",
+      "html_url": "https://github.com/example-owner/example-private/actions/runs/30433642",
+      "pull_requests": [],
+      "created_at": "2026-10-22T09:00:00Z",
+      "updated_at": "2026-10-22T09:00:01Z",
+      "run_attempt": 1,
+      "run_started_at": "2026-10-22T09:00:00Z",
+      "repository": {
+        "id": 700000002,
+        "full_name": "example-owner/example-private",
+        "private": true
+      },
+      "head_repository": {
+        "id": 700000002,
+        "full_name": "example-owner/example-private",
+        "private": true
+      },
+      "actor": {
+        "login": "example-owner",
+        "id": 1000001,
+        "type": "User"
+      },
+      "triggering_actor": {
+        "login": "example-owner",
+        "id": 1000001,
+        "type": "User"
+      }
+    }
+  ]
+}

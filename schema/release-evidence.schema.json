@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Release evidence",
-  "description": "The document a deploy box prints for bin/release-report.mjs: which release is serving, what it was checked against, and the event trail. Produced by ad-site-deploy; the reporter validates it and never edits it. Every timestamp is ISO 8601 with a zone.",
+  "description": "The document a deploy box prints for bin/release-report.mjs: which release is serving, what it was checked against, and the event trail. Produced by the box's own deploy tool, which `source` names; the reporter validates it and never edits it. Every timestamp is ISO 8601 with a zone.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -30,7 +30,7 @@
     "source": {
       "type": "string",
       "minLength": 1,
-      "description": "The producer, as ad-site-deploy@<sha>."
+      "description": "The producer, as <tool>@<sha>."
     },
     "policy": {
       "type": "object",

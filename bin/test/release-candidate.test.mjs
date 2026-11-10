@@ -180,7 +180,8 @@ test('the terms gate reads the candidate: a denied term in a shipped file blocks
   const run = (word) => {
     const out = join(tmp(), 'rc');
     const list = join(tmp(), 'terms.json');
-    writeFileSync(list, JSON.stringify({ rules: [{ id: 'internal-tool', why: 'a test term', words: [word] }] }));
+    writeFileSync(list, JSON.stringify({ rules: [{ id: 'internal-tool', why: 'a test term',
+      words: [{ key: 'shipped-word', word, why: 'a test term', test: 'is this the fixture word?' }] }] }));
     let stdout;
     try {
       stdout = execFileSync(process.execPath, [CLI, '--out', out, '--skip-tests', '--json', '--no-journal'], {

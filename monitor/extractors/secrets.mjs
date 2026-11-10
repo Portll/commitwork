@@ -19,7 +19,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { safeParseFile } from '../safe-parse.mjs';
-import { _zero, _emptyArtifact, _detailFor, capMessage } from './core.mjs';
+import { _zero, _emptyArtifact, _detailFor, _titled, capMessage } from './core.mjs';
+import { ruleTitleText } from '../sarif-read.mjs';
 
 // TruffleHog scans git HISTORY and writes JSON-lines. A VERIFIED secret is `crit` and nothing
 // else: the tool has confirmed the credential is live at its provider, which is the strongest
@@ -140,8 +141,16 @@ export function _gitleaksCounts(dir, file, verdictFile = 'gitleaks-verify.json',
   }
 
   const c = { ..._zero(), ran: true, undetermined: 0, testPath: 0, verifyRan };
+  // A title comes from `Description` alone: the rule's description in the --config the manifest
+  // pins, the same for every hit and holding nothing that was matched. `Match`, `Secret` and `Line`
+  // hold the matched text, and `Message` is a commit message; none of them is read for a title.
+  const titles = new Map();
   const rows = arr.map((f) => {
     const rule = String((f && f.RuleID) || '');
+    if (rule && !titles.has(rule) && typeof (f && f.Description) === 'string') {
+      const title = ruleTitleText(f.Description, rule);
+      if (title) titles.set(rule, title);
+    }
     const path = String((f && f.File) || '');
     const line = Number(f && f.StartLine) || 0;
     const inline = verdictFile === null && f ? INLINE_VERDICT.get(f.ValidationStatus) : undefined;
@@ -164,7 +173,7 @@ export function _gitleaksCounts(dir, file, verdictFile = 'gitleaks-verify.json',
       ...(confidence ? { confidence } : {}),
     };
   });
-  return { ...c, ..._detailFor(category, rows) };
+  return { ...c, ..._detailFor(category, rows), ..._titled(titles) };
 }
 
 // bin/weak-random-detect.mjs — insufficient randomness in security-sensitive values.

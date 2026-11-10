@@ -16,6 +16,10 @@
 #
 # usage:  bin/lockfile-synth.sh [srcDir]
 set -uo pipefail
+
+# Git Bash rewrites POSIX-looking arguments passed to native programs, so a container mount path
+# would name a host directory. Inert off Windows. See lib/posix-shell.mjs.
+export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 . "$(dirname "${BASH_SOURCE[0]}")/lib/docker-config.sh"
 
 SRC="${1:-${CW_LOCKSYNTH_SRC:-$PWD}}"

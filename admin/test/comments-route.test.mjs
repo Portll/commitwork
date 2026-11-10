@@ -243,12 +243,12 @@ test('the spine view is registered everywhere the commitwork view is', () => {
   const serve = serverSource();
   const html = panelSource('index.html');
   const panelViews = serve.match(/const PANEL_VIEWS = new Set\(\[([^\]]*)\]\)/);
-  assert.ok(panelViews[1].includes("'spinecomments'"), 'spinecomments must be in PANEL_VIEWS');
+  assert.ok(panelViews[1].includes("'commentquality'"), 'commentquality must be in PANEL_VIEWS');
   const native = html.match(/const NATIVE=\{([^}]*)\}/);
-  assert.ok(/(^|,)spinecomments:'view-comments'/.test(native[1]), 'spinecomments must map onto the same section');
-  assert.match(html, /spinecomments:'quality'/, 'TAB_GROUPS must file it under quality');
-  assert.match(html, /data-v="spinecomments"/, 'a nav tab must exist');
-  assert.match(html, /if\(v==='spinecomments'\)loadComments\('spine'\);/, 'the loader must be dispatched with the project');
+  assert.ok(/(^|,)commentquality:'view-comments'/.test(native[1]), 'commentquality must map onto the same section');
+  assert.match(html, /commentquality:'quality'/, 'TAB_GROUPS must file it under quality');
+  assert.match(html, /data-v="commentquality"/, 'a nav tab must exist');
+  assert.match(html, /if\(v==='commentquality'\)loadComments\('spine'\);/, 'the loader must be dispatched with the project');
 });
 
 // fact: a project names a root from a closed map / a root taken from the query is an arbitrary-directory read (expiry: never, prev: not built)

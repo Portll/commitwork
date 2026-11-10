@@ -1,0 +1,79 @@
+# Class rules: a copy or walk of a tree that follows the links inside it.
+#
+# A tree that arrived from outside (an archive, a package, a checked-out repository) can hold
+# symbolic links. A copy that dereferences them copies whatever they point at, anywhere on the host,
+# into the destination. A recursive walk that decides "is this a directory" with stat() rather than
+# lstat() descends through a directory link: out of the tree, or round a cycle until the stack is
+# exhausted.
+
+rules:
+  - id: cw-copytree-follows-links-py
+    languages: [python]
+    severity: WARNING
+    message: >-
+      `shutil.copytree` runs with `symlinks=False`, so every link in the source tree is replaced by
+      a copy of its target. A link to a file outside the tree copies that file into the
+      destination. Pass `symlinks=True` to copy links as links, or reject links in the source first.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-59: Improper Link Resolution Before File Access"]
+      confidence: MEDIUM
+      class: copy-follows-symlinks
+    patterns:
+      - pattern: shutil.copytree(...)
+      - pattern-not: shutil.copytree(..., symlinks=True, ...)
+      - pattern-not: shutil.copytree($SRC, $DST, True, ...)
+
+  - id: cw-walk-follows-dir-links-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A recursive walk decides whether to descend with `stat`, which follows symbolic links. A
+      directory link makes the walk leave the tree, or loop until the stack is exhausted. Use
+      `lstat`, or `readdir(..., { withFileTypes: true })` and `Dirent.isDirectory()`, neither of
+      which follows links.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-59: Improper Link Resolution Before File Access", "CWE-674: Uncontrolled Recursion"]
+      confidence: MEDIUM
+      class: recursion-without-depth
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              function $F(...) { ... }
+          - pattern-inside: |
+              async function $F(...) { ... }
+          - pattern-inside: |
+              function* $F(...) { ... }
+          - pattern-inside: |
+              const $F = (...) => { ... }
+          - pattern-inside: |
+              const $F = async (...) => { ... }
+      - pattern-either:
+          - pattern-inside: |
+              if (<... $FS.statSync(...).isDirectory() ...>) $BODY
+          - pattern-inside: |
+              if (<... statSync(...).isDirectory() ...>) $BODY
+          - pattern-inside: |
+              if (<... (await $FS.stat(...)).isDirectory() ...>) $BODY
+          - pattern-inside: |
+              if (<... (await stat(...)).isDirectory() ...>) $BODY
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      function $F(...) { ... $ST = statSync(...); ... }
+                  - pattern-inside: |
+                      function $F(...) { ... $ST = $FS.statSync(...); ... }
+                  - pattern-inside: |
+                      async function $F(...) { ... $ST = await stat(...); ... }
+                  - pattern-inside: |
+                      async function $F(...) { ... $ST = await $FS.stat(...); ... }
+                  - pattern-inside: |
+                      const $F = (...) => { ... $ST = statSync(...); ... }
+                  - pattern-inside: |
+                      const $F = (...) => { ... $ST = $FS.statSync(...); ... }
+              - pattern-inside: |
+                  if (<... $ST.isDirectory() ...>) $BODY
+      - pattern: $F(...)

@@ -29,6 +29,7 @@ import { loadRegistry, areaOut, areaOf } from './registry.mjs';
 import { annotationsPathFor, gateExemptionsPathFor, ownerMapPathFor, epssDetailPathFor } from './store-paths.mjs';
 import { epssRecordsFrom } from './epss.mjs'; // pure, so the parse is reachable from a test
 import { parseOsv, parseNpm, dedupe, loadKevCatalog } from './dep-findings.mjs'; // pure readers, shared with the remediation brief
+import { classifyWorktreePath } from './worktree-paths.mjs'; // a copy that leaves the scan was not fixed
 import { loadCatalogCache, enrichWithKev } from './vulncheck-enrich.mjs';
 import { buildReachabilityIndex } from '../cra/reachability-evidence.mjs'; // call-graph proofs, keyed (repo,id,pkg)
 import { buildAliasIndex } from '../cra/advisory-aliases.mjs'; // GO- <-> CVE, without which the join is 0.31%
@@ -794,6 +795,9 @@ if (prevSlice) for (const p of prevSlice.findings || []) {
     carried.push({ ...p, state: 'unknown-not-scanned', carriedFrom: prevSliceId });
     continue;
   }
+  // A lockfile inside a nested checkout leaves when the lane stops reading copies (deps-osv excludes
+  // them). Out of scope, never a fix candidate: the ledger would score it medium on a known fix.
+  if (classifyWorktreePath(p.path).worktree) { resolvedF.push({ ...p, state: 'resolved-scope', resolvedSlice: sliceId }); continue; }
   resolvedF.push({ ...p, state: 'resolved-fixed-candidate', resolvedSlice: sliceId });
 }
 // carried findings from the PREVIOUS slice's carried block stay carried (chain until rescanned)
@@ -801,7 +805,7 @@ if (prevSlice) for (const p of prevSlice.carried || []) {
   const plk = p.legacyKey || `${p.repo}|${p.id}|${p.package}`;
   if ((p.key && nowKeys.has(p.key)) || nowLegacy.has(plk)) continue; // repo rescanned, finding still there -> already 'persisting' above
   if (isSuperseded(p.repo)) { resolvedF.push({ ...p, state: 'resolved-superseded', resolvedSlice: sliceId, supersededBy: (lifecycleOf(p.repo) || {}).supersededBy || '' }); continue; }
-  if (scannedNames.has(p.repo) && toolRan(p.repo, p.tool)) { resolvedF.push({ ...p, state: 'resolved-fixed-candidate', resolvedSlice: sliceId }); continue; }
+  if (scannedNames.has(p.repo) && toolRan(p.repo, p.tool)) { resolvedF.push({ ...p, state: classifyWorktreePath(p.path).worktree ? 'resolved-scope' : 'resolved-fixed-candidate', resolvedSlice: sliceId }); continue; }
   carried.push(p);
 }
 

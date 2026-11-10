@@ -499,26 +499,31 @@ const sandbox = POSIX_HOST ? probeHostSandbox() : { available: false, why: `no h
 const liveSkip = noBase || (sandbox.available ? false : `host sandbox unavailable (${sandbox.why}): containment is unmeasured here, not passed`);
 
 test('live: the agent posture contains credential reads, writes and loopback (outside reads too on macOS); unwrapped, every one leaks', { skip: liveSkip }, () => {
-  const ev = measureAgentPermissionEffects();
-  const rec = permissionEffects({ agents: [agent([d('deny', 'credential-read'), d('deny', 'egress')], 'claude')], evidence: ev });
+  // Arrange
+  const darwin = process.platform === 'darwin';
+  const denying = agent([d('deny', 'credential-read'), d('deny', 'egress')], 'claude');
+  const unwrapped = (bin, args, opts) => { const i = args.lastIndexOf('-c'); return spawnSync(args[i - 1], args.slice(i), opts); };
+  // Act
+  const rec = permissionEffects({ agents: [denying], evidence: measureAgentPermissionEffects() });
+  const raw = measureAgentPermissionEffects({ spawn: unwrapped });
+  const leaked = permissionEffects({ agents: [agent()], evidence: raw });
+  // The base is per-user, so a concurrent run's probe can be in flight there; only this process's scratch is ours.
+  const leftover = readdirSync(scratchBase()).filter((n) => n.startsWith(`.cw-boundary-${process.pid}-`));
+  // Assert
   const open = rec.postures[0];
   const st = (c) => open.controls.find((x) => x.control === c).status;
   assert.equal(st('permitted-read'), 'permitted', JSON.stringify(open.probes));
   assert.equal(st('hook-exec'), 'permitted');
   for (const c of ['credential-read', 'write-escape']) assert.equal(st(c), 'contained', c);
-  const darwin = process.platform === 'darwin';
   for (const c of ['forbidden-read', 'hook-script-outside']) assert.equal(st(c), darwin ? 'contained' : 'permitted', c);
   // Under load a control may not connect; that is unmeasured, never a pass.
   assert.ok(['contained', 'unmeasured'].includes(st('loopback')), st('loopback'));
   assert.ok(['permitted', 'unmeasured'].includes(st('egress')), st('egress'));
   assert.deepEqual([rec.state, rec.breaches, rec.agents[0].denies.containedIfRunUnderHostSandbox], ['unmeasured', [], 1]);
-  const unwrapped = (bin, args, opts) => { const i = args.lastIndexOf('-c'); return spawnSync(args[i - 1], args.slice(i), opts); };
-  const raw = measureAgentPermissionEffects({ spawn: unwrapped });
-  const leaked = permissionEffects({ agents: [agent()], evidence: raw });
   assert.equal(leaked.state, 'finding', 'probes that cannot see an unconfined effect are vacuous');
   const reached = raw.byPosture.open.probes.find((p) => p.probe === 'loopback').outcome === 'allowed';
   for (const c of ['credential-read', 'write-escape', ...(darwin ? ['forbidden-read', 'hook-script-outside'] : []), ...(reached ? ['loopback'] : [])]) assert.ok(leaked.breaches.some((b) => b.control === c), c);
-  assert.deepEqual(readdirSync(scratchBase()).filter((n) => n.startsWith('.cw-boundary-')), [], 'no probe scratch is left in the scratch base');
+  assert.deepEqual(leftover, [], 'no probe scratch is left in the scratch base');
 });
 
 // ---- wired into the agent-config lane ----

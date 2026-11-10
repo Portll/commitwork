@@ -48,6 +48,26 @@ export function existsAtHead(path, cwd = CW) {
   }
 }
 
+// ── what a published snapshot carries ─────────────────────────────────────────────────────────
+// bin/lib/release-candidate-core.mjs extractSnapshot builds the snapshot with `git archive`, so
+// `git archive` is what decides whether a path ships. Reading the archive asserts that effect; an
+// export-ignore rule can be spelled several ways and reading .gitattributes judges the spelling.
+export const archiveOf = (cwd, ref, path) => execFileSync('git',
+  ['-C', cwd, 'archive', '--format=tar', ref, '--', path], { maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'pipe'] });
+
+/** Member names in a tar: a name is the first 100 bytes of a 512-byte header. Directories excluded. */
+export function archivedNames(tar) {
+  const out = [];
+  for (let off = 0; off + 512 <= tar.length; off += 512) {
+    const name = tar.toString('utf8', off, off + 100).replace(/\0[\s\S]*$/, '');
+    if (!name) continue;
+    if (!name.endsWith('/')) out.push(name);
+    const size = Number.parseInt(tar.toString('ascii', off + 124, off + 136).replace(/[\0 ]/g, ''), 8) || 0;
+    off += Math.ceil(size / 512) * 512;
+  }
+  return out;
+}
+
 // ── glob matching ─────────────────────────────────────────────────────────────────────────────
 // TEST_GLOBS are the shape `area/**/*.test.mjs`, which is all this needs to honour. `**/` is zero
 // or more directories, `*` never crosses a slash.
@@ -178,10 +198,43 @@ test('PLANTED POSITIVE — a guard that is at HEAD and under TEST_GLOBS passes',
   });
 });
 
+// A witness for "at HEAD but outside TEST_GLOBS" has to be at HEAD in a PUBLISHED snapshot too, so
+// it cannot be an export-ignore path: git archive drops those, and the register then reports the row
+// absent from HEAD, which is a different failure. The register's own path is the narrowest choice —
+// readRegister already needs it at HEAD for anything in this file to run.
+const OUTSIDE_GLOBS = 'docs/INVARIANTS.md';
+
 test('a path at HEAD but outside TEST_GLOBS fails — tracked is not the same as run', () => {
-  const r = checkRegister(fixture([['Doc as guard', '`docs/TRAPS.md`', 'none', 'none', 'guarded', 'none']]));
+  assert.ok(existsAtHead(OUTSIDE_GLOBS), `witness assumption: ${OUTSIDE_GLOBS} is tracked at HEAD`);
+  assert.equal(matchesAnyGlob(OUTSIDE_GLOBS), false, `witness assumption: npm test never runs ${OUTSIDE_GLOBS}`);
+  const r = checkRegister(fixture([['Doc as guard', `\`${OUTSIDE_GLOBS}\``, 'none', 'none', 'guarded', 'none']]));
   assert.equal(r.failures.length, 1);
   assert.match(r.failures[0], /matches no TEST_GLOBS entry/);
+});
+
+test('the witness above survives git archive — else the case above asserts the wrong failure', () => {
+  assert.ok(archivedNames(archiveOf(CW, 'HEAD', OUTSIDE_GLOBS)).includes(OUTSIDE_GLOBS),
+    `${OUTSIDE_GLOBS} is export-ignored: a published snapshot has no such path, so the register would`
+    + ' report it absent from HEAD rather than outside TEST_GLOBS');
+});
+
+// Second witness for the one above, which on its own is consistent with a reader that reports every
+// path present: a tree that export-ignores one of two files, asserted in BOTH directions. Only the
+// false-negative half — an ignored path read as shipping — is the half that lies about the case above.
+test('the archive reader sees an export-ignore omission, and does not invent one', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cw-export-ignore-'));
+  try {
+    execFileSync('git', ['-C', dir, 'init', '-q', '.'], { stdio: ['ignore', 'ignore', 'pipe'] });
+    writeFileSync(join(dir, 'ships.md'), 'ships\n');
+    writeFileSync(join(dir, 'dropped.md'), 'dropped\n');
+    writeFileSync(join(dir, '.gitattributes'), '/dropped.md export-ignore\n');
+    // A tree, not a commit: writing one needs no author identity, so this fixture does not depend
+    // on the operator having a ~/.gitconfig.
+    execFileSync('git', ['-C', dir, 'add', '-A'], { stdio: ['ignore', 'ignore', 'pipe'] });
+    const tree = execFileSync('git', ['-C', dir, 'write-tree'], { encoding: 'utf8' }).trim();
+    assert.deepEqual(archivedNames(archiveOf(dir, tree, 'ships.md')), ['ships.md']);
+    assert.deepEqual(archivedNames(archiveOf(dir, tree, 'dropped.md')), []);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('state ladder — each rung requires its column', () => {

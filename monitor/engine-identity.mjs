@@ -1,5 +1,5 @@
 // monitor/engine-identity.mjs — item 4: the engines commitwork CONSUMES (local LLM hosts via
-// manifests/llm-hosts.json, overwatch-layer's SPINE) feed the reducer verdicts and the panel state. A
+// manifests/llm-hosts.json, an external agent-task ledger) feed the reducer verdicts and the panel state. A
 // spoofed engine on a known port would be believed. This lens pins each consumed endpoint's
 // IDENTITY so a swap is a diff.
 //
@@ -18,7 +18,9 @@
 // the findings (the spoof signals); absent is an engine that is off (its own state); unbaselined
 // is grey. Loopback GETs only; nothing is sent but the probe path.
 //
-// Env (read at call time): CW_ENGID_BASELINE, CW_BIND_LISTENERS (shared listener fixture), CW_NOW.
+// Env (read at call time): CW_ENGID_BASELINE, CW_BIND_LISTENERS (shared listener fixture), CW_NOW,
+// CW_AGENT_LEDGER_URL (the consumed agent-task ledger's address),
+// CW_AGENT_LEDGER_OWNER (its expected socket owner, per install; see extraEndpoints for why it is not in the tree).
 //
 //   node monitor/engine-identity.mjs [--json]   diff vs baseline; exit 0 ok, 1 findings, 2 grey
 //   node monitor/engine-identity.mjs --accept   pin the currently observed identities
@@ -39,12 +41,30 @@ const baselinePath = () => process.env.CW_ENGID_BASELINE || join(REPO, '.claude'
 
 // Consumed endpoints beyond the LLM manifest. The bind itself is declared in bind-declarations;
 // this row declares the identity probe for it.
-export const EXTRA_ENDPOINTS = [
-  { id: 'overwatch', baseUrl: 'http://127.0.0.1:7980', ownerMatch: 'overwatch', portIsShared: false },
+//
+// `id` is this lens's own label and the baseline key, so it says what the endpoint DOES: an
+// external agent-task ledger commitwork reads plans and tasks from. `ownerMatch` is not a label —
+// it is compared against the socket-holding pid's command line, so its value has to be the
+// process's real name on the box that runs it. That name is a private tool's, and a measurement
+// parameter is still content: it is declared per install through the env, never in the tree, and
+// undeclared leaves the owner witness UNDECIDED. The probe axis is unaffected and still runs.
+//
+// A FUNCTION, not a const: the env is read at call time, or a test that sets the variable
+// afterwards passes while proving nothing about the override.
+export const extraEndpoints = (env = process.env) => [
+  {
+    id: 'agent-ledger',
+    baseUrl: env.CW_AGENT_LEDGER_URL || 'http://127.0.0.1:7980',
+    // Absent, not '' and not a guessed name. Both of those are verdicts this lens has not earned:
+    // `''` makes String.includes() true for every process alive, and a wrong name makes it false
+    // for the right one — a fabricated pass and a fabricated OWNER MISMATCH from the same hole.
+    ownerMatch: env.CW_AGENT_LEDGER_OWNER || null,
+    portIsShared: false,
+  },
 ];
 
 /** The endpoints this lens pins: manifest hosts + extras. Pure over the loaded declaration. */
-export function endpointsFor(decl = loadLlmHosts()) {
+export function endpointsFor(decl = loadLlmHosts(), env = process.env) {
   const hosts = hostsInProbeOrder(decl).map((h) => ({
     id: h.id,
     baseUrl: h.baseUrl,
@@ -52,7 +72,7 @@ export function endpointsFor(decl = loadLlmHosts()) {
     ownerMatch: h.id === 'lmstudio' ? 'LM Studio' : h.id,
     portIsShared: h.portIsShared === true,
   }));
-  return [...hosts, ...EXTRA_ENDPOINTS];
+  return [...hosts, ...extraEndpoints(env)];
 }
 
 const portOf = (baseUrl) => Number(new URL(baseUrl).port) || (new URL(baseUrl).protocol === 'https:' ? 443 : 80);
@@ -110,7 +130,7 @@ export function assessIdentities(observed, baseline) {
     const b = base ? base[o.id] : undefined;
     if (o.absent) { rows.push({ id: o.id, state: b ? 'absent' : 'absent', pinned: !!b }); continue; }
     if (o.unknown) { rows.push({ id: o.id, state: 'unknown', unknownReason: o.unknownReason, unknownDetail: o.unknownDetail }); continue; }
-    const row = { id: o.id, owner: o.owner, ownerOk: o.ownerOk, fingerprint: o.fingerprint, modelCount: o.modelCount, portIsShared: o.portIsShared };
+    const row = { id: o.id, owner: o.owner, ownerOk: o.ownerOk, fingerprint: o.fingerprint, modelCount: o.modelCount, portIsShared: o.portIsShared, ...(o.ownerUndeclared ? { ownerUndeclared: true } : {}) };
     if (o.ownerOk === false) { rows.push({ ...row, state: 'owner-changed' }); continue; }
     if (!b) { rows.push({ ...row, state: 'unbaselined' }); continue; }
     if (b.fingerprint !== o.fingerprint) { rows.push({ ...row, state: 'fingerprint-changed', baseline: b }); continue; }
@@ -134,7 +154,11 @@ export async function observeEndpoints({ decl, platform, exec, fetchImpl } = {})
     if (probe.unknown) { out.push({ id: ep.id, ...probe }); continue; }
     let owner = null;
     let ownerOk = null;
-    if (!ep.portIsShared && listeners) {
+    // An endpoint with no declared ownerMatch has no owner EXPECTATION, which is a third state and
+    // not a third verdict. Reported in its own field so a reader can tell it from the shared-port
+    // case, which is undecided for a different reason.
+    const ownerUndeclared = !ep.ownerMatch;
+    if (!ep.portIsShared && !ownerUndeclared && listeners) {
       const on = listeners.filter((l) => l.port === portOf(ep.baseUrl));
       const texts = on.map((l) => `${l.command ?? ''} ${l.args ?? ''}`);
       if (on.length) {
@@ -142,7 +166,7 @@ export async function observeEndpoints({ decl, platform, exec, fetchImpl } = {})
         ownerOk = texts.some((t) => t.includes(ep.ownerMatch));
       }
     }
-    out.push({ id: ep.id, owner, ownerOk, portIsShared: ep.portIsShared, ...probe });
+    out.push({ id: ep.id, owner, ownerOk, portIsShared: ep.portIsShared, ...(ownerUndeclared ? { ownerUndeclared } : {}), ...probe });
   }
   return out;
 }
@@ -197,6 +221,7 @@ if (isMainModule(import.meta.url)) {
       if (row.ownerOk === true) bits.push('owner ok');
       if (row.ownerOk === false) bits.push('OWNER MISMATCH');
       if (row.ownerOk === null && row.portIsShared) bits.push('unidentifiable-by-design (shared port)');
+      if (row.ownerOk === null && row.ownerUndeclared) bits.push('owner undecided — no expected owner declared (CW_AGENT_LEDGER_OWNER)');
       if (row.modelCount != null) bits.push(`${row.modelCount} model(s)`);
       console.log(`  ${row.state.toUpperCase().padEnd(20)} ${row.id}${bits.length ? `  — ${bits.join(', ')}` : ''}`);
     }

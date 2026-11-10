@@ -1,0 +1,30 @@
+{
+  "total_count": 1,
+  "jobs": [
+    {
+      "id": 399444496,
+      "run_id": 30433642,
+      "workflow_name": "CI",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/example-owner/example-private/actions/runs/30433642",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOExampleJob",
+      "head_sha": "4ad5e3e9b1a9f4c2b8d7e6f5a4b3c2d1e0f9a8b7",
+      "url": "https://api.github.com/repos/example-owner/example-private/actions/jobs/399444496",
+      "html_url": "https://github.com/example-owner/example-private/actions/runs/30433642/job/399444496",
+      "status": "queued",
+      "conclusion": null,
+      "created_at": "2026-10-22T09:00:02Z",
+      "started_at": "2026-10-22T09:00:02Z",
+      "completed_at": null,
+      "name": "build",
+      "steps": [],
+      "check_run_url": "https://api.github.com/repos/example-owner/example-private/check-runs/399444496",
+      "labels": ["self-hosted", "linux", "arm64", "commitwork"],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    }
+  ]
+}

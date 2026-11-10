@@ -16,7 +16,8 @@
 //
 // DECLARATION SPLIT FROM AUTHORITY (house invariant; renovate-dryrun.mjs already honours it). This
 // engine emits a PLAN: a branch name, a commit/PR body, and the exact git/gh commands. It NEVER
-// pushes, forks, or runs `gh pr create`. Applying stays a human act.
+// pushes, forks, or runs `gh pr create`. monitor/remediation-draft-pr.mjs opens a proposed plan as a
+// draft PR when the remediation policy's mode is draft-pr or above.
 //
 // DETERMINISM. Same inputs -> byte-identical plan. No Date.now(); a timestamp appears only if
 // CW_NOW is set, and then verbatim. Env is read at CALL time so tests can set CW_* per case.

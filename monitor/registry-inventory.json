@@ -288,6 +288,12 @@
       "note": "Tracked empty template only; the live learning.json is generated, ignored, and validated by monitor/learning.mjs."
     },
     {
+      "path": "monitor/data/rule-titles.json",
+      "kind": "feed",
+      "schema": null,
+      "reason": "Built by monitor/rule-titles.mjs from the rule lists ShellCheck and hadolint publish; the text is theirs. Readers take string values by own key and give no title when the table is absent or unreadable."
+    },
+    {
       "path": "monitor/detector-bindings.json",
       "kind": "declaration",
       "schema": "schema/detector-bindings.schema.json",

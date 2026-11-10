@@ -8,7 +8,7 @@
 // drifted-anchor population was not high, it was UNMEASURABLE, which reads the same as quiet in
 // every report that quotes it. The map is the only artefact that can say what a stored sha became,
 // and the gate must translate through it, say that it did, and still refuse when nothing resolves.
-import { test, describe } from 'node:test';
+import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -108,8 +108,16 @@ describe('the audit baseline survives a rewrite', () => {
   // so the fixture is a synthetic queue over commitwork's own history, with a synthetic sha standing
   // in for the pre-rewrite baseline and a real commit as what the map says it became.
   const git = (...a) => execFileSync('git', ['-C', CW, ...a], { encoding: 'utf8' }).trim();
-  const TARGET = git('rev-parse', 'HEAD~1');
-  const PROBE = 'package.json';            // present at HEAD~1 and at HEAD, so a comparison happens
+  // Resolved on first use, never in the describe body: a describe body runs even when every case
+  // inside it would skip, so a git call there takes the whole suite out of the run rather than
+  // failing one case — which is why `node --test` counts six missing cases as one failure.
+  let target = null;
+  // HEAD, not HEAD~1: what is under test is that a recorded baseline is TRANSLATED through the map
+  // and announced, which needs a commit that resolves and a file present in it, not a depth. A
+  // fresh clone's first commit, and the single root commit bin/release-candidate.mjs builds, have
+  // no HEAD~1 to name.
+  const TARGET = () => (target ??= git('rev-parse', 'HEAD'));
+  const PROBE = 'package.json';            // present at the baseline and at HEAD, so a comparison happens
 
   function fixture() {
     const dir = scratch();
@@ -138,23 +146,27 @@ describe('the audit baseline survives a rewrite', () => {
   test('a rewritten baseline is translated through the map, and the run SAYS it was', () => {
     const f = fixture();
     try {
-      const map = writeMap(f.dir, [[A, TARGET]]);
+      const map = writeMap(f.dir, [[A, TARGET()]]);
       writeFileSync(join(f.auditDir, 'baseline'), `${A}\n`);
       const r = run(f, { CW_COMMIT_MAP: map });
       assert.equal(r.code, 0, r.err || r.out);
       const report = JSON.parse(r.out);
-      assert.equal(report.baseline, TARGET, 'the report must record the ref it COMPARED, not the one the audit stored');
+      assert.equal(report.baseline, TARGET(), 'the report must record the ref it COMPARED, not the one the audit stored');
       assert.notEqual(report.results[0].state, 'no-baseline', 'a translated baseline must produce a real comparison');
       assert.match(r.err, /was rewritten; comparing against/,
         'a translated baseline that is not announced lets a reader take the number for the recorded tree');
-      assert.match(r.err, new RegExp(TARGET.slice(0, 12)), 'and it must name which ref it used');
+      assert.match(r.err, new RegExp(TARGET().slice(0, 12)), 'and it must name which ref it used');
+      // The announcement must name the MAP, not just claim a translation: a resolver that fell back to a
+      // guessed HEAD emits the same 'comparing against' line, so without this the case passes over it.
+      assert.match(r.err, new RegExp(`translated through ${map.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+        'a translation that does not name its map is indistinguishable from a guessed ref');
     } finally { rmSync(f.dir, { recursive: true, force: true }); }
   });
 
   test('a baseline the map cannot answer still REFUSES, and names the way out', () => {
     const f = fixture();
     try {
-      const map = writeMap(f.dir, [[A, TARGET]]);
+      const map = writeMap(f.dir, [[A, TARGET()]]);
       writeFileSync(join(f.auditDir, 'baseline'), `${'e'.repeat(40)}\n`);   // in neither git nor the map
       const r = run(f, { CW_COMMIT_MAP: map });
       assert.equal(r.code, 2, 'an unresolvable baseline must not fall back to a guessed ref');
@@ -201,10 +213,10 @@ describe('the audit baseline survives a rewrite', () => {
   test('a baseline that resolves on its own is used untouched — no map is read', () => {
     const f = fixture();
     try {
-      writeFileSync(join(f.auditDir, 'baseline'), `${TARGET}\n`);
+      writeFileSync(join(f.auditDir, 'baseline'), `${TARGET()}\n`);
       const r = run(f, { CW_COMMIT_MAP: join(f.dir, 'absent.txt') });   // absent on purpose
       assert.equal(r.code, 0, r.err || r.out);
-      assert.equal(JSON.parse(r.out).baseline, TARGET);
+      assert.equal(JSON.parse(r.out).baseline, TARGET());
       assert.doesNotMatch(r.err, /was rewritten/, 'a working baseline must not be announced as translated');
     } finally { rmSync(f.dir, { recursive: true, force: true }); }
   });
@@ -218,13 +230,25 @@ describe('resolve-sha separates an orphan from a current commit', () => {
   // single-sha path had not.
   const CLI_SHA = join(CW, 'bin', 'resolve-sha.mjs');
   const git = (...a) => execFileSync('git', ['-C', CW, ...a], { encoding: 'utf8' }).trim();
+  // Every case here supplies a map that EXISTS and holds no rows. resolve-sha loads the map before
+  // it looks at its argument, so without one the answer is the absent-store refusal and no case
+  // reaches the three states it is about — and the default path is monitor/private/, which a public
+  // checkout does not have. Built per case rather than in this body: a describe body runs even when
+  // every case inside it would skip.
+  const built = [];
+  after(() => { for (const d of built) rmSync(d, { recursive: true, force: true }); });
+  const noRowMap = () => { const d = scratch(); built.push(d); return writeMap(d, [], '# no rows\n'); };
   const run = (sha, env = {}) => {
-    const r = spawnSync(process.execPath, [CLI_SHA, sha], { encoding: 'utf8', env: { ...process.env, ...env } });
+    const withMap = { CW_COMMIT_MAP: env.CW_COMMIT_MAP || noRowMap(), ...env };
+    const r = spawnSync(process.execPath, [CLI_SHA, sha], { encoding: 'utf8', env: { ...process.env, ...withMap } });
     return { code: r.status, out: String(r.stdout || ''), err: String(r.stderr || '') };
   };
 
   test('a commit in HEAD history says so, and does not merely say "as-is"', () => {
-    const r = run(git('rev-parse', '--short', 'HEAD~1'));
+    // HEAD, not HEAD~1: what is under test is membership in HEAD's history, not a depth, and HEAD
+    // is the one revision every repository with a commit has. A single root commit — a fresh clone's
+    // first, or the candidate bin/release-candidate.mjs builds — has no HEAD~1 to name.
+    const r = run(git('rev-parse', '--short', 'HEAD'));
     assert.equal(r.code, 0, r.err);
     assert.match(r.out, /in HEAD's history/);
     assert.doesNotMatch(r.out, /ORPHANED|UNKNOWN/);
@@ -240,18 +264,28 @@ describe('resolve-sha separates an orphan from a current commit', () => {
   test('an object present here but OUTSIDE HEAD history is ORPHANED, not current', () => {
     // Built, not hunted for: a commit on a detached tree that is reachable from no branch is
     // exactly the shape a rebase leaves behind, and it must not read as "resolves as-is".
+    const tree = git('rev-parse', 'HEAD^{tree}');
+    const orphan = execFileSync('git', ['-C', CW, 'commit-tree', tree, '-m', 'an orphan for the test'],
+      { encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } }).trim();
+    assert.equal(git('cat-file', '-t', orphan), 'commit', 'the fixture must be a real object');
+    const r = run(orphan);
+    assert.match(r.out, /ORPHANED/);
+    assert.match(r.out, /NOT in HEAD's history/);
+    assert.match(r.out, /No clone resolves it/);
+  });
+
+  // The map the three cases above are handed is empty, so each of their answers is consistent with
+  // a tool that never read it. This is the other direction, and it is the one that would hide a map
+  // that silently failed to load: a row for the orphan must come back as the rewrite, not as ORPHANED.
+  test('a row in the map is read — the empty map above is not standing in for a broken one', () => {
+    const tree = git('rev-parse', 'HEAD^{tree}');
+    const orphan = execFileSync('git', ['-C', CW, 'commit-tree', tree, '-m', 'an orphan with a map row'],
+      { encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } }).trim();
     const dir = scratch();
-    try {
-      const tree = git('rev-parse', 'HEAD^{tree}');
-      const orphan = execFileSync('git', ['-C', CW, 'commit-tree', tree, '-m', 'an orphan for the test'],
-        { encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } }).trim();
-      assert.equal(git('cat-file', '-t', orphan), 'commit', 'the fixture must be a real object');
-      // A map that EXISTS and holds no rows: an ABSENT map is a refusal before the per-sha loop
-      // is reached, so it would have proved nothing about the three states.
-      const r = run(orphan, { CW_COMMIT_MAP: writeMap(dir, [], '# no rows\n') });
-      assert.match(r.out, /ORPHANED/);
-      assert.match(r.out, /NOT in HEAD's history/);
-      assert.match(r.out, /No clone resolves it/);
-    } finally { rmSync(dir, { recursive: true, force: true }); }
+    built.push(dir);
+    const r = run(orphan, { CW_COMMIT_MAP: writeMap(dir, [[orphan, git('rev-parse', 'HEAD')]]) });
+    assert.equal(r.code, 0, r.err);
+    assert.match(r.out, new RegExp(`${orphan} -> `));
+    assert.doesNotMatch(r.out, /ORPHANED|UNKNOWN/);
   });
 });

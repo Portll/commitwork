@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://portll/commitwork/release-terms.schema.json",
   "title": "commitwork denied-term list for release candidates",
-  "description": "Terms a published tree must not carry. Applied at read time by loadTerms() in bin/lib/release-terms.mjs: an invalid list refuses to load, and the release gate reports cannot-check rather than clean. The real list is private; monitor/release-terms.example.json shows the shape.",
+  "description": "Terms a published tree must not carry. The list is a detector derived from the publication boundary's ownership table, not the boundary itself: every term declares the key its reports are labelled by, why it is denied, and the test another reader applies to a hit. A term that is real but matches too widely is narrowed rather than dropped, by an exception that names one exact path and the number of occurrences measured there — a narrowing carries its measurement, which `dependentRequired` makes a condition of loading — and a term withdrawn is kept in `removed` with the measurement that withdrew it. Applied at read time by loadTerms() in bin/lib/release-terms.mjs: an invalid list refuses to load, and the release gate reports cannot-check rather than clean. The real list is private; monitor/release-terms.example.json shows the shape.",
   "type": "object",
   "required": ["rules"],
   "additionalProperties": false,
@@ -19,8 +19,57 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
           "why": { "type": "string", "minLength": 3 },
-          "words": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 2 } },
-          "patterns": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 2 } },
+          "words": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "required": ["key", "word", "why", "test"],
+              "additionalProperties": false,
+              "dependentRequired": { "exceptPaths": ["measured"] },
+              "properties": {
+                "key": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "minLength": 2, "maxLength": 40 },
+                "word": { "type": "string", "minLength": 2 },
+                "why": { "type": "string", "minLength": 3 },
+                "test": { "type": "string", "minLength": 3 },
+                "exceptPaths": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "object", "required": ["path", "count"], "additionalProperties": false, "properties": { "path": { "type": "string", "minLength": 1, "pattern": "^[^*]+$" }, "count": { "type": "integer", "minimum": 1 } } } },
+                "measured": { "type": "string", "minLength": 3 }
+              }
+            }
+          },
+          "patterns": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "required": ["key", "pattern", "why", "test"],
+              "additionalProperties": false,
+              "dependentRequired": { "exceptPaths": ["measured"] },
+              "properties": {
+                "key": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "minLength": 2, "maxLength": 40 },
+                "pattern": { "type": "string", "minLength": 2 },
+                "why": { "type": "string", "minLength": 3 },
+                "test": { "type": "string", "minLength": 3 },
+                "exceptPaths": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "object", "required": ["path", "count"], "additionalProperties": false, "properties": { "path": { "type": "string", "minLength": 1, "pattern": "^[^*]+$" }, "count": { "type": "integer", "minimum": 1 } } } },
+                "measured": { "type": "string", "minLength": 3 }
+              }
+            }
+          },
+          "removed": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "required": ["kind", "term", "why", "measured"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": { "enum": ["word", "pattern"] },
+                "term": { "type": "string", "minLength": 2 },
+                "why": { "type": "string", "minLength": 3 },
+                "measured": { "type": "string", "minLength": 3 }
+              }
+            }
+          },
           "caseSensitive": { "type": "boolean" },
           "exceptPaths": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
           "$comment": { "type": "string" }

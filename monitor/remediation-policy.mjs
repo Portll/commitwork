@@ -2,7 +2,8 @@
 // verification, learning, a shared cadence enum, and a compute-budget cap. Loaded FAIL-CLOSED
 // (corrupt/invalid throws); only a genuinely absent file resolves to the safe baseline, which is
 // mode=report — every new lane enters there. The two agentic modes additionally need a fresh
-// prompt-envelope corpus witness (the one stpa-sweep reads), or the load refuses.
+// prompt-envelope corpus witness (the one stpa-sweep reads), or the load refuses. draft-pr and every
+// mode above it let monitor/remediation-draft-pr.mjs open draft remediation pull requests.
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,8 +17,15 @@ export const policyPath = () => process.env.CW_REMEDIATION_POLICY || join(HERE, 
 // fix: schema path resolved at CALL time - a const read at import defeats any test override.
 export const policySchemaPath = () => process.env.CW_REMEDIATION_POLICY_SCHEMA || join(HERE, '..', 'schema', 'remediation-policy.schema.json');
 
-export const MODES = ['report', 'hitl-item', 'hitl-agentic', 'full-agentic'];
+// Ordered by authority, lowest first.
+export const MODES = ['report', 'hitl-item', 'draft-pr', 'hitl-agentic', 'full-agentic'];
 export const AGENTIC_MODES = ['hitl-agentic', 'full-agentic'];
+export const DRAFT_PR_MODE = 'draft-pr';
+// own: a repository the gh identity administers. upstream: a third-party repository, through a fork.
+export const DRAFT_PR_TARGETS = ['own', 'upstream'];
+// never: every PR opens as a draft. own-only: a PR on an own repository may open ready for review.
+export const DRAFT_PR_READY = ['never', 'own-only'];
+export const DRAFT_PR_CAP_MAX = 100;
 export const VERIFICATION = ['single', 'double-arbitrate'];
 export const LEARNING = ['off', 'on'];
 // One enum shared by re-investigation, reviewer rotation, and every periodic plane job.
@@ -34,7 +42,35 @@ export const DEFAULT_POLICY = Object.freeze({
     owner: null,                          // suggested-default accountable owner for full-agentic
     scope: Object.freeze({ minSeverity: 'high', pathAllowlist: [], ruleAllowlist: [] }),
   }),
+  draftPr: Object.freeze({
+    targets: Object.freeze(['own']),
+    ready: 'never',
+    maxOpenPerRepo: 1,
+    maxOpenPerDay: 3,
+  }),
 });
+
+/** Does this mode let remediation-draft-pr open pull requests? */
+export const draftPrEnabled = (policy) => MODES.indexOf(policy?.mode) >= MODES.indexOf(DRAFT_PR_MODE);
+
+function validateDraftPr(d, errors, advisories, mode) {
+  if (d === undefined) return;
+  if (d.targets !== undefined) {
+    const bad = Array.isArray(d.targets) ? d.targets.filter((t) => !DRAFT_PR_TARGETS.includes(t)) : null;
+    if (!bad) errors.push('draftPr.targets must be an array');
+    else if (bad.length) errors.push(`draftPr.targets entries must be one of ${DRAFT_PR_TARGETS.join('|')} (got ${JSON.stringify(bad)})`);
+    else if (!d.targets.length && mode === DRAFT_PR_MODE) advisories.push('mode=draft-pr with empty draftPr.targets opens nothing');
+  }
+  if (d.ready !== undefined && !DRAFT_PR_READY.includes(d.ready)) {
+    errors.push(`draftPr.ready must be one of ${DRAFT_PR_READY.join('|')} (got ${JSON.stringify(d.ready)})`);
+  }
+  for (const k of ['maxOpenPerRepo', 'maxOpenPerDay']) {
+    const v = d[k];
+    if (v !== undefined && !(Number.isInteger(v) && v >= 0 && v <= DRAFT_PR_CAP_MAX)) {
+      errors.push(`draftPr.${k} must be an integer in [0,${DRAFT_PR_CAP_MAX}]`);
+    }
+  }
+}
 
 export function validatePolicy(doc) {
   const errors = [];
@@ -59,6 +95,7 @@ export function validatePolicy(doc) {
   if (b !== undefined && (typeof b !== 'number' || Number.isNaN(b) || b < 0 || b > 100)) {
     errors.push('remediationBudgetPctOfCompute must be a number in [0,100]');
   }
+  validateDraftPr(doc.draftPr, errors, advisories, doc.mode);
   // Advisory, not forced — an informed operator can opt out on record
   if (doc.mode === 'full-agentic' && doc.m3?.autoMerge && !doc.m3?.owner) {
     advisories.push('mode=full-agentic with m3.autoMerge and no m3.owner — name an accountable owner (best practice; not forced)');
@@ -88,7 +125,11 @@ export function checkAgenticPreconditions({ policy, witnessPath: wp = witnessPat
 // gate is on by default; a reader that must see the DECLARED mode (the panel's GET) turns it off
 // and reports checkAgenticPreconditions() beside it.
 export function loadPolicy(path = policyPath(), { agenticGate = true, witnessPath: wp, now } = {}) {
-  const base = () => ({ ...DEFAULT_POLICY, m3: { ...DEFAULT_POLICY.m3, scope: { ...DEFAULT_POLICY.m3.scope } } });
+  const base = () => ({
+    ...DEFAULT_POLICY,
+    m3: { ...DEFAULT_POLICY.m3, scope: { ...DEFAULT_POLICY.m3.scope } },
+    draftPr: { ...DEFAULT_POLICY.draftPr, targets: [...DEFAULT_POLICY.draftPr.targets] },
+  });
   if (!path || !existsSync(path)) return { ...base(), source: 'default' };
   let raw;
   try { raw = readFileSync(path, 'utf8'); } catch (e) { throw new Error(`remediation policy unreadable at ${path}: ${e.code || e.message}`); }
@@ -100,6 +141,7 @@ export function loadPolicy(path = policyPath(), { agenticGate = true, witnessPat
   const policy = {
     ...b, ...doc,
     m3: { ...b.m3, ...(doc.m3 || {}), scope: { ...b.m3.scope, ...(doc.m3?.scope || {}) } },
+    draftPr: { ...b.draftPr, ...(doc.draftPr || {}) },
     source: 'file',
   };
   if (agenticGate) {

@@ -1,6 +1,6 @@
 {
   "name": "commitwork",
-  "version": "0.6.125",
+  "version": "0.6.187",
   "description": "Repository security scanner, local CI runner and scheduled monitor, with remediation and compliance-evidence tooling. Manifest-driven; runs against any git repository.",
   "homepage": "https://www.commitwork.online",
   "repository": {
@@ -77,7 +77,7 @@
     "doctor": "node bin/commitwork.mjs doctor --manifest security-baseline",
     "test": "node bin/test-run.mjs",
     "prepare": "node monitor/install-git-hook.mjs --write --prepare",
-    "test:raw": "node --test --test-concurrency=1 \"admin/**/*.test.mjs\" \"bin/**/*.test.mjs\" \"lib/**/*.test.mjs\" \"monitor/**/*.test.mjs\" \"sitemap/**/*.test.mjs\" \"cra/**/*.test.mjs\" \"map/**/*.test.mjs\" \"chunk-diff/**/*.test.mjs\" \"flow/**/*.test.mjs\" \"mcp/**/*.test.mjs\" \"codegraph/**/*.test.mjs\""
+    "test:raw": "node --test --test-concurrency=1 \"admin/**/*.test.mjs\" \"bin/**/*.test.mjs\" \"lib/**/*.test.mjs\" \"monitor/**/*.test.mjs\" \"sitemap/**/*.test.mjs\" \"cra/**/*.test.mjs\" \"map/**/*.test.mjs\" \"chunk-diff/**/*.test.mjs\" \"flow/**/*.test.mjs\" \"mcp/**/*.test.mjs\" \"codegraph/**/*.test.mjs\" \"runner/**/*.test.mjs\""
   },
   "engines": {
     "node": ">=22.18.0"

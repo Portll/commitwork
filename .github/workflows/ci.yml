@@ -408,9 +408,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # A pull request checks out its merge commit; depth 2 brings its first parent, the base.
+          fetch-depth: 2
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '26'
+      # The introduced-advisories verdict (docs/INTRODUCED-ADVISORIES.md): advisories the head's
+      # resolved lockfile graph carries that the base's does not, devDependencies included. Exit 21 is
+      # one at a blocking severity (critical, high or unknown); 22 is a graph or lookup nobody could
+      # measure. Both fail the job, and dependabot-merge needs it.
+      - name: Advisories this pull request introduces
+        if: github.event_name == 'pull_request'
+        run: node bin/commitwork.mjs deps . --introduced HEAD^1..HEAD
       # Reads the committed lockfile and the registry; installs nothing. Exit 21 is a shipped
       # advisory at high or above that an upgrade or override can clear; 22 is a result nobody could
       # measure, which fails the job rather than reading as clear. Advisories in devDependencies are

@@ -2,10 +2,13 @@
 // proposals, opt-in merges, and the update-lifecycle history.
 //
 // usage: commitwork deps [dir] [--json] [--audit-gate [level]] [--update [--tui] [--merge] [--dry-run]] [--history [--out <file>]]
+//        commitwork deps [dir] --introduced <base>..<head> | --introduced --before <lockfile> --after <lockfile> [--json] [--exclude-dev]
 //
 // Without --update it reports how far each direct dependency is behind and which advisories an
 // upgrade clears; --audit-gate turns that into a gate on shipped advisories. --update proposes the
 // updates on a branch commitwork/deps-<id>, and --history writes the update-lifecycle page.
+// With --introduced it issues the introduced-advisories verdict between two lockfiles
+// (docs/INTRODUCED-ADVISORIES.md), and records nothing in the ledger.
 //
 // What --update may change is the operator's (settings depsProdUpdateTypes, depsDevUpdateTypes,
 // depsAutoMergeTypes, depsCooldownDays; or this run's flags), narrowed by the repository's committed
@@ -13,11 +16,13 @@
 // run passes the no-record flag.
 //
 // exit: 0 done (audit printed, gate clear, proposal made or merged, nothing to do) · 2 usage error ·
-// 21 --audit-gate: a shipped advisory at the level has an available fix · 22 not measured (no npm
-// lockfile, npm could not run, or an advisory's fix is undetermined) · 23 the update was refused or
-// failed, or the history could not be read · 24 proposed, but --merge was refused
+// 21 --audit-gate: a shipped advisory at the level has an available fix; --introduced: the update
+// introduces an advisory at a blocking severity · 22 not measured (no npm lockfile, npm could not
+// run, an advisory's fix is undetermined, or an --introduced graph or lookup was not measured) · 23
+// the update was refused or failed, or the history could not be read · 24 proposed, but --merge was
+// refused
 //
-// env, read at call time: CW_NOW, CW_NPM, CW_DEPS_LEDGER, COMMITWORK_TRUST_REPO_MANIFEST, and each setting's own.
+// env, read at call time: CW_NOW, CW_NPM, CW_DEPS_LEDGER, CW_OSV_URL, COMMITWORK_TRUST_REPO_MANIFEST, and each setting's own.
 import { realpathSync } from 'node:fs';
 import { dirname, resolve, isAbsolute, join } from 'node:path';
 import { writeAtomic } from '../monitor/lockfile.mjs';
@@ -28,6 +33,7 @@ import { proposeUpdates, locate, readRepoPolicy } from './lib/npm-update.mjs';
 import { appendEvent, readLedger, ledgerPath, snapshotOf } from './lib/deps-ledger.mjs';
 import { buildHistory, renderHistoryHtml } from './lib/deps-history.mjs';
 import { initialPicker, runPicker } from './lib/checkbox-tui.mjs';
+import { introducedVerdict, inputsOf, renderIntroduced } from './lib/introduced-run.mjs';
 
 export const EXIT = { OK: 0, USAGE: 2, ACTIONABLE: 21, UNMEASURED: 22, FAILED: 23, MERGE_REFUSED: 24 };
 
@@ -37,17 +43,23 @@ export const HELP = `commitwork deps — npm package versions, advisories and de
   commitwork deps [dir] --audit-gate [lvl]  exit 21 when a shipped advisory at lvl+ (default high) has a fix
   commitwork deps [dir] --update            propose updates on a branch commitwork/deps-<id>
   commitwork deps --history [--out <file>]  write the update-lifecycle history page
+  commitwork deps [dir] --introduced <base>..<head>
+  commitwork deps --introduced --before <lockfile> --after <lockfile>
+                                            the advisories an update introduces: exit 21 at a blocking
+                                            severity, 22 when not measured (docs/INTRODUCED-ADVISORIES.md)
 
   --json                  the audit as JSON
   --include-dev           the gate counts devDependencies, which do not ship
+  --exclude-dev           --introduced judges only what ships (setting depsIntroducedIncludeDev, default on)
   --patch --minor --major --lockfile --advisories
                           the update kinds this run takes, for production and dev packages alike
   --prod <kinds> --dev <kinds>
                           the kinds per exposure, comma-separated (patch,minor,major,lockfile,advisories)
   --cooldown <days>|patch=N,minor=N,major=N
-                          release age required before an update is proposed (advisory fixes are exempt)
+                          release age required before an update is proposed (advisory fixes too, unless
+                          the depsAlertFixBypassesCooldown setting is on)
   --merge                 merge the proposal when every change is in --automerge (or the depsAutoMergeTypes
-                          setting), the repository's own tests pass, and shipped advisories do not rise
+                          setting), the repository's own tests pass, and the introduced-advisories verdict is clear
   --automerge <kinds>     the kinds this run may merge
   --tui                   choose the types and packages in the terminal
   --dry-run               show what --update would propose, change nothing
@@ -55,7 +67,8 @@ export const HELP = `commitwork deps — npm package versions, advisories and de
   --trust-repo-manifest   obey the repository's .npmrc, and run its tests for --merge
                           (also COMMITWORK_TRUST_REPO_MANIFEST=1)
 
-  Settings: depsProdUpdateTypes, depsDevUpdateTypes, depsAutoMergeTypes, depsCooldownDays (panel → Settings).
+  Settings: depsProdUpdateTypes, depsDevUpdateTypes, depsAutoMergeTypes, depsCooldownDays,
+  depsAlertFixBypassesCooldown, depsIntroducedIncludeDev, depsIntroducedSeverities (panel → Settings).
   A repository narrows them with ${POLICY_FILE}.
   Cooldown: ${COOLDOWN_WHY}.
 `;
@@ -84,7 +97,8 @@ function parseCooldown(v) {
 
 export function parseDepsArgs(argv) {
   const o = { positional: [], kinds: [], json: false, gate: null, includeDev: false, update: false, merge: false, tui: false, dryRun: false,
-    record: true, trust: false, history: false, out: null, prod: undefined, dev: undefined, automerge: undefined, cooldown: undefined, help: false };
+    record: true, trust: false, history: false, out: null, prod: undefined, dev: undefined, automerge: undefined, cooldown: undefined, help: false,
+    introduced: false, range: null, before: null, after: null, excludeDev: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const val = () => { if (i + 1 >= argv.length) throw new UsageError(`${a} needs a value`); return argv[++i]; };
@@ -92,6 +106,10 @@ export function parseDepsArgs(argv) {
     else if (a === '--json') o.json = true;
     else if (a === '--audit-gate') { o.gate = 'high'; if (AUDIT_LEVELS.includes(argv[i + 1])) o.gate = argv[++i]; }
     else if (a === '--include-dev') o.includeDev = true;
+    else if (a === '--exclude-dev') o.excludeDev = true;
+    else if (a === '--introduced') { o.introduced = true; if (/^[^-].*\.\./.test(argv[i + 1] ?? '')) o.range = argv[++i]; }
+    else if (a === '--before') o.before = val();
+    else if (a === '--after') o.after = val();
     else if (a === '--update') o.update = true;
     else if (a === '--merge') o.merge = true;
     else if (a === '--tui') o.tui = true;
@@ -111,10 +129,17 @@ export function parseDepsArgs(argv) {
   if (o.kinds.length) { o.prod = o.prod ?? [...o.kinds]; o.dev = o.dev ?? [...o.kinds]; }
   if ((o.merge || o.tui || o.dryRun) && !o.update) throw new UsageError(`${o.merge ? '--merge' : o.tui ? '--tui' : '--dry-run'} applies to --update`);
   if (o.positional.length > 1) throw new UsageError('one project directory at most');
+  if (o.introduced) {
+    if (o.update || o.gate || o.history) throw new UsageError('--introduced is its own run: not with --update, --audit-gate or --history');
+    if (!o.range && !(o.before && o.after)) throw new UsageError('--introduced takes <base>..<head>, or --before <lockfile> --after <lockfile>');
+    if (o.range && (o.before || o.after)) throw new UsageError('--introduced takes a ref range or two files, not both');
+  } else if (o.before || o.after || o.excludeDev) throw new UsageError(`${o.before ? '--before' : o.after ? '--after' : '--exclude-dev'} applies to --introduced`);
   return o;
 }
 
-const settingValues = () => Object.fromEntries(['depsProdUpdateTypes', 'depsDevUpdateTypes', 'depsAutoMergeTypes', 'depsCooldownDays'].map((k) => [k, getSetting(k).value]));
+const SETTINGS = ['depsProdUpdateTypes', 'depsDevUpdateTypes', 'depsAutoMergeTypes', 'depsCooldownDays',
+  'depsAlertFixBypassesCooldown', 'depsIntroducedIncludeDev', 'depsIntroducedSeverities'];
+const settingValues = () => Object.fromEntries(SETTINGS.map((k) => [k, getSetting(k).value]));
 
 function recorder(enabled, say) {
   if (!enabled) return () => {};
@@ -125,7 +150,8 @@ function recorder(enabled, say) {
   };
 }
 
-export async function runDeps(argv, { out = (s) => process.stdout.write(s), err = (s) => process.stderr.write(s), env = process.env } = {}) {
+/** `lookup` replaces the OSV lookup for both sides; tests inject it. */
+export async function runDeps(argv, { out = (s) => process.stdout.write(s), err = (s) => process.stderr.write(s), env = process.env, lookup = null } = {}) {
   let o;
   try { o = parseDepsArgs(argv); } catch (e) {
     if (e instanceof UsageError) { err(`commitwork deps: ${e.message}\n`); return EXIT.USAGE; }
@@ -136,7 +162,19 @@ export async function runDeps(argv, { out = (s) => process.stdout.write(s), err 
   if (!Number.isFinite(nowMs)) { err(`commitwork deps: CW_NOW is not a date: ${env.CW_NOW}\n`); return EXIT.USAGE; }
   const trustRepo = o.trust || env.COMMITWORK_TRUST_REPO_MANIFEST === '1';
   const say = (s) => err(`${s}\n`);
-  const operator = operatorPolicy({ settings: settingValues(), flags: { prod: o.prod, dev: o.dev, automerge: o.automerge, cooldown: o.cooldown } });
+  const operator = operatorPolicy({ settings: settingValues(), flags: { prod: o.prod, dev: o.dev, automerge: o.automerge, cooldown: o.cooldown, includeDev: o.excludeDev ? false : undefined } });
+
+  if (o.introduced) {
+    let loc = null;
+    if (o.range) {
+      try { loc = locate(resolve(process.cwd(), o.positional[0] || '.')); } catch (e) { say(`commitwork deps: --introduced ${o.range} needs a git repository (${e.message})`); return EXIT.UNMEASURED; }
+    }
+    const inputs = inputsOf({ range: o.range, beforeFile: o.before, afterFile: o.after, top: loc?.top, pkgPath: loc?.pkgPath });
+    const v = await introducedVerdict({ ...inputs, includeDev: operator.introduced.includeDev, blocking: operator.introduced.blocking, nowMs,
+      ...(lookup ? { lookupBefore: lookup, lookupAfter: lookup, source: 'injected' } : {}) });
+    out(o.json ? `${JSON.stringify(v, null, 2)}\n` : renderIntroduced(v));
+    return v.state === 'clear' ? EXIT.OK : v.state === 'introduces' ? EXIT.ACTIONABLE : EXIT.UNMEASURED;
+  }
 
   if (o.history) {
     const l = readLedger();
@@ -232,6 +270,7 @@ export function renderUpdate(r) {
     const a = r.auditAfter.advisories;
     if (!b.error) lines.push(`  shipped critical/high advisories: ${b.prod.critical + b.prod.high} → ${a.prod.critical + a.prod.high} · all: ${b.counts.critical + b.counts.high} → ${a.counts.critical + a.counts.high}`);
   }
+  if (r.introduced) lines.push(`  introduced advisories: ${r.introduced.state} (introduced ${r.introduced.counts.introduced}, blocking ${r.introduced.counts.blocking}, resolved ${r.introduced.counts.resolved}, not measured ${r.introduced.counts.unmeasured})`);
   if (r.superseded?.length) lines.push(`  superseded: ${r.superseded.map((s) => s.branch).join(', ')}`);
   if (r.gate) lines.push(`  merge gate (${r.gate.rung}): ${r.gate.result} — ${r.gate.detail}`);
   if (r.mergeRefused) lines.push(`  not merged: ${r.mergeRefused}`);

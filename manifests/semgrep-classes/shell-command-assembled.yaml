@@ -5,6 +5,10 @@
 # examined. The shape here is the sink itself: a shell interpreter invoked with its command-string
 # flag and an argument that is not a literal. JavaScript is covered by the registry's
 # library-agnostic detect-child-process and spawn-shell-true rules.
+#
+# Test code is out of scope: a test builds a shell line from its own fixtures to exercise the code
+# under test, and is not attack surface. That is the path list below plus #[cfg(test)] modules and
+# #[test] functions, the same exclusions the SQL and SSRF classes keep.
 
 rules:
   - id: cw-shell-command-assembled-rust
@@ -20,6 +24,16 @@ rules:
       cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
       confidence: MEDIUM
       class: shell-command-assembled
+    paths:
+      exclude:
+        - '*_test.rs'
+        - '*_tests.rs'
+        - 'tests.rs'
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/testing/**'
+        - '**/benches/**'
+        - '**/fuzz/**'
     patterns:
       - pattern-either:
           - pattern: $CMD::new($SH). ... .arg($FLAG). ... .arg($ARG)
@@ -39,3 +53,7 @@ rules:
           metavariable: $ARG
           patterns:
             - pattern-not: '"..."'
+      - pattern-not-regex: '(?sm)^[ \t]*#\[cfg\((?:all\()?test\b[^\]]*\][ \t]*\n(?:[ \t]*#\[[^\n]*\][ \t]*\n)*[ \t]*(?:pub(?:\([^)]*\))?\s+)?mod\s+\w+\s*\{.*?^\}'
+      - pattern-not-inside: |
+          #[test]
+          fn $F(...) { ... }

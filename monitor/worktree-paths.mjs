@@ -16,6 +16,12 @@
 // ADOPTING THIS IN ANOTHER LANE IS NOT FREE. Open issues already keyed on `.claude/worktrees/`
 // paths are safe only while their rows stay enumerable. Verify before
 // wiring a new lane; do not assume this module makes the change inert.
+//
+// Scan-time exclusion (SCAN_EXCLUDE_ROOTS) removes copy rows outright. That is safe for issues
+// because ingest closes a copy-keyed issue as superseded once its row is gone, and the rollup
+// resolves a vanished copy-path dependency finding as resolved-scope, never as a fix candidate.
+// monitor/test/nested-checkout-autoclose.test.mjs holds both. The manifest literals do not read
+// CW_WORKTREE_PATHS: turning classification off counts copies that are still scanned, no more.
 
 // Env: CW_WORKTREE_PATHS=off disables classification entirely (everything counts); read at CALL time.
 
@@ -30,6 +36,13 @@ export const WORKTREE_ROOTS = Object.freeze([
   { seg: '.git/worktrees', why: 'git\'s own worktree administrative directory' },
   { seg: '.git', why: 'a checkout parked inside git\'s own directory, never this repository\'s source' },
 ]);
+
+/** The same population, as roots a scanner is told not to read: WORKTREE_ROOTS minus any root that
+ *  sits under another (`.git/worktrees` is inside `.git`), root-relative. Every tree-walking lane in
+ *  manifests/security-baseline.json excludes each of these; bin/test/nested-checkout-exclusion
+ *  pins that, so a root added above fails every lane until it is excluded there too. */
+export const SCAN_EXCLUDE_ROOTS = Object.freeze(WORKTREE_ROOTS.map((r) => r.seg)
+  .filter((s, _, all) => !all.some((o) => o !== s && s.startsWith(`${o}/`))));
 
 const norm = (u) => String(u || '')
   .replace(/^file:\/\/\/?/, '')

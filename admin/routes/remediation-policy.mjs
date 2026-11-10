@@ -11,6 +11,15 @@ import { acquireLockOrReason } from '../../monitor/lockfile.mjs';
 // deliberate file edit; de-escalation never needs ceremony.
 const API_SETTABLE_MODES = new Set(['report', 'hitl-item']);
 
+// draftPr widens what draft-pr opens, so it changes by file edit only, like the mode.
+const sortedJson = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+  ? Object.fromEntries(Object.keys(x).sort().map((key) => [key, x[key]])) : x));
+function draftPrChanged(doc, path) {
+  if (doc.draftPr === undefined) return false;
+  const stored = loadPolicy(path, { agenticGate: false }).draftPr;
+  return sortedJson({ ...DEFAULT_POLICY.draftPr, ...doc.draftPr }) !== sortedJson(stored);
+}
+
 // Read-hash-compare-write is a TOCTOU without this lock — writeJSONAtomic prevents torn files, not
 // lost updates.
 function withPolicyLock(path, fn) {
@@ -67,6 +76,15 @@ export const routes = [
             + (pre.ok ? '' : ` Even as a file edit it would be refused for this run: ${pre.errors.join('; ')}`),
           settableModes: [...API_SETTABLE_MODES],
           agentic: pre,
+        });
+      }
+      let widened;
+      try { widened = draftPrChanged(doc, p); } catch (e) { return send(503, { ok: false, error: e.message }); }
+      if (widened) {
+        return send(403, {
+          ok: false,
+          error: 'draftPr decides which repositories get remediation pull requests and whether they open ready. '
+            + 'Change it by editing monitor/remediation-policy.json, not over the API.',
         });
       }
       if (doc.m3 && doc.m3.autoMerge === true) {

@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-21 04af5bde -->
 # Public repository and private sidecar
 
 The release starts from a reviewed snapshot of the current implementation, with one new root
@@ -13,6 +13,22 @@ until the snapshot is ready.
 | Synthetic fixtures and example configuration | Real scan output, incident evidence and operational records |
 | Reviewed public documentation and aggregate results | Private originals, identifying citations and detailed audit records |
 | Generic publication and validation tools | Identity mappings, redaction lists and private review findings |
+| Interfaces to other tools, named for what they do | Which private tool implements one, and that tool's own records |
+
+**A private tool this product integrates with is disclosed as an interface, not as a name.**
+commitwork reads a task store, writes to a memory store and queries a semantic index. Those
+capabilities are features: they belong in the public repository, named for what they do, with their
+contracts and schemas beside them. Which product implements one on the maintainer's own machines is
+fleet configuration, and it belongs in the sidecar, reached through a `CW_*` path like every other
+private input. A module named after a private tool fails this twice — it discloses the tool, and it
+tells a reader nothing about what the module does.
+
+The same split applies to a record that names such a tool. The register keeps this product's own
+entries; the rest sit in a private overlay merged when the artefact is generated, where an absent
+overlay is the public shape rather than an error (`bin/taxonomy-render.mjs`). A denied-term list is
+a detector, not the policy: it is derived from this table, each term carries the reason it is denied
+and a test another person can apply, and a term that accounts for nearly a whole file is suspected
+before the file is.
 
 If material requires redaction, its original belongs in the sidecar. A reviewed public derivative
 may be copied into the public repository. The mapping between the two remains private. This rule

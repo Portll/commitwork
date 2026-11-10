@@ -23,20 +23,27 @@ test('egressMode: off, observe, enforce, and a refusal for anything else', () =>
 });
 
 test('startProxy/stop: a proxy comes up for a lane and its ledger comes back; enforce with no allowlist is refused before anything starts', (t) => {
+  // Arrange
   const state = mkdtempSync(join(tmpdir(), 'cw-egress-state-')); t.after(() => rmSync(state, { recursive: true, force: true }));
-  const p = startProxy({ lane: 'fixture', mode: 'observe', env: { ...process.env, CW_EGRESS_STATE_DIR: state } });
-  assert.ok(p.port > 0, JSON.stringify(p));
-  const ledger = p.stop();
-  assert.deepEqual([ledger.lane, ledger.mode, ledger.destinations], ['fixture', 'observe', []]);
   const d = mkdtempSync(join(tmpdir(), 'cw-egress-obs-')); t.after(() => rmSync(d, { recursive: true, force: true }));
-  assert.match(startProxy({ lane: 'x', mode: 'enforce', allowlistPath: join(d, 'absent.json'), env: { ...process.env, CW_EGRESS_STATE_DIR: state } }).refused, /enforce needs an allowlist/);
+  const env = { ...process.env, CW_EGRESS_STATE_DIR: state };
   writeFileSync(join(d, 'bad-allowlist.json'), JSON.stringify({ allow: [{ host: '*', why: 'this would make every other entry decoration' }] }));
+  // Act
+  const p = startProxy({ lane: 'fixture', mode: 'observe', env });
+  // stop()'s 3 s default is a production deadline; on a contended host the child's SIGTERM handler can miss it.
+  const ledger = p.port > 0 ? p.stop({ waitMs: 20000 }) : null;
+  const absent = startProxy({ lane: 'x', mode: 'enforce', allowlistPath: join(d, 'absent.json'), env });
   const t0 = Date.now();
-  const bad = startProxy({ lane: 'x', mode: 'enforce', allowlistPath: join(d, 'bad-allowlist.json'), env: { ...process.env, CW_EGRESS_STATE_DIR: state } });
-  assert.match(bad.refused, /egress proxy could not start: .*decoration/);
-  assert.ok(Date.now() - t0 < 4000, 'a startup failure is read from the port file, not waited out');
-  assert.deepEqual(readdirSync(state), [], 'every lane directory is removed');
+  const bad = startProxy({ lane: 'x', mode: 'enforce', allowlistPath: join(d, 'bad-allowlist.json'), env });
+  const badMs = Date.now() - t0;
   const path = recordObservation(d, { check: 'a', destinations: [] }); recordObservation(d, { check: 'b', destinations: [] });
+  // Assert
+  assert.ok(p.port > 0, JSON.stringify(p));
+  assert.deepEqual([ledger.lane, ledger.mode, ledger.destinations], ['fixture', 'observe', []], ledger.why);
+  assert.match(absent.refused, /enforce needs an allowlist/);
+  assert.match(bad.refused, /egress proxy could not start: .*decoration/);
+  assert.ok(badMs < 4000, 'a startup failure is read from the port file, not waited out');
+  assert.deepEqual(readdirSync(state), [], 'every lane directory is removed');
   assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')).lanes.map((l) => l.check), ['a', 'b']);
 });
 

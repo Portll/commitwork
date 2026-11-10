@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DEFAULT_POLICY, MODES, AGENTIC_MODES, CADENCE, validatePolicy, loadPolicy, checkAgenticPreconditions } from '../remediation-policy.mjs';
+import { DEFAULT_POLICY, MODES, AGENTIC_MODES, CADENCE, validatePolicy, loadPolicy, checkAgenticPreconditions, draftPrEnabled } from '../remediation-policy.mjs';
 
 const TMP = mkdtempSync(join(tmpdir(), 'cw-rempol-'));
 const NOW = '2026-09-15T12:00:00.000Z';
@@ -113,6 +113,37 @@ test('loadPolicy is deterministic (same file → identical result)', () => {
   writeFileSync(p, JSON.stringify({ mode: 'hitl-agentic', verification: 'double-arbitrate', cadence: 'monthly' }));
   const opts = { witnessPath: fresh('det-witness.json'), now: NOW };
   assert.deepEqual(loadPolicy(p, opts), loadPolicy(p, opts));
+});
+
+test('draft-pr sits above hitl-item, needs no witness, and enables draft PRs for itself and every mode above it', () => {
+  assert.deepEqual(MODES, ['report', 'hitl-item', 'draft-pr', 'hitl-agentic', 'full-agentic']);
+  assert.deepEqual(MODES.filter((mode) => draftPrEnabled({ mode })), ['draft-pr', 'hitl-agentic', 'full-agentic']);
+  assert.equal(draftPrEnabled(DEFAULT_POLICY), false, 'the default never opens a PR');
+  assert.equal(draftPrEnabled({}), false);
+  assert.equal(checkAgenticPreconditions({ policy: { mode: 'draft-pr' }, witnessPath: ABSENT, now: NOW }).ok, true);
+  const p = join(TMP, 'draft.json');
+  writeFileSync(p, JSON.stringify({ mode: 'draft-pr', draftPr: { targets: ['upstream'] } }));
+  const loaded = loadPolicy(p, { witnessPath: ABSENT, now: NOW });
+  assert.equal(loaded.mode, 'draft-pr');
+  assert.deepEqual(loaded.draftPr, { targets: ['upstream'], ready: 'never', maxOpenPerRepo: 1, maxOpenPerDay: 3 }, 'unset sub-settings fall back to the default');
+});
+
+test('draftPr sub-settings are validated: targets, ready, and integer caps', () => {
+  assert.deepEqual(validatePolicy({ mode: 'draft-pr', draftPr: { targets: ['own', 'upstream'], ready: 'own-only', maxOpenPerRepo: 0, maxOpenPerDay: 5 } }).errors, []);
+  assert.ok(validatePolicy({ draftPr: { targets: ['everyone'] } }).errors.some((e) => /draftPr\.targets entries/.test(e)));
+  assert.ok(validatePolicy({ draftPr: { targets: 'own' } }).errors.length, 'a bare string is not a list');
+  assert.ok(validatePolicy({ draftPr: { ready: 'always' } }).errors.some((e) => /draftPr\.ready/.test(e)));
+  for (const bad of [-1, 1.5, '3', 101]) {
+    assert.ok(validatePolicy({ draftPr: { maxOpenPerDay: bad } }).errors.some((e) => /maxOpenPerDay/.test(e)), JSON.stringify(bad));
+  }
+  assert.ok(validatePolicy({ draftPr: { extra: true } }).errors.length, 'an unknown key is refused by the schema');
+  assert.ok(validatePolicy({ mode: 'draft-pr', draftPr: { targets: [] } }).advisories.some((a) => /opens nothing/.test(a)));
+});
+
+test('the shipped policy file stays at report', () => {
+  const shipped = loadPolicy(join(import.meta.dirname, '..', 'remediation-policy.json'), { witnessPath: ABSENT, now: NOW });
+  assert.equal(shipped.mode, 'report');
+  assert.equal(draftPrEnabled(shipped), false);
 });
 
 test.after(() => rmSync(TMP, { recursive: true, force: true }));

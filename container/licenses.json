@@ -1,0 +1,82 @@
+{
+  "$comment": "What the images hold besides dpkg's packages and the scanners venv, with the licence texts each must carry. container/licenses.mjs copies them into /usr/share/licenses/commitwork at build time and fails the build when one is missing. A `path` is read in the image; an `archive` file is the one setup took from the release archive it verified; a `tree` file is vendored under container/licenses/ from `upstream` at the pinned tag and must match `sha256`.",
+  "components": [
+    {
+      "name": "commitwork", "version": "tree", "licence": "AGPL-3.0-or-later AND Apache-2.0", "present": "/opt/commitwork", "covers": ["/usr/local/bin/commitwork"],
+      "note": "LICENSING.md: AGPL-3.0-or-later, or PolyForm Internal Use by written agreement, with the wire layer under Apache-2.0. The tree is JavaScript, so the image carries its own source.",
+      "files": [{ "path": "/opt/commitwork/LICENSE" }, { "path": "/opt/commitwork/LICENSE-APACHE-2.0" }, { "path": "/opt/commitwork/LICENSING.md" }],
+      "source": [{ "inImage": "/opt/commitwork" }]
+    },
+    {
+      "name": "node", "version": "22.23.3", "licence": "MIT", "present": "/usr/local/bin/node",
+      "versionIn": { "path": "/usr/local/include/node/node_version.h", "text": "#define NODE_MAJOR_VERSION 22\n#define NODE_MINOR_VERSION 23\n#define NODE_PATCH_VERSION 3\n" },
+      "note": "The file carries, after Node's own licence, the licences of what Node bundles, npm (Artistic-2.0) and corepack (MIT) among them. npm's own dependencies carry theirs in place under /usr/local/lib/node_modules/npm/node_modules.",
+      "files": [{ "path": "/usr/local/LICENSE" }, { "path": "/usr/local/lib/node_modules/npm/LICENSE", "as": "npm-LICENSE" }, { "path": "/usr/local/lib/node_modules/corepack/LICENSE.md", "as": "corepack-LICENSE.md" }]
+    },
+    {
+      "name": "node-docker", "version": "node:22.23.3-bookworm-slim", "licence": "MIT", "present": "/usr/local/bin/docker-entrypoint.sh",
+      "note": "docker-entrypoint.sh, from the official image's build repository.",
+      "files": [{ "tree": "container/licenses/node-docker/LICENSE", "sha256": "782e17d54343aa3f6db60430015692b6540089b3ec5b78274981ada2d3c3c423", "upstream": "https://raw.githubusercontent.com/nodejs/docker-node/84410eeaede25daf49826da8265fbf548cc604fe/LICENSE" }]
+    },
+    {
+      "name": "yarn", "version": "1.22.22", "licence": "BSD-2-Clause", "present": "/opt/yarn-v1.22.22",
+      "files": [{ "path": "/opt/yarn-v1.22.22/LICENSE" }]
+    },
+    {
+      "name": "gitleaks", "version": "8.30.1", "licence": "MIT", "present": "/usr/local/bin/gitleaks",
+      "files": [{ "archive": "LICENSE" }]
+    },
+    {
+      "name": "trufflehog", "version": "3.99.2", "licence": "AGPL-3.0-only", "present": "/usr/local/bin/trufflehog",
+      "note": "A static Go binary: its corresponding source includes the Go modules it links, which the bundle carries.",
+      "files": [{ "archive": "LICENSE" }],
+      "source": [{ "github": "trufflesecurity/trufflehog", "tag": "v3.99.2", "goModules": true }]
+    },
+    {
+      "name": "cosign", "version": "3.1.4", "licence": "Apache-2.0", "present": "/usr/local/bin/cosign",
+      "note": "Copied from sigstore's image, which carries no licence file; the upstream repository has no NOTICE at this tag.",
+      "files": [{ "tree": "container/licenses/cosign/LICENSE", "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4", "upstream": "https://raw.githubusercontent.com/sigstore/cosign/v3.1.4/LICENSE" }]
+    },
+    {
+      "name": "actions-runner", "version": "2.338.0", "licence": "MIT", "present": "/opt/actions-runner",
+      "note": "The release archive carries no licence file.",
+      "files": [{ "tree": "container/licenses/actions-runner/LICENSE", "sha256": "621a1e0b6163b9d63fe780b9d6f5a7f775a5781065024a1ebf8010726c44cec1", "upstream": "https://raw.githubusercontent.com/actions/runner/v2.338.0/LICENSE" }]
+    },
+    {
+      "name": "dotnet-runtime", "version": "8.0.31", "licence": "MIT", "present": "/opt/actions-runner/bin/libcoreclr.so",
+      "versionIn": { "path": "/opt/actions-runner/bin/Runner.Listener.runtimeconfig.json", "text": "\"name\": \"Microsoft.NETCore.App\",\n        \"version\": \"8.0.31\"" },
+      "note": "Microsoft.NETCore.App, bundled self-contained in the runner archive. THIRD-PARTY-NOTICES.TXT covers the code the runtime takes from others.",
+      "files": [
+        { "tree": "container/licenses/dotnet-runtime/LICENSE.TXT", "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310", "upstream": "https://raw.githubusercontent.com/dotnet/runtime/v8.0.31/LICENSE.TXT" },
+        { "tree": "container/licenses/dotnet-runtime/THIRD-PARTY-NOTICES.TXT", "sha256": "97c1a7b3da6a4c6ad516448719f45114b41a4d4c5aa300a944476e2e4f5da438", "upstream": "https://raw.githubusercontent.com/dotnet/runtime/v8.0.31/THIRD-PARTY-NOTICES.TXT" }
+      ]
+    },
+    {
+      "name": "runner-node20", "version": "20.20.2", "licence": "MIT", "present": "/opt/actions-runner/externals/node20",
+      "versionIn": { "path": "/opt/actions-runner/externals/node20/include/node/node_version.h", "text": "#define NODE_MAJOR_VERSION 20\n#define NODE_MINOR_VERSION 20\n#define NODE_PATCH_VERSION 2\n" },
+      "files": [{ "path": "/opt/actions-runner/externals/node20/LICENSE" }]
+    },
+    {
+      "name": "runner-node24", "version": "24.21.0", "licence": "MIT", "present": "/opt/actions-runner/externals/node24",
+      "versionIn": { "path": "/opt/actions-runner/externals/node24/include/node/node_version.h", "text": "#define NODE_MAJOR_VERSION 24\n#define NODE_MINOR_VERSION 21\n#define NODE_PATCH_VERSION 0\n" },
+      "files": [{ "path": "/opt/actions-runner/externals/node24/LICENSE" }]
+    }
+  ],
+  "python": {
+    "$comment": "The scanners venv. A package whose dist-info carries no licence file gets one here, pinned to the version the lock installs. A copyleft package's source is its PyPI sdist unless `sources` names others.",
+    "files": {
+      "semgrep": { "version": "1.180.0", "files": [{ "tree": "container/licenses/semgrep/LICENSE", "sha256": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331", "upstream": "https://raw.githubusercontent.com/semgrep/semgrep/v1.180.0/LICENSE" }] },
+      "opentelemetry-util-http": { "version": "0.58b0", "files": [{ "tree": "container/licenses/opentelemetry-util-http/LICENSE", "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4", "upstream": "https://raw.githubusercontent.com/open-telemetry/opentelemetry-python-contrib/v0.58b0/LICENSE" }] }
+    },
+    "licences": {
+      "$comment": "Packages whose metadata names no licence, as their licence file reads.",
+      "face": "BSD-3-Clause",
+      "glom": "BSD-3-Clause",
+      "peewee": "MIT"
+    },
+    "sources": {
+      "semgrep": { "version": "1.180.0", "add": [{ "github": "semgrep/semgrep", "tag": "v1.180.0" }], "why": "the sdist holds the Python CLI; semgrep-core, the OCaml binary in the wheel, is built from the repository" },
+      "flawfinder": { "version": "2.0.20", "replace": [{ "github": "david-a-wheeler/flawfinder", "tag": "2.0.20" }], "why": "PyPI has no sdist for 2.0.20; the wheel is the Python source itself" }
+    }
+  }
+}

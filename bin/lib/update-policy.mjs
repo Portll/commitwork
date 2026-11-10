@@ -10,6 +10,7 @@
 // The same file drives .github/workflows/ci.yml's Dependabot merge job, so this repository's
 // automatic merges and `commitwork deps --merge` answer to one declaration.
 import { UPDATE_KINDS, DEFAULT_COOLDOWN, cooldownOf } from './npm-versions.mjs';
+import { DEFAULT_BLOCKING } from './introduced-verdict.mjs';
 
 export const POLICY_FILE = '.github/dependency-updates.json';
 export const POLICY_VERSION = 1;
@@ -69,7 +70,8 @@ export function parseRepoPolicy(text, source = POLICY_FILE) {
 const intersect = (a, b) => (b === undefined ? [...a] : a.filter((k) => b.includes(k)));
 
 /**
- * The effective policy. `operator` is { prod, dev, automerge, cooldown } as chosen for this run;
+ * The effective policy. `operator` is { prod, dev, automerge, cooldown, alertFixBypassesCooldown,
+ * introduced } as chosen for this run;
  * `repo` is a parsed policy or null when the repository declares none.
  */
 export function resolvePolicy(operator, repo = null) {
@@ -91,7 +93,10 @@ export function resolvePolicy(operator, repo = null) {
     const lost = operator[side].filter((k) => !update[side].includes(k));
     if (lost.length) narrowed.push(`${side} updates ${lost.join(', ')} excluded by ${repo ? POLICY_FILE : 'policy'}${r.zeroRuntimeDependencies && side === 'prod' ? ' (zeroRuntimeDependencies)' : ''}`);
   }
-  return { update, automerge, cooldown, zeroRuntimeDependencies: r.zeroRuntimeDependencies === true, repoPolicy: !!repo, narrowed };
+  // The repository file has no keys for these two: they are the operator's alone.
+  const introduced = { includeDev: operator.introduced?.includeDev ?? true, blocking: operator.introduced?.blocking ?? [...DEFAULT_BLOCKING] };
+  return { update, automerge, cooldown, alertFixBypassesCooldown: operator.alertFixBypassesCooldown === true, introduced,
+    zeroRuntimeDependencies: r.zeroRuntimeDependencies === true, repoPolicy: !!repo, narrowed };
 }
 
 /** May a change of this kind (an update type, 'lockfile' or 'advisories') to a package of this exposure be applied / merged? */
@@ -105,5 +110,7 @@ export function operatorPolicy({ settings, flags = {} }) {
     dev: pick('dev', 'depsDevUpdateTypes'),
     automerge: pick('automerge', 'depsAutoMergeTypes'),
     cooldown: pick('cooldown', 'depsCooldownDays'),
+    alertFixBypassesCooldown: settings.depsAlertFixBypassesCooldown === true,
+    introduced: { includeDev: pick('includeDev', 'depsIntroducedIncludeDev') ?? true, blocking: settings.depsIntroducedSeverities ?? [...DEFAULT_BLOCKING] },
   };
 }

@@ -1,0 +1,62 @@
+# Class rule: an HTML sink fed by component state or by the resolved value of a promise.
+#
+# The registry rule typescript.react.security.audit.react-dangerouslysetinnerhtml takes its taint
+# sources from function parameters only (`function ...({..., $X, ...})`). A value read from a
+# `useState` pair, or handed to a `.then(...)` callback or awaited, is a local the registry never
+# marks, so `dangerouslySetInnerHTML={{ __html: state.svg }}` is invisible to it. Checked on
+# 2026-11-10 with a four-component fixture: the registry flagged the prop and `props.member` shapes
+# and neither the `useState` shapes. This rule makes those sinks visible for review. It claims
+# coverage, not a vulnerability: most such values are produced by a renderer that sanitises its own
+# output.
+
+rules:
+  - id: cw-html-sink-from-state-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      An HTML sink (`dangerouslySetInnerHTML`, `innerHTML`/`outerHTML`, `insertAdjacentHTML`)
+      receives component state or the resolved value of a promise, with no sanitiser call on the
+      way. The registry rule for `dangerouslySetInnerHTML` only follows function parameters, so
+      this shape is reported here for review. Where the value comes from a renderer that
+      sanitises its own output (for example mermaid with `securityLevel: 'strict'`) it is
+      sanitised by the library and this is a coverage note; where it can carry markup from a
+      document, a request or a model, wrap it in `DOMPurify.sanitize(...)` first.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]
+      confidence: LOW
+      class: html-sink-from-state
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              const [$S, $SET] = useState(...);
+              ...
+          - pattern: $S
+      - patterns:
+          - pattern-inside: |
+              $P.then(($V) => { ... })
+          - pattern: $V
+      - patterns:
+          - pattern-inside: |
+              const $V = await $CALL;
+              ...
+          - pattern: $V
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: '(?i)^(.*\.)?(sanitize\w*|purify|escape\w*)$'
+    pattern-sinks:
+      - patterns:
+          - focus-metavariable: $X
+          - pattern-either:
+              - pattern: |
+                  <$Y ... dangerouslySetInnerHTML={{__html: $X}} />
+              - pattern: |
+                  {..., dangerouslySetInnerHTML: {__html: $X}, ...}
+              - pattern: $EL.innerHTML = $X
+              - pattern: $EL.outerHTML = $X
+              - pattern: $EL.insertAdjacentHTML($POS, $X)

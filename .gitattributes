@@ -8,3 +8,7 @@
 # The scan canary's installed packages are byte-exact: RECORD holds their sha256, and a CRLF checkout
 # would turn the clean twin into a tampered one.
 /fixtures/scan-canary/*/site-packages/** -text
+
+# Vendored licence texts are pinned by sha256 in container/licenses.json; a CRLF checkout would
+# change the bytes the image build checks.
+/container/licenses/** -text

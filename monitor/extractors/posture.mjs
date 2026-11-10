@@ -19,11 +19,15 @@ import { join } from 'node:path';
 import { safeParseFile } from '../safe-parse.mjs';
 import { readJacksonGuard } from '../jackson-guard-read.mjs';
 import { unknown } from '../unknown.mjs';
-import { _zero, _emptyArtifact, _detailFor, capMessage, _wtBucket, _setAsideWorktree, _worktreesOf } from './core.mjs';
+import { _zero, _emptyArtifact, _detailFor, _titled, capMessage, _wtBucket, _setAsideWorktree, _worktreesOf } from './core.mjs';
+import { publishedTitles, publishedTitle } from '../rule-titles.mjs'; // the rule lists hadolint and ShellCheck publish
 
 // Hadolint writes a flat array of {code, level, file, line, message}. level ∈ error|warning|info|
 // style. The manifest writes '[]' itself when no Dockerfile matched, so an empty array is a real
 // clean run, not a void.
+// Titles come from the Rules table hadolint publishes, then ShellCheck's own list for an SC code the
+// table leaves out (../rule-titles.mjs). Never from `message`: its SC rows are ShellCheck messages,
+// which carry the names they matched.
 export function _hadolintCounts(dir, file) {
   const p = join(dir, file); if (!existsSync(p)) return null;
   let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
@@ -32,12 +36,19 @@ export function _hadolintCounts(dir, file) {
   if (!Array.isArray(j)) return { ..._zero(), ran: true, unparseable: true };
   const c = { ..._zero(), ran: true }, map = { error: 'high', warning: 'med', info: 'low', style: 'low' };
   const rows = [];
+  const hadolint = publishedTitles('hadolint');
+  const shellcheck = publishedTitles('shellcheck');
+  const titles = new Map();
   for (const f of j) {
     const b = map[String((f && f.level) || '').toLowerCase()] || 'low';
     c[b]++; c.total++;
     rows.push({ rule: f && f.code, file: f && f.file, line: f && f.line, sev: b, message: f && f.message });
+    const rule = typeof (f && f.code) === 'string' ? f.code : '';
+    if (!rule || titles.has(rule)) continue;
+    const title = publishedTitle(hadolint, rule) || (rule.startsWith('SC') ? publishedTitle(shellcheck, rule) : null);
+    if (title) titles.set(rule, title);
   }
-  return { ...c, ..._detailFor('dockerfile', rows) };
+  return { ...c, ..._detailFor('dockerfile', rows), ..._titled(titles) };
 }
 
 // bin/tls-headers-scan.mjs writes {headers:{ran,grade,missing[]}, tls:{ran,findings[]}, ran, …}.

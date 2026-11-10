@@ -1,0 +1,3 @@
+usage_usec 100
+user_usec 60
+system_usec 40
