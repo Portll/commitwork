@@ -143,3 +143,21 @@ test('an explicit listen port is recorded at once, as listen:<port>, not ephemer
     assert.equal(listens[0].ephemeral, undefined, 'named once is named: a literal could have matched it');
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+test('a wrapped builtin keeps its name and length — tracing must not change what code can inspect', () => {
+  // Arrange
+  const d = fixtureRepo();
+  try {
+    writeFileSync(join(d, 'bin', 'shape.mjs'),
+      "import * as fs from 'node:fs';\nimport http from 'node:http';\nimport net from 'node:net';\nimport cp from 'node:child_process';\n"
+      + "const fns = { readFileSync: fs.readFileSync, openSync: fs.openSync, request: http.request, connect: net.connect, listen: net.Server.prototype.listen, spawnSync: cp.spawnSync, fetch: globalThis.fetch };\n"
+      + "console.log(JSON.stringify(Object.fromEntries(Object.entries(fns).map(([k, f]) => [k, [f.name, f.length]]))));\n");
+    // Act
+    const plain = spawnSync(process.execPath, ['bin/shape.mjs'], { cwd: d, encoding: 'utf8' });
+    const traced = spawnSync(process.execPath, ['-r', hookPath(), 'bin/shape.mjs'],
+      { cwd: d, encoding: 'utf8', env: { ...process.env, CW_FLOW_TRACE: join(d, 't.jsonl'), CW_FLOW_ROOT: d } });
+    // Assert
+    assert.ok(readTrace(join(d, 't.jsonl')).state === 'usable', 'the hook was really on');
+    assert.deepEqual(JSON.parse(traced.stdout), JSON.parse(plain.stdout));
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

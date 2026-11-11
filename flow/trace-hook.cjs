@@ -169,6 +169,17 @@ function install() {
   let probing = false;
   let depth = 0;                                 // network calls nest: http.request -> net -> Socket#connect
   const wrappers = new WeakSet();
+  // A wrapper keeps the original's `name` and `length`: code that inspects a function (a table of fs
+  // methods checked by name, a promisify keyed on length) must see the same function shape traced
+  // as untraced, or the trace changes the behaviour it is measuring.
+  const like = (w, orig) => {
+    try {
+      Object.defineProperty(w, 'name', { value: orig.name, configurable: true });
+      Object.defineProperty(w, 'length', { value: orig.length, configurable: true });
+    } catch { /* a frozen function property is cosmetic */ }
+    wrappers.add(w);
+    return w;
+  };
 
   try { mkdirSync.call(fs, path.dirname(OUT), { recursive: true }); } catch { /* the append will report it */ }
 
@@ -230,7 +241,7 @@ function install() {
       }
       return orig.apply(this, args);
     };
-    wrappers.add(obj[name]);
+    like(obj[name], orig);
   };
 
   const READS = ['readFileSync', 'readFile', 'createReadStream', 'readdirSync', 'readdir',
@@ -245,10 +256,10 @@ function install() {
   for (const n of SPAWNS) {
     const orig = cp[n];
     if (typeof orig !== 'function') continue;
-    cp[n] = function (...args) {
+    cp[n] = like(function (...args) {
       emit({ t: 'spawn', path: String(args[0]), actor: actorOf(), via: n, at: Date.now() });
       return orig.apply(this, args);
-    };
+    }, orig);
   }
 
   // ── network ──────────────────────────────────────────────────────────────────────────────────
@@ -268,8 +279,7 @@ function install() {
       depth += 1;
       try { return orig.apply(this, args); } finally { depth -= 1; }
     };
-    obj[name] = w;
-    wrappers.add(w);
+    obj[name] = like(w, orig);
   };
 
   netWrap(net, 'connect', 'net.connect', (a) => socketKey(a, 'tcp'));
@@ -293,9 +303,7 @@ function install() {
       emit({ t: 'connect', key, actor: actorOf(), via: 'fetch', at: Date.now() });
       return Reflect.apply(orig, this, args);
     };
-    Object.defineProperty(fetch, 'length', { value: orig.length });
-    Object.defineProperty(globalThis, 'fetch', { ...fetchDesc, value: fetch });
-    wrappers.add(fetch);
+    Object.defineProperty(globalThis, 'fetch', { ...fetchDesc, value: like(fetch, orig) });
   }
 
   const origListen = net.Server.prototype.listen;
@@ -316,7 +324,7 @@ function install() {
     }
     return origListen.apply(this, args);
   };
-  wrappers.add(net.Server.prototype.listen);
+  like(net.Server.prototype.listen, origListen);
 
   // Non-vacuity, written by the hook itself: a trace with no `installed` row means the preload never
   // ran, which flow/runtime.mjs reports as UNUSABLE rather than as a clean, edgeless run.
