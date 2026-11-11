@@ -143,6 +143,54 @@ npm link
 
 `--dry-run` prints every command without executing it. Use it before you trust a command.
 
+### Installing and updating
+
+`bin/install.sh` installs a checkout's HEAD, or a release tarball checked against its SHA-256,
+into a prefix (default `~/.local`: the tree in `~/.local/lib/commitwork`, the launcher in
+`~/.local/bin/commitwork`). [container/README.md](container/README.md) describes every flag.
+
+```sh
+sh bin/install.sh --from commitwork-X.Y.Z.tgz --sha256 <hex>   # the release lists the hash
+commitwork update --check                                      # is a newer release out?
+commitwork update                                              # verify it and install it
+```
+
+`commitwork update` reads a signed `portll-update@1` manifest from `https://updates.portll.net`,
+then from the `portll-update.json` asset of the GitHub release. It refuses a manifest whose schema,
+product or Ed25519 signature does not check, and one signed under a key commitwork does not ship
+(`lib/update/keys.mjs`). It installs only a version newer than `package.json`'s. It downloads the
+tarball, checks its size and SHA-256 against the manifest, and runs `bin/install.sh --from <tgz>
+--sha256 <hex>` with the same `--prefix` and `--dest` as the installed tree. The installer keeps
+the replaced tree at `<dest>.previous`. A git checkout is never installed over: `update` reports
+the release, and you update the checkout with git.
+
+- `--channel beta` takes every build published from main, and a stable release when it is higher.
+  The default is the `update.channel` setting, `stable`.
+- `--source portll|github` reads one source. The default is the `update.sources` setting.
+- `--yes` installs without asking. Without a terminal, `update` only reports.
+- No token is needed: the repository is public. A token raises GitHub's rate limit. `update`
+  takes `GITHUB_TOKEN`, then `gh auth token`, then the stored token: the macOS Keychain item
+  `PORTLL_UPDATE_TOKEN`, or a 0600 file `~/.commitwork/update-token` elsewhere.
+  `--login` signs in with the GitHub device flow: it prints `https://github.com/login/device` and
+  a code, then waits. It needs `PORTLL_GITHUB_CLIENT_ID`. `--token-stdin` stores a pasted token.
+  `--logout` removes it.
+- Every check and install is one JSON line in `~/.commitwork/update.log`: source, version, keyId
+  and outcome.
+
+The panel checks once a day, a few minutes after it starts and then every 24 hours plus up to an
+hour of jitter. The `update.auto` setting decides what the check does: `install` (the default),
+`notify` or `off`. With `install`, it installs only while no panel job is running and no sweep is
+in flight, then restarts onto the new code at its next idle point. A panel run from a git checkout
+reports the release and installs nothing. The restart is the panel's own
+automatic update, the same one that loads any change on disk. The panel log and the health line on
+the Settings page say what was installed and that the restart is pending. `CW_PANEL_AUTO_UPDATE=0`
+turns off both.
+
+Releases are published by `.github/workflows/publish-update.yml`, which calls spine's
+`publish-update.yml`: a beta manifest for every push to main, and a stable one after `release.yml`
+publishes a `v*` release. `npm run publish-update -- --channel <c>` runs spine's publisher by hand
+(`SPINE_DIR`, default `../spine`).
+
 ### Windows
 
 The commands above run from **Windows Terminal / PowerShell**. On Windows, CI checks the platform

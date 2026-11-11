@@ -1,0 +1,34 @@
+{
+ "publicKeyBase64": "H0MT26TZJwusdTe7PabkyRKDk+wSEp+zIcGVWpAqCeU=",
+ "keyId": "test-2026-11",
+ "artifactText": "portll-update@1 test artifact\n",
+ "canonical": "{\"artifacts\":[{\"github\":{\"asset\":\"megablast-chat-1.16.1.vsix\",\"repo\":\"Portll/megablast-chat\",\"tag\":\"v1.16.1\"},\"name\":\"megablast-chat-1.16.1.vsix\",\"platform\":\"any\",\"sha256\":\"b28c863eec6a43bbb3e8fdeddb541c6f2dc4e55c806bce1da1d9d06c74b163c3\",\"size\":30,\"url\":\"https://updates.portll.net/v1/megablast/1.16.1/megablast-chat-1.16.1.vsix\"}],\"channel\":\"beta\",\"notes\":\"test vector\",\"product\":\"megablast\",\"published\":\"2026-11-11T13:00:00Z\",\"schema\":\"portll-update@1\",\"version\":\"1.16.1\"}",
+ "manifest": {
+  "schema": "portll-update@1",
+  "product": "megablast",
+  "channel": "beta",
+  "version": "1.16.1",
+  "published": "2026-11-11T13:00:00Z",
+  "notes": "test vector",
+  "artifacts": [
+   {
+    "name": "megablast-chat-1.16.1.vsix",
+    "platform": "any",
+    "size": 30,
+    "sha256": "b28c863eec6a43bbb3e8fdeddb541c6f2dc4e55c806bce1da1d9d06c74b163c3",
+    "url": "https://updates.portll.net/v1/megablast/1.16.1/megablast-chat-1.16.1.vsix",
+    "github": {
+     "repo": "Portll/megablast-chat",
+     "tag": "v1.16.1",
+     "asset": "megablast-chat-1.16.1.vsix"
+    }
+   }
+  ],
+  "signature": {
+   "alg": "ed25519",
+   "keyId": "test-2026-11",
+   "sig": "MbiNBtmgw7AsrX+4nr3qHyG16PRl+cDo3GQpVEO6S3FjHU9UgTi9Enhu/mpzyNT4Ee4CjDIvMtyczaaNXRpZAQ=="
+  }
+ },
+ "verifies": true
+}
