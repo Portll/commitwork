@@ -219,6 +219,24 @@ function reviewDaysFromEnv(s) {
   return err ? { ok: false, error: `CW_MCP_REPO_ROOTS_REVIEW_DAYS=${JSON.stringify(s)} is invalid: ${err}` } : { ok: true, value: v };
 }
 
+export const UPDATE_AUTO_MODES = Object.freeze(['install', 'notify', 'off']);
+export const UPDATE_CHANNELS = Object.freeze(['stable', 'beta']);
+export const UPDATE_SOURCES = Object.freeze(['portll', 'github']);
+const oneOf = (words) => (v) => (words.includes(v) ? null : `must be one of ${words.join(', ')} (got ${show(v)})`);
+const oneOfFromEnv = (name, words) => (s) => (words.includes(s.toLowerCase())
+  ? { ok: true, value: s.toLowerCase() }
+  : { ok: false, error: `${name}=${JSON.stringify(s)} is invalid: must be one of ${words.join(', ')}` });
+function validUpdateSources(v) {
+  if (!Array.isArray(v) || !v.length) return `must be a non-empty list drawn from ${UPDATE_SOURCES.join(', ')} (got ${show(v)})`;
+  if (!v.every((x) => UPDATE_SOURCES.includes(x))) return `must be drawn from ${UPDATE_SOURCES.join(', ')}`;
+  return new Set(v).size === v.length ? null : 'a source is listed more than once';
+}
+function sourcesFromEnv(s) {
+  const v = s.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+  const err = validUpdateSources(v);
+  return err ? { ok: false, error: `CW_UPDATE_SOURCES=${JSON.stringify(s)} is invalid: ${err}` } : { ok: true, value: v };
+}
+
 // ── THE DECLARED REGISTRY ──────────────────────────────────────────────────────────────────────
 // Free-form keys are refused. Each entry carries everything a settings UI needs — label, help text,
 // unit, default, env shadow, consumers — because a parallel list maintained beside this one is the
@@ -683,6 +701,53 @@ export const SETTING_KEYS = {
     nullable: false,
     consumers: ['bin/deps.mjs'],
     validate: validSeverities,
+  },
+
+  // ── SELF-UPDATE (portll-update@1) ──────────────────────────────────────────────────────────
+  // Dotted names, unlike the keys above: they are the contract's names, shared with Megablast and
+  // Spine.app, so one word means one thing across the three updaters.
+  'update.auto': {
+    key: 'update.auto',
+    label: 'Updates: what the daily check does',
+    description: 'install, the default: the panel checks once a day, installs a newer signed release when no job or sweep is running, then restarts itself onto it at its next idle point. notify: it reports the release and installs nothing. off: no daily check. `commitwork update` works in every mode.',
+    unit: 'install|notify|off',
+    options: [
+      { id: 'install', label: 'install' },
+      { id: 'notify', label: 'notify' },
+      { id: 'off', label: 'off' },
+    ],
+    envVar: 'CW_UPDATE_AUTO',
+    parseEnv: oneOfFromEnv('CW_UPDATE_AUTO', UPDATE_AUTO_MODES),
+    default: 'install',
+    nullable: false,
+    consumers: ['lib/update/run.mjs', 'admin/serve.mjs'],
+    validate: oneOf(UPDATE_AUTO_MODES),
+  },
+  'update.channel': {
+    key: 'update.channel',
+    label: 'Updates: channel',
+    description: 'stable takes tagged releases. beta takes every build published from main, and a stable release when it is higher.',
+    unit: 'stable|beta',
+    options: [{ id: 'stable', label: 'stable' }, { id: 'beta', label: 'beta' }],
+    envVar: 'CW_UPDATE_CHANNEL',
+    parseEnv: oneOfFromEnv('CW_UPDATE_CHANNEL', UPDATE_CHANNELS),
+    default: 'stable',
+    nullable: false,
+    consumers: ['lib/update/run.mjs'],
+    validate: oneOf(UPDATE_CHANNELS),
+  },
+  'update.sources': {
+    key: 'update.sources',
+    label: 'Updates: sources, in order',
+    description: 'Where a release manifest is read from, first to last: portll is https://updates.portll.net, github is the GitHub Releases of Portll/commitwork. The first source with a manifest whose signature verifies is used.',
+    unit: 'sources',
+    options: [{ id: 'portll', label: 'portll' }, { id: 'github', label: 'github' }],
+    envVar: 'CW_UPDATE_SOURCES',
+    parseEnv: sourcesFromEnv,
+    default: ['portll', 'github'],
+    nullable: false,
+    consumers: ['lib/update/run.mjs'],
+    validate: validUpdateSources,
   },
 };
 

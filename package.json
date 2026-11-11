@@ -76,6 +76,7 @@
     "list": "node bin/commitwork.mjs list --manifest security-baseline",
     "doctor": "node bin/commitwork.mjs doctor --manifest security-baseline",
     "test": "node bin/test-run.mjs",
+    "publish-update": "node release/publish-update.mjs",
     "prepare": "node monitor/install-git-hook.mjs --write --prepare",
     "test:raw": "node --test --test-concurrency=1 \"admin/**/*.test.mjs\" \"bin/**/*.test.mjs\" \"lib/**/*.test.mjs\" \"monitor/**/*.test.mjs\" \"sitemap/**/*.test.mjs\" \"cra/**/*.test.mjs\" \"map/**/*.test.mjs\" \"chunk-diff/**/*.test.mjs\" \"flow/**/*.test.mjs\" \"mcp/**/*.test.mjs\" \"codegraph/**/*.test.mjs\" \"runner/**/*.test.mjs\""
   },

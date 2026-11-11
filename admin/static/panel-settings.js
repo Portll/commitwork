@@ -1043,7 +1043,8 @@ async function loadPanelHealth(){
     const au=d.autoUpdate||{state:'off'};
     const up=d.uptimeSecs>=86400?Math.floor(d.uptimeSecs/86400)+'d '+Math.floor(d.uptimeSecs%86400/3600)+'h':d.uptimeSecs>=3600?Math.floor(d.uptimeSecs/3600)+'h '+Math.floor(d.uptimeSecs%3600/60)+'m':Math.floor(d.uptimeSecs/60)+'m';
     line.innerHTML=`pid ${d.pid} · up ${up} · ${Math.round(d.memory.rss/1048576)} MB · ${d.supervised?'launchd-supervised · ':''}`
-      +(d.code.stale?'code on disk is newer than this process'+(AUTO_NOTE[au.state]?' — '+AUTO_NOTE[au.state]:''):'code current');
+      +(d.code.stale?'code on disk is newer than this process'+(AUTO_NOTE[au.state]?' — '+AUTO_NOTE[au.state]:''):'code current')
+      +(d.releaseUpdate&&d.releaseUpdate.note?' · '+esc(d.releaseUpdate.note):'');
     const stale=$('ph-stale'), b=$('ph-restart'), n=(d.code.changed||[]).length;
     const autoBusy=au.state==='checking'||au.state==='updating';
     if(stale) stale.hidden=!(d.code.stale&&(autoBusy||au.state==='off'||au.state==='blocked'));

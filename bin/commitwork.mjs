@@ -53,7 +53,7 @@ const expandHome = (p) => (p && p.startsWith('~/') ? join(homedir(), p.slice(2))
 // A version query runs no check, so it gets no report directory and no warning about one.
 const VERSION_CMDS = new Set(['version', '--version']);
 // Commands that run no lane, so write no lane artifacts and need no report directory.
-const NO_REPORT_CMDS = new Set([...VERSION_CMDS, 'deps']);
+const NO_REPORT_CMDS = new Set([...VERSION_CMDS, 'deps', 'update']);
 if (process.env.CW_REPORT_DIR) {
   process.env.CW_REPORT_DIR = resolve(process.env.CW_REPORT_DIR);
   mkdirSync(process.env.CW_REPORT_DIR, { recursive: true });
@@ -2803,6 +2803,9 @@ ${helpInPlace('scan-images')}  commitwork brief [dir] [--pc]       scan a reposi
                                       a pre-commit hook that checks the staged content
                                       (the index) for secrets before a commit lands;
                                       hook uninstall / hook run (see bin/hook.mjs)
+  commitwork update [--check] [--channel stable|beta] [--yes]
+                                      install a newer signed release (bin/update.mjs);
+                                      --login / --token-stdin / --logout manage the token
   commitwork version                  print the installed version (also --version)
   commitwork help
 ${helpOff()}
@@ -2911,6 +2914,8 @@ async function main() {
   if (cmd === 'setup') { process.exitCode = setupExitCode(await runSetup(parseSetupArgs(argv.slice(1)))); return; }
   if (cmd === 'init') { process.exitCode = runInit(parseInitArgs(argv.slice(1))); return; }
   if (cmd === 'deps') { process.exitCode = await runDeps(argv.slice(1)); return; }
+  // ahead of the first-run setup prompt: an update installs no scanner and must run unattended
+  if (cmd === 'update') { const { main: updateMain } = await import('./update.mjs'); process.exitCode = await updateMain(argv.slice(1)); return; }
   // ahead of the first-run setup prompt: a commit hook must never stop at an interactive question
   if (cmd === 'hook') { const { main: hookMain } = await import('./hook.mjs'); process.exitCode = hookMain(argv.slice(1)); return; }
   // first interactive launch: check the scanner toolchain and offer to install (once, stamped)
@@ -2938,7 +2943,7 @@ async function main() {
     case 'list': return cmdList(manifest, repoPath);
     case 'doctor': return cmdDoctor(manifest, repoPath);
     case 'run': return cmdRun(manifest, repoPath, positional[0], opts);
-    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, doctor, setup, init, hook, version, help)`);
+    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, doctor, setup, init, hook, update, version, help)`);
   }
 }
 

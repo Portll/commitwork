@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-349 commands: 152 declared, 12 prose, 185 undeclared. Of the declared, 121 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 31 declare a code of 20 or above.
+354 commands: 156 declared, 12 prose, 186 undeclared. Of the declared, 124 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 32 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -45,7 +45,7 @@ Declared in `bin/setup.mjs` (`setupExitCode`).
 | 20 | a requested install failed, or a tool --only named has no installer here |
 | 21 | nothing failed, but a requested tool needs an administrator; the closing block names the command |
 
-Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`, `version`, `help`.
+Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`, `update`, `version`, `help`.
 
 ## bin/
 
@@ -350,6 +350,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 20 | at least one section not measured (still printed) |
 | 21 | --write: a returned warning could not be recorded in the register (the digest is still written). |
 
+### `bin/disclosure-review.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | always on a completed run |
+| 1 | on bad input. |
+
 ### `bin/disregard.mjs`
 
 | Exit | Meaning |
@@ -531,6 +538,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 2 | usage |
 | 127 | no readable joern-scan launcher. |
 
+### `bin/judge.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | a reply was produced (even `undetermined`) |
+| 1 | bad input |
+| 2 | the backend errored. |
+
 ### `bin/lane-fixture.mjs`
 
 | Exit | Meaning |
@@ -663,6 +678,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 21 | a log, run, record or doc could not be read or parsed |
 | 22 | usage |
 | 23 | nothing measured: a job's log has no test totals, the job did not complete, no job matched, or --check found no record |
+
+### `bin/pm-handoff.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | on success |
+| 1 | on bad input. |
 
 ### `bin/pre-publish.mjs`
 
@@ -854,6 +876,18 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | every assessed session passed |
 | 1 | at least one BLOCK |
 | 2 | usage error, or nothing could be assessed. A run that reached no verdict exits 2 and never 0 — "I could not tell" and "it was fine" are different answers and only one of them is a pass. |
+
+### `bin/update.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | current, installed, or a token stored or removed |
+| 2 | usage |
+| 10 | a newer release is available and was not installed |
+| 20 | refused: a manifest or artifact failed verification |
+| 21 | no source answered with a verified manifest, or the download failed |
+| 22 | bin/install.sh failed (it undoes itself; the installed tree is as it was) |
+| 23 | sign-in failed |
 
 ### `bin/validate-artifact.mjs`
 
