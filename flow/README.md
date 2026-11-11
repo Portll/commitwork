@@ -270,3 +270,69 @@ The build owned `flow/**` only (spec §4) and recorded cross-cutting changes rat
    running nothing is not recorded yet.
 4. **Store default.** `CW_HARNESS_STORE` still defaults to `reports/harness/`, which is gitignored, so
    every artifact this produces by default is untracked. Where it should live durably is still undecided.
+
+## Static extraction: endpoints, databases, triggers
+
+C1 (`static.mjs`, `triggers.mjs`) adds three node kinds and three edge kinds to the graph. Every new
+edge is `witness: 'static'`, `existence: 'unknown'`, with `evidence` as `file:line how`.
+
+| node | key | from |
+|---|---|---|
+| `endpoint` | `<scheme>://<host>[:<port>]` | `fetch`, `http(s).request/get` (URL or `{host, port, protocol}`), named `request`/`get` imports of `node:http(s)`, `net`/`tls.connect`, `new WebSocket`, `new URL(…)` passed to any of them |
+| `endpoint` | `listen:<port\|unknown>` | `.listen(…)` in a module that imports `node:http(s)/net/http2/tls` or calls `createServer`; an unresolved port is `listen:unknown` and the node carries `unknown: true` |
+| `database` | the path literal (`:memory:` allowed) | `new DatabaseSync(p)` / `new Database(p)` |
+| `scheduler` | `launchd:<label>` · `workflow:<file>#schedule` · `cron:<file>` · `timer:<module>` · `watch:<module>` | see below |
+
+Edges: `connects` and `listens` module → endpoint; `triggers` scheduler → module; database access is
+`reads`/`writes` module → database, with `tables: […]` and the verbs and tables in `evidence`
+(`SELECT`/`WITH…SELECT` read; `INSERT/UPDATE/DELETE/REPLACE/CREATE/DROP/ALTER` write; `BEGIN`,
+`COMMIT`, `PRAGMA` and the like are neither). A spawn of `node` or `process.execPath` carries
+`script` (and `scripts` once merged) and, when the script is a tracked module, a second `spawns`
+edge to that module; the script is the first argv element that is not a `-flag`. A write by
+`appendFileSync`/`appendFile`/`createWriteStream(…, { flags: 'a' })` carries `append: true`; a read
+by `createReadStream`, `fs.watch`/`watchFile`, or inside a `setInterval` callback or a
+self-rescheduling `setTimeout` function carries `tail: true`. `mergeEdges` unions `tables`/`scripts`
+and ORs `append`/`tail`, since those describe the edge, not one witness of it.
+
+**Values.** An argument is resolved from the mask lexer's literal spans plus bracket matching over
+the masked rewrite V8 already accepted (`lexer.mjs` `matchBracket`/`splitArgs`): string and
+template literals, `const` bindings, `join`/`resolve` onto `import.meta.dirname`, `__dirname`,
+`dirname(fileURLToPath(import.meta.url))`, `new URL(x, import.meta.url)`, `process.cwd()`. This
+reads no character the lexer did not classify, so it is not a second tokenizer. A join onto a
+directory variable it cannot see into tries the module directory, then the repo root, and keeps
+the first tracked file.
+
+**Unknown is never clean.** A call site whose host, port, URL, database path, database handle, SQL
+or node script cannot be named is not an edge to a placeholder. It goes in the module record's
+`sites`, and into `summary.unanalysableSites`, `summary.unanalysableSitesByKind` (reason with the
+identifier taken out) and `summary.sites` (`file:line kind call: reason`), kept apart from the
+module-level `unanalysable` count.
+
+**`exec` as a method.** `db.exec('CREATE TABLE …')` and `RE.exec('…')` were read as spawn targets:
+every SQL statement handed to `node:sqlite` became a `process` node. A member `.exec(`/`.execSync(`
+is now a spawn only when its receiver is a `node:child_process` namespace import; a bare `exec(`
+(an injected `execFileSync`) still is. Process nodes on this tree went from 105 to 77.
+
+**Triggers.** `launchd`: `monitor/install-agents.mjs` is imported in a child process and its
+`AGENTS` table read (label, argv, schedule fragment, service). The file's own `isMainModule` guard
+keeps the install/`launchctl` half from running; the child keeps its registry reads out of the
+graph build. Labels therefore follow the registry of the machine that builds the graph, as the
+real plists do. The schedule is parsed into `{ type: 'KeepAlive' | 'StartInterval' |
+'StartCalendarInterval', … }` on the node. `workflow`: `.github/workflows/*.yml` and
+`workflows/*.yml` with `on.schedule` cron entries, line-based (no YAML dependency), triggering each
+tracked module a `run:` step invokes as `node <path>`. `cron`: a tracked `crontab`, `*.cron` or
+`*.crontab`. `timer`/`watch`: `setInterval`, a `setTimeout(f)` inside `f`'s own body (a bare
+`setTimeout(r, ms)` is a delay, not a trigger), and `fs.watch`/`watchFile` through an `fs`
+namespace or named import. A declared job that runs no tracked module is a site, not dropped.
+`analyseRepo` accepts `triggers: { launchd, workflows, crontabs, lsFiles }` to inject any of these.
+
+Measured on this tree, 2026-11-12, `node flow/static.mjs`, 9.3 s wall (baseline before these
+changes 7.2 s): 4,469 modules, 11,137 nodes, 22,703 edges. New nodes: 9 endpoints (7 outbound,
+`listen:0`, `listen:unknown`), 1 database (`:memory:`), 28 schedulers (16 launchd, 2 workflow, 10
+timer, 0 watch, 0 cron). New edges: 7 `connects`, 89 `listens`, 26 `triggers` (16 launchd, 10
+timer), 2 database edges, 390 `spawns` to a module, 351 node spawns carrying `script`, 8 `append`,
+0 `tail`. 365 unanalysable sites (112 connects, 167 database, 86 spawns; 151 outside tests). Both
+scheduled workflows (`codeql.yml`, `scorecard.yml`) run actions, not `node <path>`, so they
+trigger nothing. Most endpoints and every file-backed database path in this tree are computed
+(`dbPath()`, an env override with a default, a function parameter), which is why those counts are
+small and the site counts are not.
