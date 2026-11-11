@@ -23,11 +23,11 @@ Measured 2026-10-08:
 
 | Class | Files | Lines | What it matches |
 |---|---:|---:|---|
-| `launchd` | 11 | 43 | `launchctl`, `LaunchAgents`/`LaunchDaemons`, plist schedule keys |
+| `launchd` | 12 | 44 | `launchctl`, `LaunchAgents`/`LaunchDaemons`, plist schedule keys |
 | `keychain` | 7 | 14 | spawning `security`, `security find-/add-/dump-…`, `keychain:` refs, `osxkeychain` |
-| `zsh` | 1 | 2 | zsh shebangs, `'zsh'` literals, `.zshrc`/`.zprofile` |
-| `users-path` | 3 | 3 | `/Users/<name>` |
-| `homebrew` | 21 | 47 | `/opt/homebrew`, Cellar, `brew <subcommand>`, `'brew'` literals |
+| `zsh` | 2 | 3 | zsh shebangs, `'zsh'` literals, `.zshrc`/`.zprofile` |
+| `users-path` | 2 | 2 | `/Users/<name>` |
+| `homebrew` | 22 | 48 | `/opt/homebrew`, Cellar, `brew <subcommand>`, `'brew'` literals |
 | `sandbox-exec` | 1 | 3 | `sandbox-exec` |
 | `macos-tools` | 10 | 37 | `sw_vers osascript xcrun codesign notarytool spctl plutil pbcopy pbpaste system_profiler softwareupdate mdfind tccutil`, spawning `open`, `'ditto'`/`'xattr'` literals, BSD `sed -i ''`, `stat -f`, `date -j` |
 
