@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://commitwork.online/schema/dfd.schema.json",
   "title": "dfd@1 — a source-independent data flow diagram model (lib/dfd.mjs)",
-  "description": "Three element kinds (process, store, external) and flows between them. A broker or queue is a store with subtype broker|queue|topic|stream. Referential integrity (unique ids, flow endpoints, declared layers and groups, v as the first field) is checked in code by validateDfd, not here.",
+  "description": "Three element kinds (process, store, external) and flows between them. A broker or queue is a store with subtype broker|queue|topic|stream|log. Referential integrity (unique ids, flow endpoints, declared layers and groups, which kind takes which subtype, v as the first field) is checked in code by validateDfd, not here. Every field added after the first release is optional, so a document written before it stays valid.",
   "type": "object",
   "required": ["v", "kind", "nodes", "flows"],
   "additionalProperties": false,
@@ -49,7 +49,10 @@
           "id": { "type": "string", "minLength": 1 },
           "kind": { "enum": ["process", "store", "external"] },
           "label": { "type": "string", "minLength": 1 },
-          "subtype": { "type": "string", "minLength": 1 },
+          "subtype": {
+            "description": "store: broker|queue|topic|stream|log (a broker: data waits in it between writer and reader) or database|file. external: endpoint (a network peer or a listening port), scheduler (launchd, a workflow schedule, cron, a timer, a watcher), actor (a person or an attacker), system (another program), env (configuration from outside), binary (an executable spawned by name). A process takes none. Which kind takes which is checked in validateDfd.",
+            "enum": ["broker", "queue", "topic", "stream", "log", "database", "file", "endpoint", "scheduler", "actor", "system", "env", "binary"]
+          },
           "group": { "type": "string", "minLength": 1 },
           "layer": { "type": "string", "minLength": 1 },
           "unknown": { "type": "boolean" },
@@ -69,6 +72,18 @@
           "label": { "type": "string" },
           "mode": { "enum": ["sync", "async", "event"] },
           "directed": { "type": "boolean" },
+          "role": {
+            "description": "What the flow carries. Absent is data. feedback, error and retry are return paths: analysis classes them as feedback even when the opposite flow is adjacent, and only data flows collapse into a two-way pair.",
+            "enum": ["data", "feedback", "error", "retry"]
+          },
+          "existence": {
+            "description": "The producer's verdict on whether the flow is real: confirmed only when a second witness (the runtime, for the flow-graph adapter) agreed. Distinct from evidence.existence, which is the source edge's own value carried unchanged.",
+            "enum": ["confirmed", "unknown"]
+          },
+          "direction": {
+            "description": "On a flow made from an undirected touch, what the runtime saw the module do: reads (the flow runs into the module), writes (out of it) or both (two flows, one each way). Present only when the runtime resolved it; such a flow is directed.",
+            "enum": ["reads", "writes", "both"]
+          },
           "evidence": {
             "type": "object",
             "required": ["existence"],

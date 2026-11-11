@@ -259,6 +259,56 @@ panel route can send the same policy as a header.
 Not done: no panel route, no crossing minimisation beyond the sweeps, no label collision avoidance,
 and a diagram over 150 elements is refused unless `--max` raises the limit.
 
+### dfd sources and mapping
+
+Added 2026-11-12. The adapters moved out of `lib/dfd.mjs` into `flow/dfd-adapter.mjs`: `lib/` ships
+and imports nothing from `flow/`. `lib/dfd.mjs` keeps the model, `validateDfd`, `analyse` and
+`filterModel`.
+
+**Additions to `dfd@1`**, all optional, `v` still 1:
+
+| field | values | meaning |
+|---|---|---|
+| node `subtype` (store) | `broker` `queue` `topic` `stream` `log` · `database` `file` | the first five are brokers (`isBroker`) |
+| node `subtype` (external) | `endpoint` `scheduler` `actor` `system` `env` `binary` | a process takes none; `validateDfd` checks which kind takes which |
+| flow `role` | `data` (default) `feedback` `error` `retry` | a non-data flow is a **feedback** flow even when its pair is adjacent; only `data` collapses into a two-way pair |
+| flow `existence` | `confirmed` `unknown` | the producer's verdict; `evidence.existence` stays the source edge's own value |
+| flow `direction` | `reads` `writes` `both` | on a touch the runtime resolved: what it saw the module do; such a flow is directed |
+
+The subtype set is closed: the fixture's `user`, `relational` and `lake` became `actor`, `database`
+and `file`. `filterModel(model, { prefix, around, hops, direction })` walks `out` (forward), `in`
+(backward) or `both` (the default and the old behaviour); an undirected flow is crossed either way.
+`around` is the new name for `focus`, which is still read.
+
+**`fromFlowGraph(graph, { reconcile, layers, include })`**, beyond the table above:
+
+| flow graph | `dfd@1` |
+|---|---|
+| `endpoint` | external, subtype `endpoint`; `connects` M→E, and `listens` draws E→M: a listener is fed from outside |
+| `database` | store, subtype `database`; an edge's `tables` go into the flow label |
+| `scheduler` | external, subtype `scheduler`; `triggers` draws S→M with mode `event` |
+| `spawns` with `script` | a flow to the script's own process, not to `node`; a script that is not a module stays on the binary, labelled with the script |
+| `writes` `append: true` + `reads` `tail: true` | the store is subtype `log` (a broker) and both flows are `async` |
+| an `artifact`/`store` whose path is a module | that module's process: one element, not a P and a D; a flow it would make to itself is dropped and counted |
+| reconcile edge (same from, to, kind) | replaces witness and existence; flow `existence` is `confirmed` only when that existence is; a `touches` with `direction` becomes directed flows |
+| reconcile `observedPaths[bareName]` | one path renames the bare-filename store; several split it, one store per path, every split flow `existence: unknown` |
+
+`layers` is a layer map (`validateLayerMap`): `{ layers: [...], rules: [{ prefix | glob, layer }] }`,
+first match wins, applied to the label of every process and store. `docs/dfd/commitwork-layers.json`
+is commitwork's own (`raw`, `normalised`, `published`, from `monitor/README.md`'s sweep pipeline).
+Counts of what was merged, renamed, split and resolved are in `source.options.merged`.
+
+**`fromCodeFlows(records)`** draws a scanned repository from `cra/dataflow-evidence.mjs` records:
+the untrusted source is an external actor, the source and sink files are processes, and the sink is
+a store or external by what the rule id says it sinks into (`sinkKindOf`: SQL → database, path →
+file, log injection → log, command → binary, request forgery → endpoint, XSS → actor, code
+injection → system; anything else an unknown system). A record holds only its trace's two ends and
+its step count, so a step in a third file is not drawn. Every flow is `existence: unknown`: a
+CodeQL trace proves data can reach the sink, not that a run did.
+
+`docs/dfd/threat-model.dfd.json` is `docs/THREAT-MODEL.md` drawn by hand: six boundaries, the
+attackers as actors, every element citing its section and every flow `authored` / `unknown`.
+
 ## Requests made while building, and where they stand
 
 The build owned `flow/**` only (spec §4) and recorded cross-cutting changes rather than making them.
