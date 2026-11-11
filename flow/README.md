@@ -157,6 +157,108 @@ asked a question — `monitor/rollup.mjs` republishes when run with no argument,
 treats an unknown first argument as a whole-fleet sweep — so `DEFAULT_COMMANDS` is a checked
 read-only set and widening it is a deliberate act, not a default.
 
+## Data flow diagrams (`dfd@1`)
+
+`flow/` printed text. `flow/dfd*.mjs` draws: a data flow diagram of this repository's own graph, or
+of any system described in a `dfd@1` file — a scanned repository's flows, a threat-model diagram.
+
+| file | what it is |
+|---|---|
+| `dfd.mjs` | the `dfd@1` model, `validateDfd`, the analysis (`analyse`), the adapter (`fromFlowGraph`), the filter (`filterModel`) — pure functions |
+| `dfd-render.mjs` | deterministic layered layout and one self-contained HTML page with an inline SVG |
+| `dfd-cli.mjs` | the command |
+| `../schema/dfd.schema.json` | the document's shape; ids, flow ends, declared layers and groups are checked in `validateDfd` |
+
+```sh
+node flow/dfd-cli.mjs --from lib/test/fixtures/dfd-synthetic.json --out /tmp/dfd.html
+node flow/static.mjs                                   # writes <CW_HARNESS_STORE>/flow.json
+node flow/dfd-cli.mjs --graph --prefix flow/ --out /tmp/flow-dfd.html
+node flow/dfd-cli.mjs --graph --focus monitor/rollup.mjs --hops 1 --emit model   # the dfd@1 document
+node --test --experimental-test-coverage flow/test/dfd.test.mjs flow/test/dfd-render.test.mjs flow/test/dfd-cli.test.mjs
+```
+
+The command is `node flow/dfd-cli.mjs`, as `flow/report.mjs` is, and not a `commitwork` subcommand:
+`flow/` is not in `package.json` `files`, so the installed CLI cannot import it.
+
+### The model
+
+```jsonc
+{ "v": 1, "kind": "dfd", "title": "…",
+  "source": { "producer": "authored|flow-graph|…", "omitted": {…}, "filter": {…} },
+  "layers": ["bronze", "silver", "gold"],                       // maturity order, optional
+  "groups": [{ "id": "internet", "label": "Internet", "boundary": "trust|system" }],
+  "nodes": [{ "id": "api", "kind": "process|store|external", "label": "Order API",
+              "subtype": "topic", "group": "internet", "layer": "bronze", "unknown": false, "note": "…" }],
+  "flows": [{ "from": "api", "to": "events", "label": "OrderPlaced", "mode": "sync|async|event",
+              "directed": true,
+              "evidence": { "witness": "static|runtime|both|authored",
+                            "existence": "confirmed|contradicted|unknown", "refs": ["file:line how"] } }] }
+```
+
+Three element kinds. A broker or queue is a **store** with subtype `broker`, `queue`, `topic` or
+`stream`: data rests in it between producer and consumer, the notation has no fourth symbol, and
+asynchrony already lives on the flow's `mode`. `mode` says whether the two ends are coupled in time:
+`sync` the sender waits, `async` it does not, `event` the receiver is triggered by a message.
+`evidence` keeps the flow graph's two axes apart, unchanged. A flow with no `evidence` is *declared*;
+neither it nor an `unknown` one is ever drawn or tabulated as confirmed.
+
+### What the analysis derives
+
+Every flow takes exactly one class, in this order: **undirected** (`directed: false`),
+**self-loop** (`from === to`, a retry), **bidirectional** (A→B and B→A both exist; one two-headed
+flow), **feedback** (an arc that returns inside a strongly connected component, found by walking the
+component from the node the outside flows into), **forward**. From the same pass: hop rank per node
+(longest path once the returning arcs are set aside) and the rank of its component, branch and merge
+points, source-to-sink paths (counted exactly, listed up to a cap, the cut declared), async hops (by
+mode, or by a broker at either end) and producer → broker → consumer triples.
+
+An undirected flow takes no part in ranks, cycles or paths: a cycle built on a guessed direction is
+a fabricated feedback loop. A cycle through an element marked `unknown` is reported as uncertain.
+
+### The flow-graph adapter
+
+| flow graph | `dfd@1` |
+|---|---|
+| `module` | process; `group` is its first path segment; an unanalysable module is `unknown` |
+| `artifact`, `store` | store, subtype `file`; a bare filename is `unknown` — a name, not a location |
+| `env` | external, subtype `env` |
+| `process` (spawn target) | external, subtype `binary`, when the target reads as one command name; the module's own process when it names a module; otherwise left out and counted |
+| `reads` M←X | flow X→M · `writes` M→X: flow M→X · `touches`: flow with `directed: false` |
+| `spawns` | flow M→P, `async` unless every witness is a `*Sync` call; left out when every witness is a bare `exec`, which a database handle also has |
+| `reads` M←M′ (an import) | left out and counted: a code dependency, not a data flow (`--imports` keeps it) |
+
+Test modules and fixtures are left out unless `--tests`. Everything left out is counted in
+`source.omitted` and printed on the page.
+
+Measured on this tree with the `dfd` files in it, 2026-11-11: the graph's 11,077 nodes and 21,770
+edges become 2,489 elements (547 processes, 1,140 stores, 802 externals: 755 env keys and 47
+binaries) and 2,973 flows, every one `static` / `unknown`, 1,445 of them undirected, 8 async. Left
+out and counted: 3,613 test modules, 2,422 imports, 28 spawn targets that are not command names, 21
+bare-`exec` edges, 4,947 nodes with no remaining flow. The analysis finds 23 two-way pairs, 1
+feedback flow, no self-loop, 179 branch and 295 merge points, 5,281 source-to-sink paths, and 14
+cyclic components: 13 are one two-way pair, the fourteenth has ten members. **All 14 pass through a
+bare-filename store**, so all 14 are reported as uncertain. Nothing in the graph is a broker, a
+network endpoint or a scheduled trigger, because C1 does not extract them.
+
+### The page
+
+Gane–Sarson notation: a process is a rounded box, a store is a box open at the right (`D`; `Q` for a
+broker), an external entity is a square box with a shadow. Solid is sync, dashed is async or event,
+two heads is bidirectional, dotted and headless is a direction nobody determined. A feedback flow
+is routed over the top on its own track; a retry is a loop on the process's corner. Maturity layers
+are horizontal bands and hop rank runs left to right. A boundary is a hull when it encloses only its
+members, and a caption under each member when it cannot. The same elements and flows are tabulated
+under the diagram.
+
+Layout is rank assignment, one virtual point per rank a long flow crosses, four barycentre sweeps
+and coordinates, with no clock and no randomness: one model is one sequence of bytes. The page
+carries `houseCss()` and the theme follower, no other script, no `style` attribute, and a
+`Content-Security-Policy` of hashes for exactly those. `renderHtml` returns `{ html, csp }` so a
+panel route can send the same policy as a header.
+
+Not done: no panel route, no crossing minimisation beyond the sweeps, no label collision avoidance,
+and a diagram over 150 elements is refused unless `--max` raises the limit.
+
 ## Requests made while building, and where they stand
 
 The build owned `flow/**` only (spec §4) and recorded cross-cutting changes rather than making them.

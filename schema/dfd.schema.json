@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/dfd.schema.json",
+  "title": "dfd@1 — a source-independent data flow diagram model (lib/dfd.mjs)",
+  "description": "Three element kinds (process, store, external) and flows between them. A broker or queue is a store with subtype broker|queue|topic|stream. Referential integrity (unique ids, flow endpoints, declared layers and groups, v as the first field) is checked in code by validateDfd, not here.",
+  "type": "object",
+  "required": ["v", "kind", "nodes", "flows"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": { "type": "string" },
+    "v": { "const": 1 },
+    "kind": { "const": "dfd" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "source": {
+      "type": "object",
+      "required": ["producer"],
+      "additionalProperties": false,
+      "properties": {
+        "producer": { "type": "string", "minLength": 1 },
+        "note": { "type": "string" },
+        "graph": { "type": "object" },
+        "options": { "type": "object" },
+        "omitted": { "type": "object" },
+        "filter": { "type": "object" }
+      }
+    },
+    "layers": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "boundary"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "boundary": { "enum": ["trust", "system"] }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["process", "store", "external"] },
+          "label": { "type": "string", "minLength": 1 },
+          "subtype": { "type": "string", "minLength": 1 },
+          "group": { "type": "string", "minLength": 1 },
+          "layer": { "type": "string", "minLength": 1 },
+          "unknown": { "type": "boolean" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "label": { "type": "string" },
+          "mode": { "enum": ["sync", "async", "event"] },
+          "directed": { "type": "boolean" },
+          "evidence": {
+            "type": "object",
+            "required": ["existence"],
+            "additionalProperties": false,
+            "properties": {
+              "witness": { "enum": ["static", "runtime", "both", "authored"] },
+              "existence": { "enum": ["confirmed", "contradicted", "unknown"] },
+              "refs": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

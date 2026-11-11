@@ -1,0 +1,54 @@
+{
+  "v": 1,
+  "kind": "dfd",
+  "title": "Order analytics (synthetic fixture)",
+  "source": {
+    "producer": "authored",
+    "note": "Hand-authored test fixture: every element kind and every flow topology the visualiser supports, in one model."
+  },
+  "layers": ["bronze", "silver", "gold"],
+  "groups": [
+    { "id": "internet", "label": "Internet", "boundary": "trust" },
+    { "id": "platform", "label": "Order platform", "boundary": "system" }
+  ],
+  "nodes": [
+    { "id": "customer", "kind": "external", "label": "Customer", "subtype": "user", "group": "internet" },
+    { "id": "api", "kind": "process", "label": "Order API", "group": "platform" },
+    { "id": "orders-db", "kind": "store", "label": "Orders DB", "subtype": "relational", "group": "platform" },
+    { "id": "events", "kind": "store", "label": "order-events", "subtype": "topic", "group": "platform", "note": "Kafka topic" },
+    { "id": "ingest", "kind": "process", "label": "Ingest", "layer": "bronze" },
+    { "id": "bronze", "kind": "store", "label": "Raw orders", "subtype": "lake", "layer": "bronze" },
+    { "id": "transform", "kind": "process", "label": "Clean and conform", "layer": "silver" },
+    { "id": "enrich", "kind": "process", "label": "Enrich", "layer": "silver" },
+    { "id": "validate", "kind": "process", "label": "Validate quality", "layer": "silver" },
+    { "id": "quarantine", "kind": "store", "label": "Quarantine", "subtype": "log", "layer": "silver" },
+    { "id": "silver", "kind": "store", "label": "Conformed orders", "subtype": "lake", "layer": "silver" },
+    { "id": "aggregate", "kind": "process", "label": "Aggregate", "layer": "gold" },
+    { "id": "features", "kind": "process", "label": "Build features", "layer": "gold" },
+    { "id": "gold", "kind": "store", "label": "Gold marts", "subtype": "relational", "layer": "gold" },
+    { "id": "serve", "kind": "process", "label": "Report API" },
+    { "id": "analyst", "kind": "external", "label": "BI analyst", "subtype": "user" }
+  ],
+  "flows": [
+    { "from": "customer", "to": "api", "label": "order request", "mode": "sync" },
+    { "from": "api", "to": "customer", "label": "order status", "mode": "sync" },
+    { "from": "api", "to": "orders-db", "label": "order row", "mode": "sync", "evidence": { "witness": "both", "existence": "confirmed", "refs": ["api/orders.mjs:41 insert"] } },
+    { "from": "api", "to": "events", "label": "OrderPlaced", "mode": "async" },
+    { "from": "events", "to": "ingest", "label": "OrderPlaced", "mode": "event" },
+    { "from": "ingest", "to": "ingest", "label": "retry on timeout", "mode": "sync" },
+    { "from": "ingest", "to": "bronze", "label": "raw batch", "mode": "sync" },
+    { "from": "bronze", "to": "transform", "label": "raw batch", "mode": "sync" },
+    { "from": "transform", "to": "enrich", "label": "clean rows", "mode": "sync" },
+    { "from": "enrich", "to": "validate", "label": "candidate rows", "mode": "sync" },
+    { "from": "validate", "to": "transform", "label": "validation errors", "mode": "sync" },
+    { "from": "validate", "to": "bronze", "label": "replay request", "mode": "async", "evidence": { "witness": "authored", "existence": "unknown" } },
+    { "from": "validate", "to": "quarantine", "label": "rejected rows", "mode": "sync" },
+    { "from": "validate", "to": "silver", "label": "valid rows", "mode": "sync" },
+    { "from": "silver", "to": "aggregate", "label": "orders", "mode": "sync" },
+    { "from": "silver", "to": "features", "label": "orders", "mode": "sync" },
+    { "from": "aggregate", "to": "gold", "label": "daily totals", "mode": "sync" },
+    { "from": "features", "to": "gold", "label": "feature rows", "mode": "sync" },
+    { "from": "gold", "to": "serve", "label": "marts", "mode": "sync" },
+    { "from": "serve", "to": "analyst", "label": "report", "mode": "sync" }
+  ]
+}
