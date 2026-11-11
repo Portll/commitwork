@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 339 | 277 | 62 |
-| Exit codes (declared in the header) | 352 | 155 | 197 |
-| `CW_*` environment variables (described in an `env` header) | 928 | 223 | 705 |
+| Commands (a usage line in the header) | 340 | 278 | 62 |
+| Exit codes (declared in the header) | 354 | 156 | 198 |
+| `CW_*` environment variables (described in an `env` header) | 932 | 223 | 709 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -38,6 +38,7 @@ From `usage()` in `bin/commitwork.mjs`.
 | `commitwork init [--root <dir>]... [--repo <path>]... [--private-dir <dir>] [--dry-run]` | create the private store dir, a fleet registry and ~/.commitwork; never overwrites |
 | `commitwork setup [--yes] [--only a,b]` | install missing scanners via the local package manager (brew/winget/scoop/pipx); also offered on the first interactive launch |
 | `commitwork hook install [--repo <path>] [--chain] [--lanes secrets,gitleaks] [--unrun block\|warn]` | a pre-commit hook that checks the staged content (the index) for secrets before a commit lands; hook uninstall / hook run (see bin/hook.mjs) |
+| `commitwork update [--check] [--channel stable\|beta] [--yes]` | install a newer signed release (bin/update.mjs); --login / --token-stdin / --logout manage the token |
 | `commitwork version` | print the installed version (also --version) |
 | `commitwork help` | undocumented |
 
@@ -79,6 +80,7 @@ Exit codes:
 - `commitwork init`: 0 ready · 1 refused (existing state init would not have created, or a state root that cannot be resolved) · 2 usage (declared in `bin/init.mjs`)
 - `commitwork setup`: 0 every requested tool was present or installed, or nothing was requested (report-only, declined) · 20 a requested install failed, or a tool --only named has no installer here · 21 nothing failed, but a requested tool needs an administrator; the closing block names the command (declared in `bin/setup.mjs`)
 - `commitwork hook`: undeclared
+- `commitwork update`: undeclared
 - `commitwork version`: undeclared
 - `commitwork help`: undeclared
 
@@ -1682,6 +1684,20 @@ bin/turn-gate.mjs — run the turn gate over a session transcript.
 - Option: `--hook is record-only and exits 0 on every path: blocking waits on adjudicated firings.`
 - Exit: 0 every assessed session passed · 1 at least one BLOCK · 2 usage error, or nothing could be assessed. A run that reached no verdict exits 2 and never 0 — "I could not tell" and "it was fine" are different answers and only one of them is a pass.
 
+### `bin/update.mjs`
+
+commitwork update — check for, verify and install a newer commitwork (portll-update@1).
+
+- Usage: `commitwork update [--check] [--channel stable|beta] [--source portll|github] [--yes]`
+- Option: `--check report only; never downloads the release or installs`
+- Option: `--channel this run's channel; default the update.channel setting (stable)`
+- Option: `--source read only this source; default the update.sources setting (portll, then github)`
+- Option: `--yes install without asking; without it, a terminal is asked and anything else`
+- Option: `--login sign in to GitHub with the device flow (needs PORTLL_GITHUB_CLIENT_ID) and store`
+- Option: `--token-stdin store a token read from stdin (a GitHub token or an update token)`
+- Option: `--logout remove the stored token`
+- Exit: 0 current, installed, or a token stored or removed · 2 usage · 10 a newer release is available and was not installed · 20 refused: a manifest or artifact failed verification · 21 no source answered with a verified manifest, or the download failed · 22 bin/install.sh failed (it undoes itself; the installed tree is as it was) · 23 sign-in failed
+
 ### `bin/upstream-fetch.mjs`
 
 upstream-fetch.mjs — fetch a vendored third-party binary ONLY from a declared source, verify it against a declared hash, and append a hash-chained record of what was taken.
@@ -2707,8 +2723,8 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-928 `CW_*` names read by tracked non-test sources: 803 by name, and
-125 indirect (quoted in a file that reads the environment by a computed key, so the read
+932 `CW_*` names read by tracked non-test sources: 804 by name, and
+128 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
 
@@ -3575,6 +3591,10 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_UPDATES_CACHE` | indirect | `monitor/update-vulns.mjs` | undocumented |
 | `CW_UPDATES_JOB_DIR` | direct | `admin/routes/updates.mjs` | undocumented |
 | `CW_UPDATES_OUT` | direct | `admin/routes/updates.mjs` | undocumented |
+| `CW_UPDATE_AUTO` | indirect | `monitor/settings.mjs` | undocumented |
+| `CW_UPDATE_CHANNEL` | indirect | `monitor/settings.mjs` | undocumented |
+| `CW_UPDATE_LOG` | direct | `lib/update/run.mjs` | undocumented |
+| `CW_UPDATE_SOURCES` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_UPSTREAM` | direct | `bin/tls-proxy.sh` | undocumented |
 | `CW_UPSTREAM_CACHE` | direct | `bin/upstream-fetch.mjs` | undocumented |
 | `CW_UPSTREAM_CHAIN` | direct | `bin/upstream-fetch.mjs` | undocumented |

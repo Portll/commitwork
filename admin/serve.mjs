@@ -110,9 +110,13 @@ import { routes as inboxRoutes } from './routes/inbox.mjs';
 import { routes as runnerRoutes } from './routes/runner.mjs';
 import { initJobs, knownProjects, trigger, running } from './lib/jobs.mjs';
 import { createAutoUpdater, autoUpdateEnabled, runPreflight } from './lib/panel-auto-update.mjs';
+import { createUpdateScheduler, busyReason } from '../lib/update/scheduler.mjs';
+import { runUpdate, updateSettings, configDir as updateConfigDir } from '../lib/update/run.mjs';
+import { resolveToken } from '../lib/update/token.mjs';
+import { readMarkers, defaultPidAlive } from '../monitor/sweep-health.mjs';
 import { readBuild } from './lib/panel-build.mjs';
 import { needsBootstrap, externalSsoAllowed } from './auth.mjs';
-import { annotationsPathFor, gateExemptionsPathFor, stubAllowlistPathFor, stateBaseFor } from '../monitor/store-paths.mjs';
+import { annotationsPathFor, gateExemptionsPathFor, stubAllowlistPathFor, stateBaseFor, reportsRootFor } from '../monitor/store-paths.mjs';
 import { persistSessions, sessionStorePath } from './sessions.mjs';
 import { initAuthSession, oauthConfigured, githubLinkBlocked, b64url, ssoPending, oauthSessions, pruneOauth, adminSession, safeStrEq } from './lib/auth-session.mjs';
 import { SCANNER_SPECS } from '../monitor/extractors.mjs'; // the canonical category set
@@ -761,8 +765,26 @@ setInterval(() => {
   if (!autoUpdateEnabled() || process.env.CW_PANEL_PREFLIGHT === '1') return;
   autoUpdater.tick().catch((e) => console.error('[admin] automatic update check failed:', e.message));
 }, 30_000).unref();
+// The daily release check (portll-update@1). update.auto = install installs a newer signed release
+// only while no job runs and no sweep is in flight; the autoUpdater above then sees the new code and
+// restarts onto it at its next idle point. Off under CW_PANEL_AUTO_UPDATE=0 and in tests, like it.
+const releaseUpdater = createUpdateScheduler({
+  mode: () => updateSettings().auto,
+  busy: () => busyReason({ jobs: running, markers: readMarkers({ reportsRoot: reportsRootFor(CW) }), pidAlive: defaultPidAlive }),
+  run: (mode) => {
+    const { channel, sources } = updateSettings();
+    const { token } = resolveToken({ configDir: updateConfigDir() });
+    return runUpdate({ mode, channel, sources, token, installerStdio: 'ignore', say: (m) => console.error(`[admin] [update] ${m}`) });
+  },
+  log: (m) => console.error(`[admin] ${m}`),
+});
+setInterval(() => {
+  if (!autoUpdateEnabled() || process.env.CW_PANEL_PREFLIGHT === '1') return;
+  releaseUpdater.tick().catch((e) => console.error('[admin] release update check failed:', e.message));
+}, 60_000).unref();
 initPanelProcessRoutes({ BOOT_AT, BUILD, codeHealth, restartPanel,
-  autoUpdate: () => (autoUpdateEnabled() ? autoUpdater.state() : { state: 'off' }) });
+  autoUpdate: () => (autoUpdateEnabled() ? autoUpdater.state() : { state: 'off' }),
+  releaseUpdate: () => (autoUpdateEnabled() ? releaseUpdater.state() : { state: 'off' }) });
 initPanelStateRoutes({ registry, configState, SERVICES });
 
 // Small JSON body reader for the auth routes. Caps the body: an auth endpoint that buffers an

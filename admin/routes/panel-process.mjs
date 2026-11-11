@@ -9,6 +9,7 @@ import { ADMIN } from '../lib/core.mjs';
 let BOOT_AT = '';
 let BUILD = null;
 let autoUpdate = () => ({ state: 'off' });
+let releaseUpdate = () => ({ state: 'off' });
 let codeHealth = () => { throw new Error('panel-process.mjs used before initPanelProcessRoutes'); };
 let restartPanel = () => { throw new Error('panel-process.mjs used before initPanelProcessRoutes'); };
 let successorEntry; // serve.mjs never passes it; tests point it at a fixture
@@ -17,6 +18,7 @@ let successorEntry; // serve.mjs never passes it; tests point it at a fixture
 export function initPanelProcessRoutes(deps) {
   ({ BOOT_AT, BUILD = null, codeHealth, restartPanel, successorEntry = join(ADMIN, 'serve.mjs') } = deps);
   if (deps.autoUpdate) autoUpdate = deps.autoUpdate;
+  if (deps.releaseUpdate) releaseUpdate = deps.releaseUpdate;
 }
 
 export const routes = [
@@ -30,7 +32,7 @@ export const routes = [
       // supervised = launchd (KeepAlive) owns relaunching; the restart route then exits instead
       // of spawning its own successor, so two supervisors never fight over the ports
       supervised: !!process.env.CW_PANEL_SUPERVISED,
-      code: codeHealth(), build: BUILD, autoUpdate: autoUpdate() });
+      code: codeHealth(), build: BUILD, autoUpdate: autoUpdate(), releaseUpdate: releaseUpdate() });
   } },
   // POST /api/panel/restart: close both listeners, spawn a successor from the code on disk with
   // THIS process's env (CW_OAUTH_LIVE_EXCHANGE and friends travel — a bare relaunch silently
