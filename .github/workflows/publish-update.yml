@@ -8,7 +8,7 @@ name: Publish update
 #           release.yml's `gh release create` refuses one that exists.
 # The work is spine's reusable workflow (Portll/spine .github/workflows/publish-update.yml), on the
 # self-hosted runner that holds the signing key and the R2 credentials. It depends on the spine
-# change that adds that workflow; until it lands on spine main this workflow fails at the call.
+# workflow at a pinned spine commit.
 # The artefact is the npm-pack tarball, packed here exactly as release.yml packs it.
 on:
   push:
@@ -70,13 +70,16 @@ jobs:
     needs: pack
     permissions:
       contents: write
-    # Branch-pinned on purpose: the reusable workflow and this file ship as one change across two
-    # repositories. Pin it to a commit SHA once the spine side is merged.
-    uses: Portll/spine/.github/workflows/publish-update.yml@main # zizmor: ignore[unpinned-uses] pinned after the spine PR lands
+    # Pinned to the spine commit that holds publish-update.yml (spine #270 and #268, on main).
+    # Portll/spine is private: SPINE_TOKEN (a repo secret that can read it) lets the workflow
+    # check out spine's publisher; R2 credentials come from the self-hosted runner's Keychain.
+    uses: Portll/spine/.github/workflows/publish-update.yml@b40620591db025402b035c92ef45b71905e655c7
     with:
       product: commitwork
       channel: ${{ needs.pack.outputs.channel }}
       version: ${{ needs.pack.outputs.version }}
-      artifact: update-artifact
+      artifact-name: update-artifact
       file: commitwork-${{ needs.pack.outputs.version }}.tgz
       github: ${{ needs.pack.outputs.channel == 'stable' }}
+    secrets:
+      SPINE_TOKEN: ${{ secrets.SPINE_TOKEN }}
