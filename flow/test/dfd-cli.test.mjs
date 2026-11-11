@@ -12,7 +12,7 @@ import { validateDfd } from '../../lib/dfd.mjs';
 import { makeNode, makeEdge, nodeId } from '../graph.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const FIXTURE = join(HERE, 'fixtures', 'dfd-synthetic.json');
+const FIXTURE = join(HERE, '..', '..', 'lib', 'test', 'fixtures', 'dfd-synthetic.json');
 const tmp = () => mkdtempSync(join(tmpdir(), 'flow-dfd-'));
 
 function run(argv, env = {}) {
