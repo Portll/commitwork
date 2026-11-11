@@ -12,7 +12,7 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 |---|---:|---:|---:|
 | Commands (a usage line in the header) | 339 | 277 | 62 |
 | Exit codes (declared in the header) | 352 | 155 | 197 |
-| `CW_*` environment variables (described in an `env` header) | 927 | 222 | 705 |
+| `CW_*` environment variables (described in an `env` header) | 928 | 223 | 705 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -2707,7 +2707,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-927 `CW_*` names read by tracked non-test sources: 802 by name, and
+928 `CW_*` names read by tracked non-test sources: 803 by name, and
 125 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -2960,6 +2960,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_DEPS_PROD_TYPES` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEP_PROVENANCE` | direct | `monitor/dep-provenance.mjs` | undocumented |
 | `CW_DETECTOR_BASIS` | direct | `monitor/detector-basis.mjs` | undocumented |
+| `CW_DFD_FILE` | direct | `admin/routes/dfd.mjs` | undocumented |
 | `CW_DF_ROOT` | direct | `bin/lib/docsite-figures.mjs` | repo root; tests point it at a fixture |
 | `CW_DIFF_MAX_BYTES` | direct | `chunk-diff/generate.mjs` | undocumented |
 | `CW_DIFF_MAX_WORDS` | direct | `chunk-diff/lib/diff-ops.mjs` | undocumented |
@@ -3085,7 +3086,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_GUARD_UNATTENDED` | direct | `bin/hooks/guard-destructive.mjs`, `lib/security-posture.mjs` | undocumented |
 | `CW_HANDOFF_CMD` | direct | `admin/routes/remediation.mjs` | undocumented |
 | `CW_HARNESS_MEMORY_DIR` | direct | `bin/memory-sync.mjs` | the memory directory, default the harness path for this repo |
-| `CW_HARNESS_STORE` | direct | `flow/store.mjs` | undocumented |
+| `CW_HARNESS_STORE` | direct | `flow/store.mjs` | the flow store directory, default reports/harness; --graph without a path reads flow.json there (`flow/dfd-cli.mjs`) |
 | `CW_HEAD_SHA` | direct | `bin/head-sha.mjs` | undocumented |
 | `CW_HEALTH_RUNS_STORE` | direct | `admin/lib/jobs.mjs` | undocumented |
 | `CW_HERMETIC_TIMEOUT_SEC` | direct | `bin/hermetic-test.mjs` | default 5400 |

@@ -61,6 +61,8 @@ before(async () => {
       env: {
         ...process.env,
         CW_AUTH_STORE: join(TMP, 'users.json'), CW_REGISTRY: join(TMP, 'projects.json'), CW_DFD_FILE: FIXTURE,
+        // the panel stamps its code at boot; under plain `node --test` nothing redirects it out of .claude/store
+        CW_PANEL_CODE_STAMP: join(TMP, 'panel-code-stamp.json'),
         CW_ADMIN_PORT: String(port), CW_ADMIN_LOCAL_PORT: String(localPort),
       },
       stdio: ['ignore', 'pipe', 'pipe'],

@@ -15,6 +15,7 @@
 
 import { parseArgs, prepare, EXIT, DEFAULT_MAX } from '../../flow/dfd-cli.mjs';
 import { renderHtml } from '../../lib/dfd-render.mjs';
+import { MARK_ICON } from '../../lib/brand-tokens.mjs';
 import { esc } from '../../lib/html-escape.mjs';
 
 const FILTER_PARAMS = ['prefix', 'focus', 'hops', 'direction'];
@@ -41,7 +42,7 @@ export function load(url, env = process.env, { drawing = true } = {}) {
   return { status: 200, opts, ...got };
 }
 
-const errorPage = (status, msg) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>data flow diagram unavailable</title></head>`
+const errorPage = (status, msg) => `<!doctype html><html lang="en"><head><meta charset="utf-8">${MARK_ICON}<title>data flow diagram unavailable</title></head>`
   + `<body><h1>data flow diagram unavailable</h1><p>${esc(msg)}</p><p>Status ${status}.</p></body></html>`;
 
 function page(ctx) {
