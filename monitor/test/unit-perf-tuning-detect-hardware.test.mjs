@@ -3,19 +3,32 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { detectHardware } from '../perf-tuning.mjs';
 
+// The machine under test is DESCRIBED here and handed in as `probe`; nothing below reads the host.
+const host = {
+  cpus: () => Array.from({ length: 18 }, () => ({ model: 'Apple M5 Pro' })),
+  totalmem: () => 48 * 1024 ** 3,
+  arch: () => 'arm64',
+  platform: () => 'darwin',
+};
+
 test('returns cores from env when CW_PERF_CORES is set', () => {
   const r = detectHardware({ env: { CW_PERF_CORES: '8' } });
   assert.equal(r.cores, 8);
 });
 
 test('returns cores from cpus length when CW_PERF_CORES is unset', () => {
-  const r = detectHardware({ env: {} });
+  const r = detectHardware({ env: {}, probe: host });
+  assert.equal(r.cores, 18);
+});
+
+test('returns cores from cpus length when CW_PERF_CORES is 0', () => {
+  const r = detectHardware({ env: { CW_PERF_CORES: '0' }, probe: host });
   assert.equal(r.cores, 18);
 });
 
 test('returns cores as 1 when CW_PERF_CORES is 0 and cpus is empty', () => {
-  const r = detectHardware({ env: { CW_PERF_CORES: '0' } });
-  assert.equal(r.cores, 18);
+  const r = detectHardware({ env: { CW_PERF_CORES: '0' }, probe: { ...host, cpus: () => [] } });
+  assert.equal(r.cores, 1);
 });
 
 test('returns ramGB from env when CW_PERF_RAM_GB is set', () => {
@@ -24,7 +37,7 @@ test('returns ramGB from env when CW_PERF_RAM_GB is set', () => {
 });
 
 test('returns ramGB from totalmem when CW_PERF_RAM_GB is unset', () => {
-  const r = detectHardware({ env: {} });
+  const r = detectHardware({ env: {}, probe: host });
   assert.equal(r.ramGB, 48);
 });
 
@@ -34,7 +47,7 @@ test('returns arch from env when CW_PERF_ARCH is set', () => {
 });
 
 test('returns arch from osArch when CW_PERF_ARCH is unset', () => {
-  const r = detectHardware({ env: {} });
+  const r = detectHardware({ env: {}, probe: host });
   assert.equal(r.arch, "arm64");
 });
 
@@ -44,12 +57,12 @@ test('returns platform from env when CW_PERF_PLATFORM is set', () => {
 });
 
 test('returns platform from osPlatform when CW_PERF_PLATFORM is unset', () => {
-  const r = detectHardware({ env: {} });
+  const r = detectHardware({ env: {}, probe: host });
   assert.equal(r.platform, "darwin");
 });
 
 test('returns model from cpus list when available', () => {
-  const r = detectHardware({ env: {} });
+  const r = detectHardware({ env: {}, probe: host });
   assert.equal(r.model, "Apple M5 Pro");
 });
 

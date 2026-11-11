@@ -199,6 +199,13 @@
       "binding": "validator"
     },
     {
+      "path": "manifests/wp-weakness-catalogue.json",
+      "kind": "declaration",
+      "schema": "schema/wp-weakness-catalogue.schema.json",
+      "binding": "mirrored",
+      "note": "bin/wp-posture.mjs loadCatalogue validates it by hand and never consults the schema; bin/test/schema-required.test.mjs holds the shipped catalogue to the schema."
+    },
+    {
       "path": "monitor/annotations.example.json",
       "kind": "store",
       "schema": "schema/annotation.schema.json",

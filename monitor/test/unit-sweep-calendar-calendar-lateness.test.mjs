@@ -3,6 +3,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calendarLateness } from '../sweep-calendar.mjs';
 
+// A calendar slot is the machine's LOCAL wall-clock time (launchd StartCalendarInterval), so every
+// expected instant below depends on the zone. Pinned to a half-hour offset on purpose: under UTC a
+// calendarLateness that wrongly read the slot as UTC would pass unnoticed.
+process.env.TZ = 'Australia/Adelaide';
+
 test('returns null when calendar is invalid', () => {
   const r = calendarLateness({ calendar: '25:00', now: 1700000000000 });
   assert.equal(r, null);

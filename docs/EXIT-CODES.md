@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-349 commands: 152 declared, 12 prose, 185 undeclared. Of the declared, 121 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 31 declare a code of 20 or above.
+352 commands: 155 declared, 12 prose, 185 undeclared. Of the declared, 124 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 31 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -350,6 +350,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 20 | at least one section not measured (still printed) |
 | 21 | --write: a returned warning could not be recorded in the register (the digest is still written). |
 
+### `bin/disclosure-review.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | always on a completed run |
+| 1 | on bad input. |
+
 ### `bin/disregard.mjs`
 
 | Exit | Meaning |
@@ -531,6 +538,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 2 | usage |
 | 127 | no readable joern-scan launcher. |
 
+### `bin/judge.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | a reply was produced (even `undetermined`) |
+| 1 | bad input |
+| 2 | the backend errored. |
+
 ### `bin/lane-fixture.mjs`
 
 | Exit | Meaning |
@@ -663,6 +678,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 21 | a log, run, record or doc could not be read or parsed |
 | 22 | usage |
 | 23 | nothing measured: a job's log has no test totals, the job did not complete, no job matched, or --check found no record |
+
+### `bin/pm-handoff.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | on success |
+| 1 | on bad input. |
 
 ### `bin/pre-publish.mjs`
 

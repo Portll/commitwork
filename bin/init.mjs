@@ -24,7 +24,7 @@ import {
   privateDir, registryPathFor, authStorePath, annotationsPathFor, gateExemptionsPathFor, stateRootFor, STATE_PATHS,
   stubAllowlistPathFor, imageAcceptancePathFor, ownerMapPathFor, programWorklistPathFor,
   bolaManifestDirFor, craProductsPathFor, credentialScopePathFor, configCorrectnessLedgerPathFor,
-  disregardedWarningsPathFor,
+  disregardedWarningsPathFor, releaseSourcesPathFor,
 } from '../monitor/store-paths.mjs';
 import { loadRegistry, validateRegistry, validateAgainstSchema } from '../monitor/registry.mjs';
 
@@ -45,6 +45,7 @@ export const OPTIONAL_RECORDS = [
   { env: 'CW_DISREGARDED_WARNINGS', at: disregardedWarningsPathFor, absent: 'no warning has been set aside', example: 'monitor/disregarded-warnings.example.json' },
   { env: 'CW_PRODUCTS', at: craProductsPathFor, absent: 'CRA tools refuse with "not configured"', example: 'cra/products.example.json' },
   { env: 'CW_BOLA_MANIFEST_DIR', at: bolaManifestDirFor, absent: 'the BOLA lane has no manifests to run', example: 'manifests/bola/example.json' },
+  { env: 'CW_RELEASE_SOURCES', at: releaseSourcesPathFor, absent: 'release-report --fetch has nothing to fetch', example: 'monitor/releases.example.json' },
 ];
 
 export function parseInitArgs(argv) {

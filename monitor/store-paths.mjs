@@ -306,6 +306,9 @@ export const privateDocsiteDirFor = privateRecord('CW_DOCSITE_PRIVATE', 'docsite
 /** Warnings an operator saw and set aside (monitor/disregarded-warnings.mjs). CW_DISREGARDED_WARNINGS. Absent = none set aside. */
 export const disregardedWarningsPathFor = privateRecord('CW_DISREGARDED_WARNINGS', 'disregarded-warnings.json');
 
+/** The deploy boxes bin/release-report.mjs --fetch pulls release evidence from. CW_RELEASE_SOURCES. Absent = nothing to fetch. */
+export const releaseSourcesPathFor = privateRecord('CW_RELEASE_SOURCES', 'releases.json');
+
 
 /** Actions refused under unattended posture C, one JSON line each (lib/security-posture.mjs). CW_APPROVAL_QUEUE. Absent = nothing refused yet. */
 export const approvalQueuePathFor = privateRecord('CW_APPROVAL_QUEUE', 'approval-queue.jsonl');

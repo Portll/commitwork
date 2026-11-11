@@ -1,14 +1,20 @@
 // Which CW_ environment variables each JS or shell source reads, directly or by quoted name (bin/reference.mjs collectEnv).
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { collectEnv } from '../reference.mjs';
-import { basename, dirname } from 'node:path';
+import { copyFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const real = basename(fileURLToPath(import.meta.url));
 const selfOtherCase = real.replace('.test.', '.Test.');
 const selfDotted = './' + selfOtherCase;
+// A real copy under the other-case name: opening this file by that name works only on a case-insensitive volume.
+const copies = mkdtempSync(join(tmpdir(), 'collectEnv-'));
+copyFileSync(fileURLToPath(import.meta.url), join(copies, selfOtherCase));
+after(() => rmSync(copies, { recursive: true, force: true }));
 const row = (name, how, readers) => ({ name, how, readers, description: null });
 const rowsFor = (readers) => [
   row('CW_BRACKET_2', 'direct', readers),
@@ -30,19 +36,19 @@ test('a source or script that cannot be read contributes nothing', () => {
 });
 
 test("this file's env.CW_PLAIN_ONE and env['CW_BRACKET_2'] are direct reads, and its quoted 'CW_ONLY_QUOTED' is indirect because env[key] also appears", () => {
-  assert.deepEqual(collectEnv(here, [selfOtherCase]), rowsFor([selfOtherCase]));
+  assert.deepEqual(collectEnv(copies, [selfOtherCase]), rowsFor([selfOtherCase]));
 });
 
 test('a reader listed twice appears once and readers are sorted by path with ./ before letters', () => {
   assert.deepEqual(
-    collectEnv(here, [selfOtherCase, selfDotted, selfOtherCase]),
+    collectEnv(copies, [selfOtherCase, selfDotted, selfOtherCase]),
     rowsFor([selfDotted, selfOtherCase]),
   );
 });
 
 test('skipped and unreadable entries do not change what a readable source reports', () => {
   assert.deepEqual(
-    collectEnv(here, ['no-such-script.sh', real, selfOtherCase, 'notes.md']),
+    collectEnv(copies, ['no-such-script.sh', real, selfOtherCase, 'notes.md']),
     rowsFor([selfOtherCase]),
   );
 });

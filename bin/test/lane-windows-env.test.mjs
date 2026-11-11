@@ -15,10 +15,11 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve, dirname, delimiter } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { laneWindowsEnv } from '../lib/scanner-env.mjs';
 import { msysPathconvEnv, MSYS_PATHCONV_ENV } from '../../lib/posix-shell.mjs';
+import { fakeDocker, fakeSimple } from '../../monitor/test/lib/fake-bin.mjs';
 
 const CW = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const semgrep = { id: 'sast', requires: { tools: ['semgrep'] } };
@@ -90,6 +91,10 @@ test('every bin/*.sh that hands a container or the sandbox CLI a path exports th
 // child's real environment. It can only be run where the suite runs, so what it proves here is the
 // off-Windows direction: a semgrep-shaped lane and a docker-shaped lane both execute, and neither
 // carries a variable this platform never needed.
+// The requirement gate would refuse both lanes on a host with no semgrep or no docker daemon, and a
+// refused lane writes no env to read. Neither tool is ever run by `env > file`, so a fake of each
+// goes first on PATH and the docker probe cache is the fixture's own: the gate is satisfied by the
+// fixture, not by what this machine has installed.
 test('a lane runs with its env untouched on this platform', async () => {
   const T = mkdtempSync(join(tmpdir(), 'cw-win-env-'));
   try {
@@ -97,11 +102,16 @@ test('a lane runs with its env untouched on this platform', async () => {
     writeFileSync(join(repo, 'README.md'), 'fixture\n');
     const reports = join(T, 'reports'); mkdirSync(reports);
     const manifest = join(T, 'm.json');
+    const fakes = join(T, 'bin'); mkdirSync(fakes);
+    fakeSimple(fakes, 'semgrep');
+    fakeDocker(fakes, { info: 'ok' });
     const dump = (id, requires) => ({ id, egress: 'none', groups: ['all'], requires, local: [`env > "$CW_REPORT_DIR/${id}.env"`] });
     writeFileSync(manifest, JSON.stringify({ repo: 'fixture',
       checks: [dump('py', { tools: ['semgrep'] }), dump('box', { tools: ['docker'], docker: true })] }));
     const env = { ...process.env, CW_REPORT_DIR: reports, CW_SKIP_SETUP: '1', CW_ASSERT_TREE: '0', CW_SELF_SWEEP: '0',
-      CW_SANDBOX: 'off', CW_PERF_FEEDBACK: join(T, 'perf.jsonl'), FORCE_COLOR: '0' };
+      CW_SANDBOX: 'off', CW_PERF_FEEDBACK: join(T, 'perf.jsonl'), FORCE_COLOR: '0',
+      PATH: `${fakes}${delimiter}${process.env.PATH || ''}`, FAKE_LOG: join(T, 'fakes.log'), FAKE_DIR: T,
+      CW_DOCKER_PROBE_CACHE: join(T, 'docker-probe.json') };
     delete env.PYTHONUTF8; delete env.MSYS_NO_PATHCONV; delete env.MSYS2_ARG_CONV_EXCL;
     const out = await new Promise((res) => {
       const c = spawn(process.execPath, [join(CW, 'bin', 'commitwork.mjs'), 'run', 'all', '--manifest', manifest, '--repo', repo, '--no-fail-fast'],
