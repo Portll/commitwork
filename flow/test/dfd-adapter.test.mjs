@@ -3,7 +3,7 @@
 // check by hand; every model the adapters emit is also run through validateDfd.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateDfd, analyse } from '../../lib/dfd.mjs';
@@ -551,4 +551,64 @@ test('an unclassified sink is marked unknown and says which rule could not be re
   // assert
   assert.equal(sink.unknown, true);
   assert.match(sink.note, /the rule id java\/weird-rule does not say what its sink is/);
+});
+
+// ── the documents in docs/dfd/ ───────────────────────────────────────────────────────────────────
+
+const headingsOf = (md) => [...md.matchAll(/^#{2,4} (.+)$/gm)].map((m) => m[1]);
+const anchorOf = (h) => h.toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, '').trim().replace(/\s/g, '-');
+
+test('the threat-model diagram is a valid dfd@1 document and every element cites a real section', () => {
+  // arrange
+  const doc = readJson('docs/dfd/threat-model.dfd.json');
+  const heads = headingsOf(readFileSync(join(REPO, 'docs', 'THREAT-MODEL.md'), 'utf8'));
+  const anchors = new Set(heads.map(anchorOf));
+
+  // act
+  const valid = validateDfd(doc);
+  const uncited = doc.nodes.filter((n) => !heads.some((h) => (n.note || '').includes(`docs/THREAT-MODEL.md § ${h}`))).map((n) => n.id);
+  const badRefs = doc.flows.flatMap((f) => f.evidence.refs).filter((r) => !r.startsWith('docs/THREAT-MODEL.md#') || !anchors.has(r.split('#')[1]));
+
+  // assert
+  assert.deepEqual(valid.errors, []);
+  assert.deepEqual(uncited, []);
+  assert.deepEqual(badRefs, []);
+  assert.ok(doc.flows.every((f) => f.evidence.witness === 'authored' && f.evidence.existence === 'unknown'), 'nothing in the threat model was observed');
+});
+
+test('the threat-model diagram draws the boundaries, the attackers and the loops the document names', () => {
+  // arrange
+  const doc = readJson('docs/dfd/threat-model.dfd.json');
+
+  // act
+  const a = analyse(doc);
+  const groups = Object.fromEntries(doc.groups.map((g) => [g.id, g.boundary]));
+  const actors = doc.nodes.filter((n) => n.subtype === 'actor').map((n) => n.id);
+
+  // assert
+  assert.deepEqual(groups, { network: 'trust', host: 'trust', commitwork: 'system', sandbox: 'trust', container: 'trust', model: 'trust' });
+  assert.deepEqual(actors, ['repo-author', 'dep-author', 'operator', 'mcp-client']);
+  assert.deepEqual(a.feedback.map((f) => `${f.from}>${f.to}`), ['mcp-client>mcp-server', 'claude>tree', 'judge>issue-loop']);
+  assert.deepEqual(a.bidirectional.map((b) => `${b.a}<>${b.b}`), ['reports<>host-lane', 'registries<>host-lane']);
+  assert.equal(doc.flows.some((f) => f.from === 'cred-stores' || f.to === 'cred-stores'), false);
+  assert.equal(doc.nodes.find((n) => n.id === 'registries').unknown, true);
+});
+
+test('the commitwork layer map is valid, names only paths the tree has, and layers the sweep pipeline in order', () => {
+  // arrange
+  const map = readJson('docs/dfd/commitwork-layers.json');
+  const path = (p) => join(REPO, p);
+
+  // act
+  const valid = validateLayerMap(map);
+  const missing = map.rules.filter((r) => r.prefix && !r.prefix.endsWith('-') && !existsSync(path(r.prefix.replace(/\/$/, '')))).map((r) => r.prefix);
+  const got = ['reports/sweep-2026/repo/codeql.sarif', 'bin/commitwork.mjs', 'monitor/extractors/sarif.mjs', 'reports/area/rollup.json',
+    'monitor/rollup.mjs', 'reports/area/dashboard.html', 'admin/server.mjs', 'lib/dfd.mjs'].map((p) => layerOf(p, map) ?? null);
+
+  // assert
+  assert.deepEqual(valid, { ok: true, errors: [] });
+  assert.deepEqual(map.layers, ['raw', 'normalised', 'published']);
+  assert.match(map.$comment, /monitor\/README\.md 'The sweep pipeline'/);
+  assert.deepEqual(missing, []);
+  assert.deepEqual(got, ['raw', 'raw', 'normalised', 'normalised', 'normalised', 'published', 'published', null]);
 });
