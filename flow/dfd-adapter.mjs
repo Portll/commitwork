@@ -329,14 +329,14 @@ export function fromCodeFlows(records, { title } = {}) {
     const input = node({ id: `input:${r.repo}:${at(p.source)}`, kind: 'external', subtype: 'actor', label: p.source.expr ? `${p.source.expr} (${at(p.source)})` : at(p.source), group: 'untrusted',
       note: `a source CodeQL treats as untrusted in ${r.repo}` });
     const code = (file) => node({ id: `code:${r.repo}:${file}`, kind: 'process', label: file, group });
-    const s = sinkKindOf(r.rule);
-    const sink = node({ id: `sink:${r.repo}:${s.category}`, kind: s.kind, subtype: s.subtype, label: s.label,
-      ...(s.unknown ? { unknown: true, note: `the rule id ${r.rule} does not say what its sink is` } : { note: `sink of ${r.repo}'s ${s.category} rules` }) });
     const ref = `${r.rule} ${at(p.source)} -> ${at(p.sink)}`;
     const first = code(p.source.file);
     flow(input, first, p.source.expr || 'untrusted input', ref);
     let last = first;
     if (p.sink.file !== p.source.file) { last = code(p.sink.file); flow(first, last, `${p.steps} steps (${r.rule})`, ref); }
+    const s = sinkKindOf(r.rule);
+    const sink = node({ id: `sink:${r.repo}:${s.category}`, kind: s.kind, subtype: s.subtype, label: s.label,
+      ...(s.unknown ? { unknown: true, note: `the rule id ${r.rule} does not say what its sink is` } : { note: `sink of ${r.repo}'s ${s.category} rules` }) });
     flow(last, sink, p.sink.expr ? `${p.sink.expr} (${r.rule})` : r.rule, ref);
   }
   return {
