@@ -23,7 +23,7 @@ Measured 2026-10-08:
 
 | Class | Files | Lines | What it matches |
 |---|---:|---:|---|
-| `launchd` | 10 | 41 | `launchctl`, `LaunchAgents`/`LaunchDaemons`, plist schedule keys |
+| `launchd` | 11 | 43 | `launchctl`, `LaunchAgents`/`LaunchDaemons`, plist schedule keys |
 | `keychain` | 7 | 14 | spawning `security`, `security find-/add-/dump-…`, `keychain:` refs, `osxkeychain` |
 | `zsh` | 1 | 2 | zsh shebangs, `'zsh'` literals, `.zshrc`/`.zprofile` |
 | `users-path` | 3 | 3 | `/Users/<name>` |
@@ -75,6 +75,7 @@ an amd64 runner when its inputs change; its three runs so far, all on 2026-10-08
 | `monitor/persistence-diff.mjs` | Watches LaunchAgents/LaunchDaemons as persistence surfaces | Portable already: a Linux surface set (systemd units, cron, profiles) is selected by platform |
 | `bin/deploy.mjs` | Lists `~/Library/LaunchAgents` among paths it refuses to write | Protective, not a dependency. The same list carries `/etc/cloudflared` for Linux |
 | `bin/hooks/guard-destructive.mjs` | Names `launchctl` and plists in the pattern that refuses an attempt to switch the human-commit gate off | Protective, not a dependency. The same pattern names `.zshrc` and `.profile` |
+| `flow/triggers.mjs` | Reads the launchd generator's `AGENTS` table and plist schedule keys (`StartCalendarInterval`, `StartInterval`) to draw scheduler entities in the data flow graph; never runs `launchctl` | Portable already: it reads a table, not the host, so the graph is the same on any OS. Workflow schedules, crontabs, timers and `fs.watch` are extracted beside it; a systemd timer reader would sit in the same place once a unit generator exists |
 
 ## Keychain
 
@@ -158,6 +159,7 @@ adds a seam, and say in the sections above what the portable path is.
 | launchd | `bin/deploy.mjs` |
 | launchd | `bin/hooks/guard-destructive.mjs` |
 | launchd | `bin/panel-local-name.mjs` |
+| launchd | `flow/triggers.mjs` |
 | launchd | `monitor/install-agents.mjs` |
 | launchd | `monitor/persistence-diff.mjs` |
 | launchd | `monitor/service-health.mjs` |
