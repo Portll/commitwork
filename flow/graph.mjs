@@ -11,8 +11,12 @@
 
 export const SCHEMA_VERSION = 1;
 
-export const NODE_KINDS = ['module', 'artifact', 'store', 'env', 'process'];
-export const EDGE_KINDS = ['reads', 'writes', 'spawns', 'touches'];
+// endpoint  — `<scheme>://<host>[:<port>]` (outbound) or `listen:<port|unknown>` (a server)
+// database  — the database path literal (`:memory:` allowed)
+// scheduler — `launchd:<label>` | `workflow:<file>#schedule` | `cron:<file>` | `timer:<module>` | `watch:<module>`
+export const NODE_KINDS = ['module', 'artifact', 'store', 'env', 'process', 'endpoint', 'database', 'scheduler'];
+// connects: module -> endpoint · listens: module -> endpoint · triggers: scheduler -> module
+export const EDGE_KINDS = ['reads', 'writes', 'spawns', 'touches', 'connects', 'listens', 'triggers'];
 export const WITNESSES = ['static', 'runtime', 'both'];
 export const EXISTENCE = ['confirmed', 'contradicted', 'unknown'];
 
@@ -42,6 +46,11 @@ export function makeEdge(from, to, kind, opts = {}) {
   return { v: SCHEMA_VERSION, from, to, kind, witness, existence, evidence, ...rest };
 }
 
+// Fields that describe the edge as a whole and so must survive a merge from ANY witness, not only the
+// first: a module that appends to a store at one site and truncates it at another still appends.
+const UNION_FIELDS = ['tables', 'scripts'];
+const ANY_FIELDS = ['append', 'tail'];
+
 /** Merge by identity. Evidence accumulates; nothing is replaced. */
 export function mergeEdges(edges) {
   const by = new Map();
@@ -49,10 +58,16 @@ export function mergeEdges(edges) {
     const k = edgeKey(e.from, e.to, e.kind);
     const prev = by.get(k);
     if (!prev) {
-      by.set(k, { ...e, evidence: e.evidence ? [].concat(e.evidence) : [] });
+      const first = { ...e, evidence: e.evidence ? [].concat(e.evidence) : [] };
+      for (const f of UNION_FIELDS) if (Array.isArray(first[f])) first[f] = [...new Set(first[f])].sort();
+      by.set(k, first);
       continue;
     }
     for (const ev of [].concat(e.evidence || [])) if (!prev.evidence.includes(ev)) prev.evidence.push(ev);
+    for (const f of UNION_FIELDS) {
+      if (Array.isArray(e[f])) prev[f] = [...new Set([...(prev[f] || []), ...e[f]])].sort();
+    }
+    for (const f of ANY_FIELDS) if (e[f] === true) prev[f] = true;
   }
   return [...by.values()].sort((a, b) => edgeKey(a.from, a.to, a.kind).localeCompare(edgeKey(b.from, b.to, b.kind)));
 }

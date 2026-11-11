@@ -278,3 +278,88 @@ export function rawQuotedRuns(src) {
   }
   return out;
 }
+
+// ── structure over the MASKED source ────────────────────────────────────────────────────────────
+// Not a second tokenizer. These read only the output of maskFrom() — the rewrite V8 has already
+// accepted — where every string, template chunk, regex and comment interior is filler. A bracket
+// inside a literal is therefore not a bracket here, and literal VALUES still come only from
+// classify()'s spans. All they do is count brackets in code V8 agreed is code.
+
+const OPEN = { '(': ')', '[': ']', '{': '}' };
+const CLOSE = new Set([')', ']', '}']);
+
+/** Offset of the bracket closing the one at `open`, or -1 when it never closes. */
+export function matchBracket(masked, open) {
+  const want = [OPEN[masked[open]]];
+  if (!want[0]) return -1;
+  for (let i = open + 1; i < masked.length; i += 1) {
+    const c = masked[i];
+    if (OPEN[c]) want.push(OPEN[c]);
+    else if (CLOSE.has(c)) {
+      if (c !== want.pop()) return -1;
+      if (!want.length) return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * -> [{ start, end }] — the top-level comma-separated arguments inside the bracket at `open`,
+ * trimmed of whitespace. Empty when the bracket is empty; null when it never closes.
+ */
+export function splitArgs(masked, open) {
+  const close = matchBracket(masked, open);
+  if (close === -1) return null;
+  const out = [];
+  let depth = 0;
+  let from = open + 1;
+  const push = (to) => {
+    let a = from;
+    let b = to;
+    while (a < b && /\s/.test(masked[a])) a += 1;
+    while (b > a && /\s/.test(masked[b - 1])) b -= 1;
+    if (b > a) out.push({ start: a, end: b });
+  };
+  for (let i = open + 1; i < close; i += 1) {
+    const c = masked[i];
+    if (OPEN[c]) depth += 1;
+    else if (CLOSE.has(c)) depth -= 1;
+    else if (c === ',' && depth === 0) { push(i); from = i + 1; }
+  }
+  push(close);
+  return out;
+}
+
+/**
+ * -> { namespaces:Set, named:Map<local, imported> } for the bindings this module takes from any
+ * specifier in `from`: `import * as X`, `import X`, `import { a as b }`, `const X = require(...)`,
+ * `const { a: b } = require(...)`. Read off the masked code in front of each specifier literal the
+ * lexer found; a default import is treated as the namespace, which is what `node:` builtins give.
+ */
+export function importedNames(masked, spans, from) {
+  const want = new Set(from);
+  const namespaces = new Set();
+  const named = new Map();
+  for (const sp of spans) {
+    if (sp.kind !== 'string' || !want.has(sp.value)) continue;
+    const before = masked.slice(Math.max(0, sp.start - 400), sp.start);
+    let clause = null;
+    const imp = /\bimport\s+([^;]*?)\s+from\s*$/.exec(before);
+    if (imp) clause = imp[1];
+    const req = /\b(?:const|let|var)\s+([^=;]+?)\s*=\s*require\s*\(\s*$/.exec(before);
+    if (!clause && req) clause = req[1].replace(/:/g, ' as ');
+    if (!clause) continue;
+    const brace = /\{([^}]*)\}/.exec(clause);
+    if (brace) {
+      for (const part of brace[1].split(',')) {
+        const m = /^\s*([\w$]+)(?:\s+as\s+([\w$]+))?\s*$/.exec(part);
+        if (m) named.set(m[2] || m[1], m[1]);
+      }
+    }
+    const ns = /\*\s*as\s+([\w$]+)/.exec(clause);
+    if (ns) namespaces.add(ns[1]);
+    const def = /^\s*([\w$]+)\s*(?:,|$)/.exec(clause);
+    if (def) namespaces.add(def[1]);
+  }
+  return { namespaces, named };
+}
