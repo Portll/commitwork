@@ -24,6 +24,7 @@
     "map/",
     "sitemap/",
     "admin/",
+    "flow/",
     "provenance/",
     "mcp/",
     "codegraph/",
