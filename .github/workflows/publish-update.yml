@@ -26,7 +26,9 @@ permissions: {}
 jobs:
   pack:
     name: Pack the tarball
-    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    # Off until the operator has done the one-time setup (spine updates/README.md) and set the
+    # repository variable PORTLL_UPDATES to "on"; before that every push would queue a publish job.
+    if: vars.PORTLL_UPDATES == 'on' && (github.event_name == 'push' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
