@@ -336,3 +336,69 @@ scheduled workflows (`codeql.yml`, `scorecard.yml`) run actions, not `node <path
 trigger nothing. Most endpoints and every file-backed database path in this tree are computed
 (`dbPath()`, an env override with a default, a function parameter), which is why those counts are
 small and the site counts are not.
+
+## Runtime witness: network, observed paths, direction
+
+Added 2026-11-12. C2 now observes the network and the way each file was opened; C3 uses both.
+
+**Network.** `trace-hook.cjs` wraps `net.connect` / `net.createConnection` / `net.Socket#connect`,
+`tls.connect`, `http(s).request` / `.get`, `globalThis.fetch` and `net.Server#listen`, by the same
+`require`-then-patch route as fs, so named ESM imports (`import { request } from 'node:http'`) bind
+the wrapper. Each wrapper keeps the original's `name` and `length`. Rows are `t: 'connect'` /
+`'listen'` with `key` in C1's endpoint form: `<scheme>://<host>[:<port>]`, the scheme's default port
+omitted, `tcp://` / `tls://` for raw sockets, `unix://<path>` for a pipe; `listen:<port>`, or
+`listen:unix:<path>`. Only the outermost call of a nest is a row (`http.request` reaches
+`net.createConnection` and `Socket#connect` synchronously). A port-0 listen is recorded on
+`listening` at the bound port with `ephemeral: true`. fetch's own socket is opened asynchronously by
+undici with no repo frame on the stack, so it is unattributed; the `fetch` call itself is the row.
+
+**The network witnesses itself, per process.** At install the hook listens on a unix socket,
+connects to it with `net.connect` and sends an `http.request` to it, all through the patched entry
+points; a pipe binds synchronously, so this finishes before the traced program starts. Each call
+must produce a row, and every other wrapper must be the function the program will call. The result
+is `netWitness` / `netReason` on the `installed` row. `readTrace` returns `network: { state, reason,
+pids }`; `summarise` drops (and counts as `network.refused`) every network row from a pid that did not
+witness itself, because one trace collects every process `node --test` forks. Tested for real by a
+preload that freezes `net.connect` ahead of the hook. Probe rows carry `probe: true` and are never
+observations.
+
+**Open access.** Every actual open carries `access`: `read`, `write`, `append` or `readwrite`, from
+the call's own default and its `flag`/`flags` option or `open()` flags (string or `O_*`).
+`copyFile` / `cp` record the source read and the destination written. A stat, `existsSync`,
+`readdir` and the like carry no access: they open nothing and orient nothing. An fd or FileHandle
+argument is not a path and is not recorded. `summarise` accumulates `access` per from|to|kind.
+
+**Reconcile.**
+
+- `connects` / `listens` edges match runtime observations on `endpointIdentity`: host and effective
+  port (`https://h` = `tls://h:443`), or the listen key. The scheme is not the claim; the peer is.
+- An unobserved static endpoint is `unconfirmed` only when `runtime.network.state === 'usable'`.
+  Otherwise it is `unknown` with `unfalsifiable` and `networkUnwitnessed`. An observation still
+  confirms, because `summarise` only emits network observations from witnessed processes.
+- A runtime-only endpoint is a false negative when the module has a literal naming its host (not
+  `localhost`) or, for a listen, its port; ephemeral listens and hosts from config are `dynamicPaths`.
+- A `touches` edge takes `direction` (`reads` / `writes` / `both`) from the access of the module's
+  opens of its target. An exact-path open also confirms it (`witness: 'both'`). An open matched only
+  by name (bare or `./` / `../` literal) gives the direction with `directionBy: 'name'` and confirms
+  nothing: the name is several files.
+- `observedPaths` maps each bare or relative store key to the concrete paths the modules that name
+  it actually touched. `coverage` is the visited-module list. Every edge carries `v`, `from`, `to`,
+  `kind`, `witness`, `existence`, `runtimeCoverage`, measured or not.
+- The headline is unchanged in kind: restricted to visited modules, false negatives and unconfirmed
+  reported apart. Confirmed `touches` and endpoints now count toward `comparable`.
+- `readReconcile(path)` validates `v`, every edge's fields, `observedPaths` and `coverage`, and
+  throws (`CW_FLOW_RECONCILE_ABSENT` / `_INVALID`) instead of defaulting.
+
+**Integration gap, flagged rather than fixed (outside this change's files).** `report.mjs` unions
+several runs into `{ state, coverage, observations }` and drops each run's `network`. Reconcile then
+treats the network as unwitnessed: observed endpoints still confirm, unobserved ones refute nothing.
+Passing a `network` that is `usable` only when every run's is would restore unconfirmed endpoints.
+
+**Measured 2026-11-12** on this tree (static graph from `node flow/static.mjs`: 4,463/4,464 modules,
+11,120 nodes, 21,843 edges, no endpoint nodes yet), runtime over
+`node --test --test-concurrency=2 'lib/test/*.test.mjs' 'flow/test/*.test.mjs'`, 47 s on 2 cores:
+643 modules visited (210 non-test); divergence 471 over 547 comparable (false negatives 171,
+unconfirmed 300), confirmed 76 (39 of them `touches`); 195 of 876 visited `touches` edges given a
+direction (39 exact, all `reads`; 156 by name: 58 `reads`, 86 `writes`, 12 `both`); 226 bare
+stores resolved to 851 observed paths; network witnessed in every process, 57 observations (28
+connects, 29 listens, all loopback, all `dynamicPaths` because C1 emitted no endpoints), 0 refused.
