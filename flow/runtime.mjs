@@ -137,6 +137,7 @@ export function summarise(traceRead) {
     const prev = by.get(k);
     const { access, ...rest } = o;
     if (!prev) { by.set(k, { ...rest, ...(access ? { access: [access] } : {}) }); continue; }
+    if (prev.ephemeral && !rest.ephemeral) delete prev.ephemeral;   // named once is named: a literal could match
     if (access && !(prev.access || []).includes(access)) prev.access = [...(prev.access || []), access].sort();
   }
   const deduped = [...by.values()];
