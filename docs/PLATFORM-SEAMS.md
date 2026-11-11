@@ -19,7 +19,7 @@ home path in a comment discloses as much as one in code. A `zsh` line that also 
 used for classification and is not counted. The regex per class is in `bin/lib/platform-seams.mjs`
 (`SEAM_CLASSES`).
 
-Measured 2026-10-08:
+Measured 2026-11-12:
 
 | Class | Files | Lines | What it matches |
 |---|---:|---:|---|
