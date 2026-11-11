@@ -23,7 +23,8 @@
 //       without a path reads flow.json there)
 
 import { readJson, storePath } from './store.mjs';
-import { validateDfd, analyse, fromFlowGraph, filterModel } from '../lib/dfd.mjs';
+import { validateDfd, analyse, filterModel } from '../lib/dfd.mjs';
+import { fromFlowGraph } from './dfd-adapter.mjs';
 import { renderHtml } from '../lib/dfd-render.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
