@@ -92,3 +92,28 @@ test('a gitignored file inside a listed directory stays out of the tarball', { s
   assert.deepEqual(shipped, [], `gitignored paths npm pack would ship; add a negation to package.json files:\n  ${shipped.join('\n  ')}`);
   assert.ok(files.has('monitor/security-annotations.json'), 'the shared security-annotations defaults are tracked and must ship');
 });
+
+// admin/routes/dfd.mjs reaches into flow/ (the dfd command's parser and the flow store); every module
+// it imports, transitively, must ship, and flow/'s tests must not.
+test('the panel\'s dfd route ships with every module it imports, and flow/ ships without its tests', { skip }, (t) => {
+  // arrange
+  const { dir, files } = packedFiles(t);
+  const seen = new Set();
+  const walk = (rel) => {
+    if (seen.has(rel)) return;
+    seen.add(rel);
+    const src = readFileSync(join(dir, rel), 'utf8');
+    for (const m of src.matchAll(/^\s*(?:import|export)\s[^'"]*?from\s+'(\.{1,2}\/[^']+)'/gm)) {
+      walk(join(dirname(rel), m[1]).split('\\').join('/'));
+    }
+  };
+
+  // act
+  walk('admin/routes/dfd.mjs');
+  const missing = [...seen].filter((p) => !files.has(p));
+
+  // assert
+  assert.ok(seen.has('flow/dfd-cli.mjs') && seen.has('flow/store.mjs'), [...seen].join(' '));
+  assert.deepEqual(missing, [], `the dfd route imports modules npm pack leaves out: ${missing.join(', ')}`);
+  assert.deepEqual([...files].filter((f) => f.startsWith('flow/test/')), []);
+});

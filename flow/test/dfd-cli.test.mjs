@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { main, parseArgs, EXIT, DEFAULT_MAX } from '../dfd-cli.mjs';
+import { main, parseArgs, prepare, EXIT, DEFAULT_MAX, HELP, USAGE } from '../dfd-cli.mjs';
 import { validateDfd } from '../../lib/dfd.mjs';
 import { makeNode, makeEdge, nodeId } from '../graph.mjs';
 
@@ -15,10 +15,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURE = join(HERE, '..', '..', 'lib', 'test', 'fixtures', 'dfd-synthetic.json');
 const tmp = () => mkdtempSync(join(tmpdir(), 'flow-dfd-'));
 
-function run(argv, env = {}) {
+function run(argv, env = {}, extra = {}) {
   const out = [];
   const err = [];
-  const code = main(argv, { env, stdout: { write: (s) => out.push(s) }, stderr: { write: (s) => err.push(s) } });
+  const code = main(argv, { env, stdout: { write: (s) => out.push(s) }, stderr: { write: (s) => err.push(s) }, ...extra });
   return { code, out: out.join(''), err: err.join('') };
 }
 
@@ -110,7 +110,7 @@ test('--out writes the page whole, leaves no temp file and prints one line', () 
 
   // assert
   assert.equal(r.code, EXIT.OK);
-  assert.equal(r.out, `dfd: 16 elements, 20 flows -> ${out} (html)\n`);
+  assert.equal(r.out, `dfd: 16 elements, 20 flows -> ${out} (html, TB 1460x1776, 0 crossing(s), 0 label collision(s))\n`);
   assert.match(readFileSync(out, 'utf8'), /url\("data:font\/woff2;base64,/, 'the default page carries its fonts');
   assert.deepEqual(readdirSync(join(dir, 'deep')), ['page.html']);
 });
@@ -186,7 +186,7 @@ test('a usage error exits 2 and shows the usage line', () => {
 
   // assert
   assert.equal(r.code, EXIT.USAGE);
-  assert.match(r.err, /--emit takes one of[\s\S]*usage: node flow\/dfd-cli\.mjs/);
+  assert.match(r.err, /--emit takes one of[\s\S]*usage: node flow\/dfd-cli\.mjs[\s\S]*--help lists every option/);
 });
 
 test('a filter that matches nothing, or a model past --max, exits 22 and draws nothing', () => {
@@ -276,4 +276,139 @@ test('run as a command it exits with main\'s code', () => {
   assert.equal(JSON.parse(ok.stdout).v, 1);
   assert.equal(bad.status, 2);
   assert.match(bad.stderr, /^dfd: give exactly one of/);
+});
+
+// ── direction, collapse, orientation, help ───────────────────────────────────────────────────────
+
+test('--help prints every option and exits 0 without needing a source', () => {
+  // arrange
+  const argv = ['--help'];
+
+  // act
+  const r = run(argv);
+  const short = run(['-h', '--from']);
+
+  // assert
+  assert.equal(r.code, EXIT.OK);
+  assert.equal(r.out, HELP);
+  for (const flag of ['--from', '--graph', '--prefix', '--focus', '--hops', '--direction', '--collapse ', '--collapse-all-groups-over', '--orientation', '--max', '--emit', '--out']) {
+    assert.ok(HELP.includes(flag), flag);
+  }
+  assert.ok(HELP.includes(USAGE));
+  assert.equal(short.code, EXIT.USAGE, 'a flag missing its value is still a usage error');
+});
+
+test('parseArgs reads --direction, --collapse, --collapse-all-groups-over and --orientation', () => {
+  // arrange
+  const argv = ['--from', 'f.json', '--focus', 'n', '--direction', 'in', '--collapse', 'a, b,,', '--collapse-all-groups-over', '12', '--orientation', 'TB'];
+
+  // act
+  const { opts, error } = parseArgs(argv);
+
+  // assert
+  assert.equal(error, undefined);
+  assert.deepEqual(opts, { from: 'f.json', focus: 'n', direction: 'in', collapse: ['a', 'b'], collapseOver: 12, orientation: 'TB' });
+});
+
+test('parseArgs refuses a bad direction, a direction with no seed, a bad orientation, an empty collapse and a fractional threshold', () => {
+  // arrange
+  const cases = [
+    [['--from', 'f', '--prefix', 'p', '--direction', 'up'], /--direction takes one of in, out, both/],
+    [['--from', 'f', '--direction', 'in'], /--direction needs --prefix or --focus/],
+    [['--from', 'f', '--orientation', 'RL'], /--orientation takes one of LR, TB, auto/],
+    [['--from', 'f', '--collapse', ','], /--collapse takes one or more group ids/],
+    [['--from', 'f', '--collapse-all-groups-over', '2.5'], /--collapse-all-groups-over takes a whole number, got 2\.5/],
+  ];
+
+  // act
+  const errors = cases.map(([argv]) => parseArgs(argv).error);
+
+  // assert
+  cases.forEach(([, re], i) => assert.match(errors[i], re));
+});
+
+test('--direction and the focus pass through to the filter unchanged', () => {
+  // arrange
+  const seen = [];
+  const stub = (model, args) => { seen.push(args); return model; };
+
+  // act
+  const r = run(['--from', FIXTURE, '--focus', 'validate', '--hops', '2', '--direction', 'out', '--emit', 'model'], {}, { filter: stub });
+  const plain = run(['--from', FIXTURE, '--emit', 'model'], {}, { filter: stub });
+
+  // assert
+  assert.equal(r.code, EXIT.OK);
+  assert.equal(plain.code, EXIT.OK);
+  assert.deepEqual(seen, [
+    { prefix: undefined, focus: 'validate', around: 'validate', hops: 2, direction: 'out' },
+    { prefix: undefined, focus: undefined, around: undefined, hops: 1 },
+  ]);
+});
+
+test('--collapse draws the named group as one node and --collapse-all-groups-over picks groups by size', () => {
+  // arrange
+  const dir = tmp();
+  const one = join(dir, 'one.html');
+  const big = join(dir, 'big.html');
+
+  // act
+  const a = run(['--from', FIXTURE, '--collapse', 'platform', '--orientation', 'LR', '--out', one]);
+  const b = run(['--from', FIXTURE, '--collapse-all-groups-over', '1', '--fonts', 'none', '--out', big]);
+  const none = run(['--from', FIXTURE, '--collapse-all-groups-over', '3', '--emit', 'html', '--fonts', 'none']);
+
+  // assert
+  assert.equal(a.code, EXIT.OK);
+  assert.match(a.out, /^dfd: 14 elements, 18 flows -> .*one\.html \(html, LR \d+x\d+, 0 crossing\(s\), 0 label collision\(s\)\)\n$/);
+  assert.match(readFileSync(one, 'utf8'), /data-id="group:platform"/);
+  assert.equal(b.code, EXIT.OK);
+  assert.doesNotMatch(readFileSync(big, 'utf8'), /data-id="group:internet"/, 'internet has one element, not more than one');
+  assert.match(readFileSync(big, 'utf8'), /data-id="group:platform"/);
+  assert.doesNotMatch(none.out, /<strong>Collapsed:/);
+});
+
+test('--collapse naming a group with no element exits 22 and lists the groups there are', () => {
+  // arrange
+  const argv = ['--from', FIXTURE, '--collapse', 'platform,nope'];
+  const dir = tmp();
+  const bare = join(dir, 'bare.json');
+  writeFileSync(bare, JSON.stringify({ v: 1, kind: 'dfd', nodes: [{ id: 'a', kind: 'process', label: 'a' }], flows: [] }));
+
+  // act
+  const r = run(argv);
+  const empty = run(['--from', bare, '--collapse', 'g']);
+
+  // assert
+  assert.equal(r.code, EXIT.SIZE);
+  assert.match(r.err, /--collapse names no group with an element in the drawing: nope \(groups: internet, platform\)/);
+  assert.match(empty.err, /drawing: g\n$/);
+  assert.equal(r.out + empty.out, '');
+});
+
+test('--max counts the elements left after collapsing', () => {
+  // arrange
+  const argv = ['--from', FIXTURE, '--max', '14', '--fonts', 'none'];
+
+  // act
+  const flat = run(argv);
+  const folded = run([...argv, '--collapse', 'platform']);
+
+  // assert
+  assert.equal(flat.code, EXIT.SIZE);
+  assert.match(flat.err, /16 elements is more than --max 14[\s\S]*--collapse/);
+  assert.equal(folded.code, EXIT.OK);
+});
+
+test('prepare returns the filtered model and the groups to collapse, or the code a refusal exits with', () => {
+  // arrange
+  const opts = parseArgs(['--from', FIXTURE, '--collapse-all-groups-over', '2']).opts;
+
+  // act
+  const ok = prepare(opts);
+  const missing = prepare({ from: join(tmp(), 'none.json') });
+
+  // assert
+  assert.deepEqual(ok.collapse, ['platform']);
+  assert.equal(ok.drawn, 14);
+  assert.equal(ok.model.nodes.length, 16);
+  assert.equal(missing.code, EXIT.INPUT);
 });
