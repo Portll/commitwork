@@ -125,7 +125,7 @@ test('unresolved paths, handles and SQL are sites; a regex .exec is ignored', ()
   assert.deepEqual(r.edges, []);
   assert.deepEqual(r.sites.map((s) => `${s.call}: ${s.reason}`), [
     'new DatabaseSync: database path computed dbPath()',
-    'new DatabaseSync: database path anchored to an unresolved directory',
+    'new DatabaseSync: database path joined onto an unknown directory',
     'new DatabaseSync: database path no path',
     'prepare: database path not resolved',
     'exec: computed SQL',

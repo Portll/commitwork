@@ -550,7 +550,7 @@ export function extractDatabases(ctx, { line }) {
     }
     if (key) {
       for (const a of args.slice(0, 1)) markConsumed(ctx, a, consumed);
-    } else sites.push({ at: at(m.index), kind: 'database', call: `new ${m[1]}`, reason: r.ok ? 'database path anchored to an unresolved directory' : `database path ${r.reason}` });
+    } else sites.push({ at: at(m.index), kind: 'database', call: `new ${m[1]}`, reason: r.ok ? 'database path joined onto an unknown directory' : `database path ${r.reason}` });
     handles.push({ name, key, index: m.index });
   }
   const handleFor = (name, index) => {
