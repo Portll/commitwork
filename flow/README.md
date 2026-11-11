@@ -164,21 +164,41 @@ of any system described in a `dfd@1` file — a scanned repository's flows, a th
 
 | file | what it is |
 |---|---|
-| `dfd.mjs` | the `dfd@1` model, `validateDfd`, the analysis (`analyse`), the adapter (`fromFlowGraph`), the filter (`filterModel`) — pure functions |
-| `dfd-render.mjs` | deterministic layered layout and one self-contained HTML page with an inline SVG |
-| `dfd-cli.mjs` | the command |
+| `../lib/dfd.mjs` | the `dfd@1` model, `validateDfd`, the analysis (`analyse`), the filter (`filterModel`) — pure functions |
+| `dfd-adapter.mjs` | the adapters: `fromFlowGraph` (this repository's flow graph) and `fromCodeFlows` (a scanned repository) |
+| `../lib/dfd-render.mjs` | deterministic layered layout and one self-contained HTML page with an inline SVG (`renderHtml`, `layout`, `collapseGroups`) |
+| `dfd-cli.mjs` | the command; its `parseArgs` and `prepare` are also the panel route's |
+| `../admin/routes/dfd.mjs` | the panel page `GET /dfd/` and the document `GET /api/dfd`, behind the login |
 | `../schema/dfd.schema.json` | the document's shape; ids, flow ends, declared layers and groups are checked in `validateDfd` |
 
 ```sh
 node flow/dfd-cli.mjs --from lib/test/fixtures/dfd-synthetic.json --out /tmp/dfd.html
 node flow/static.mjs                                   # writes <CW_HARNESS_STORE>/flow.json
 node flow/dfd-cli.mjs --graph --prefix flow/ --out /tmp/flow-dfd.html
-node flow/dfd-cli.mjs --graph --focus monitor/rollup.mjs --hops 1 --emit model   # the dfd@1 document
-node --test --experimental-test-coverage flow/test/dfd.test.mjs flow/test/dfd-render.test.mjs flow/test/dfd-cli.test.mjs
+node flow/dfd-cli.mjs --graph --focus monitor/rollup.mjs --hops 2 --direction in --emit model   # what feeds it, as dfd@1
+node flow/dfd-cli.mjs --graph --collapse-all-groups-over 12 --orientation TB --out /tmp/flow-dfd.html
+node flow/dfd-cli.mjs --help
+node --test --experimental-test-coverage lib/test/dfd*.test.mjs flow/test/dfd*.test.mjs admin/test/dfd*.test.mjs
 ```
 
-The command is `node flow/dfd-cli.mjs`, as `flow/report.mjs` is, and not a `commitwork` subcommand:
-`flow/` is not in `package.json` `files`, so the installed CLI cannot import it.
+| flag | what it does |
+|---|---|
+| `--from <file>` · `--graph [<file>]` | the source: a `dfd@1` file, or the flow graph through the adapter (default `<CW_HARNESS_STORE>/flow.json`); `--tests` and `--imports` keep what the adapter leaves out |
+| `--prefix <p>` · `--focus <node>` · `--hops <n>` | seed the filter and keep everything within n flows (default 1); `--focus` is passed as `around` |
+| `--direction in\|out\|both` | walk only into the seeds, only out of them, or both (default); needs `--prefix` or `--focus` |
+| `--collapse <g>[,<g>]` | draw each named group as one node; flows across it merge per other end, mode and role, `×n` in the label; a name with no element exits 22 |
+| `--collapse-all-groups-over <n>` | collapse every group with more than n elements |
+| `--orientation LR\|TB\|auto` | ranks left to right, top to bottom, or `auto` (default): TB when LR is wider than 1,600 units and TB is narrower |
+| `--max <n>` | refuse to draw more than n elements (default 150), counted after collapsing |
+| `--emit html\|model\|analysis` · `--out <file>` · `--fonts` · `--title` | output; `model` is the filtered document before any collapse; `--out` prints the drawing's size, crossings and label collisions |
+
+Exit 0 written, 2 usage, 20 not a valid `dfd@1`, 21 an input absent, unreadable or not a flow graph,
+22 the filter matched nothing, `--collapse` named an empty group, or the drawing is over `--max`.
+
+The command is `node flow/dfd-cli.mjs`, as `flow/report.mjs` is, and not a `commitwork` subcommand.
+`flow/` is in `package.json` `files` (its tests are not), because `admin/routes/dfd.mjs` imports the
+command's parser and the flow store. The route reads the file `CW_DFD_FILE` names, else the flow
+store's graph; its query keys are the flags above, and `/api/dfd` takes the filter keys only.
 
 ### The model
 
@@ -243,21 +263,38 @@ network endpoint or a scheduled trigger, because C1 does not extract them.
 ### The page
 
 Gane–Sarson notation: a process is a rounded box, a store is a box open at the right (`D`; `Q` for a
-broker), an external entity is a square box with a shadow. Solid is sync, dashed is async or event,
-two heads is bidirectional, dotted and headless is a direction nobody determined. A feedback flow
-is routed over the top on its own track; a retry is a loop on the process's corner. Maturity layers
-are horizontal bands and hop rank runs left to right. A boundary is a hull when it encloses only its
-members, and a caption under each member when it cannot. The same elements and flows are tabulated
-under the diagram.
+broker), an external entity is a square box with a shadow. A subtype carries a mark at the box's
+right end: database cylinder, broker chevrons, log lines, file page; endpoint globe, scheduler clock,
+actor figure, system screen, env braces, binary prompt. A collapsed group is a process with a double
+outline. Solid is sync, dashed is async or event, two heads is bidirectional, dotted and headless is
+a direction nobody determined. A feedback flow — any returning arc, and every flow whose `role` is
+not `data` — is routed outside the body on its own track and keeps its own edge even when a data
+flow runs the other way along the same pair; `error` is dash-dot in the severity colour with a ✕ on
+its label, `retry` is dotted with a ↻. Existence: `confirmed` is heavier, *declared* (no evidence)
+is plain, `unknown` is lighter and grey, `contradicted` is red. A retry on one process is a loop on
+its corner. A boundary is a hull when it encloses only its members, and a caption under each member
+when it cannot. The legend names every mark; the same elements and flows are tabulated under the
+diagram with their full labels.
 
-Layout is rank assignment, one virtual point per rank a long flow crosses, four barycentre sweeps
-and coordinates, with no clock and no randomness: one model is one sequence of bytes. The page
-carries `houseCss()` and the theme follower, no other script, no `style` attribute, and a
-`Content-Security-Policy` of hashes for exactly those. `renderHtml` returns `{ html, csp }` so a
-panel route can send the same policy as a header.
+Layout: longest-path ranks, a source moved to one rank before its first consumer, one virtual point
+per rank a long flow crosses, four barycentre sweeps, then adjacent transposition while it removes
+crossings (never splitting a group within a rank), then coordinates. In LR maturity layers are
+horizontal bands across the drawing; in TB each element is packed at its own width and a layer is a
+band over the ranks it holds, so layers on disjoint ranks share the cross axis. Feedback risers sit
+in gutters the retry-loop labels, which stand above their own box, never use. Labels wrap to two
+lines, then shorten in the middle; each takes the first spot along its edge clear of elements,
+boundary and band names, risers and placed labels, else a nudge, else it is counted in
+`stats.collisions`. No clock and no randomness: one model is one sequence of bytes. The page carries
+`houseCss()` and the theme follower, no other script, no `style` attribute, and a
+`Content-Security-Policy` of hashes for exactly those; an endpoint's URL is text on the page, never
+something it fetches. `renderHtml` returns `{ html, csp, stats }`; the panel route sends `csp` as
+the header.
 
-Not done: no panel route, no crossing minimisation beyond the sweeps, no label collision avoidance,
-and a diagram over 150 elements is refused unless `--max` raises the limit.
+Measured on `lib/test/fixtures/dfd-synthetic.json` (22 elements, 26 flows), 2026-11-12: drawn top to
+bottom, 1,328 × 1,776 units (left to right would be 3,407 wide), 0 crossings, 0 label collisions.
+
+Not done: a diagram over 150 elements is refused unless `--max` raises the limit or collapsing
+brings it under.
 
 ### dfd sources and mapping
 

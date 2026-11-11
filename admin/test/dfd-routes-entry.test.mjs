@@ -138,7 +138,7 @@ describe('GET /dfd/ — the page', () => {
     assert.match(absent.body, /flow graph not found at .*flow\.json — run `node flow\/static\.mjs`/);
     assert.match(nomatch.body, /prefix &quot;&lt;script&gt;&quot;/);
     assert.doesNotMatch(nomatch.body, /<script>/);
-    assert.match(toobig.body, /16 elements is more than max 3/);
+    assert.match(toobig.body, /22 elements is more than max 3/);
     assert.ok([usage, absent, invalid, nomatch, toobig].every((r) => !/<svg/.test(r.body) && r.headers['cache-control'] === 'no-store'));
   });
 });

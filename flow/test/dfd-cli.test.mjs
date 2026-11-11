@@ -110,7 +110,7 @@ test('--out writes the page whole, leaves no temp file and prints one line', () 
 
   // assert
   assert.equal(r.code, EXIT.OK);
-  assert.equal(r.out, `dfd: 16 elements, 20 flows -> ${out} (html, TB 1460x1776, 0 crossing(s), 0 label collision(s))\n`);
+  assert.equal(r.out, `dfd: 22 elements, 26 flows -> ${out} (html, TB 1328x1776, 0 crossing(s), 0 label collision(s))\n`);
   assert.match(readFileSync(out, 'utf8'), /url\("data:font\/woff2;base64,/, 'the default page carries its fonts');
   assert.deepEqual(readdirSync(join(dir, 'deep')), ['page.html']);
 });
@@ -141,7 +141,7 @@ test('the filter narrows a dfd file and the page says it is a subset', () => {
   // assert
   assert.equal(r.code, EXIT.OK);
   assert.deepEqual(m.nodes.map((n) => n.id), ['events', 'ingest', 'bronze']);
-  assert.equal(m.source.filter.nodesOmitted, 13);
+  assert.equal(m.source.filter.nodesOmitted, 19);
 });
 
 test('an invalid document exits 20 and lists what is wrong', () => {
@@ -203,7 +203,7 @@ test('a filter that matches nothing, or a model past --max, exits 22 and draws n
   assert.equal(a.code, EXIT.SIZE);
   assert.match(a.err, /the filter matched no node \(prefix "no\/such\/", focus null\)/);
   assert.equal(b.code, EXIT.SIZE);
-  assert.match(b.err, /16 elements is more than --max 5/);
+  assert.match(b.err, /22 elements is more than --max 5/);
   assert.equal(a.out + b.out, '');
   assert.equal(asModel.code, EXIT.OK, 'the limit is on drawing, not on emitting the model');
   assert.equal(DEFAULT_MAX, 150);
@@ -327,7 +327,7 @@ test('parseArgs refuses a bad direction, a direction with no seed, a bad orienta
   cases.forEach(([, re], i) => assert.match(errors[i], re));
 });
 
-test('--direction and the focus pass through to the filter unchanged', () => {
+test('--direction and the focus, as around, pass through to the filter unchanged', () => {
   // arrange
   const seen = [];
   const stub = (model, args) => { seen.push(args); return model; };
@@ -340,8 +340,8 @@ test('--direction and the focus pass through to the filter unchanged', () => {
   assert.equal(r.code, EXIT.OK);
   assert.equal(plain.code, EXIT.OK);
   assert.deepEqual(seen, [
-    { prefix: undefined, focus: 'validate', around: 'validate', hops: 2, direction: 'out' },
-    { prefix: undefined, focus: undefined, around: undefined, hops: 1 },
+    { prefix: undefined, around: 'validate', hops: 2, direction: 'out' },
+    { prefix: undefined, around: undefined, hops: 1 },
   ]);
 });
 
@@ -358,7 +358,7 @@ test('--collapse draws the named group as one node and --collapse-all-groups-ove
 
   // assert
   assert.equal(a.code, EXIT.OK);
-  assert.match(a.out, /^dfd: 14 elements, 18 flows -> .*one\.html \(html, LR \d+x\d+, 0 crossing\(s\), 0 label collision\(s\)\)\n$/);
+  assert.match(a.out, /^dfd: 20 elements, 24 flows -> .*one\.html \(html, LR \d+x\d+, 0 crossing\(s\), 0 label collision\(s\)\)\n$/);
   assert.match(readFileSync(one, 'utf8'), /data-id="group:platform"/);
   assert.equal(b.code, EXIT.OK);
   assert.doesNotMatch(readFileSync(big, 'utf8'), /data-id="group:internet"/, 'internet has one element, not more than one');
@@ -386,7 +386,7 @@ test('--collapse naming a group with no element exits 22 and lists the groups th
 
 test('--max counts the elements left after collapsing', () => {
   // arrange
-  const argv = ['--from', FIXTURE, '--max', '14', '--fonts', 'none'];
+  const argv = ['--from', FIXTURE, '--max', '20', '--fonts', 'none'];
 
   // act
   const flat = run(argv);
@@ -394,7 +394,7 @@ test('--max counts the elements left after collapsing', () => {
 
   // assert
   assert.equal(flat.code, EXIT.SIZE);
-  assert.match(flat.err, /16 elements is more than --max 14[\s\S]*--collapse/);
+  assert.match(flat.err, /22 elements is more than --max 20[\s\S]*--collapse/);
   assert.equal(folded.code, EXIT.OK);
 });
 
@@ -408,7 +408,7 @@ test('prepare returns the filtered model and the groups to collapse, or the code
 
   // assert
   assert.deepEqual(ok.collapse, ['platform']);
-  assert.equal(ok.drawn, 14);
-  assert.equal(ok.model.nodes.length, 16);
+  assert.equal(ok.drawn, 20);
+  assert.equal(ok.model.nodes.length, 22);
   assert.equal(missing.code, EXIT.INPUT);
 });

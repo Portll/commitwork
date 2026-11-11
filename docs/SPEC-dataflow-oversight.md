@@ -118,19 +118,22 @@ in a `dfd@1` file. Five parts, each a pure function of the one before it:
    store, external. A broker or queue is a store `subtype` (`broker|queue|topic|stream`, beside
    `database|log|file`); an external's `subtype` is `endpoint|scheduler|actor|system|env|binary`. A
    flow carries `mode` (`sync|async|event`), `role` (`data|feedback|error|retry`), `existence`
-   (`confirmed|unknown`, else its evidence's, else *declared*) and `direction`. `analyse` gives every
+   (`confirmed|unknown`, else its evidence's, else *declared*) and `direction`. Every role but `data`
+   is a declared return path, drawn as feedback on its own edge. `analyse` gives every
    flow one class — undirected, self-loop, bidirectional, feedback, forward — and the hop ranks,
    cycles, branch and merge points and paths the page reports. `filterModel` keeps the seeds of a
    prefix or a focus and everything within `hops` flows of them, `direction` `in`, `out` or `both`.
-2. **Adapter** — `fromFlowGraph`. Module → process, artifact or store → store, env key and command
-   name → external; `touches` → a flow with `directed: false`. **A flow whose direction was never
+2. **Adapter** — `fromFlowGraph` in `flow/dfd-adapter.mjs`. Module → process, artifact or store →
+   store, env key and command name → external; `touches` → a flow with `directed: false`. **A flow whose direction was never
    determined takes no part in ranks, cycles or paths**: a cycle built on a guessed direction is a
    fabricated feedback loop. Everything left out is counted and printed.
 3. **Renderer** — `lib/dfd-render.mjs`, `renderHtml(model, { collapse, orientation, fonts })` →
    `{ html, csp, stats }`. Layered layout: longest-path ranks, one virtual point per rank a long flow
    crosses, four barycentre sweeps, then adjacent transposition while it removes crossings and never
-   splitting a group within a rank. Ranks run left to right or top to bottom; `auto` takes top to
-   bottom when the left-to-right drawing is wider than 1,600 units and the other is narrower. Feedback
+   splitting a group within a rank; a source sits one rank before its first consumer. Ranks run left
+   to right or top to bottom, and top to bottom packs elements at their own widths, layers on
+   disjoint ranks sharing the cross axis; `auto` takes top to bottom when the left-to-right drawing
+   is wider than 1,600 units and the other is narrower. Feedback
    runs outside the body on its own track; its risers sit in gutters that the retry-loop labels, which
    stand above their own box, never use. Edge labels wrap to two lines, then shorten in the middle;
    each takes the first spot along its edge clear of every element, boundary name, riser and placed
@@ -151,8 +154,8 @@ in a `dfd@1` file. Five parts, each a pure function of the one before it:
    document before any collapse. The page is sent under `renderHtml`'s policy as the
    `Content-Security-Policy` header. `flow/` is in `package.json` `files` for this import.
 
-Measured on `lib/test/fixtures/dfd-synthetic.json`, 2026-11-12: 16 elements, 20 flows, drawn top to
-bottom 1,460 × 1,776 units (left to right would be 3,145 wide), 0 crossings, 0 label collisions.
+Measured on `lib/test/fixtures/dfd-synthetic.json`, 2026-11-12: 22 elements, 26 flows, drawn top to
+bottom 1,328 × 1,776 units (left to right would be 3,407 wide), 0 crossings, 0 label collisions.
 
 ---
 
