@@ -137,6 +137,9 @@ export function speak(argv, { env, cwd, timeout }) {
       }
     });
     child.on('exit', (code, signal) => finish({ ok: false, why: `exited ${signal || code} before answering tools/list${said()}` }));
+    // A server that exits before reading its stdin turns these writes into EPIPE. Its exit is the
+    // verdict ('exited … before answering'), so the write error is expected and must not throw.
+    child.stdin.on('error', (e) => { if (e.code !== 'EPIPE' && e.code !== 'ECONNRESET') finish({ ok: false, why: `stdin: ${e.code || e.message}` }); });
     for (const f of RPC) child.stdin.write(`${JSON.stringify(f)}\n`);
   });
 }
