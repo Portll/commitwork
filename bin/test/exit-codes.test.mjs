@@ -151,3 +151,35 @@ test('a backslash before a pipe in a meaning stays inside its table cell', () =>
   // Every pipe left in the row is a cell boundary: three of them, so two cells.
   assert.equal(row.replace(/\\\\/g, '').replace(/\\\|/g, '').split('|').length - 1, 3);
 });
+
+test('a subcommand delegating to a module outside bin/, monitor/ and cra/ is declared from that module\'s header', () => {
+  // arrange
+  const root = mkdtempSync(join(tmpdir(), 'cw-exit-codes-flow-'));
+  try {
+    mkdirSync(join(root, 'bin'));
+    mkdirSync(join(root, 'flow'));
+    writeFileSync(join(root, 'flow', 'draw.mjs'), '// flow/draw.mjs — draws\n// exit: 0 written · 2 usage\nexport function main() { return 0; }\n');
+    writeFileSync(join(root, 'bin', 'commitwork.mjs'), [
+      '#!/usr/bin/env node', "import { main as runDraw } from '../flow/draw.mjs';", "import { main as runGone } from '../flow/gone.mjs';",
+      'function usage() {', '  console.log(`', '  commitwork draw    draw', '  commitwork gone    gone', '`);', '}',
+      "  if (cmd === 'draw') { process.exitCode = await runDraw(argv.slice(1)); return; }",
+      "  if (cmd === 'gone') { process.exitCode = runGone(); return; }", '',
+    ].join('\n'));
+    execFileSync('git', ['-C', root, 'init', '-q']);
+    execFileSync('git', ['-C', root, 'add', '.']);
+
+    // act
+    const { cli, commands } = collect(root);
+
+    // assert
+    const draw = cli.find((c) => c.name === 'commitwork draw');
+    assert.equal(draw.status, 'declared');
+    assert.equal(draw.source, 'flow/draw.mjs');
+    assert.equal(draw.via, 'runDraw');
+    assert.deepEqual(codes(draw), [[0, 'written'], [2, 'usage']]);
+    assert.equal(cli.find((c) => c.name === 'commitwork gone').status, 'undeclared');
+    assert.ok(!commands.some((c) => c.source.startsWith('flow/')), 'a delegated module outside the directories is not itself a command');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

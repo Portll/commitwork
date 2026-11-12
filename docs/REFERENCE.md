@@ -11,7 +11,7 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
 | Commands (a usage line in the header) | 340 | 278 | 62 |
-| Exit codes (declared in the header) | 354 | 156 | 198 |
+| Exit codes (declared in the header) | 355 | 157 | 198 |
 | `CW_*` environment variables (described in an `env` header) | 932 | 223 | 709 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
@@ -39,6 +39,7 @@ From `usage()` in `bin/commitwork.mjs`.
 | `commitwork setup [--yes] [--only a,b]` | install missing scanners via the local package manager (brew/winget/scoop/pipx); also offered on the first interactive launch |
 | `commitwork hook install [--repo <path>] [--chain] [--lanes secrets,gitleaks] [--unrun block\|warn]` | a pre-commit hook that checks the staged content (the index) for secrets before a commit lands; hook uninstall / hook run (see bin/hook.mjs) |
 | `commitwork update [--check] [--channel stable\|beta] [--yes]` | install a newer signed release (bin/update.mjs); --login / --token-stdin / --logout manage the token |
+| `commitwork dfd --repo <path> [--codeql <file>] [--out <file>]` | draw a data flow diagram: of another repository (its JS/TS sources read, never run, and its CodeQL code flows), of a SARIF file alone (--codeql), of this tree's flow graph (--graph) or of a dfd@1 file (--from); what it could not read is counted (commitwork dfd --help) |
 | `commitwork version` | print the installed version (also --version) |
 | `commitwork help` | undocumented |
 
@@ -81,6 +82,7 @@ Exit codes:
 - `commitwork setup`: 0 every requested tool was present or installed, or nothing was requested (report-only, declined) · 20 a requested install failed, or a tool --only named has no installer here · 21 nothing failed, but a requested tool needs an administrator; the closing block names the command (declared in `bin/setup.mjs`)
 - `commitwork hook`: undeclared
 - `commitwork update`: undeclared
+- `commitwork dfd`: 0 written · 2 usage · 20 the document is not a valid dfd@1 · 21 an input is absent, unreadable or not a flow graph, --repo is not a git checkout, or --codeql is neither SARIF nor dataflow records · 22 the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw (declared in `flow/dfd-cli.mjs`)
 - `commitwork version`: undeclared
 - `commitwork help`: undeclared
 

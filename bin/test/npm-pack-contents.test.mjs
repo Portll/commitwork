@@ -93,27 +93,55 @@ test('a gitignored file inside a listed directory stays out of the tarball', { s
   assert.ok(files.has('monitor/security-annotations.json'), 'the shared security-annotations defaults are tracked and must ship');
 });
 
+// Every module a shipped entry imports, transitively, read from the packed tree: static imports and
+// re-exports, and dynamic import() of a literal relative specifier.
+function importClosure(dir, entry) {
+  const seen = new Set();
+  const walk = (rel) => {
+    if (seen.has(rel)) return;
+    seen.add(rel);
+    let src;
+    try { src = readFileSync(join(dir, rel), 'utf8'); } catch { return; }   // absent: reported as missing below
+    for (const m of src.matchAll(/^\s*(?:import|export)\s[^'"]*?from\s+'(\.{1,2}\/[^']+)'|\bimport\(\s*'(\.{1,2}\/[^']+)'\s*\)/gm)) {
+      walk(join(dirname(rel), m[1] || m[2]).split('\\').join('/'));
+    }
+  };
+  walk(entry);
+  return seen;
+}
+
 // admin/routes/dfd.mjs reaches into flow/ (the dfd command's parser and the flow store); every module
 // it imports, transitively, must ship, and flow/'s tests must not.
 test('the panel\'s dfd route ships with every module it imports, and flow/ ships without its tests', { skip }, (t) => {
   // arrange
   const { dir, files } = packedFiles(t);
-  const seen = new Set();
-  const walk = (rel) => {
-    if (seen.has(rel)) return;
-    seen.add(rel);
-    const src = readFileSync(join(dir, rel), 'utf8');
-    for (const m of src.matchAll(/^\s*(?:import|export)\s[^'"]*?from\s+'(\.{1,2}\/[^']+)'/gm)) {
-      walk(join(dirname(rel), m[1]).split('\\').join('/'));
-    }
-  };
 
   // act
-  walk('admin/routes/dfd.mjs');
+  const seen = importClosure(dir, 'admin/routes/dfd.mjs');
   const missing = [...seen].filter((p) => !files.has(p));
 
   // assert
   assert.ok(seen.has('flow/dfd-cli.mjs') && seen.has('flow/store.mjs'), [...seen].join(' '));
   assert.deepEqual(missing, [], `the dfd route imports modules npm pack leaves out: ${missing.join(', ')}`);
   assert.deepEqual([...files].filter((f) => f.startsWith('flow/test/')), []);
+});
+
+// `commitwork dfd` is flow/dfd-cli.mjs: the static pass, both adapters, the CodeQL reader and the
+// renderer must all be in the tarball for an installed commitwork to draw a scanned repository.
+test('`commitwork dfd` ships with every module it imports', { skip }, (t) => {
+  // arrange
+  const { dir, files } = packedFiles(t);
+
+  // act
+  const seen = importClosure(dir, 'flow/dfd-cli.mjs');
+  const missing = [...seen].filter((p) => !files.has(p));
+
+  // assert
+  for (const m of ['flow/static.mjs', 'flow/triggers.mjs', 'flow/verify.mjs', 'flow/lexer.mjs', 'flow/dfd-adapter.mjs', 'cra/dataflow-evidence.mjs', 'monitor/sarif-read.mjs', 'lib/dfd-render.mjs']) {
+    assert.ok(seen.has(m), `${m} is not in the closure the walk found: ${[...seen].join(' ')}`);
+  }
+  assert.ok(files.has('schema/dfd.schema.json'), 'validateDfd reads schema/dfd.schema.json at call time');
+  assert.ok(files.has('bin/commitwork.mjs'));
+  assert.match(readFileSync(join(dir, 'bin/commitwork.mjs'), 'utf8'), /^import \{ main as runDfd \} from '\.\.\/flow\/dfd-cli\.mjs';/m);
+  assert.deepEqual(missing, [], `\`commitwork dfd\` imports modules npm pack leaves out: ${missing.join(', ')}`);
 });
