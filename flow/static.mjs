@@ -730,14 +730,15 @@ export function streamMarks(ctx, verb, index, role, pollRanges) {
  * -> a per-module record. `state` is the grey carrier: only 'analysed' contributes edges, and the
  * other three are named rather than dropped.
  */
-/** The first goal V8 accepts the source under, with its parse; the last refusal when none does. */
+/** The first goal V8 accepts the source under, with its parse; every goal's refusal when none does. */
 async function parseUnder(goals, src, path) {
-  let parsed;
+  const refused = [];
   for (const goal of goals) {
-    parsed = await parseModule(src, path, { goal });
+    const parsed = await parseModule(src, path, { goal });
     if (parsed.ok) return { goal, parsed };
+    refused.push(goals.length > 1 ? `as ${goal}: ${parsed.error}` : parsed.error);
   }
-  return { goal: goals[goals.length - 1], parsed };
+  return { goal: goals[0], parsed: { ok: false, error: refused.join('; ') } };
 }
 
 export async function analyseSource(path, original, { strip } = {}) {
