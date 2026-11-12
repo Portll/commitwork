@@ -11,7 +11,8 @@
 // reported as an unanalysable site, never dropped — a scheduler with nothing behind it is exactly
 // the kind of dead job this graph exists to show.
 //
-// The launchd generator is IMPORTED, in a child process, not executed: the module's own guard
+// The launchd generator is IMPORTED, in a child process, not executed, and only when the target is
+// this checkout (`self`): another repository's file at that path is never imported. The module's own guard
 // (isMainModule) keeps its install/launchctl half from running on import, and the child keeps its
 // top-level reads (the registry, settings) out of this process. Its labels depend on the registry
 // of the machine that builds the graph — which is also what the real plists depend on.
@@ -278,13 +279,17 @@ function readOr(root, f) {
  * -> { schedulers:[{key, extra, targets}], sites:[{at, kind, reason}] } across every source.
  * `modules` are analyseSource() records (their `triggers` carry the in-module timers/watches).
  */
-export function analyseTriggers({ root, files, modules = [], launchd, workflows, crontabs, lsFiles = null, env = process.env } = {}) {
+export function analyseTriggers({ root, files, modules = [], launchd, workflows, crontabs, lsFiles = null, env = process.env, self = false } = {}) {
   const tracked = new Set(files);
   const schedulers = [];
   const sites = [];
   const discovered = (workflows && crontabs) ? null : triggerFiles(root, lsFiles);
 
-  if (tracked.has(LAUNCHD_GENERATOR) || launchd) {
+  // The generator is imported, so it runs only for this checkout (`self`). In any other repository
+  // a file at that path is that repository's code: never imported, and reported as not read.
+  if (!self && !launchd && tracked.has(LAUNCHD_GENERATOR)) {
+    sites.push({ at: `${LAUNCHD_GENERATOR}:1`, kind: 'launchd', reason: 'not read: the generator is imported to read it, and this is not commitwork\'s own checkout, whose code alone is ever run' });
+  } else if ((self && tracked.has(LAUNCHD_GENERATOR)) || launchd) {
     const loaded = launchd || loadLaunchdAgents(root, { env });
     const r = launchdSchedulers(loaded, { root, generatorSource: readOr(root, LAUNCHD_GENERATOR) || '', tracked });
     schedulers.push(...r.schedulers);

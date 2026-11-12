@@ -10,9 +10,10 @@
 // The coverage claim is over the FILE SET, not the edges found: analysed + unanalysable = the whole
 // input, and unanalysable is enumerated by name and reason.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { dirname, join, normalize, relative, resolve } from 'node:path';
+import * as nodeModule from 'node:module';
+import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify, rawQuotedRuns, matchBracket, splitArgs, importedNames } from './lexer.mjs';
 import { timerSites, inRanges, analyseTriggers } from './triggers.mjs';
@@ -53,6 +54,58 @@ const ENV_DOT_RE = /\benv\.(CW_[A-Z0-9_]+)\b/g;
 // the override afterwards. `const f = () => process.env.CW_Y` does not — the read happens on call.
 // The lookahead is what tells them apart; without it every arrow function was flagged.
 const ENV_LOADTIME_RE = /^(?:export\s+)?(?:const|let|var)\s+[\w$]+\s*=(?:(?!=>|\bfunction\b)[^;])*\benv\.CW_[A-Z0-9_]+/;
+
+// ── languages: what the pass reads in a repository that is not this one ─────────────────────────
+//
+// JavaScript and TypeScript only. Each extension fixes a language and a parse goal: .mjs/.mts are
+// modules, .cjs/.cts CommonJS, and .js/.jsx/.ts/.tsx are whichever V8 accepts, module first (a
+// package.json `type` is not read: the parse is the witness, not the declaration). TypeScript is
+// read through node:module stripTypeScriptTypes in strip mode, which replaces every annotation with
+// whitespace of the same length, so offsets and line numbers are the source's own. Strip mode
+// refuses what needs a transform (enum, namespace, parameter properties) and JSX; such a file is
+// `unsupported-language`, counted with its reason, never analysed as something else.
+export const SOURCE_EXTS = Object.freeze(['.mjs', '.cjs', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts']);
+const GOALS = { '.mjs': ['module'], '.mts': ['module'], '.cjs': ['commonjs'], '.cts': ['commonjs'] };
+const TS_EXTS = new Set(['.ts', '.tsx', '.mts', '.cts']);
+const JSX_EXTS = new Set(['.jsx', '.tsx']);
+// Source in a language this pass does not read: counted per language in the summary.
+const OTHER_LANGUAGES = {
+  '.py': 'python', '.go': 'go', '.rb': 'ruby', '.php': 'php', '.java': 'java', '.kt': 'kotlin', '.kts': 'kotlin',
+  '.rs': 'rust', '.c': 'c', '.h': 'c', '.cc': 'c++', '.cpp': 'c++', '.hpp': 'c++', '.cs': 'c#', '.swift': 'swift',
+  '.scala': 'scala', '.m': 'objective-c', '.mm': 'objective-c', '.dart': 'dart', '.lua': 'lua', '.pl': 'perl',
+  '.ex': 'elixir', '.exs': 'elixir', '.erl': 'erlang', '.hs': 'haskell', '.clj': 'clojure', '.fs': 'f#',
+  '.vue': 'vue', '.svelte': 'svelte', '.astro': 'astro', '.cob': 'cobol', '.cbl': 'cobol', '.groovy': 'groovy',
+};
+/** Files larger than this are counted `too-large`, not read: a bundle is not a module anyone wrote. */
+export const MAX_SOURCE_BYTES = 2 * 1024 * 1024;
+
+export const isSourcePath = (p) => SOURCE_EXTS.includes(extname(p).toLowerCase());
+export const languageOf = (p) => {
+  const e = extname(p).toLowerCase();
+  if (TS_EXTS.has(e)) return 'typescript';
+  if (SOURCE_EXTS.includes(e)) return 'javascript';
+  return OTHER_LANGUAGES[e] || null;
+};
+
+/** -> { ok: true, code } with types replaced by whitespace, or { ok: false, state, reason }. */
+export function stripTypes(src, path, strip = nodeModule.stripTypeScriptTypes) {
+  if (typeof strip !== 'function') {
+    return { ok: false, state: 'unsupported-language', reason: `TypeScript: node:module stripTypeScriptTypes is not available on Node ${process.version}` };
+  }
+  // It warns once per process that it is experimental; the warning is about this call, not the file.
+  const emit = process.emitWarning;
+  process.emitWarning = (w, ...rest) => { if (!/stripTypeScriptTypes/.test(String(w?.message ?? w))) emit.call(process, w, ...rest); };
+  try {
+    const code = strip(String(src), { mode: 'strip' });
+    if (code.length !== String(src).length) return { ok: false, state: 'unparseable', reason: 'TypeScript: stripping changed the length, so offsets would not be the source\'s' };
+    return { ok: true, code };
+  } catch (e) {
+    const unsupported = e.code === 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX' || JSX_EXTS.has(extname(path).toLowerCase());
+    return { ok: false, state: unsupported ? 'unsupported-language' : 'unparseable', reason: `TypeScript: ${e.code ? `${e.code} ` : ''}${e.message}` };
+  } finally {
+    process.emitWarning = emit;
+  }
+}
 
 /** Is this string value plausibly a repo artifact path? Conservative on purpose. */
 export function looksLikePath(v) {
@@ -677,16 +730,40 @@ export function streamMarks(ctx, verb, index, role, pollRanges) {
  * -> a per-module record. `state` is the grey carrier: only 'analysed' contributes edges, and the
  * other three are named rather than dropped.
  */
-export async function analyseSource(path, src) {
-  const base = { v: SCHEMA_VERSION, path, edges: [], envKeys: [], literals: 0, witness: {} };
+/** The first goal V8 accepts the source under, with its parse; the last refusal when none does. */
+async function parseUnder(goals, src, path) {
+  let parsed;
+  for (const goal of goals) {
+    parsed = await parseModule(src, path, { goal });
+    if (parsed.ok) return { goal, parsed };
+  }
+  return { goal: goals[goals.length - 1], parsed };
+}
 
-  const parsed = await parseModule(src, path);
-  if (!parsed.ok) return { ...base, state: 'unparseable', reason: parsed.error };
+export async function analyseSource(path, original, { strip } = {}) {
+  const ext = extname(path).toLowerCase();
+  const typed = TS_EXTS.has(ext);
+  const base = { v: SCHEMA_VERSION, path, edges: [], envKeys: [], literals: 0, witness: {},
+    ...(ext === '.mjs' ? {} : { lang: typed ? 'typescript' : 'javascript' }) };
+
+  let src = original;
+  if (typed) {
+    const t = stripTypes(original, path, strip);
+    if (!t.ok) return { ...base, state: t.state, reason: t.reason };
+    src = t.code;
+  }
+  const { goal, parsed } = await parseUnder(GOALS[ext] || ['module', 'commonjs'], src, path);
+  if (!parsed.ok) {
+    // V8 has no JSX: a .jsx/.tsx file it refuses is in a language this pass does not read
+    if (JSX_EXTS.has(ext)) return { ...base, state: 'unsupported-language', reason: `JSX: V8 parses no JSX and no transform ships (${parsed.error})` };
+    return { ...base, state: 'unparseable', reason: parsed.error };
+  }
+  if (goal !== 'module') base.goal = goal;
 
   const lex = classify(src);
   if (!lex.ok) return { ...base, state: 'lexer-bailed', reason: lex.reason };
 
-  const mask = await maskConsistent(src, lex.spans, path);
+  const mask = await maskConsistent(src, lex.spans, path, { goal });
   if (!mask.ok) return { ...base, state: 'mask-inconsistent', reason: mask.error };
 
   const { masked } = maskFrom(src, lex.spans);   // the SAME rewrite V8 just accepted, not a copy of it
@@ -739,6 +816,12 @@ export async function analyseSource(path, src) {
     }
 
     if (db.consumed.has(sp.start)) continue;           // a database path or SQL text, extracted above
+    // In a CommonJS file, require('./x') is the import: invisible to V8, which names no specifier
+    // for a script, and to looksLikePath, an extensionless specifier being no path.
+    if (goal === 'commonjs' && /^\.\.?\//.test(v) && /(?<![\w$.])require\s*\(\s*$/.test(masked.slice(Math.max(0, sp.start - 20), sp.start))) {
+      edges.push({ kind: 'reads', targetKind: 'module', target: resolveSpec(path, v), evidence: `${at} require` });
+      continue;
+    }
     const { verb, role } = verbBefore(masked, sp.start, 260, { cpNamespaces });
     if (role === 'not-spawn') continue;
 
@@ -756,6 +839,7 @@ export async function analyseSource(path, src) {
       edges.push({ kind: 'reads', targetKind: 'module', target: resolveSpec(path, v), evidence: `${at} dynamic-import` });
       continue;
     }
+
 
     const target = normalise(v, path);
     // `composed: true` — a bare filename is a NAME, not a location. It is almost always joined with
@@ -864,20 +948,54 @@ export function isTestModule(p) {
   return /(^|\/)test\//.test(p) || /\.test\.[cm]?js$/.test(p) || /(^|\/)fixtures\//.test(p);
 }
 
-/** -> { nodes, edges, modules, summary }. Coverage is asserted over the file set, not the edges. */
-export async function analyseRepo({ root, files, env = process.env, triggers = {} } = {}) {
+/** Is `root` this checkout? Only then do commitwork's own readers (the launchd generator) run. */
+export function isSelf(root) {
+  const real = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
+  return real(root) === real(repoRoot());
+}
+
+const MODULE_EXTS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
+/**
+ * A relative import's target as a tracked file: as written; else, for TypeScript's `./x.js` that
+ * names `./x.ts`, and for an extensionless specifier (resolveSpec gave it `.mjs`), the same stem
+ * with each source extension, then `<stem>/index.<ext>`. Unresolved: as written, so the edge still
+ * names what the source said.
+ */
+export function resolveTracked(target, tracked) {
+  if (tracked.has(target)) return target;
+  const stem = target.replace(/\.(?:mjs|cjs|js|jsx)$/, '');
+  for (const c of [...MODULE_EXTS.map((e) => `${stem}${e}`), ...MODULE_EXTS.map((e) => `${stem}/index${e}`)]) if (tracked.has(c)) return c;
+  return target;
+}
+
+/**
+ * -> { nodes, edges, modules, summary }. Coverage is asserted over the file set, not the edges.
+ *
+ * `root` is any git checkout; `files` the sources to read (default: this checkout's tracked .mjs, or
+ * targetSources() of another). `self` (default: is `root` this checkout) gates the readers that
+ * know commitwork's own tree: for any other root the launchd generator is never imported, because
+ * importing it runs its top level, and a target's code is never executed. `unsupported` counts the
+ * tracked files in languages this pass does not read, by language.
+ */
+export async function analyseRepo({ root, files, env = process.env, triggers = {}, self, unsupported = {}, strip } = {}) {
   const repo = root || repoRoot();
-  const list = files || trackedSources(repo);
+  const own = self ?? isSelf(repo);
+  const list = files || (own ? trackedSources(repo) : targetSources(repo).sources);
   const modules = [];
   for (const f of list) {
     let src;
     try {
+      const size = statSync(join(repo, f)).size;
+      if (size > MAX_SOURCE_BYTES) {
+        modules.push({ v: SCHEMA_VERSION, path: f, state: 'too-large', reason: `${size} bytes is over ${MAX_SOURCE_BYTES}: a bundle, not read`, edges: [], envKeys: [], witness: {} });
+        continue;
+      }
       src = readFileSync(join(repo, f), 'utf8');
     } catch (e) {
       modules.push({ v: SCHEMA_VERSION, path: f, state: 'unreadable', reason: e.code || e.message, edges: [], envKeys: [], witness: {} });
       continue;
     }
-    modules.push(await analyseSource(f, src));
+    modules.push(await analyseSource(f, src, { strip }));
   }
 
   const analysed = modules.filter((m) => m.state === 'analysed');
@@ -893,6 +1011,7 @@ export async function analyseRepo({ root, files, env = process.env, triggers = {
   };
   for (const m of modules) put('module', m.path, { analysis: m.state });
   const tracked = new Set(list);
+  for (const e of raw) if (e.targetKind === 'module') e.target = resolveTracked(e.target, tracked);
 
   const edges = [];
   for (const e of raw) {
@@ -919,7 +1038,7 @@ export async function analyseRepo({ root, files, env = process.env, triggers = {
   }
 
   // ── triggers: scheduler -> module
-  const trig = analyseTriggers({ root: repo, files: list, modules, env, lsFiles: () => lsFiles(repo), ...triggers });
+  const trig = analyseTriggers({ root: repo, files: list, modules, env, self: own, lsFiles: () => lsFiles(repo), ...triggers });
   for (const t of trig.schedulers) {
     const sid = put('scheduler', t.key, t.extra);
     for (const x of t.targets) edges.push(makeEdge(sid, nodeId('module', x.module), 'triggers', { witness: 'static', existence: 'unknown', evidence: x.evidence }));
@@ -954,6 +1073,7 @@ export async function analyseRepo({ root, files, env = process.env, triggers = {
       unanalysable: unanalysable.length,
       unanalysableByReason: countBy(unanalysable, (m) => m.state),
       coverageAccountsForAll: analysed.length + unanalysable.length === list.length,
+      ...(own ? {} : { self: false, byLanguage: countBy(modules, (m) => m.lang || 'javascript'), unsupportedLanguages: { ...unsupported } }),
       nodesByKind: countBy(nodeList, (n) => n.kind),
       edgesByKind: countBy(merged, (e) => e.kind),
       // call sites inside ANALYSED modules whose endpoint / database / SQL / script / trigger target
@@ -997,6 +1117,23 @@ export function lsFiles(repo, patterns = []) {
 
 export function trackedSources(repo) {
   return lsFiles(repo, ['*.mjs']).filter((f) => !f.startsWith('.claude/'));
+}
+
+/**
+ * Another repository's tracked JS/TS sources -> { sources, unsupported: { language: files } }.
+ * Vendored trees (node_modules/) are not the repository's code and are left out; every other
+ * tracked file is either a source or, when its extension names another language, counted.
+ */
+export function targetSources(repo) {
+  const sources = [];
+  const unsupported = {};
+  for (const f of lsFiles(repo)) {
+    if (/(^|\/)node_modules\//.test(f)) continue;
+    if (isSourcePath(f)) { sources.push(f); continue; }
+    const lang = languageOf(f);
+    if (lang) unsupported[lang] = (unsupported[lang] || 0) + 1;
+  }
+  return { sources, unsupported };
 }
 
 export async function main(argv = process.argv.slice(2), env = process.env) {
