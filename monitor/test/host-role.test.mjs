@@ -84,7 +84,7 @@ describe('resolveHostRole', () => {
   });
 
   test('the presence threshold is env-overridable at call time', async () => {
-    const probe = { inputIdleSec: idleFor(120), onBattery: () => ({ value: false }), machineBusy: quiet };
+    const probe = { localHour: day, inputIdleSec: idleFor(120), onBattery: () => ({ value: false }), machineBusy: quiet };
     assert.equal((await resolveHostRole({ setting: auto, env: {}, probe })).role, 'shared');
     assert.equal((await resolveHostRole({ setting: auto, env: { CW_HOST_PRESENCE_IDLE_S: '60' }, probe })).role, 'server');
   });

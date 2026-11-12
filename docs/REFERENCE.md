@@ -2723,8 +2723,8 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-931 `CW_*` names read by tracked non-test sources: 804 by name, and
-127 indirect (quoted in a file that reads the environment by a computed key, so the read
+931 `CW_*` names read by tracked non-test sources: 803 by name, and
+128 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
 
@@ -3379,7 +3379,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_RELEASE_REVIEWS_SCHEMA` | direct | `bin/lib/release-reviews.mjs` | undocumented |
 | `CW_RELEASE_SCRATCH` | direct | `bin/release-candidate.mjs` | the directory the tests gate makes its scratch HOME in (default ~/.cache/commitwork/release-candidate), read at call time |
 | `CW_RELEASE_SOURCE` | direct | `bin/release-candidate.mjs`, `bin/web-roadmap.mjs` | the repository --work reads commits from; default this checkout |
-| `CW_RELEASE_SOURCES` | direct | `bin/release-report.mjs` | undocumented |
+| `CW_RELEASE_SOURCES` | indirect | `monitor/store-paths.mjs` | undocumented |
 | `CW_RELEASE_TAG_PREFIX` | direct | `bin/release-tag.mjs` | the release tag prefix, default v (`bin/changelog.mjs`) |
 | `CW_RELEASE_TERMS` | direct | `bin/lib/release-terms.mjs` | a list file; overrides the sidecar |
 | `CW_REMEDIATION_INPUT` | indirect | `monitor/remediation-pr.mjs` | undocumented |

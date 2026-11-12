@@ -20,10 +20,11 @@ test('returns false when path equals home', () => {
 test('returns false when home is inside path', () => {
   const dir = mkdtempSync(join(tmpdir(), 'argReadAllowed-'));
   try {
-    const home = join(dir, 'sub');
+    const parent = realpathSync(dir);
+    const home = join(parent, 'sub');
     mkdirSync(home, { recursive: true });
-    const r = argReadAllowed(dir, home);
-    assert.equal(r, true);
+    const r = argReadAllowed(parent, home);
+    assert.equal(r, false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -86,10 +87,11 @@ test('returns false for path outside home that is not mount allowed', () => {
 test('returns false when path is home parent and home is child', () => {
   const dir = mkdtempSync(join(tmpdir(), 'argReadAllowed-'));
   try {
-    const home = join(dir, 'a', 'b');
+    const ancestor = realpathSync(dir);
+    const home = join(ancestor, 'a', 'b');
     mkdirSync(home, { recursive: true });
-    const r = argReadAllowed(dir, home);
-    assert.equal(r, true);
+    const r = argReadAllowed(ancestor, home);
+    assert.equal(r, false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

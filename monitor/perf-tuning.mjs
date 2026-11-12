@@ -72,12 +72,14 @@ export const INTENSITY_LEVELS = () => loadProfiles().intensityLevels;
 // it is reported as `unknown` rather than guessed at `nvme` — guessing the fast case is exactly the
 // direction that produces a flattering number, and the panel asks the operator instead.
 
-export function detectHardware({ env = process.env } = {}) {
-  const list = cpus() || [];
+// `probe` replaces the node:os readings ({ cpus, totalmem, arch, platform }) so a test can describe
+// a machine instead of asserting whichever one it happens to run on.
+export function detectHardware({ env = process.env, probe = {} } = {}) {
+  const list = (probe.cpus || cpus)() || [];
   const cores = Number(env.CW_PERF_CORES) || list.length || 1;
-  const ramGB = Number(env.CW_PERF_RAM_GB) || Math.round(totalmem() / (1024 ** 3));
-  const arch = env.CW_PERF_ARCH || osArch();
-  const platform = env.CW_PERF_PLATFORM || osPlatform();
+  const ramGB = Number(env.CW_PERF_RAM_GB) || Math.round((probe.totalmem || totalmem)() / (1024 ** 3));
+  const arch = env.CW_PERF_ARCH || (probe.arch || osArch)();
+  const platform = env.CW_PERF_PLATFORM || (probe.platform || osPlatform)();
   const model = list[0]?.model || 'unknown';
   const diskClass = env.CW_PERF_DISK || 'unknown';
   const containers = env.CW_PERF_CONTAINERS === undefined ? null : env.CW_PERF_CONTAINERS !== '0';

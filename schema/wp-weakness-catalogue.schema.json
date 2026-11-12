@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.portll.net/schema/wp-weakness-catalogue.schema.json",
+  "title": "WordPress weakness catalogue",
+  "$comment": "MIRRORED, not applied. bin/wp-posture.mjs loadCatalogue is what runs: it throws when entries is not an array, and sets aside (as invalid, counted in the report) an entry whose id, sev, cwe, predicate verb or type, count threshold, given type, where operators, enables routes or detail template it refuses. Required fields and enumerations here are the ones that validator enforces, NOT every field the current entries happen to carry. Two of its checks are not expressible here and stay with it: an id is unique, and every name in enables is a key of routes.",
+  "type": "object",
+  "required": ["entries"],
+  "properties": {
+    "schema": { "type": "integer", "minimum": 1 },
+    "name": { "type": "string" },
+    "note": { "type": "string" },
+    "routes": {
+      "type": "object",
+      "$comment": "Route id to the sentence describing it. An entry's enables may only name a key of this object.",
+      "additionalProperties": { "type": "string" }
+    },
+    "componentClasses": {
+      "type": "object",
+      "$comment": "Passed to bin/lib/wp-observables.mjs collectObservables as `classes`; that module owns the shape of each class."
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sev", "cwe", "predicate", "detail"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$" },
+          "name": { "type": "string" },
+          "sev": { "enum": ["crit", "high", "med", "low"] },
+          "cwe": { "type": "string", "pattern": "^CWE-\\d+$" },
+          "predicate": {
+            "type": "object",
+            "required": ["verb", "type"],
+            "$comment": "count-gt and count-lt additionally need a finite numeric `than`; loadCatalogue enforces that pairing.",
+            "properties": {
+              "verb": { "enum": ["exists", "absent", "count-gt", "count-lt"] },
+              "type": { "enum": ["wp-install", "wp-component", "wp-option", "wp-setting", "wp-user", "audit-source", "served-dir", "file", "server-directive"] },
+              "where": { "type": "object", "$comment": "Field to a scalar, a list (membership) or an operator object: neq, in, notIn, gt, gte, lt, lte, contains, notContains, startsWith, endsWith, regex, exists. An unknown operator is refused by loadCatalogue." },
+              "than": { "type": "number" },
+              "given": {
+                "type": "object",
+                "required": ["type"],
+                "properties": {
+                  "type": { "enum": ["wp-install", "wp-component", "wp-option", "wp-setting", "wp-user", "audit-source", "served-dir", "file", "server-directive"] },
+                  "where": { "type": "object" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "detail": { "type": "string", "minLength": 1 },
+          "enables": { "type": "array", "items": { "type": "string" } },
+          "refs": { "type": "object" },
+          "course": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

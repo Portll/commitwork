@@ -126,6 +126,12 @@ function main() {
     b.kill('SIGKILL');
   };
   b.on('error', (e) => { refused = refused || `${opts.bwrap[0]}: ${e.code || e.message}`; say(`sandbox-net: ${refused}`); process.exitCode = NOT_RUN; });
+  // A refusal SIGKILLs bwrap, and a read or write already in flight on these pipes then fails with
+  // ECONNRESET or EPIPE. Unhandled, that crashes this helper with exit 1, and a caller reads 1 as the
+  // lane's own failure instead of NOT_RUN. The close handler below gives the verdict, so a pipe error
+  // after a kill is expected; any other pipe error is a refusal of its own.
+  const pipeError = (fd) => (e) => { if (e.code !== 'ECONNRESET' && e.code !== 'EPIPE') refuse(`bwrap fd ${fd}: ${e.code || e.message}`); };
+  for (const i of [3, 4, 5]) if (b.stdio[i]) b.stdio[i].on('error', pipeError(i));
   if (data) b.stdio[5].end(resolvConf(readOr('/etc/resolv.conf')));
   let info = '';
   b.stdio[3].on('data', (d) => {

@@ -73,13 +73,36 @@ const heldRecords = new Set();
  *  withRecordLock instead of consulting it. */
 export const holdsRecordLock = (path) => heldRecords.has(resolve(path));
 
-/** Serialise one record file's load/mutate/write, exactly as withIssuesLock does. */
-export function withRecordLock(path, fn, { attempts = 50 } = {}) {
+// A WAITER WAITS FOR AS LONG AS A HOLDER MAY LIVE. The budget used to be 50 rounds of a 20 ms spin,
+// about one second, against a 30 s stale window: a contended writer gave up long before the lock
+// could be anything but live and busy, and its observation was dropped (thrown, never written) on a
+// slow runner with eight writers. The wait is now wall-clock and spans the stale window plus a
+// margin, so within the budget a waiter either gets the lock or takes over a dead holder's; it fails
+// loud only past that, which no live holder of one short read-modify-write explains.
+//
+// It SLEEPS between rounds (Atomics.wait), never burns: seven spinning waiters on a two- or
+// three-core runner starve the one process that can release the lock. The backoff is jittered so
+// waiters that collided once do not retry in lockstep and collide again.
+const RECORD_STALE_MS = 30_000;
+export const RECORD_WAIT_MS = RECORD_STALE_MS + 5_000;
+const sleep = (ms) => { if (ms > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
+const backoffMs = (round) => { const cap = Math.min(100, 2 ** Math.min(round, 7)); return cap / 2 + Math.random() * (cap / 2); };
+
+/** Serialise one record file's load/mutate/write. `attempts: 1` is single shot (refuse if held);
+ *  otherwise it waits up to `waitMs` of wall clock. */
+export function withRecordLock(path, fn, { attempts = Infinity, waitMs = RECORD_WAIT_MS } = {}) {
   const target = resolve(path);
-  const held = acquireLock(`${target}.lock`, {
-    staleMs: 30_000, label: 'nondeterministic-store', attempts, spinMs: 20,
-    onStale: (ms) => console.warn(`[nondet] breaking a stale record lock (${Math.round(ms / 1000)}s old)`),
-  });
+  const deadline = Date.now() + waitMs;
+  let held;
+  for (let round = 1; ; round++) {
+    held = acquireLock(`${target}.lock`, {
+      staleMs: RECORD_STALE_MS, label: 'nondeterministic-store', attempts: 1,
+      onStale: (ms) => console.warn(`[nondet] breaking a stale record lock (${Math.round(ms / 1000)}s old)`),
+    });
+    const left = deadline - Date.now();
+    if (held.ok || round >= attempts || left <= 0) break;
+    sleep(Math.min(backoffMs(round), left));
+  }
   if (!held.ok) throw new Error(`record ${target} is locked by another process (${target}.lock); try again`);
   heldRecords.add(target);
   // Deregister before release so writeRows never believes a handed-on lock is held.

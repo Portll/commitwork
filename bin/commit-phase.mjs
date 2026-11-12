@@ -670,7 +670,7 @@ function replay({ onto, ref, gitDir, key, check }) {
     }
     const tree = git(['write-tree'], { env, allowFail: true });
     if (typeof tree !== 'string' || !/^[0-9a-f]{40}$/.test(tree)) return giveUp('write-tree failed during replay — nothing landed.');
-    const rawMsg = execFileSync('git', ['log', '-1', '--format=%B', c], { cwd: repo(), encoding: 'utf8' });
+    const rawMsg = git(['log', '-1', '--format=%B', c], { raw: true });
     const { text: msg, removed } = stripForbiddenTrailers(rawMsg);
     if (removed) console.error(`commit-phase: stripped ${removed} Co-Authored-By trailer(s) from ${c.slice(0, 7)} during replay.`);
     const rebuilt = buildCommit([tree, '-p', parent], { input: msg, env });

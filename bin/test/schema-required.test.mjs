@@ -17,6 +17,7 @@ const CLOSED_SCHEMA_DEBT = [
   'bin/comment-baseline.json',
   'cra/controls.json',
   'lib/memory-layer-contract.json',
+  'manifests/wp-weakness-catalogue.json',
   'monitor/approach-taxonomy.json',
   'monitor/config-correctness-ledger.example.json',
   'monitor/detector-bindings.json',

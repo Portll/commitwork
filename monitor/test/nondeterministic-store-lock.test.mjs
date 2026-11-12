@@ -14,7 +14,8 @@
 //  1. The writers must actually overlap. `spawnSync` in a loop does not overlap — it blocks until
 //     each child exits, so twelve "concurrent" writers run one after another and the contention
 //     under test never occurs. The writers below are started with async `spawn` AND hold at a
-//     shared wall-clock barrier, so the collision is arranged rather than hoped for.
+//     barrier (each reports READY, all are released together), so the collision is arranged rather
+//     than hoped for.
 //  2. The counting must be able to fail. A conservation check that cannot catch a loss is
 //     decoration, so the control test points the same counting at the unlocked read-modify-write
 //     this change replaced, with the interleaving forced: it must lose a row. If the first test
@@ -42,38 +43,105 @@ const storeEnv = (store) => ({ ...process.env, CW_NONDET_STORE: store, CW_NONDET
 const recordPath = (store) => join(store, DIMENSION, `${SUBJECT}.jsonl`);
 const rowsIn = (p) => readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
 
+// Each writer reports READY once booted and imported, then holds until the parent writes the go file:
+// a fixed wall-clock barrier is missed by a writer that boots late on a slow runner, and a missed
+// barrier quietly turns the concurrent writers back into a sequence the lock is never tested against.
+const spawnWriter = (prog, args, env) => {
+  const kid = spawn(process.execPath, [prog, ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let err = '';
+  kid.stderr.on('data', (d) => { err += d; });
+  const ready = new Promise((ok, fail) => {
+    kid.stdout.on('data', (d) => { if (String(d).includes('READY')) ok(); });
+    kid.on('error', fail);
+    kid.on('exit', (code) => fail(new Error(`writer exited ${code} before READY: ${err}`)));
+  });
+  const exited = new Promise((ok, fail) => {
+    kid.on('error', fail);
+    kid.on('exit', (code) => (code === 0 ? ok() : fail(new Error(`writer ${args[0]} exited ${code}: ${err}`))));
+  });
+  exited.catch(() => {}); // observed by the caller's await; a failure before READY is reported by `ready`
+  return { ready, exited };
+};
+// The child must have existsSync and go in scope.
+const HOLD_UNTIL_GO = `
+process.stdout.write('READY\\n');
+while (!existsSync(go)) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2);
+`;
+
 test(`CONSERVATION — ${WRITERS} processes x ${PER_WRITER} observations, each present exactly once`, async () => {
+  // Arrange
   const dir = scratch();
   try {
     const store = join(dir, 'store');
     const prog = join(dir, 'w.mjs');
+    const go = join(dir, 'go');
     // pathToFileURL is named AT the interpolation, not behind a const: bin/test/esm-specifier-shape.mjs
     // matches this shape by spelling on purpose, because a variable holding `C:\\...` looks identical
     // to one holding a URL and the child rejects the first with ERR_UNSUPPORTED_ESM_URL_SCHEME.
     writeFileSync(prog, `
+import { existsSync } from 'node:fs';
 import { record } from ${JSON.stringify(pathToFileURL(STORE_PATH).href)};
-const [writer, n, startAt] = process.argv.slice(2);
-while (Date.now() < Number(startAt)) { /* hold at the barrier so every writer arrives together */ }
+const [writer, n, go] = process.argv.slice(2);
+${HOLD_UNTIL_GO}
 for (let i = 0; i < Number(n); i++) {
   record({ subject: '${SUBJECT}', dimension: '${DIMENSION}', score: 0.5, detail: { writer: Number(writer), i } });
 }
 `);
-    const startAt = Date.now() + 700;   // enough for every child to boot and reach the barrier
-    const kids = Array.from({ length: WRITERS }, (_, w) => new Promise((done, fail) => {
-      const kid = spawn(process.execPath, [prog, String(w), String(PER_WRITER), String(startAt)], { env: storeEnv(store), stdio: ['ignore', 'ignore', 'pipe'] });
-      let err = '';
-      kid.stderr.on('data', (d) => { err += d; });
-      kid.on('error', fail);
-      kid.on('exit', (code) => (code === 0 ? done() : fail(new Error(`writer ${w} exited ${code}: ${err}`))));
-    }));
-    await Promise.all(kids);
+    const kids = Array.from({ length: WRITERS }, (_, w) => spawnWriter(prog, [String(w), String(PER_WRITER), go], storeEnv(store)));
+    await Promise.all(kids.map((k) => k.ready));
 
+    // Act: release every writer at once.
+    writeFileSync(go, '');
+    await Promise.all(kids.map((k) => k.exited));
+
+    // Assert
     const rows = rowsIn(recordPath(store));
     assert.equal(rows.length, WRITERS * PER_WRITER,
       `expected ${WRITERS * PER_WRITER} observations, found ${rows.length} — a short count is a lost update, and the file is well-formed either way`);
     const seen = new Set(rows.map((r) => `${r.detail.writer}:${r.detail.i}`));
     assert.equal(seen.size, WRITERS * PER_WRITER, 'every (writer, i) pair must appear exactly once');
   } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a writer WAITS OUT a live holder that outlasts the old one-second budget, and its observation lands', async () => {
+  // Arrange: another process takes the record lock and keeps it for HOLD_MS.
+  const HOLD_MS = 1_500;
+  const dir = scratch();
+  try {
+    const store = join(dir, 'store');
+    const p = recordPath(store);
+    mkdirSync(dirname(p), { recursive: true });
+    const prog = join(dir, 'holder.mjs');
+    const go = join(dir, 'go');
+    writeFileSync(prog, `
+import { existsSync } from 'node:fs';
+import { withRecordLock } from ${JSON.stringify(pathToFileURL(STORE_PATH).href)};
+const [label, p, go] = process.argv.slice(2);
+withRecordLock(p, () => {
+  ${HOLD_UNTIL_GO}
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ${HOLD_MS});
+}, { attempts: 1 });
+`);
+    const holder = spawnWriter(prog, ['holder', p, go], storeEnv(store));
+    await holder.ready;
+    writeFileSync(go, '');
+    process.env.CW_NONDET_STORE = store;
+    process.env.CW_NONDET_HOT = '1000';
+
+    // Act
+    const started = Date.now();
+    record({ subject: SUBJECT, dimension: DIMENSION, score: 0.2 });
+    const waited = Date.now() - started;
+    await holder.exited;
+
+    // Assert
+    assert.ok(waited >= HOLD_MS / 2, `the lock was held while record() ran (waited ${waited} ms)`);
+    assert.equal(read(SUBJECT, DIMENSION).length, 1, 'the contended observation is written, not dropped');
+  } finally {
+    delete process.env.CW_NONDET_STORE;
+    delete process.env.CW_NONDET_HOT;
     rmSync(dir, { recursive: true, force: true });
   }
 });

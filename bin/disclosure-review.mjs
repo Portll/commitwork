@@ -22,19 +22,15 @@
 // --out <dir>         output dir (default $CW_DISCLOSURE_OUT or ./reports/disclosure-<stamp>)
 // Exit 0 always on a completed run; 1 on bad input.
 
-import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
+import { readFileSync, mkdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { nowISO } from '../lib/clock.mjs';
 import { judge } from '../lib/judge.mjs';
 import { classify, priorityKey } from '../lib/judge-taxonomy.mjs';
+import { isMainModule } from '../lib/is-main.mjs';
+import { writeAtomic } from '../monitor/lockfile.mjs';
 
 export const BUCKETS = Object.freeze(['confirmed', 'dismissed', 'undetermined']);
-
-function writeAtomic(path, text) {
-  const tmp = `${path}.tmp-${process.pid}`;
-  writeFileSync(tmp, text);
-  renameSync(tmp, path);
-}
 
 async function mapPool(items, n, fn) {
   const out = new Array(items.length);
@@ -184,4 +180,4 @@ async function main() {
   process.exit(0);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMainModule(import.meta.url)) main();

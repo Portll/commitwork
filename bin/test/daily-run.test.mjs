@@ -36,6 +36,20 @@ if (n === 1) out.notActioned.push({ findingId: '0123456789abcdef', reason: 'low-
 console.log(JSON.stringify({ is_error: false, subtype: 'success', structured_output: out, total_cost_usd: 0.25, usage: { input_tokens: 100, cache_read_input_tokens: 50, output_tokens: 10 }, modelUsage: { 'claude-test': { outputTokens: 10 } } }));
 `;
 
+/**
+ * Snapshot process.env and put it back IN PLACE after the test. Reassigning process.env (`process.env =
+ * saved`) swaps the live environment for a plain object; from Node 26 child_process no longer reads that
+ * object when no `env` option is passed, so later tests that put stubs on PATH spawn against the real
+ * environment and the stub never runs.
+ */
+function restoreEnvAfter(t) {
+  const saved = { ...process.env };
+  t.after(() => {
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+    Object.assign(process.env, saved);
+  });
+}
+
 function fakeVeld() {
   const todos = [];
   const server = createServer((req, res) => {
@@ -75,8 +89,7 @@ test('a scheduled run writes a validated report after one refusal, files the tod
   writeFileSync(skill, 'skill text');
   const veld = await fakeVeld();
   t.after(() => veld.server.close());
-  const saved = { ...process.env };
-  t.after(() => { process.env = saved; });
+  restoreEnvAfter(t);
   Object.assign(process.env, {
     CW_REGISTRY: fx.registry, CW_DAILY_CONFIG: fx.configPath, CW_CLAUDE_BIN: join(bin, 'claude'), CW_DAILY_SKILL: skill,
     CW_NOW: '2026-10-02T01:00:00Z', CW_VELD_URL: veld.url, CW_VELD_USER: 'tester', VELD_API_KEY: 'test-key',
@@ -123,25 +136,27 @@ test('a scheduled run writes a validated report after one refusal, files the tod
 });
 
 test('a model that never answers within the schema leaves a failed run record and no report', async (t) => {
-  // The stubs drain stdin before answering. A stub that exits first races the prompt write, and the
-  // run then fails on EPIPE instead of on the missing schema.
+  // Arrange. The stubs drain stdin before answering. A stub that exits first races the prompt write,
+  // and the run then fails on EPIPE instead of on the missing schema.
   const fx = dailyFixture({ previousRows: {}, currentRows: { sastSemgrep: [rows.exec] } });
   const bin = join(fx.root, 'bin');
   mkdirSync(bin);
   writeFileSync(join(bin, 'claude'), `#!/bin/sh\ncat >/dev/null\necho x >> ${join(fx.root, 'calls')}\necho '{"is_error":true,"subtype":"error_max_turns","result":"no"}'\n`); chmodSync(join(bin, 'claude'), 0o755);
   writeFileSync(join(bin, 'osascript'), `#!/bin/sh\necho "$2" >> ${join(fx.root, 'notices')}\n`); chmodSync(join(bin, 'osascript'), 0o755);
   writeFileSync(join(fx.root, 'daily.md'), 'skill');
-  const saved = { ...process.env };
-  t.after(() => { process.env = saved; });
+  restoreEnvAfter(t);
   Object.assign(process.env, { CW_REGISTRY: fx.registry, CW_DAILY_CONFIG: fx.configPath, CW_CLAUDE_BIN: join(bin, 'claude'), CW_DAILY_SKILL: join(fx.root, 'daily.md'), PATH: `${bin}:${process.env.PATH}` });
+  const calls = () => readFileSync(join(fx.root, 'calls'), 'utf8').trim().split('\n').length;
+  const notices = () => readFileSync(join(fx.root, 'notices'), 'utf8').trim().split('\n').length;
+
+  // Act and assert, per pass: the first run fails, the next skips, --force retries.
   assert.equal(await main(['--area', AREA, '--no-todos']), 1);
   const daily = join(fx.areaOut, 'daily');
   assert.ok(!existsSync(join(daily, 'sweep-20261002000000.json')));
   const run = JSON.parse(readFileSync(join(daily, 'sweep-20261002000000.run.json'), 'utf8'));
   assert.equal(run.ok, false);
   assert.match(run.attempts[0].error, /no structured output/);
-  const calls = () => readFileSync(join(fx.root, 'calls'), 'utf8').trim().split('\n').length;
-  const notices = () => readFileSync(join(fx.root, 'notices'), 'utf8').trim().split('\n').length;
+  assert.equal(notices(), 1, 'the failure notifies');
   assert.equal(calls(), 1, 'the failed attempt is not retried within the run when claude itself errored');
   assert.equal(await main(['--area', AREA, '--no-todos']), 0, 'the next pass skips a batch whose model run failed');
   assert.equal(calls(), 1);
@@ -158,8 +173,7 @@ test('a run the area lock is held against does nothing, and leaves the holder it
   writeFileSync(join(bin, 'claude'), `#!/bin/sh\ncat >/dev/null\necho x >> ${join(fx.root, 'calls')}\necho '{"is_error":true,"subtype":"error_max_turns","result":"no"}'\n`); chmodSync(join(bin, 'claude'), 0o755);
   writeFileSync(join(bin, 'osascript'), '#!/bin/sh\n'); chmodSync(join(bin, 'osascript'), 0o755);
   writeFileSync(join(fx.root, 'daily.md'), 'skill');
-  const saved = { ...process.env };
-  t.after(() => { process.env = saved; });
+  restoreEnvAfter(t);
   Object.assign(process.env, { CW_REGISTRY: fx.registry, CW_DAILY_CONFIG: fx.configPath, CW_CLAUDE_BIN: join(bin, 'claude'), CW_DAILY_SKILL: join(fx.root, 'daily.md'), PATH: `${bin}:${process.env.PATH}` });
   const held = acquireLock(join(fx.areaOut, 'daily', '.lock'), { label: 'another daily run' });
   assert.ok(held.ok);
@@ -174,8 +188,7 @@ test('a run the area lock is held against does nothing, and leaves the holder it
 
 test('a refused suggestions file leaves no run record, and one for a reported batch is refused', async (t) => {
   const fx = dailyFixture({ previousRows: {}, currentRows: { sastSemgrep: [rows.exec] } });
-  const saved = { ...process.env };
-  t.after(() => { process.env = saved; });
+  restoreEnvAfter(t);
   Object.assign(process.env, { CW_REGISTRY: fx.registry, CW_DAILY_CONFIG: fx.configPath });
   const bad = join(fx.root, 'bad.json');
   writeFileSync(bad, JSON.stringify({ headline: 'h', suggestions: [], notActioned: [] }));
@@ -192,6 +205,7 @@ test('a refused suggestions file leaves no run record, and one for a reported ba
 });
 
 test('a failure notifies when it appears, when it changes, and once a day while it lasts', (t) => {
+  // Arrange
   const root = mkdtempSync(join(tmpdir(), 'cw-daily-notice-'));
   const bin = join(root, 'bin');
   mkdirSync(bin);
@@ -201,12 +215,22 @@ test('a failure notifies when it appears, when it changes, and once a day while 
   process.env.PATH = `${bin}:${saved}`;
   const state = join(root, 'state.json');
   const t0 = new Date('2026-10-03T00:00:00Z');
-  assert.equal(noticeFailure(state, 'ar', 'skill not committed', t0), true);
-  assert.equal(noticeFailure(state, 'ar', 'skill not committed', new Date(t0.getTime() + 30 * 60_000)), false);
-  assert.equal(noticeFailure(state, 'ar', 'anchor moved', new Date(t0.getTime() + 60 * 60_000)), true);
-  assert.equal(noticeFailure(state, 'ar', 'anchor moved', new Date(t0.getTime() + 25 * 3_600_000)), true);
+  const at = (ms) => new Date(t0.getTime() + ms);
+
+  // Act
+  const appears = noticeFailure(state, 'ar', 'skill not committed', t0);
+  const sameWithinADay = noticeFailure(state, 'ar', 'skill not committed', at(30 * 60_000));
+  const changes = noticeFailure(state, 'ar', 'anchor moved', at(60 * 60_000));
+  const sameNextDay = noticeFailure(state, 'ar', 'anchor moved', at(25 * 3_600_000));
   clearFailure(state, 'ar');
-  assert.equal(noticeFailure(state, 'ar', 'anchor moved', new Date(t0.getTime() + 26 * 3_600_000)), true);
+  const afterClear = noticeFailure(state, 'ar', 'anchor moved', at(26 * 3_600_000));
+
+  // Assert
+  assert.equal(appears, true);
+  assert.equal(sameWithinADay, false);
+  assert.equal(changes, true);
+  assert.equal(sameNextDay, true);
+  assert.equal(afterClear, true);
   assert.equal(readFileSync(join(root, 'notices'), 'utf8').trim().split('\n').length, 4);
 });
 

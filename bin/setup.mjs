@@ -28,6 +28,7 @@ import { safeSpawnSync } from '../lib/win-spawn.mjs'; // npm/scoop/gem are .cmd 
 import { resolvePinnedTool } from '../lib/cobolwork-resolve.mjs';
 import { verifyReleaseSignature } from '../lib/release-signing.mjs';
 import { recordProvenance } from '../lib/tool-provenance.mjs';
+import { unzip } from './cwe-graph.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // The same override the panel's scanner routes read; both read at call time.
@@ -106,9 +107,22 @@ const releaseBase = () => process.env.CW_SETUP_RELEASE_BASE || 'https://github.c
 export const releaseUrl = (spec, a) => `${releaseBase()}/${spec.repo}/releases/download/${spec.tag}/${a.asset}`;
 const releaseBinDir = () => process.env.CW_SETUP_BIN_DIR || join(homedir(), '.local', 'bin');
 export const LICENSE_FILE = /(^|\/)(LICEN[CS]E|COPYING|NOTICE)([._-][^/]*)?$/i;
+// fact: GNU tar does not read a zip, bsdtar does / GNU tar is the tar on Linux and the one Git for Windows puts first on PATH under Git Bash, so a .zip pin installed only where bsdtar answered to `tar` (expiry: never, prev: broken)
+/** The entries of a zip as [{ name, data }], or null when the bytes are not a zip this reader handles. */
+function zipEntries(buf) {
+  try { return unzip(buf); } catch { return null; }
+}
 /** Copy an archive's licence files to dest; false when it holds none or they will not extract. */
 function copyLicenses(archive, dest, tmp) {
   const list = spawnSync('tar', ['-tf', archive], { encoding: 'utf8' });
+  if (list.status !== 0) {
+    // A backslash is a separator on Windows, so a name carrying one is not taken as a file name.
+    const held = (zipEntries(readFileSync(archive)) || []).filter((e) => LICENSE_FILE.test(e.name) && !e.name.includes('\\'));
+    if (!held.length) return false;
+    mkdirSync(dest, { recursive: true });
+    for (const e of held) writeFileSync(join(dest, e.name.split('/').pop()), e.data);
+    return true;
+  }
   const names = list.status === 0 ? list.stdout.split('\n').filter((n) => LICENSE_FILE.test(n)) : [];
   if (!names.length || spawnSync('tar', ['-xf', archive, '-C', tmp, ...names], { stdio: 'ignore' }).status !== 0) return false;
   mkdirSync(dest, { recursive: true });
@@ -485,7 +499,13 @@ async function installRelease(row) {
     // verb, and the format is detected from the bytes rather than assumed from a flag.
     writeFileSync(join(tmp, a.asset), buf);
     const x = spawnSync('tar', ['-xf', join(tmp, a.asset), '-C', tmp, bin], { stdio: 'ignore' });
-    if (x.status !== 0 || !existsSync(join(tmp, bin))) { console.log(red(`  ✗ ${row.name}: ${bin} not found in ${a.asset}`)); return false; }
+    let extracted = x.status === 0 && existsSync(join(tmp, bin));
+    if (!extracted) {
+      // Where `tar` is GNU tar a zip is unreadable to it: the member is read from the verified bytes instead.
+      const member = (zipEntries(buf) || []).find((e) => e.name === bin);
+      if (member) { writeFileSync(join(tmp, bin), member.data); extracted = true; }
+    }
+    if (!extracted) { console.log(red(`  ✗ ${row.name}: ${bin} not found in ${a.asset}`)); return false; }
     const lic = process.env.CW_SETUP_LICENSE_DIR;
     if (lic && !copyLicenses(join(tmp, a.asset), join(lic, row.name), tmp)) { console.log(red(`  ✗ ${row.name}: no licence file in ${a.asset}`)); return false; }
     const dir = releaseBinDir();

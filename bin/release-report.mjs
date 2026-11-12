@@ -40,7 +40,7 @@ import { houseCss } from '../lib/house-css.mjs';
 import { MARK_ICON } from '../lib/brand-tokens.mjs';
 import { validateAgainstSchema } from '../lib/json-schema.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
-import { privateDir, reportsRootFor } from '../monitor/store-paths.mjs';
+import { releaseSourcesPathFor, reportsRootFor } from '../monitor/store-paths.mjs';
 import { kevFreshness, kevSet, epssFor, loadJSON, craRoot } from '../cra/lib.mjs';
 import { loadIndex } from './advisory-index.mjs';
 import { baseScore, band, versionOf } from './cvss.mjs';
@@ -52,7 +52,7 @@ const HOUR = 3600_000;
 const SSH_TIMEOUT_MS = 60_000;
 
 const releasesDir = () => resolve(process.env.CW_RELEASES_DIR || join(homedir(), '.commitwork', 'releases'));
-const sourcesPath = () => resolve(process.env.CW_RELEASE_SOURCES || join(privateDir(CW), 'releases.json'));
+const sourcesPath = () => releaseSourcesPathFor(CW);
 const kevPath = () => resolve(process.env.CW_KEV || join(craRoot(), 'monitor', 'data', 'kev.json'));
 const epssPath = () => resolve(process.env.CW_EPSS || join(craRoot(), 'monitor', 'data', 'epss.json'));
 

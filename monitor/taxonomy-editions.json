@@ -820,6 +820,45 @@
         }
       ],
       "countAfter": 207
+    },
+    {
+      "version": 18,
+      "label": "The register described without its environment",
+      "date": "2026-11-04",
+      "form": "JSON registry, sqlite projection",
+      "artifact": "monitor/failure-taxonomy.json",
+      "tracked": true,
+      "headline": "No class was minted or retired and no score moved: the prose of 123 of the 207 classes was reworded to name the role a thing played rather than the product, tool or session involved, and the scanner redaction roster shipped empty.",
+      "body": "Reconstructed from the commit that bumped the registry from 17 to 18, because the version moved and its entry was not authored with it. Every statement here was derived by comparing the registry on either side of that commit; the reasons behind individual rewordings are not given, because the commit does not carry them. The class count does not move: 207 before and after, the same ids in the same order, with every closure and gain score unchanged. What changed is wording. The example text of 117 classes, the score basis of 23, the predicate of four, the description of two and the name of one were rewritten, and nine classes had mitigation or proposal text reworded. Outside the classes, eight of the 26 remediation rows, six cycle log entries, two attribution plan rows, and the registry note and provenance fields were reworded the same way. Three statements changed in substance rather than in wording: the second-pass agreement figure now counts changed classes and changed scores separately, the mitigation provenance no longer restates per-product coverage counts and says the page computes them from the register, and the recorded count of classes without evidence under the published predicate fell from 64 to 61, which re-running that predicate on each side of the commit reproduces. The same commit emptied the scanner redaction roster, because the register no longer holds the text those redactions matched; it relaxed the roster schema to allow an empty list and moved the redaction tests onto a fixture roster, with a new test that refuses a catalogued scanner name in any rendered class field. The substrate map and the roster note stamp this work 2026-10-29; this entry carries the date of the commit.",
+      "changes": [
+        {
+          "kind": "classes",
+          "date": "2026-11-04",
+          "ids": [],
+          "note": "No class minted or retired; the count stands at 207 from edition 17, with the same ids in the same order and no closure or gain score changed."
+        },
+        {
+          "kind": "field",
+          "date": "2026-11-04",
+          "note": "Class prose reworded in 123 of 207 classes to name roles rather than products, tools or sessions: example in 117, scoreBasis in 23, predicate in four (A10, P2, W7, K4), description in two (R12, K11), name in one (K4), and mitigation or proposal text in nine. The same rewording reached eight of 26 remediation rows, six cycle log entries, two attribution plan rows and the note, sourceProvenance, stpaVocabulary and stpaProvenance fields."
+        },
+        {
+          "kind": "field",
+          "date": "2026-11-04",
+          "note": "scoreProvenance restated the second-pass agreement figure from 28 scores changed and 171 confirmed to 28 classes changed (45 of 398 scores: closure 22, gain 23) and 171 confirmed. No score moved in this edition; the figure describes the earlier pass."
+        },
+        {
+          "kind": "field",
+          "date": "2026-11-04",
+          "note": "mitigationProvenance dropped its hand-written per-product coverage, no-record and proposal counts and states that the page computes them from the register as rendered; evidencePredicate.count moved from 64 to 61 with the rule and matchers unchanged."
+        },
+        {
+          "kind": "field",
+          "date": "2026-11-04",
+          "note": "The substrate map took the reworded predicates of A10, P2 and W7 and its verification stamp moved to registry version 18, with 207 classes, 201 mapped and 6 unmapped unchanged. The scanner redaction roster went from six redactions to none and its schema now permits an empty list."
+        }
+      ],
+      "countAfter": 207
     }
   ]
 }

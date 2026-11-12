@@ -26,6 +26,8 @@
     "admin/",
     "provenance/",
     "mcp/",
+    "codegraph/",
+    "chunk-diff/",
     "LICENSING.md",
     "LICENSE-APACHE-2.0",
     "docs/AGPL-SCOPE.md",

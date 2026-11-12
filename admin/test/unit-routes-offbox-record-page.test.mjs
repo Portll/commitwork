@@ -1,7 +1,25 @@
 // Records a normalised offbox page entry and appends it to the page store (admin/routes/offbox.mjs recordPage).
-import { test } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { recordPage } from '../routes/offbox.mjs';
+
+// recordPage appends to the page store. Unscoped, every call below lands in the checkout's own
+// .claude/store/offbox-pages.jsonl, which bin/test/sidecar-paths.test.mjs then reads as a store
+// written with nothing versioning it.
+const TMP = mkdtempSync(join(tmpdir(), 'cw-offbox-record-page-'));
+let saved;
+
+before(() => {
+  saved = process.env.CW_OFFBOX_PAGE_STORE;
+  process.env.CW_OFFBOX_PAGE_STORE = join(TMP, 'pages.jsonl');
+});
+after(() => {
+  if (saved === undefined) delete process.env.CW_OFFBOX_PAGE_STORE; else process.env.CW_OFFBOX_PAGE_STORE = saved;
+  rmSync(TMP, { recursive: true, force: true });
+});
 
 test('normalises a valid ok state with all fields present', () => {
   const at = '2024-01-01T00:00:00.000Z';
