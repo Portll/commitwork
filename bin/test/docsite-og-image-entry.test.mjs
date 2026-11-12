@@ -134,11 +134,23 @@ const stressExits = (args, env = process.env) => Promise.all(Array.from({ length
   c.on('exit', (code, signal) => { clearTimeout(timer); done(code ?? signal); });
 })));
 
+// Two controls, run under the same stress before the renderer. The first only allocates. The second
+// has the renderer's own hazard profile and none of its code: hot integer loops over a large buffer
+// (what gets compiled in the background), deflateSync at level 9, and a natural exit. When Node hangs
+// either, the deadlock is Node's (nodejs/node#54918, open: a V8 background task waits at shutdown on
+// a GC the exiting thread never runs), the renderer cannot exit more naturally than the control does,
+// and the run says so instead of failing. A renderer that reintroduces process.exit() is still caught
+// by the static exitHazards test above on every run.
+const HOT_CONTROL = "const z=require('node:zlib');const b=new Uint8Array(1200*630*3);"
+  + "for(let r=0;r<6;r++)for(let i=0;i<b.length;i++)b[i]=(b[i]*31+i*7+r)&255;z.deflateSync(b,{level:9});";
+
 test('the renderer exits under concurrent-allocation stress', async (t) => {
-  const control = await stressExits(['-e', 'const a = []; for (let i = 0; i < 2e5; i++) a.push({ i });']);
-  const controlHung = control.filter((c) => c === 'hung').length;
-  if (controlHung) {
-    t.skip(`Node ${process.version} hung ${controlHung}/${STRESS_RUNS} allocation-only controls under the same stress`);
+  // Arrange
+  const controls = { 'allocation-only': await stressExits(['-e', 'const a = []; for (let i = 0; i < 2e5; i++) a.push({ i });']) };
+  controls['hot-loop and deflate'] = await stressExits(['-e', HOT_CONTROL]);
+  const controlHung = Object.entries(controls).map(([k, v]) => [k, v.filter((c) => c === 'hung').length]).filter(([, n]) => n);
+  if (controlHung.length) {
+    t.skip(`Node ${process.version} hung ${controlHung.map(([k, n]) => `${n}/${STRESS_RUNS} ${k}`).join(' and ')} controls under the same stress (nodejs/node#54918); the renderer's exit was NOT measured`);
     return;
   }
   const { root, png } = site(t);
@@ -146,7 +158,9 @@ test('the renderer exits under concurrent-allocation stress', async (t) => {
   writeFileSync(png, Buffer.from('not the card'));
   const env = { ...process.env, CW_DOCSITE_ROOT: root };
   delete env.CW_DOCSITE_PRIVATE;
+  // Act
   const exits = await stressExits([OG, '--check'], env);
+  // Assert
   assert.ok(!exits.includes('hung'), `"hung" is the deadlock: ${exits.join(', ')}`);
   const killed = exits.filter((e) => typeof e === 'string');
   const killedBy = [...new Set(killed)].join(', ');
