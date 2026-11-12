@@ -74,6 +74,11 @@ test('no .mjs pushes a secret-bearing FLAG into a spawn args array', () => {
     + offenders.map((o) => '  ' + o).join('\n'));
 });
 
+// A spawn option `input: `…`` is the child's STDIN, which is the remedy the shell-script rule above
+// names, not the defect: no shell parses it and `ps` never shows it. It is removed before matching so
+// a secret written to a child's stdin on the same line as the call is not read as interpolation.
+const withoutStdin = (line) => line.replace(/\binput\s*:\s*`(?:[^`\\]|\\.)*`/g, 'input: ``');
+
 test('no .mjs interpolates a secret into a SHELL string', () => {
   // execSync(`… ${TOKEN} …`) is the same exposure with an extra layer: the shell sees it too.
   const INTERP = new RegExp(
@@ -83,7 +88,7 @@ test('no .mjs interpolates a secret into a SHELL string', () => {
     if (f.endsWith('.test.mjs')) continue;
     const lines = stripComments(readFileSync(f, 'utf8'), 'js');
     lines.forEach((line, i) => {
-      if (INTERP.test(line)) offenders.push(`${relative(REPO, f)}:${i + 1}  ${line.trim().slice(0, 110)}`);
+      if (INTERP.test(withoutStdin(line))) offenders.push(`${relative(REPO, f)}:${i + 1}  ${line.trim().slice(0, 110)}`);
     });
   }
   assert.deepEqual(offenders, [], 'a secret is interpolated into a shell command string:\n'
@@ -92,6 +97,19 @@ test('no .mjs interpolates a secret into a SHELL string', () => {
 
 // ── the detectors must actually detect ───────────────────────────────────────────────────────
 // Each detector is proven against the real pre-fix line it was written for.
+
+test('CONTROL: a secret on a child\'s stdin is not interpolation, and the same secret in the command still is', () => {
+  // Arrange
+  const INTERP = new RegExp(`(?:execSync|exec|spawnSync|spawn)\\([^)]*\\$\\{[^}]*${SECRET_NAME}[^}]*\\}`, 'i');
+  const stdin = "exec('security', ['-i'], { input: `add-generic-password -U -s ${ITEM} -a ${ITEM} -w ${token}\\n` });";
+  const shell = 'execSync(`curl -H "Authorization: ${token}" https://x`, { input: `x` });';
+  // Act
+  const stdinFlagged = INTERP.test(withoutStdin(stdin));
+  const shellFlagged = INTERP.test(withoutStdin(shell));
+  // Assert
+  assert.equal(stdinFlagged, false, 'a value written to stdin must not be flagged');
+  assert.equal(shellFlagged, true, 'a value interpolated into the command string must still be flagged');
+});
 
 test('CONTROL: the detectors catch the real lines they were written for', () => {
   // ci/run-ci.sh, before the fix.
