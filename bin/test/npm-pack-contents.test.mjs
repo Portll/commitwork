@@ -102,7 +102,9 @@ function importClosure(dir, entry) {
     seen.add(rel);
     let src;
     try { src = readFileSync(join(dir, rel), 'utf8'); } catch { return; }   // absent: reported as missing below
-    for (const m of src.matchAll(/^\s*(?:import|export)\s[^'"]*?from\s+'(\.{1,2}\/[^']+)'|\bimport\(\s*'(\.{1,2}\/[^']+)'\s*\)/gm)) {
+    // a comment line is skipped: prose may quote an import() it does not make
+    const code = src.split('\n').filter((l) => !/^\s*(?:\/\/|\*)/.test(l)).join('\n');
+    for (const m of code.matchAll(/^\s*(?:import|export)\s[^'"]*?from\s+'(\.{1,2}\/[^']+)'|\bimport\(\s*'(\.{1,2}\/[^']+\.[cm]?js)'\s*\)/gm)) {
       walk(join(dirname(rel), m[1] || m[2]).split('\\').join('/'));
     }
   };
