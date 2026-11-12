@@ -58,7 +58,9 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         node: ['22', '26']
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # macOS Node 26 runs take 22-25 minutes (2026-11-12); 30 left one queue hiccup between a green
+    # suite and a cancelled one. A hung test is caught by its own timeout well inside this.
+    timeout-minutes: 40
     steps:
       # Actions pinned to commit SHAs, not tags: a tag can be silently repointed by the action
       # owner (the trivy-action / tj-actions compromise class). The trailing comment names the
