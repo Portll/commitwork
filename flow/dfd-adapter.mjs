@@ -353,3 +353,92 @@ export function fromCodeFlows(records, { title } = {}) {
     flows: [...flows.values()],
   };
 }
+
+// ── what the static pass could not read ─────────────────────────────────────────────────────────
+
+const MAX_LISTED = 200;
+
+/**
+ * A flow graph's summary and modules -> the `source.unknown` block of its dfd@1 model, or null when
+ * the graph carries neither (a hand-made graph). Unknown is never clean: every file the pass could
+ * not read is counted by state, and named (the first MAX_LISTED, with the count of the rest);
+ * languages it does not read are counted; call sites whose target could not be named are counted.
+ * The adapter drops a process with no flow, so an unread module would otherwise vanish from the
+ * drawing without trace.
+ */
+export function unknownOf(graph) {
+  const s = graph?.summary;
+  const mods = Array.isArray(graph?.modules) ? graph.modules : null;
+  if (!s && !mods) return null;
+  const unread = (mods || []).filter((m) => m.state !== 'analysed');
+  const byState = {};
+  for (const m of unread) byState[m.state] = (byState[m.state] || 0) + 1;
+  return {
+    files: s?.filesInput ?? mods.length,
+    analysed: s?.analysed ?? (mods.length - unread.length),
+    unanalysable: s?.unanalysable ?? unread.length,
+    byState: s?.unanalysableByReason ?? byState,
+    filesUnread: unread.slice(0, MAX_LISTED).map((m) => `${m.path}: ${m.state}${m.reason ? ` (${String(m.reason).split('\n')[0].slice(0, 200)})` : ''}`),
+    filesUnreadNotListed: Math.max(0, unread.length - MAX_LISTED),
+    unsupportedLanguages: s?.unsupportedLanguages ?? {},
+    computedSites: s?.unanalysableSites ?? 0,
+    computedSitesByKind: s?.unanalysableSitesByKind ?? {},
+  };
+}
+
+// ── one drawing from two sources ────────────────────────────────────────────────────────────────
+
+/** A path as a repository-relative POSIX path: no `file://`, no `./`, relative to `root` when inside. */
+export function repoRelative(p, root = null) {
+  let x = String(p || '').replace(/\\/g, '/');
+  if (x.startsWith('file://')) { try { x = decodeURIComponent(new URL(x).pathname); } catch { x = x.slice(7); } }
+  const r = root ? String(root).replace(/\\/g, '/').replace(/\/+$/, '') : null;
+  if (r && x.startsWith(`${r}/`)) x = x.slice(r.length + 1);
+  return x.replace(/^(\.\/)+/, '');
+}
+
+/**
+ * The static pass's model and the CodeQL model of the same repository -> one dfd@1 model.
+ *
+ * MERGE RULE: a CodeQL process (one per file a trace starts or ends in) and a static process (one
+ * per module) are the same element when their repository-relative paths are equal (repoRelative:
+ * `file://` and `./` dropped, an absolute path under `root` made relative). The merged element is
+ * the static one — its id, label and group — and every CodeQL flow that named the CodeQL process is
+ * redirected to it. Every other element of either model is kept as it is; ids do not collide, the
+ * two adapters using different prefixes. Flows are the union, each keeping its own evidence.
+ * `source.merged` counts what matched.
+ */
+export function mergeModels(staticModel, codeModel, { root = null, title } = {}) {
+  const byPath = new Map(staticModel.nodes.filter((n) => n.kind === 'process').map((n) => [repoRelative(n.label, root), n.id]));
+  const redirect = new Map();
+  for (const n of codeModel.nodes) {
+    if (n.kind !== 'process') continue;
+    const hit = byPath.get(repoRelative(n.label, root));
+    if (hit) redirect.set(n.id, hit);
+  }
+  const to = (id) => redirect.get(id) || id;
+  // The CodeQL model declares its groups and the static one does not; dfd@1 asks for all or none, so
+  // each top-level directory the static adapter grouped by is declared as a system boundary.
+  const groups = new Map([...(staticModel.groups || []), ...(codeModel.groups || [])].map((g) => [g.id, g]));
+  for (const n of staticModel.nodes) if (n.group !== undefined && !groups.has(n.group)) groups.set(n.group, { id: n.group, label: n.group, boundary: 'system' });
+  // a CodeQL repo group left with no element after the redirect is not drawn
+  const nodes = [...staticModel.nodes, ...codeModel.nodes.filter((n) => !redirect.has(n.id))];
+  const used = new Set(nodes.map((n) => n.group).filter(Boolean));
+  return {
+    v: DFD_VERSION,
+    kind: 'dfd',
+    title: title || staticModel.title,
+    source: {
+      producer: 'flow-graph+codeql-code-flows',
+      note: 'The static pass (flow/static.mjs) over the repository, with the CodeQL taint traces of the same repository merged in: a CodeQL file and a static module are one element when their repository-relative paths are equal.',
+      ...(staticModel.source?.graph ? { graph: staticModel.source.graph } : {}),
+      options: { ...(staticModel.source?.options || {}), merged: { ...(staticModel.source?.options?.merged || {}), codeqlProcessesMatched: redirect.size, codeqlProcessesUnmatched: codeModel.nodes.filter((n) => n.kind === 'process').length - redirect.size } },
+      omitted: { ...(staticModel.source?.omitted || {}), ...Object.fromEntries(Object.entries(codeModel.source?.omitted || {}).map(([k, v]) => [`codeql ${k}`, v])) },
+      ...(staticModel.source?.unknown ? { unknown: staticModel.source.unknown } : {}),
+    },
+    ...(staticModel.layers ? { layers: staticModel.layers } : {}),
+    ...(groups.size ? { groups: [...groups.values()].filter((g) => used.has(g.id)) } : {}),
+    nodes,
+    flows: [...staticModel.flows, ...codeModel.flows.map((f) => ({ ...f, from: to(f.from), to: to(f.to) }))],
+  };
+}

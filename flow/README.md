@@ -192,13 +192,60 @@ node --test --experimental-test-coverage lib/test/dfd*.test.mjs flow/test/dfd*.t
 | `--max <n>` | refuse to draw more than n elements (default 150), counted after collapsing |
 | `--emit html\|model\|analysis` · `--out <file>` · `--fonts` · `--title` | output; `model` is the filtered document before any collapse; `--out` prints the drawing's size, crossings and label collisions |
 
-Exit 0 written, 2 usage, 20 not a valid `dfd@1`, 21 an input absent, unreadable or not a flow graph,
-22 the filter matched nothing, `--collapse` named an empty group, or the drawing is over `--max`.
+Exit 0 written, 2 usage, 20 not a valid `dfd@1`, 21 an input absent, unreadable or not a flow graph
+(or `--repo` not a git checkout, or `--codeql` neither SARIF nor dataflow records), 22 the filter
+matched nothing, `--collapse` named an empty group, the drawing is over `--max`, or `--repo`/`--codeql`
+found no flow to draw.
 
-The command is `node flow/dfd-cli.mjs`, as `flow/report.mjs` is, and not a `commitwork` subcommand.
-`flow/` is in `package.json` `files` (its tests are not), because `admin/routes/dfd.mjs` imports the
-command's parser and the flow store. The route reads the file `CW_DFD_FILE` names, else the flow
+Changed 2026-11-12 (owner decisions 2 and 3). The command was `node flow/dfd-cli.mjs` only and "not
+a `commitwork` subcommand"; it is now also `commitwork dfd`, dispatched ahead of first-run setup in
+`bin/commitwork.mjs`, with the same flags and exit codes (docs/EXIT-CODES.md reads them from this
+module's header). `flow/` is in `package.json` `files` (its tests are not), because the subcommand
+and `admin/routes/dfd.mjs` import it. The route reads the file `CW_DFD_FILE` names, else the flow
 store's graph; its query keys are the flags above, and `/api/dfd` takes the filter keys only.
+
+### A scanned repository (`--repo`, `--codeql`)
+
+`commitwork dfd --repo <path>` runs C1 over ANOTHER git checkout's tracked `.mjs .cjs .js .jsx .ts
+.tsx .mts .cts` files (`targetSources`; `node_modules/` left out). Parser rules are unchanged: the
+mask lexer, V8's parse as the floor and the mask-consistency rewrite, no second tokenizer. The parse
+goal is fixed by the extension (`.mjs`/`.mts` module, `.cjs`/`.cts` CommonJS) or, for `.js .jsx .ts
+.tsx`, is the first V8 accepts, module then CommonJS. CommonJS is parsed as Node runs it, the module
+wrapper under `vm.Script` (constructed, never run); V8 names no specifiers there, so the W2 test is
+vacuous for it and `require('./x')` literals are taken as the imports.
+
+TypeScript goes through `node:module` `stripTypeScriptTypes` in strip mode (added in Node 22.13.0,
+so present on the 22.18 floor; experimental, Stability 1.1 on 22.x, warns once; needs no flag —
+checked on 22.23.4 with and without `--no-experimental-strip-types`). Strip mode writes whitespace
+of the same length, so offsets and lines are the source's. It refuses enum, namespace, parameter
+properties and JSX: such a file is `unsupported-language` with the error as its reason. A `.jsx` or
+`.tsx` V8 refuses is `unsupported-language`. Without the function, every TypeScript file is
+`unsupported-language`, never clean. A file over 2 MiB is `too-large`, not read.
+
+Target code is never executed. The launchd generator (`monitor/install-agents.mjs`) is imported to
+read it, so it is read only when the target is this checkout (`isSelf`, by realpath); in any other
+repository a file at that path is a site, "not read". Workflows, crontabs, timers and watches are
+read statically as before. A relative import is resolved against the tracked set (`./x.js` naming
+`x.ts`, extensionless, `index.*`).
+
+What the pass could not read is the model's `source.unknown` (`unknownOf`): files by state and by
+name (200 listed, the rest counted), tracked files in other languages by language, and call sites
+whose target is computed. The page banner states each count, zero included; `--out` prints them.
+A path assembled from variables at an fs call is still not a site (see Analysis limitations).
+
+`--codeql <file>` takes a SARIF file (through `monitor/sarif-read.mjs`, each result through
+`dataflowFromResult`) or dataflow records (a JSON array or `{ records }`). Alone it draws
+`fromCodeFlows`, attributed to the SARIF's directory name. With `--repo` the two models merge
+(`mergeModels`): **a CodeQL process and a static module are one element when their repository-
+relative paths are equal** (`file://`, `./` dropped, an absolute path under the root made relative);
+the static element is kept, CodeQL flows are redirected to it, everything else of both is kept, and
+`source.options.merged` counts matched and unmatched CodeQL processes.
+
+The panel takes `repo=<name>`: a name only, `^[A-Za-z0-9._-]{1,128}$` and not `.` or `..`, looked
+up in the panel's fleet resolver (`admin/lib/core.mjs` `resolvedRepos`). Anything else, or a name
+the registry does not know, is 400 with the reason, before any filesystem access. The pass runs in
+a child (`--experimental-vm-modules flow/dfd-cli.mjs --repo <registered path> --emit model`, 180 s);
+its model is filtered and collapsed in the panel through `prepare`. `codeql=` is not accepted.
 
 ### The model
 

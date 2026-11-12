@@ -66,8 +66,8 @@ test('parseArgs lets --graph stand without a path', () => {
 test('parseArgs names each malformed invocation', () => {
   // arrange
   const cases = [
-    [[], /exactly one of --from/],
-    [['--from', 'a', '--graph'], /exactly one of --from/],
+    [[], /exactly one source: --from/],
+    [['--from', 'a', '--graph'], /exactly one source: --from/],
     [['--from'], /--from needs a value/],
     [['stray'], /unknown argument stray/],
     [['--nope'], /unknown argument --nope/],
@@ -186,7 +186,7 @@ test('a usage error exits 2 and shows the usage line', () => {
 
   // assert
   assert.equal(r.code, EXIT.USAGE);
-  assert.match(r.err, /--emit takes one of[\s\S]*usage: node flow\/dfd-cli\.mjs[\s\S]*--help lists every option/);
+  assert.match(r.err, /--emit takes one of[\s\S]*usage: commitwork dfd[\s\S]*--help lists every option/);
 });
 
 test('a filter that matches nothing, or a model past --max, exits 22 and draws nothing', () => {
@@ -275,7 +275,7 @@ test('run as a command it exits with main\'s code', () => {
   assert.equal(ok.status, 0);
   assert.equal(JSON.parse(ok.stdout).v, 1);
   assert.equal(bad.status, 2);
-  assert.match(bad.stderr, /^dfd: give exactly one of/);
+  assert.match(bad.stderr, /^dfd: give exactly one source/);
 });
 
 // ── direction, collapse, orientation, help ───────────────────────────────────────────────────────

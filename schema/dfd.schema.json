@@ -21,7 +21,8 @@
         "graph": { "type": "object" },
         "options": { "type": "object" },
         "omitted": { "type": "object" },
-        "filter": { "type": "object" }
+        "filter": { "type": "object" },
+        "unknown": { "type": "object", "description": "What the producer could not read, counted: files by state and by name, languages it does not read, call sites whose target it could not name. Unknown is never clean." }
       }
     },
     "layers": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },

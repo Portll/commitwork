@@ -143,13 +143,16 @@ in a `dfd@1` file. Five parts, each a pure function of the one before it:
    the tests compare hashes. The page makes no request, carries no style attribute, admits only its
    own style and the theme follower, and tabulates every element and flow under the drawing — the
    drawing is never the only channel.
-4. **Command** — `node flow/dfd-cli.mjs --from <dfd.json> | --graph [<flow.json>]`, with `--prefix`,
+4. **Command** — `commitwork dfd` (also `node flow/dfd-cli.mjs`) `--from <dfd.json> | --graph
+   [<flow.json>] | --repo <path> [--codeql <file>] | --codeql <file>` (a scanned repository: C1 over
+   its JS/TS sources, never run, and its CodeQL code flows, merged by repository-relative path;
+   flow/README.md), with `--prefix`,
    `--focus`, `--hops`, `--direction`, `--collapse`, `--collapse-all-groups-over`, `--orientation`,
    `--max` (counted after collapsing) and `--help`. Exit 2 usage, 20 invalid, 21 input, 22 nothing
    matched or too large. `--out` prints the drawing's size, crossings and label collisions.
 5. **Panel route** — `admin/routes/dfd.mjs`, `GET /dfd/` and `GET /api/dfd`, below the login gate.
    The source is the file `CW_DFD_FILE` names, else `<CW_HARNESS_STORE>/flow.json` through the
-   adapter. The query keys are the command's flags and go through the command's own parser and
+   adapter; `repo=<name>` names a repository the panel's registry knows, never a path. The query keys are the command's flags and go through the command's own parser and
    loader, so the two refuse alike; `/api/dfd` takes the filter keys only and returns the `dfd@1`
    document before any collapse. The page is sent under `renderHtml`'s policy as the
    `Content-Security-Policy` header. `flow/` is in `package.json` `files` for this import.
