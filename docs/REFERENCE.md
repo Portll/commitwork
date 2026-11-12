@@ -11,8 +11,8 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
 | Commands (a usage line in the header) | 340 | 278 | 62 |
-| Exit codes (declared in the header) | 354 | 156 | 198 |
-| `CW_*` environment variables (described in an `env` header) | 931 | 222 | 709 |
+| Exit codes (declared in the header) | 355 | 157 | 198 |
+| `CW_*` environment variables (described in an `env` header) | 932 | 223 | 709 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -39,6 +39,7 @@ From `usage()` in `bin/commitwork.mjs`.
 | `commitwork setup [--yes] [--only a,b]` | install missing scanners via the local package manager (brew/winget/scoop/pipx); also offered on the first interactive launch |
 | `commitwork hook install [--repo <path>] [--chain] [--lanes secrets,gitleaks] [--unrun block\|warn]` | a pre-commit hook that checks the staged content (the index) for secrets before a commit lands; hook uninstall / hook run (see bin/hook.mjs) |
 | `commitwork update [--check] [--channel stable\|beta] [--yes]` | install a newer signed release (bin/update.mjs); --login / --token-stdin / --logout manage the token |
+| `commitwork dfd --repo <path> [--codeql <file>] [--out <file>]` | draw a data flow diagram: of another repository (its JS/TS sources read, never run, and its CodeQL code flows), of a SARIF file alone (--codeql), of this tree's flow graph (--graph) or of a dfd@1 file (--from); what it could not read is counted (commitwork dfd --help) |
 | `commitwork version` | print the installed version (also --version) |
 | `commitwork help` | undocumented |
 
@@ -81,6 +82,7 @@ Exit codes:
 - `commitwork setup`: 0 every requested tool was present or installed, or nothing was requested (report-only, declined) · 20 a requested install failed, or a tool --only named has no installer here · 21 nothing failed, but a requested tool needs an administrator; the closing block names the command (declared in `bin/setup.mjs`)
 - `commitwork hook`: undeclared
 - `commitwork update`: undeclared
+- `commitwork dfd`: 0 written · 2 usage · 20 the document is not a valid dfd@1 · 21 an input is absent, unreadable or not a flow graph, --repo is not a git checkout, or --codeql is neither SARIF nor dataflow records · 22 the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw (declared in `flow/dfd-cli.mjs`)
 - `commitwork version`: undeclared
 - `commitwork help`: undeclared
 
@@ -2723,7 +2725,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-931 `CW_*` names read by tracked non-test sources: 803 by name, and
+932 `CW_*` names read by tracked non-test sources: 804 by name, and
 128 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -2976,6 +2978,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_DEPS_PROD_TYPES` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEP_PROVENANCE` | direct | `monitor/dep-provenance.mjs` | undocumented |
 | `CW_DETECTOR_BASIS` | direct | `monitor/detector-basis.mjs` | undocumented |
+| `CW_DFD_FILE` | direct | `admin/routes/dfd.mjs` | undocumented |
 | `CW_DF_ROOT` | direct | `bin/lib/docsite-figures.mjs` | repo root; tests point it at a fixture |
 | `CW_DIFF_MAX_BYTES` | direct | `chunk-diff/generate.mjs` | undocumented |
 | `CW_DIFF_MAX_WORDS` | direct | `chunk-diff/lib/diff-ops.mjs` | undocumented |
@@ -3101,7 +3104,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_GUARD_UNATTENDED` | direct | `bin/hooks/guard-destructive.mjs`, `lib/security-posture.mjs` | undocumented |
 | `CW_HANDOFF_CMD` | direct | `admin/routes/remediation.mjs` | undocumented |
 | `CW_HARNESS_MEMORY_DIR` | direct | `bin/memory-sync.mjs` | the memory directory, default the harness path for this repo |
-| `CW_HARNESS_STORE` | direct | `flow/store.mjs` | undocumented |
+| `CW_HARNESS_STORE` | direct | `flow/store.mjs` | the flow store directory, default reports/harness; --graph without a path reads flow.json there (`flow/dfd-cli.mjs`) |
 | `CW_HEAD_SHA` | direct | `bin/head-sha.mjs` | undocumented |
 | `CW_HEALTH_RUNS_STORE` | direct | `admin/lib/jobs.mjs` | undocumented |
 | `CW_HERMETIC_TIMEOUT_SEC` | direct | `bin/hermetic-test.mjs` | default 5400 |

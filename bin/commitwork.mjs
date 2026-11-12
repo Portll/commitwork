@@ -53,7 +53,7 @@ const expandHome = (p) => (p && p.startsWith('~/') ? join(homedir(), p.slice(2))
 // A version query runs no check, so it gets no report directory and no warning about one.
 const VERSION_CMDS = new Set(['version', '--version']);
 // Commands that run no lane, so write no lane artifacts and need no report directory.
-const NO_REPORT_CMDS = new Set([...VERSION_CMDS, 'deps', 'update']);
+const NO_REPORT_CMDS = new Set([...VERSION_CMDS, 'deps', 'update', 'dfd']);
 if (process.env.CW_REPORT_DIR) {
   process.env.CW_REPORT_DIR = resolve(process.env.CW_REPORT_DIR);
   mkdirSync(process.env.CW_REPORT_DIR, { recursive: true });
@@ -105,6 +105,7 @@ import { writeRunSarif, commitworkVersion, SARIF_FILE } from './lib/sarif-export
 import { nowISO } from '../lib/clock.mjs';
 import { runBriefTui } from './lib/brief-tui.mjs';
 import { runDeps } from './deps.mjs';
+import { main as runDfd } from '../flow/dfd-cli.mjs'; // `commitwork dfd`: the data flow visualiser, flags and exit codes its own
 import { loadKevCatalog, loadEpssScores } from '../monitor/dep-findings.mjs';
 import { resolveScanPath, scanOutDir, discoverPcRepos } from './lib/scan-target.mjs';
 import { describeWebroot } from './lib/webroot.mjs';
@@ -2806,6 +2807,12 @@ ${helpInPlace('scan-images')}  commitwork brief [dir] [--pc]       scan a reposi
   commitwork update [--check] [--channel stable|beta] [--yes]
                                       install a newer signed release (bin/update.mjs);
                                       --login / --token-stdin / --logout manage the token
+  commitwork dfd --repo <path> [--codeql <file>] [--out <file>]
+                                      draw a data flow diagram: of another repository (its
+                                      JS/TS sources read, never run, and its CodeQL code
+                                      flows), of a SARIF file alone (--codeql), of this
+                                      tree's flow graph (--graph) or of a dfd@1 file (--from);
+                                      what it could not read is counted (commitwork dfd --help)
   commitwork version                  print the installed version (also --version)
   commitwork help
 ${helpOff()}
@@ -2916,6 +2923,8 @@ async function main() {
   if (cmd === 'deps') { process.exitCode = await runDeps(argv.slice(1)); return; }
   // ahead of the first-run setup prompt: an update installs no scanner and must run unattended
   if (cmd === 'update') { const { main: updateMain } = await import('./update.mjs'); process.exitCode = await updateMain(argv.slice(1)); return; }
+  // ahead of the first-run setup prompt: drawing a diagram installs and runs no scanner
+  if (cmd === 'dfd') { process.exitCode = await runDfd(argv.slice(1)); return; }
   // ahead of the first-run setup prompt: a commit hook must never stop at an interactive question
   if (cmd === 'hook') { const { main: hookMain } = await import('./hook.mjs'); process.exitCode = hookMain(argv.slice(1)); return; }
   // first interactive launch: check the scanner toolchain and offer to install (once, stamped)
@@ -2943,7 +2952,7 @@ async function main() {
     case 'list': return cmdList(manifest, repoPath);
     case 'doctor': return cmdDoctor(manifest, repoPath);
     case 'run': return cmdRun(manifest, repoPath, positional[0], opts);
-    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, doctor, setup, init, hook, update, version, help)`);
+    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, dfd, doctor, setup, init, hook, update, version, help)`);
   }
 }
 

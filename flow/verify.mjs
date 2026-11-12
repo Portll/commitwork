@@ -30,8 +30,27 @@ async function sourceTextModule() {
   return vm.SourceTextModule;
 }
 
-/** -> { ok, error, specifiers } — specifiers are STATIC imports only (see the header). */
-export async function parseModule(src, identifier = 'anonymous.mjs') {
+// A CommonJS file is parsed as Node runs it: the body of the module wrapper function, compiled by
+// vm.Script and never run. The wrapper opens on the source's first line, so line numbers hold. A
+// hashbang is legal only at the very start of a script, so inside the wrapper it becomes a comment
+// of the same length. V8 names no specifiers for a script: require() is a call, not a declaration.
+export const CJS_WRAPPER = '(function (exports, require, module, __filename, __dirname) {';
+const cjsBody = (s) => (s.startsWith('#!') ? `//${s.slice(2)}` : s);
+
+/**
+ * -> { ok, error, specifiers } — specifiers are STATIC imports only (see the header). `goal` is
+ * 'module' (vm.SourceTextModule) or 'commonjs' (the module wrapper under vm.Script, no specifiers).
+ */
+export async function parseModule(src, identifier = 'anonymous.mjs', { goal = 'module' } = {}) {
+  if (goal === 'commonjs') {
+    const vm = await import('node:vm');
+    try {
+      new vm.Script(`${CJS_WRAPPER}${cjsBody(String(src))}\n})`, { filename: identifier });
+      return { ok: true, error: null, specifiers: [] };
+    } catch (e) {
+      return { ok: false, error: `${e.name}: ${e.message}`, specifiers: null };
+    }
+  }
   const SourceTextModule = await sourceTextModule();
   try {
     const m = new SourceTextModule(String(src), { identifier });
@@ -73,10 +92,10 @@ export function maskFrom(src, spans) {
  * That residual is what W3 and W4 are for, and flow/README.md states it rather than implying the
  * floor is a ceiling.
  */
-export async function maskConsistent(src, spans, identifier = 'anonymous.mjs') {
+export async function maskConsistent(src, spans, identifier = 'anonymous.mjs', { goal = 'module' } = {}) {
   const m = maskFrom(src, spans);
   if (!m.ok) return { ok: false, error: m.error };
-  const parsed = await parseModule(m.masked, `${identifier}#masked`);
+  const parsed = await parseModule(m.masked, `${identifier}#masked`, { goal });
   return { ok: parsed.ok, error: parsed.error };
 }
 

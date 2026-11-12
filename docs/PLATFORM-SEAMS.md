@@ -19,15 +19,15 @@ home path in a comment discloses as much as one in code. A `zsh` line that also 
 used for classification and is not counted. The regex per class is in `bin/lib/platform-seams.mjs`
 (`SEAM_CLASSES`).
 
-Measured 2026-10-08:
+Measured 2026-11-12:
 
 | Class | Files | Lines | What it matches |
 |---|---:|---:|---|
-| `launchd` | 10 | 41 | `launchctl`, `LaunchAgents`/`LaunchDaemons`, plist schedule keys |
+| `launchd` | 12 | 44 | `launchctl`, `LaunchAgents`/`LaunchDaemons`, plist schedule keys |
 | `keychain` | 8 | 17 | spawning `security`, `security find-/add-/dump-…`, `keychain:` refs, `osxkeychain` |
-| `zsh` | 1 | 2 | zsh shebangs, `'zsh'` literals, `.zshrc`/`.zprofile` |
-| `users-path` | 3 | 3 | `/Users/<name>` |
-| `homebrew` | 21 | 47 | `/opt/homebrew`, Cellar, `brew <subcommand>`, `'brew'` literals |
+| `zsh` | 2 | 3 | zsh shebangs, `'zsh'` literals, `.zshrc`/`.zprofile` |
+| `users-path` | 2 | 2 | `/Users/<name>` |
+| `homebrew` | 22 | 48 | `/opt/homebrew`, Cellar, `brew <subcommand>`, `'brew'` literals |
 | `sandbox-exec` | 1 | 3 | `sandbox-exec` |
 | `macos-tools` | 10 | 37 | `sw_vers osascript xcrun codesign notarytool spctl plutil pbcopy pbpaste system_profiler softwareupdate mdfind tccutil`, spawning `open`, `'ditto'`/`'xattr'` literals, BSD `sed -i ''`, `stat -f`, `date -j` |
 
@@ -75,6 +75,7 @@ an amd64 runner when its inputs change; its three runs so far, all on 2026-10-08
 | `monitor/persistence-diff.mjs` | Watches LaunchAgents/LaunchDaemons as persistence surfaces | Portable already: a Linux surface set (systemd units, cron, profiles) is selected by platform |
 | `bin/deploy.mjs` | Lists `~/Library/LaunchAgents` among paths it refuses to write | Protective, not a dependency. The same list carries `/etc/cloudflared` for Linux |
 | `bin/hooks/guard-destructive.mjs` | Names `launchctl` and plists in the pattern that refuses an attempt to switch the human-commit gate off | Protective, not a dependency. The same pattern names `.zshrc` and `.profile` |
+| `flow/triggers.mjs` | Reads the launchd generator's `AGENTS` table and plist schedule keys (`StartCalendarInterval`, `StartInterval`) to draw scheduler entities in the data flow graph; never runs `launchctl` | Portable already: it reads a table, not the host, so the graph is the same on any OS. Workflow schedules, crontabs, timers and `fs.watch` are extracted beside it; a systemd timer reader would sit in the same place once a unit generator exists |
 
 ## Keychain
 
@@ -159,6 +160,7 @@ adds a seam, and say in the sections above what the portable path is.
 | launchd | `bin/deploy.mjs` |
 | launchd | `bin/hooks/guard-destructive.mjs` |
 | launchd | `bin/panel-local-name.mjs` |
+| launchd | `flow/triggers.mjs` |
 | launchd | `monitor/install-agents.mjs` |
 | launchd | `monitor/persistence-diff.mjs` |
 | launchd | `monitor/service-health.mjs` |

@@ -4,7 +4,8 @@
 // Population: tracked top-level bin/, monitor/ and cra/ .mjs files that carry a shebang, show their
 // own invocation in the header, or declare exit codes there; plus the `commitwork` subcommands
 // listed in bin/commitwork.mjs's usage(). A subcommand is declared only when its dispatch line sets
-// `process.exitCode = [await] fn(...)` and fn's module header declares codes.
+// `process.exitCode = [await] fn(...)` and fn's module header declares codes; that module may sit
+// outside bin/, monitor/ and cra/ (`commitwork dfd` delegates to flow/dfd-cli.mjs).
 //
 // Header forms read (the header is the leading comment block, after any shebang):
 //   labelled   `exit: 0 a · 1 b`, `Exit codes: 0 = a; 1 = b`, continuation lines included
@@ -223,14 +224,16 @@ function cliCommands(root, src, headers) {
   const subs = [];
   for (const m of body.matchAll(/^ {2}commitwork ([a-z][\w-]*)/gm)) if (!subs.includes(m[1])) subs.push(m[1]);
   const imports = new Map();
-  for (const m of src.matchAll(/^import \{([^}]+)\} from '(\.\/[^']+)';/gm)) {
+  for (const m of src.matchAll(/^import \{([^}]+)\} from '(\.\.?\/[^']+)';/gm)) {
     for (const name of m[1].split(',').map((s) => s.trim().split(/\s+as\s+/).pop())) imports.set(name, join('bin', m[2]));
   }
   return subs.map((sub) => {
     const line = src.split('\n').find((l) => l.includes(`cmd === '${sub}'`) && /process\.exitCode\s*=\s*(?:await\s+)?\w+\(/.test(l));
     const fn = line?.match(/process\.exitCode\s*=\s*(?:await\s+)?(\w+)\(/)?.[1];
-    const mod = fn && imports.get(fn);
-    const h = mod && headers.get(mod.replace(/\\/g, '/'));
+    const mod = fn && imports.get(fn)?.replace(/\\/g, '/');
+    // a module outside DIRS (flow/dfd-cli.mjs) is not in the population; its header is read here
+    if (mod && !headers.has(mod)) { const text = read(root, mod); if (text !== null) headers.set(mod, parseHeader(text, mod)); }
+    const h = mod && headers.get(mod);
     if (h && h.status === 'declared') return { name: `commitwork ${sub}`, source: mod, via: fn, ...h };
     return { name: `commitwork ${sub}`, source: 'bin/commitwork.mjs', status: 'undeclared', entries: [] };
   });

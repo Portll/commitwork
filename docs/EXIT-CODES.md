@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-354 commands: 156 declared, 12 prose, 186 undeclared. Of the declared, 124 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 32 declare a code of 20 or above.
+355 commands: 157 declared, 12 prose, 186 undeclared. Of the declared, 124 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 33 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -44,6 +44,18 @@ Declared in `bin/setup.mjs` (`setupExitCode`).
 | 0 | every requested tool was present or installed, or nothing was requested (report-only, declined) |
 | 20 | a requested install failed, or a tool --only named has no installer here |
 | 21 | nothing failed, but a requested tool needs an administrator; the closing block names the command |
+
+### `commitwork dfd`
+
+Declared in `flow/dfd-cli.mjs` (`runDfd`).
+
+| Exit | Meaning |
+|---:|---|
+| 0 | written |
+| 2 | usage |
+| 20 | the document is not a valid dfd@1 |
+| 21 | an input is absent, unreadable or not a flow graph, --repo is not a git checkout, or --codeql is neither SARIF nor dataflow records |
+| 22 | the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw |
 
 Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`, `update`, `version`, `help`.
 

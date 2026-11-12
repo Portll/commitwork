@@ -55,7 +55,7 @@ test('the off-box ingest sits above the CSRF and login gates, and authenticates 
   assert.match(mod, /offboxHosts\(env\)\.has\(host\)/, 'the exemption must be confined to the offbox hostname');
 });
 
-test('the only modular routes outside /api/ are the authenticated docsite, launchlist and off-box pages', () => {
+test('the only modular routes outside /api/ are the authenticated docsite, launchlist, data flow diagram and off-box pages', () => {
   const dir = join(HERE, '..', 'routes');
   const paths = new Set();
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.mjs'))) {
@@ -72,7 +72,8 @@ test('the only modular routes outside /api/ are the authenticated docsite, launc
   ];
   const launchlistSurface = ['/launchlist', '/launchlist/'];
   const offboxSurface = ['/offbox', '/offbox/'];
-  assert.deepEqual(nonApi, [...docsiteSurface, ...launchlistSurface, ...offboxSurface].sort(),
+  const dfdSurface = ['/dfd', '/dfd/'];
+  assert.deepEqual(nonApi, [...docsiteSurface, ...launchlistSurface, ...dfdSurface, ...offboxSurface].sort(),
     'the authenticated non-API surface changed; declare the exact docsite route here or move an '
     + 'accidental route under /api/. Dispatch must remain behind the login gate.');
 });

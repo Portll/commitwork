@@ -111,6 +111,55 @@ a distinct finding from `reads X`.
 **C5. Store liveness** — `flow/liveness.mjs`. Last write per store against the freshness each
 consumer assumes. A consumer that assumes nothing is itself the finding.
 
+**C6. Visualiser** — a data flow diagram (Gane–Sarson) of the flow graph, or of any system described
+in a `dfd@1` file. Five parts, each a pure function of the one before it:
+
+1. **Model** — `lib/dfd.mjs`, `schema/dfd.schema.json`. Three element kinds and no fourth: process,
+   store, external. A broker or queue is a store `subtype` (`broker|queue|topic|stream`, beside
+   `database|log|file`); an external's `subtype` is `endpoint|scheduler|actor|system|env|binary`. A
+   flow carries `mode` (`sync|async|event`), `role` (`data|feedback|error|retry`), `existence`
+   (`confirmed|unknown`, else its evidence's, else *declared*) and `direction`. Every role but `data`
+   is a declared return path, drawn as feedback on its own edge. `analyse` gives every
+   flow one class — undirected, self-loop, bidirectional, feedback, forward — and the hop ranks,
+   cycles, branch and merge points and paths the page reports. `filterModel` keeps the seeds of a
+   prefix or a focus and everything within `hops` flows of them, `direction` `in`, `out` or `both`.
+2. **Adapter** — `fromFlowGraph` in `flow/dfd-adapter.mjs`. Module → process, artifact or store →
+   store, env key and command name → external; `touches` → a flow with `directed: false`. **A flow whose direction was never
+   determined takes no part in ranks, cycles or paths**: a cycle built on a guessed direction is a
+   fabricated feedback loop. Everything left out is counted and printed.
+3. **Renderer** — `lib/dfd-render.mjs`, `renderHtml(model, { collapse, orientation, fonts })` →
+   `{ html, csp, stats }`. Layered layout: longest-path ranks, one virtual point per rank a long flow
+   crosses, four barycentre sweeps, then adjacent transposition while it removes crossings and never
+   splitting a group within a rank; a source sits one rank before its first consumer. Ranks run left
+   to right or top to bottom, and top to bottom packs elements at their own widths, layers on
+   disjoint ranks sharing the cross axis; `auto` takes top to bottom when the left-to-right drawing
+   is wider than 1,600 units and the other is narrower. Feedback
+   runs outside the body on its own track; its risers sit in gutters that the retry-loop labels, which
+   stand above their own box, never use. Edge labels wrap to two lines, then shorten in the middle;
+   each takes the first spot along its edge clear of every element, boundary name, riser and placed
+   label, else a nudge, else it is **counted** in `stats.collisions` — never silently overlapped.
+   `collapse` draws a group as one node, merging flows across it per other end, mode and role with
+   `×n` in the label. **One model renders to the same bytes every time**: nothing reads the clock, and
+   the tests compare hashes. The page makes no request, carries no style attribute, admits only its
+   own style and the theme follower, and tabulates every element and flow under the drawing — the
+   drawing is never the only channel.
+4. **Command** — `commitwork dfd` (also `node flow/dfd-cli.mjs`) `--from <dfd.json> | --graph
+   [<flow.json>] | --repo <path> [--codeql <file>] | --codeql <file>` (a scanned repository: C1 over
+   its JS/TS sources, never run, and its CodeQL code flows, merged by repository-relative path;
+   flow/README.md), with `--prefix`,
+   `--focus`, `--hops`, `--direction`, `--collapse`, `--collapse-all-groups-over`, `--orientation`,
+   `--max` (counted after collapsing) and `--help`. Exit 2 usage, 20 invalid, 21 input, 22 nothing
+   matched or too large. `--out` prints the drawing's size, crossings and label collisions.
+5. **Panel route** — `admin/routes/dfd.mjs`, `GET /dfd/` and `GET /api/dfd`, below the login gate.
+   The source is the file `CW_DFD_FILE` names, else `<CW_HARNESS_STORE>/flow.json` through the
+   adapter; `repo=<name>` names a repository the panel's registry knows, never a path. The query keys are the command's flags and go through the command's own parser and
+   loader, so the two refuse alike; `/api/dfd` takes the filter keys only and returns the `dfd@1`
+   document before any collapse. The page is sent under `renderHtml`'s policy as the
+   `Content-Security-Policy` header. `flow/` is in `package.json` `files` for this import.
+
+Measured on `lib/test/fixtures/dfd-synthetic.json`, 2026-11-12: 22 elements, 26 flows, drawn top to
+bottom 1,328 × 1,776 units (left to right would be 3,407 wide), 0 crossings, 0 label collisions.
+
 ---
 
 ## 3. Deliverable
@@ -126,7 +175,8 @@ The code is how you get the measurement; the measurement is the point. Over comm
 
 ## 4. Contention
 
-Owns `flow/**` only. Reads anything; writes nothing else.
+Owns `flow/**` only. Reads anything; writes nothing else. C6 is the exception, by design: its model
+and renderer are in `lib/` and its route in `admin/routes/`, so the panel can serve them.
 
 `package.json`'s test script globs `flow/**/*.test.mjs`, and README's `## Documentation` index
 lists this document.
