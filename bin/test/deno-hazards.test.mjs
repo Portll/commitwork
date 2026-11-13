@@ -89,6 +89,23 @@ describe('parsers', () => {
     assert.deepEqual(f('deno run --inspect=0.0.0.0:9229 main.ts'), ['deno/inspector-exposed']);
   });
 
+  test('a TLS bypass scoped to loopback is a note; scoped elsewhere or unscoped it keeps its level and says which hosts', () => {
+    const g = (cmd) => invocationFindings(denoInvocations(cmd)[0], 'prod').map((x) => `${x.ruleId} ${x.level} ${x.detail}`);
+    assert.deepEqual(g('deno run --allow-net=127.0.0.1:54331 --unsafely-ignore-certificate-errors=127.0.0.1,localhost main.ts'),
+      ['deno/ignore-certificate-errors note deno run, only for 127.0.0.1, localhost (loopback)']);
+    assert.deepEqual(g('deno run --allow-net=db.internal --unsafely-ignore-certificate-errors=127.0.0.1,db.internal main.ts'),
+      ['deno/ignore-certificate-errors error deno run, for 127.0.0.1, db.internal']);
+    assert.deepEqual(g('deno run --allow-net=db.internal --unsafely-ignore-certificate-errors main.ts'),
+      ['deno/ignore-certificate-errors error deno run, every host']);
+  });
+
+  test('-A with --deny-* keeps its level but names what the denies took back', () => {
+    const [x] = invocationFindings(denoInvocations('deno run -A --deny-run --deny-ffi --deny-write main.ts')[0], 'prod');
+    assert.equal(x.ruleId, 'deno/allow-all');
+    assert.equal(x.level, 'error');
+    assert.equal(x.detail, 'deno run main.ts; taken back: --deny-run --deny-ffi --deny-write');
+  });
+
   test('specifiers: pinned forms are quiet, every floating form is named', () => {
     for (const s of ['jsr:@std/path@^1.0.8', 'npm:chalk@5.4.1', 'https://deno.land/x/oak@v17.1.4/mod.ts', 'https://esm.sh/react@19.0.0', 'https://deno.land/std@0.224.0/path/mod.ts', 'http://localhost:8000/dev.ts']) {
       assert.equal(specifierFinding(s, false), null, s);
