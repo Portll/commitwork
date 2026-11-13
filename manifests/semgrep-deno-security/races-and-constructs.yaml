@@ -140,10 +140,21 @@ rules:
           - pattern-inside: |
               if (<... existsSync($P, ...) ...>) { ... }
               ...
-      - pattern: Deno.$OP($P, ...)
-      - metavariable-regex:
-          metavariable: $OP
-          regex: ^(open|create|writeFile|writeTextFile|remove|rename|chmod|chown|truncate|symlink|mkdir|copyFile)(Sync)?$
+      # Only operations that WRITE through the checked path. A read-only open after a stat fails or
+      # reads the swapped file, which is not an escalation; Deno.remove unlinks a symlink rather than
+      # following it; mkdir fails on an existing path. Measured on audience-direct d448414: all three
+      # findings under the wider sink list were a read-only open or a temp-file remove.
+      - pattern-either:
+          - patterns:
+              - pattern: Deno.$OP($P, ...)
+              - metavariable-regex:
+                  metavariable: $OP
+                  regex: ^(create|writeFile|writeTextFile|rename|chmod|chown|truncate|symlink|copyFile)(Sync)?$
+          - pattern: 'Deno.open($P, {..., write: true, ...})'
+          - pattern: 'Deno.open($P, {..., append: true, ...})'
+          - pattern: 'Deno.open($P, {..., create: true, ...})'
+          - pattern: 'Deno.open($P, {..., truncate: true, ...})'
+          - pattern: 'Deno.openSync($P, {..., write: true, ...})'
 
   - id: cw-deno-websocket-no-origin-check
     languages: [typescript, javascript]
@@ -250,19 +261,28 @@ rules:
       class: deno-auth
       cwe: ["CWE-208: Observable Timing Discrepancy"]
       confidence: MEDIUM
-    pattern-either:
-      - pattern: $X === Deno.env.get(...)
-      - pattern: Deno.env.get(...) === $X
-      - pattern: $X !== Deno.env.get(...)
-      - pattern: Deno.env.get(...) !== $X
-      - pattern: $X == Deno.env.get(...)
-      - pattern: Deno.env.get(...) == $X
-      - pattern: $R.headers.get("authorization") === $X
-      - pattern: $R.headers.get("Authorization") === $X
-      - pattern: $R.headers.get("authorization") !== $X
-      - pattern: $R.headers.get("Authorization") !== $X
-      - pattern: $X === $R.headers.get("authorization")
-      - pattern: $X === $R.headers.get("Authorization")
+    # A SECRET compared with a VALUE. Measured on audience-direct d448414: all three findings of the
+    # earlier form compared a config flag with a literal (Deno.env.get('SUPABASE_USE_S3') === 'true'),
+    # which leaks nothing. Now: the variable's name must say secret, and the other side must not be a
+    # literal.
+    patterns:
+      - pattern-either:
+          - pattern: $X === Deno.env.get($N)
+          - pattern: Deno.env.get($N) === $X
+          - pattern: $X !== Deno.env.get($N)
+          - pattern: Deno.env.get($N) !== $X
+          - pattern: $X == Deno.env.get($N)
+          - pattern: Deno.env.get($N) == $X
+          - pattern: $X === $R.headers.get($N)
+          - pattern: $R.headers.get($N) === $X
+          - pattern: $X !== $R.headers.get($N)
+          - pattern: $R.headers.get($N) !== $X
+      - metavariable-regex:
+          metavariable: $N
+          regex: (?i)^["'`][\w-]*(token|secret|key|pass|auth|signature|hmac|cred|salt|api)[\w-]*["'`]$
+      - metavariable-regex:
+          metavariable: $X
+          regex: ^(?!["'`])(?!null$)(?!undefined$)(?!true$)(?!false$)
 
   - id: cw-deno-worker-inherits-permissions
     languages: [typescript, javascript]
@@ -296,10 +316,18 @@ rules:
       class: deno-cookie
       cwe: ["CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag", "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"]
       confidence: MEDIUM
-    patterns:
-      - pattern: 'setCookie($H, {...})'
-      - pattern-not: 'setCookie($H, {..., httpOnly: true, ..., secure: true, ...})'
-      - pattern-not: 'setCookie($H, {..., secure: true, ..., httpOnly: true, ...})'
+    # Absent, or literally false. A flag passed through (httpOnly: options?.httpOnly) is the caller's
+    # decision and its value is not visible here — audience-direct d448414's three setCookie calls pass
+    # Supabase SSR options built with httpOnly: true, and were all reported by the literal-true form.
+    pattern-either:
+      - patterns:
+          - pattern: 'setCookie($H, {...})'
+          - pattern-not: 'setCookie($H, {..., httpOnly: $A, ...})'
+      - patterns:
+          - pattern: 'setCookie($H, {...})'
+          - pattern-not: 'setCookie($H, {..., secure: $A, ...})'
+      - pattern: 'setCookie($H, {..., httpOnly: false, ...})'
+      - pattern: 'setCookie($H, {..., secure: false, ...})'
 
   - id: cw-deno-cleartext-remote-import
     languages: [typescript, javascript]
@@ -321,3 +349,48 @@ rules:
       - metavariable-regex:
           metavariable: $URL
           regex: ^["'`]http://
+
+  - id: cw-deno-protocol-relative-redirect
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A redirect's Location is built from the request's own path (new URL(req.url).pathname). A path
+      that begins with `//` — https://site//evil.example/ — makes that a protocol-relative URL, and the
+      browser goes to evil.example. Set the path to a literal first, or refuse a path starting with
+      `//` or `/\`.
+    metadata:
+      category: security
+      class: deno-redirect
+      cwe: ["CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              const $U = new URL($REQ.url);
+              ...
+          - pattern-inside: |
+              let $U = new URL($REQ.url);
+              ...
+      # The path must START the target. Encoded into a query parameter of a literal path
+      # (`/admin/error?redirectTo=${encodeURIComponent(url.pathname)}`) it is data, not a location —
+      # measured on audience-direct d448414, where the deep-expression form reported exactly that.
+      - pattern-either:
+          - pattern: 'new Response($B, {..., headers: {..., Location: $L, ...}, ...})'
+          - pattern: 'new Response($B, {..., headers: {..., location: $L, ...}, ...})'
+          - pattern: Response.redirect($L, ...)
+      # The value must START with a .pathname — anchored on the text, because metavariable-pattern
+      # matches anywhere INSIDE the value (measured: `$U.pathname` alone matched the encoded-query
+      # case) — and the pathname must be THIS request URL's ($U): a text regex alone matched
+      # `forwarded.pathname` of new URL('/join', url.origin) on audience-direct d448414.
+      - metavariable-regex:
+          metavariable: $L
+          regex: ^(\w+\.pathname\b|`\$\{\s*\w+\.pathname\s*\})
+      - metavariable-pattern:
+          metavariable: $L
+          pattern: $U.pathname
+      - pattern-not-inside: |
+          $U.pathname = "...";
+          ...
+      - pattern-not-inside: |
+          $U.pathname = `...`;
+          ...

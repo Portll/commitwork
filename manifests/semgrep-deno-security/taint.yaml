@@ -84,6 +84,38 @@ x-deno-remote-sources: &deno-remote-sources
       - pattern-inside: 'for await (const $CHUNK of $CONN.readable) { ... }'
       - pattern: $CHUNK
 
+# The request's INPUTS — query parameters, headers, body, route params, socket and queue messages —
+# without the request URL as a whole. For a redirect the difference is the point: the scheme and host
+# of req.url are whatever the victim's browser asked for, so redirecting to the request's own origin
+# (an https upgrade, new URL("/join", url.origin)) cannot leave the site. Measured on audience-direct
+# d448414: with req.url as the source, 22 of 22 open-redirect findings were false positives.
+x-deno-request-input-sources: &deno-request-input-sources
+  - pattern: $U.searchParams.get(...)
+  - pattern: $U.searchParams.getAll(...)
+  - patterns:
+      - pattern-either:
+          - pattern-inside: Deno.serve(..., ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., async ($REQ, ...) => { ... })
+          - pattern-inside: '({..., fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: '({..., async fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: 'function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: 'async function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: '(..., $REQ: Request, ...) => { ... }'
+          - pattern-inside: 'async (..., $REQ: Request, ...) => { ... }'
+      - pattern-either:
+          - pattern: $REQ.headers.get(...)
+          - pattern: $REQ.json()
+          - pattern: $REQ.text()
+          - pattern: $REQ.formData()
+  - pattern-either:
+      - pattern: $C.req.query(...)
+      - pattern: $C.req.queries(...)
+      - pattern: $C.req.param(...)
+      - pattern: $C.req.header(...)
+      - pattern: $C.req.json()
+      - pattern: $C.req.parseBody(...)
+      - pattern: $CTX.params.$P
+
 x-deno-local-sources: &deno-local-sources
   - pattern: Deno.args
   - pattern: Deno.env.get(...)
@@ -106,6 +138,16 @@ rules:
       confidence: HIGH
       dfd: {sink: command}
     pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
     pattern-sinks:
       - patterns:
           - pattern: new Deno.Command($CMD, ...)
@@ -142,6 +184,15 @@ rules:
       dfd: {sink: command-argument}
     pattern-sources: *deno-remote-sources
     pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
       - patterns:
           - pattern-inside: 'new Deno.Command($C, {..., args: [..., "--", ..., $V, ...], ...})'
           - pattern: $V
@@ -202,6 +253,16 @@ rules:
       confidence: HIGH
       dfd: {sink: code-load}
     pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -235,6 +296,16 @@ rules:
     pattern-sources:
       - pattern-either: *deno-remote-sources
       - pattern-either: *deno-local-sources
+    pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
     pattern-sinks:
       - patterns:
           - pattern: Deno.dlopen($PATH, ...)
@@ -258,6 +329,15 @@ rules:
       dfd: {sink: file-system}
     pattern-sources: *deno-remote-sources
     pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
       - pattern-either:
           - pattern: basename(...)
           - pattern: $P.basename(...)
@@ -298,6 +378,15 @@ rules:
       dfd: {sink: network}
     pattern-sources: *deno-remote-sources
     pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
       - patterns:
           - pattern: $ALLOW.includes($X)
           - focus-metavariable: $X
@@ -334,6 +423,15 @@ rules:
       dfd: {sink: html}
     pattern-sources: *deno-remote-sources
     pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
       - pattern-either:
           - pattern: escape(...)
           - pattern: escapeHtml(...)
@@ -369,12 +467,29 @@ rules:
       cwe: ["CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"]
       confidence: MEDIUM
       dfd: {sink: redirect}
-    pattern-sources: *deno-remote-sources
+    pattern-sources: *deno-request-input-sources
     pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
       - patterns:
           - pattern: $ALLOW.includes($X)
           - focus-metavariable: $X
         by-side-effect: true
+      # A helper whose name says it constrains a redirect (safeRedirect, sanitizeRedirectUrl,
+      # postAuthRedirectFor, isAllowedRedirect...). A NAME heuristic, stated as one: the helper is
+      # trusted to do what its name says, and the evaluator's hop table shows it as the bound.
+      - patterns:
+          - pattern: $FN(...)
+          - metavariable-regex:
+              metavariable: $FN
+              regex: (?i)^(\w*(safe|sanitiz|validat|allowed|trusted|constrain)\w*(redirect|url|path|next|return)\w*|\w*redirect\w*for|\w*(redirect|url|path)\w*(safe|allowed|trusted))$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -382,6 +497,11 @@ rules:
               - pattern: $C.redirect($URL, ...)
               - pattern: 'new Response($B, {..., headers: {..., location: $URL, ...}, ...})'
               - pattern: 'new Response($B, {..., headers: {..., Location: $URL, ...}, ...})'
+          # A target that STARTS with a literal local path (/login?..., '/app' + ...) stays on the site
+          # whatever follows it. `//` and `/\` are excluded from that: both are read as another host.
+          - metavariable-regex:
+              metavariable: $URL
+              regex: ^(?![`'"]/[^/\\])
           - focus-metavariable: $URL
 
   - id: cw-deno-sql-injection
@@ -401,16 +521,38 @@ rules:
       dfd: {sink: sql}
     pattern-sources: *deno-remote-sources
     pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
       - pattern-either:
           - pattern: parseInt(...)
           - pattern: Number(...)
     pattern-sinks:
       - patterns:
-          - pattern: $DB.$M($SQL, ...)
-          - metavariable-regex:
-              metavariable: $M
-              regex: ^(queryArray|queryObject|query|queryEntries|execute|exec|prepare|run|sql)$
-          # Hono's c.req.query() / c.req.queries() are request READS, the source itself.
+          # queryArray/queryObject/queryEntries are deno-postgres's own names and bind on any receiver.
+          # query/execute/exec/run/prepare/sql are everyone's names — RegExp.exec above all, which on
+          # audience-direct d448414 produced 3 of 3 false SQL findings (/^Bearer\s+(\S+)$/i.exec(...)) —
+          # so they bind only on a receiver named like a database handle.
+          - pattern-either:
+              - patterns:
+                  - pattern: $DB.$M($SQL, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(queryArray|queryObject|queryEntries)$
+              - patterns:
+                  - pattern: $DB.$M($SQL, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(query|execute|exec|prepare|run|sql)$
+                  - metavariable-regex:
+                      metavariable: $DB
+                      regex: (?i)^(\w*\.)*(db|database|client|conn|connection|pool|pg|sql|sqlite|tx|trx|transaction|kysely|knex)\w*$
           - pattern-not: $C.req.$M(...)
           - pattern-not: $U.searchParams.$M(...)
           - focus-metavariable: $SQL
@@ -432,6 +574,16 @@ rules:
       confidence: HIGH
       dfd: {sink: environment}
     pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -482,6 +634,15 @@ rules:
       dfd: {sink: regex}
     pattern-sources: *deno-remote-sources
     pattern-sanitizers:
+      # A row read back from the database is the database's value. Which row the request chose is an
+      # authorization question (IDOR), not an injection one. Measured on audience-direct d448414: an
+      # invoice looked up with .eq('invoice_id', body.invoice_id) carried taint into the Stripe
+      # session id read from that row, reported as SSRF. Second-order injection from stored data is a
+      # different claim, and this pack does not make it.
+      - pattern-either:
+          - pattern: await $SB.from(...). ... .$LAST(...)
+          - pattern: $SB.from(...). ... .$LAST(...)
+          - pattern: await $SB.rpc(...)
       - pattern-either:
           - pattern: escape(...)
           - pattern: $R.escape(...)

@@ -12,7 +12,7 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 |---|---:|---:|---:|
 | Commands (a usage line in the header) | 343 | 281 | 62 |
 | Exit codes (declared in the header) | 357 | 159 | 198 |
-| `CW_*` environment variables (described in an `env` header) | 934 | 225 | 709 |
+| `CW_*` environment variables (described in an `env` header) | 933 | 225 | 708 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -2745,7 +2745,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-934 `CW_*` names read by tracked non-test sources: 807 by name, and
+933 `CW_*` names read by tracked non-test sources: 806 by name, and
 127 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -2910,7 +2910,6 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_CODEQL_MODELS` | direct | `bin/lib/lane-reuse.mjs` | a repository's CodeQL models, default in the private store |
 | `CW_CODEQL_OPUS_CONCURRENCY` | direct | `admin/routes/codeql-remediation.mjs` | undocumented |
 | `CW_CODEQL_PACKAGES` | direct | `bin/lib/lane-reuse.mjs` | local CodeQL packs, default ~/.codeql/packages |
-| `CW_CODEQL_SHIPPED_MODELS` | direct | `bin/codeql-model-pack.mjs` | undocumented |
 | `CW_COINCIDENCE_DAYS` | direct | `monitor/forensics.mjs` | undocumented |
 | `CW_COINCIDENCE_MAXGAP` | direct | `monitor/coincidence.mjs` | never report above this many seconds (default 900) |
 | `CW_COINCIDENCE_MIN` | direct | `monitor/coincidence.mjs` | min samples per pair (default 12) |

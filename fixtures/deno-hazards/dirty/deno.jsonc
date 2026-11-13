@@ -7,6 +7,7 @@
     "worker": "deno run --allow-run --allow-ffi --allow-write --allow-env --allow-sys main.ts",
     "tools": "deno run --allow-run=git,bash --allow-import --allow-scripts main.ts",
     "test": "deno test -A",
+    "dev": "deno run -A --watch=static/ main.ts",
     "remote": "deno run -A https://deno.land/x/somecli/mod.ts"
   },
   "permissions": {

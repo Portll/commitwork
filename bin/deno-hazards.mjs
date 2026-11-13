@@ -124,7 +124,9 @@ export function denoInvocations(cmd) {
 /** Findings for one invocation. `where` is 'prod' | 'ci' | 'dev' — the context it runs in. */
 export function invocationFindings(inv, where) {
   const f = [];
-  const dev = DEV_ONLY.has(inv.sub);
+  // Development: a test/bench subcommand, a task named for development, or a watching server (a
+  // process restarted on every save is not the production one).
+  const dev = DEV_ONLY.has(inv.sub) || where === 'dev' || inv.flags.some((x) => x.name === '--watch' || x.name.startsWith('--watch'));
   const add = (ruleId, level, detail) => f.push({ ruleId, level, detail });
   const has = (n) => inv.flags.find((x) => x.name === n);
   const scoped = (x) => x && x.value !== null && x.value !== '';
@@ -148,13 +150,18 @@ export function invocationFindings(inv, where) {
       if (shells.length) add('deno/allow-run-shell', dev ? 'note' : 'warning', `--allow-run=${run.value} includes ${shells.join(', ')}`);
     }
   }
-  if (inv.flags.some((x) => x.name === '--unsafely-ignore-certificate-errors')) add('deno/ignore-certificate-errors', 'error', `deno ${inv.sub}`);
+  // Still a warning in development: with verification off, a module fetched at dev time is
+  // replaceable by anyone on the developer's network path, and the lockfile is what was replaced.
+  if (inv.flags.some((x) => x.name === '--unsafely-ignore-certificate-errors')) add('deno/ignore-certificate-errors', dev ? 'warning' : 'error', `deno ${inv.sub}`);
   for (const x of inv.flags) {
     if (/^--inspect(-brk|-wait)?$/.test(x.name) && x.value && /^(0\.0\.0\.0|\[::\]|::|\*)(:|$)/.test(x.value)) add('deno/inspector-exposed', 'error', `${x.name}=${x.value}`);
   }
   if (inv.flags.some((x) => x.name === '--no-lock' || (x.name === '--lock' && x.value === 'false'))) add('deno/lock-disabled', dev ? 'note' : 'warning', `deno ${inv.sub} --no-lock`);
   if (inv.target && /^https?:\/\//.test(inv.target) && ['run', 'serve', 'install', 'compile', 'x'].includes(inv.sub)) {
-    add(inv.target.startsWith('http:') ? 'deno/cleartext-import' : 'deno/remote-entrypoint', inv.target.startsWith('http:') || allAll ? 'error' : 'warning', `deno ${inv.sub} ${inv.target}`);
+    // http: is always an error. A remote https: entrypoint with every permission is an error where it
+    // runs as the service, a warning in a development task (Fresh's own `update` task is exactly that).
+    const cleartext = inv.target.startsWith('http:');
+    add(cleartext ? 'deno/cleartext-import' : 'deno/remote-entrypoint', cleartext || (allAll && !dev) ? 'error' : 'warning', `deno ${inv.sub} ${inv.target}`);
   }
   return f;
 }
@@ -197,10 +204,10 @@ function walk(root, dirs = excludeDirs()) {
 const contextOf = (rel) => {
   const b = basename(rel);
   if (/^\.github\/workflows\//.test(rel) || /^\.gitlab-ci|^\.circleci\/|^azure-pipelines|^Jenkinsfile/.test(rel)) return 'ci';
-  if (/^(Dockerfile|Containerfile)|\.dockerfile$|^Procfile$|^fly\.toml$|^app\.ya?ml$/i.test(b)) return 'prod';
+  if (/^(Dockerfile|Containerfile)|\.dockerfile$|^Procfile$|^fly\.toml$|^app\.ya?ml$|\.(service|socket)$/i.test(b)) return 'prod';
   return 'prod';
 };
-const taskContext = (name) => (/test|bench|check|lint|fmt|coverage|doc/i.test(name) ? 'dev' : 'prod');
+const taskContext = (name) => (/test|bench|check|lint|fmt|coverage|doc|dev|local|watch|debug|update|cli|manifest|generate|seed|codegen|storybook|preview/i.test(name) ? 'dev' : 'prod');
 
 export function scan(root) {
   const findings = []; const suppressed = [];
@@ -221,7 +228,11 @@ export function scan(root) {
     const ext = extname(b);
     const isConfig = b === 'deno.json' || b === 'deno.jsonc';
     const isCode = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs'].includes(ext);
-    const isCmd = /^(Dockerfile|Containerfile|Procfile|Makefile|Justfile|justfile)$/.test(b) || /\.(dockerfile|sh|bash|ya?ml|toml)$/i.test(b) || b === 'package.json';
+    // systemd units and their drop-ins are where a server is started on a VM, and the place the
+    // production grant actually lives. Measured on audience-direct d448414: the site's unit ran
+    // `ExecStart=/usr/local/bin/deno run -A main.ts` and the lane, reading no unit files, missed it.
+    const isUnit = /\.(service|socket)$/.test(b) || (/\.conf$/.test(b) && /\.service\.d\//.test(rel));
+    const isCmd = isUnit || /^(Dockerfile|Containerfile|Procfile|Makefile|Justfile|justfile)$/.test(b) || /\.(dockerfile|sh|bash|ya?ml|toml)$/i.test(b) || b === 'package.json';
     if (!isConfig && !isCode && !isCmd) continue;
     let text; try { text = readFileSync(abs, 'utf8'); } catch { continue; }
     const dir = rel.slice(0, rel.length - b.length);
