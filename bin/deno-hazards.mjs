@@ -37,6 +37,7 @@ import { isMainModule } from '../lib/is-main.mjs';
 const DENO_SKIP = ['.git', 'node_modules', '.deno', '_fresh'];
 const SUPPRESS_RE = /\bcw-hazards-ignore\b[\s:\-—]*(.*)$/;
 const COMMENT_LINE = /^\s*(\/\/|#|\*|\/\*)/;
+const LOOPBACK = /^(localhost|127(\.\d{1,3}){3}|\[?::1\]?)(:\d+)?$/i;
 
 export const RULES = Object.freeze({
   'deno/allow-all': 'All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program.',
@@ -51,7 +52,7 @@ export const RULES = Object.freeze({
   'deno/allow-read-unscoped': '--allow-read with no path list: every file the user can read is readable, including keys and credentials.',
   'deno/allow-sys-unscoped': '--allow-sys with no API list: system information (network interfaces, hostname, uid) is readable.',
   'deno/permission-set-unscoped': 'A permission set in deno.json grants an unscoped permission (true rather than a list).',
-  'deno/ignore-certificate-errors': 'TLS certificate verification is disabled: every HTTPS connection, module downloads included, accepts a forged certificate.',
+  'deno/ignore-certificate-errors': 'TLS certificate verification is disabled: the connections it covers (every HTTPS connection, module downloads included, unless a host list narrows it) accept a forged certificate.',
   'deno/inspector-exposed': 'The V8 inspector listens on a non-loopback address: anyone who reaches the port can run arbitrary code in the process.',
   'deno/lock-disabled': 'The lockfile is disabled: nothing verifies that remote modules are the ones that were reviewed.',
   'deno/no-lockfile': 'Remote or registry imports with no deno.lock: module contents are not pinned by hash.',
@@ -131,7 +132,10 @@ export function invocationFindings(inv, where) {
   const has = (n) => inv.flags.find((x) => x.name === n);
   const scoped = (x) => x && x.value !== null && x.value !== '';
   const allAll = inv.flags.some((x) => x.name === '-A' || x.name === '--allow-all' || /^-[a-zA-Z]*A[a-zA-Z]*$/.test(x.name) && !x.name.startsWith('--'));
-  if (allAll) add('deno/allow-all', dev ? 'note' : where === 'ci' ? 'warning' : 'error', `deno ${inv.sub} ${inv.target || ''}`.trim());
+  // A deny beats -A (Deno 2.x: NotCapable), so -A --deny-run --deny-write is narrower than -A. Still -A for everything
+  // not denied, so the level stays; the detail says what was taken back, so a reader does not fix it twice.
+  const denies = inv.flags.filter((x) => /^--deny-[a-z]+$/.test(x.name)).map((x) => (scoped(x) ? `${x.name}=${x.value}` : x.name));
+  if (allAll) add('deno/allow-all', dev ? 'note' : where === 'ci' ? 'warning' : 'error', `deno ${inv.sub} ${inv.target || ''}`.trim() + (denies.length ? `; taken back: ${denies.join(' ')}` : ''));
   const unscoped = [
     ['--allow-run', 'deno/allow-run-unscoped', 'warning'], ['--allow-ffi', 'deno/allow-ffi-unscoped', 'warning'],
     ['--allow-write', 'deno/allow-write-unscoped', 'warning'], ['--allow-import', 'deno/allow-import-unscoped', 'warning'],
@@ -152,7 +156,15 @@ export function invocationFindings(inv, where) {
   }
   // Still a warning in development: with verification off, a module fetched at dev time is
   // replaceable by anyone on the developer's network path, and the lockfile is what was replaced.
-  if (inv.flags.some((x) => x.name === '--unsafely-ignore-certificate-errors')) add('deno/ignore-certificate-errors', dev ? 'warning' : 'error', `deno ${inv.sub}`);
+  // With a host list (--unsafely-ignore-certificate-errors=127.0.0.1,localhost) only those hosts skip verification.
+  // Loopback-only is a note: forging that certificate takes code already running on the machine. Any other list
+  // keeps the level, and names the hosts.
+  const tls = has('--unsafely-ignore-certificate-errors');
+  if (tls) {
+    const hosts = scoped(tls) ? tls.value.split(',').map((h) => h.trim()).filter(Boolean) : [];
+    if (hosts.length && hosts.every((h) => LOOPBACK.test(h))) add('deno/ignore-certificate-errors', 'note', `deno ${inv.sub}, only for ${hosts.join(', ')} (loopback)`);
+    else add('deno/ignore-certificate-errors', dev ? 'warning' : 'error', hosts.length ? `deno ${inv.sub}, for ${hosts.join(', ')}` : `deno ${inv.sub}, every host`);
+  }
   for (const x of inv.flags) {
     if (/^--inspect(-brk|-wait)?$/.test(x.name) && x.value && /^(0\.0\.0\.0|\[::\]|::|\*)(:|$)/.test(x.value)) add('deno/inspector-exposed', 'error', `${x.name}=${x.value}`);
   }
