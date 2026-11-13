@@ -3,16 +3,20 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { scanLine } from '../secrets-sweep.mjs';
 
+// Built at run time: a literal of either shape is refused by push protection.
+const AWS_KEY = ['AKIA', 'ABCDEFGHIJKLMNOP'].join('');
+const GITHUB_TOKEN = ['ghp', 'a'.repeat(36)].join('_');
+
 test('detects an AWS access key as a real secret with correct column', () => {
-  const line = 'key=AKIAABCDEFGHIJKLMNOP';
+  const line = `key=${AWS_KEY}`;
   const r = scanLine(line, 1);
-  assert.deepEqual(r, [{ line: 1, col: 5, cls: "provider-key/aws", verdict: "FALSE-POSITIVE", reason: "placeholder", match: "AKIAABCDEFGHIJKLMNOP", fingerprint: "16cbbe3918a1dc83" }]);
+  assert.deepEqual(r, [{ line: 1, col: 5, cls: "provider-key/aws", verdict: "FALSE-POSITIVE", reason: "placeholder", match: AWS_KEY, fingerprint: "16cbbe3918a1dc83" }]);
 });
 
 test('detects a GitHub token as a real secret', () => {
-  const line = 'token=ghp_' + 'a'.repeat(36);
+  const line = `token=${GITHUB_TOKEN}`;
   const r = scanLine(line, 1);
-  assert.deepEqual(r, [{ line: 1, col: 7, cls: "provider-key/github", verdict: "FALSE-POSITIVE", reason: "placeholder", match: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", fingerprint: "7bdccadd83905810" }]);
+  assert.deepEqual(r, [{ line: 1, col: 7, cls: "provider-key/github", verdict: "FALSE-POSITIVE", reason: "placeholder", match: GITHUB_TOKEN, fingerprint: "7bdccadd83905810" }]);
 });
 
 test('downgrades a quoted placeholder value to false-positive', () => {

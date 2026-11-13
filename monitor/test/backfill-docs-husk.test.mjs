@@ -60,6 +60,21 @@ test('an unparseable npm-audit.json is a void too, with its reason recorded', ()
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
+test('two scoped packages at the same version stay distinct, not collapsed into one blank package', () => {
+  const sarif = JSON.stringify({ version: '2.1.0', runs: [{ tool: { driver: { name: 'osv', rules: [] } }, results: [
+    { ruleId: 'CVE-2024-1', message: { text: "Package '@babel/core@7.24.0' is vulnerable" },
+      locations: [{ physicalLocation: { artifactLocation: { uri: 'package-lock.json' } } }] },
+    { ruleId: 'CVE-2024-1', message: { text: "Package '@babel/parser@7.24.0' is vulnerable" },
+      locations: [{ physicalLocation: { artifactLocation: { uri: 'package-lock.json' } } }] },
+  ] }] });
+  const { root, out } = fixture({ 'osv.sarif': sarif });
+  try {
+    const { sidecar } = run(out);
+    assert.equal(sidecar.repos['repo-a'].counts.total, 2,
+      'with an empty parsed package both rows shared one dedupe key and the second finding disappeared');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('an artifact that genuinely parses to zero findings IS documented clean', () => {
   const { root, out } = fixture({ 'osv.sarif': JSON.stringify({ version: '2.1.0', runs: [{ tool: { driver: { name: 'osv', rules: [] } }, results: [] }] }) });
   try {

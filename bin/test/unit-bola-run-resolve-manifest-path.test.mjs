@@ -1,10 +1,21 @@
 // Resolves the BOLA manifest file path and its source (bin/bola-run.mjs resolveManifestPath).
-import { test } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveManifestPath } from '../bola-run.mjs';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+
+// The bundled list includes the private manifest directory, so the exact messages below hold only
+// with that directory empty.
+const PRIVATE = mkdtempSync(join(tmpdir(), 'resolveManifestPath-private-'));
+const prevPrivate = process.env.CW_BOLA_MANIFEST_DIR;
+before(() => { process.env.CW_BOLA_MANIFEST_DIR = PRIVATE; });
+after(() => {
+  if (prevPrivate !== undefined) process.env.CW_BOLA_MANIFEST_DIR = prevPrivate;
+  else delete process.env.CW_BOLA_MANIFEST_DIR;
+  rmSync(PRIVATE, { recursive: true, force: true });
+});
 
 test('uses flag when provided and CW_BOLA_MANIFEST is not set', () => {
   const dir = mkdtempSync(join(tmpdir(), 'resolveManifestPath-'));

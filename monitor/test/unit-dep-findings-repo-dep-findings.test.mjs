@@ -110,6 +110,24 @@ test('handles npm audit JSON with via objects and merges with OSV findings', () 
   });
 });
 
+test('a scoped OSV package reaches the row with its scope and last-@ version', () => {
+  withTempDir((dir) => {
+    writeFileSync(join(dir, 'osv.sarif'), JSON.stringify({
+      runs: [{
+        results: [{
+          ruleId: 'CVE-2023-0002',
+          message: { text: "Package '@babel/core@7.24.0' is vulnerable" },
+          locations: [{ physicalLocation: { artifactLocation: { uri: 'file:///path/package-lock.json' } } }],
+        }],
+        tool: { driver: { rules: [{ id: 'CVE-2023-0002', properties: { 'security-severity': '7.5' }, shortDescription: { text: 'CVE-2023-0002' } }] } },
+      }],
+    }));
+    const { findings } = repoDepFindings(dir);
+    assert.equal(findings[0].package, '@babel/core');
+    assert.equal(findings[0].version, '7.24.0');
+  });
+});
+
 test('throws when OSV SARIF file is malformed JSON', () => {
   withTempDir((dir) => {
     writeFileSync(join(dir, 'osv.sarif'), '{ not: json ');

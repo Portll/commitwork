@@ -11,7 +11,7 @@ CAPEC → ATT&CK enrichment, with the figures measured over the tracked MITRE da
 |---|---|
 | STPA loops | 6 |
 | UCA values | 8 |
-| causal factors | 16 |
+| causal factors | 17 |
 | guide words | 10 standard + 2 ext. + 2 proposed |
 
 ## 01 — STPA — System-Theoretic Process Analysis
@@ -105,15 +105,15 @@ factors, below.
 ### Commitwork's applied vocabulary
 
 Every taxonomy class in `monitor/failure-taxonomy.json` carries an `stpa` judgment built from three
-closed sets — a UCA is a triple: which loop, which of 8 failure shapes, which of 16 root causes.
+closed sets — a UCA is a triple: which loop, which of 8 failure shapes, which of 17 root causes.
 
 **6 loops (who's the controller):** `operator` · `monitor` · `scanner` · `agent` · `oversight` · `attention`
 
 **8 UCA values (how it failed):** `not-provided` · `unsafe` · `too-early` · `too-late` ·
 `out-of-order` · `stopped-too-soon` · `applied-too-long` · `none`
 
-**16 causes (why):** `controller-algorithm` · `controller-model` · `higher-input` ·
-`actuator-delayed` · `actuator-missing` · `actuator-corrupt` · `process-failure` ·
+**17 causes (why):** `controller-algorithm` · `controller-model` · `controller-discretion` ·
+`higher-input` · `actuator-delayed` · `actuator-missing` · `actuator-corrupt` · `process-failure` ·
 `process-change` · `process-disturbance` · `feedback-missing` · `feedback-delayed` ·
 `feedback-incorrect` · `sensor-inadequate` · `coordination-conflict` · `coordination-gap` ·
 `coordination-duplicate`
@@ -126,6 +126,15 @@ Built for a monitoring system, where the paper's control-structure model (built 
 physical/organisational systems) has nothing to say. A second, smaller one is the UCA value
 `none`, which records that a class describes a measurement or record rather than an action by that
 loop's controller.
+
+A third is the cause `controller-discretion`: no rule, ruling or instruction in force chose among
+the actions available, and the controller chose by a default it did not state. Textbook STPA files
+that case under an inadequate control algorithm, which reads the gap as a defect in the rule and
+closes it by writing one. For an agent the gap does not close: the cases it meets outnumber the
+rules anyone can write ahead of them, so each correction that adds a rule removes one case and
+leaves the mode unnamed. The separate cause counts the choices no rule made, which
+`controller-algorithm` would otherwise absorb one correction at a time. Class G28 is the row it was
+added for.
 :::
 
 ### Worked example — real UCAs from the CWE → CAPEC → ATT&CK enrichment path
@@ -214,10 +223,12 @@ omission reads as "not considered," which is its own false-clean.
 boundary* — something crossing in an unexpected form. `++ CONFABULATED` and `++ HIJACKED` fit
 that frame cleanly: both describe a boundary property normal software doesn't have — a generator
 that can synthesise plausible content with no source, and a channel that carries data and
-instruction over the same wire. Two other LLM failure modes were considered and rejected for this
-slot: non-determinism (same input, different output) and sycophancy (a correct answer abandoned
-under social pressure) aren't boundary deviations — they're a controller's behaviour varying,
-which is exactly what STPA's UCA values and causal factors already exist to capture. Forcing them
+instruction over the same wire. Three other LLM failure modes were considered and rejected for this
+slot: non-determinism (same input, different output), sycophancy (a correct answer abandoned
+under social pressure) and underdetermination (an instruction that leaves the choice among
+actions to the receiver) aren't boundary deviations — they're a controller's behaviour,
+which is exactly what STPA's UCA values and causal factors already exist to capture.
+Underdetermination is carried by the cause `controller-discretion`. Forcing them
 into HAZOP's guide-word list would blur that split.
 :::
 

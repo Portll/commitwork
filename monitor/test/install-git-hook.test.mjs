@@ -124,3 +124,44 @@ describe('install-git-hook — declaration-driven, fail-closed', { skip: UNDECLA
     assert.match(again.stdout, /nothing installed/);
   });
 });
+
+// Outside the describe above, and deliberately: the commit message gate is installed BEFORE the
+// self-monitor and must not inherit its registry dependency, so this holds in a checkout the
+// registry does not declare — where every assertion above has nothing to assert. CW_GATE_DIR is
+// also what makes the pinned branch reachable from a fixture: it says where the export goes, so
+// the operator's own gate dir is never touched (monitor/install-git-hook.mjs msgGateText).
+describe('the commit message gate is pinned, and installed even when the self-monitor refuses', () => {
+  test('--write pins the gate to a committed revision and records it for --refresh', () => {
+    const hooks = mkdtempSync(join(tmpdir(), 'cw-hook-'));
+    const gate = mkdtempSync(join(tmpdir(), 'cw-hook-gate-'));
+    try {
+      const r = spawnSync(process.execPath, [INSTALLER, '--write'],
+        { cwd: CW, encoding: 'utf8', env: { ...process.env, CW_HOOKS_DIR: hooks, CW_GATE_DIR: gate } });
+      const text = readFileSync(join(hooks, 'commit-msg'), 'utf8');
+      const sha = (text.match(/^# Pinned to commitwork ([0-9a-f]{40}):/m) || [])[1];
+      assert.ok(sha, `the hook must name the revision it runs:\n${text}`);
+      assert.ok(text.includes(join(gate, sha, 'bin', 'commit-msg.mjs')), 'the hook must exec the export, not the checkout');
+      assert.ok(existsSync(join(gate, sha, 'bin', 'commit-msg.mjs')), 'the export must be on disk before a hook names it');
+      assert.match(readFileSync(join(gate, 'installed.json'), 'utf8'), new RegExp(sha),
+        '--refresh reads this ledger; with no row, the checkout that lands commits never leaves its pinned revision');
+      // AREA is null where the registry declares no such checkout and the self-monitor exits 2.
+      // The gate above is installed either way: that is why the two are installed separately.
+      assert.equal(r.status, AREA ? 0 : 2, r.stderr);
+    } finally {
+      rmSync(hooks, { recursive: true, force: true });
+      rmSync(gate, { recursive: true, force: true });
+    }
+  });
+
+  test('a fixture that nominated no gate dir gets this checkout, unpinned, and exports nothing', () => {
+    const hooks = mkdtempSync(join(tmpdir(), 'cw-hook-'));
+    try {
+      run(hooks, '--write');
+      const text = readFileSync(join(hooks, 'commit-msg'), 'utf8');
+      assert.doesNotMatch(text, /^# Pinned to commitwork/m, 'a fixture must not pin, or it would write an export beside the operator\'s');
+      assert.ok(text.includes(join(CW, 'bin', 'commit-msg.mjs')), 'a fixture runs the gate of the checkout under test');
+    } finally {
+      rmSync(hooks, { recursive: true, force: true });
+    }
+  });
+});

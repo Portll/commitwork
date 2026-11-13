@@ -19,6 +19,8 @@
 //        ~/.cache/commitwork/release-candidate), read at call time
 //      CW_RELEASE_TERMS — the denied-term list (default: the sidecar's committed
 //        monitor/release-terms.json), read at call time
+//      CW_RELEASE_TERM_ACCEPTANCES — the per-term acceptance record (default: the sidecar's committed
+//        monitor/release-term-acceptances.json), read at call time
 //
 // exit: 0 accepted · 1 blocked · 2 incomplete (a gate could not run, or was skipped)
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
@@ -344,6 +346,11 @@ const HELP = `commitwork release-candidate — the public snapshot of a ref, bui
   gates: tree witness, pre-publish with reviewed dispositions, private-name scan, denied-term scan, docs-doctor,
   the launchlist's publication content checks, and npm test with an allowlisted environment, a scratch HOME and no sidecar.
 
+  The denied-term gate has three states: pass (no term fired), contested (every occurrence carries a
+  signed acceptance bound to the measurement it was granted against) and fail (any occurrence
+  unreviewed, or one whose acceptance lapsed when the measurement changed). A contested gate does not
+  block, and does not read as a clean tree either.
+
   --project <name> builds another fleet repository from its launchlist config (repo, publicTest,
   selfNames). Its candidate is scanned by this checkout's pre-publish with no reviewed dispositions,
   stripped of commit SHAs in .md only, and tested with its publicTest. The docs gate is cannot-check
@@ -390,7 +397,12 @@ export async function main(argv = process.argv.slice(2)) {
     L.push(`  files      ${c.files} (${c.excluded} export-ignored, ${c.stampsDateOnly} stamps made date-only, ${c.shasStripped} files with ${c.commitsNamed} commit SHAs stripped, ${c.derivedRegenerated} derived pages regenerated)`);
     L.push('');
   }
-  for (const g of report.gates) L.push(`  ${g.status.padEnd(12)} ${g.gate}${g.detail?.error ? `  — ${g.detail.error}` : ''}`);
+  // A gate that is not a pass says why on its own line: `error` when it could not run, `summary`
+  // when it ran and the counts are the answer — blocked by unreviewed terms reads nothing like clean.
+  for (const g of report.gates) {
+    const why = g.detail?.error || g.detail?.summary;
+    L.push(`  ${g.status.padEnd(12)} ${g.gate}${why ? `  — ${why}` : ''}`);
+  }
   L.push('', `  VERDICT: ${report.verdict}`);
   if (report.candidate) L.push(`  report: ${join(dirname(report.candidate.path), 'release-candidate.json')}`);
   process.stdout.write(`${L.join('\n')}\n`);

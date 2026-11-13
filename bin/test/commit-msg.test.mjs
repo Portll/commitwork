@@ -62,10 +62,14 @@ function scratch(t) {
 const commit = (dir, message) => spawnSync('git', ['commit', '-q', '-m', message], { cwd: dir, encoding: 'utf8' });
 const commits = (dir) => Number(spawnSync('git', ['rev-list', '--count', 'HEAD'], { cwd: dir, encoding: 'utf8' }).stdout.trim() || 0);
 
+// `unpinned: true` in every install below: these assert the rules of the gate IN THIS TREE, the
+// code under test. A pinned install runs an exported copy of the trunk instead — the right
+// production default, and the wrong thing to assert a working-tree change against. The pin itself
+// is bin/test/gate-pin.test.mjs's subject.
 describe('the installed hook, end to end on a bare git commit', () => {
   test('refuses a declarative subject, then commits the imperative one', (t) => {
     const dir = scratch(t);
-    const r = installOne(`${dir}=ironwork`, { write: true, cw: REPO });
+    const r = installOne(`${dir}=ironwork`, { write: true, unpinned: true, cw: REPO });
     assert.equal(r.ok, true, r.line);
     assert.equal(g(dir, ['config', '--get', 'commitwork.rules']), 'ironwork');
     const hook = join(dir, '.git', 'hooks', 'commit-msg');
@@ -82,7 +86,7 @@ describe('the installed hook, end to end on a bare git commit', () => {
 
   test('refuses a Co-Authored-By trailer', (t) => {
     const dir = scratch(t);
-    installOne(`${dir}=cobolwork-web`, { write: true, cw: REPO });
+    installOne(`${dir}=cobolwork-web`, { write: true, unpinned: true, cw: REPO });
     const r = commit(dir, 'feat: add the page\n\nCo-Authored-By: someone <a@b>');
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /Co-Authored-By/);
@@ -90,7 +94,7 @@ describe('the installed hook, end to end on a bare git commit', () => {
 
   test('fails closed when the gate script is missing', (t) => {
     const dir = scratch(t);
-    installOne(`${dir}=cobolwork`, { write: true, cw: join(dir, 'no-commitwork-here') });
+    installOne(`${dir}=cobolwork`, { write: true, unpinned: true, cw: join(dir, 'no-commitwork-here') });
     const r = commit(dir, 'feat: add the page');
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /gate cannot run/);
@@ -101,7 +105,7 @@ describe('the installed hook, end to end on a bare git commit', () => {
 describe('install-commit-msg', () => {
   test('a dry run writes nothing and sets nothing', (t) => {
     const dir = scratch(t);
-    const r = installOne(`${dir}=cobolwork`, { cw: REPO });
+    const r = installOne(`${dir}=cobolwork`, { unpinned: true, cw: REPO });
     assert.match(r.line, /DRY RUN/);
     assert.ok(!existsSync(join(dir, '.git', 'hooks', 'commit-msg')));
     assert.equal(spawnSync('git', ['config', '--get', 'commitwork.rules'], { cwd: dir }).status, 1);
@@ -109,7 +113,7 @@ describe('install-commit-msg', () => {
 
   test('the rule set defaults to the directory name, and an unknown one is refused', (t) => {
     const dir = scratch(t);
-    const r = installOne(dir, { write: true, cw: REPO });
+    const r = installOne(dir, { write: true, unpinned: true, cw: REPO });
     assert.equal(r.ok, false);
     assert.match(r.line, /no rule set 'cw-commit-msg-/);
   });
@@ -118,11 +122,11 @@ describe('install-commit-msg', () => {
     const dir = scratch(t);
     const hook = join(dir, '.git', 'hooks', 'commit-msg');
     writeFileSync(hook, '#!/bin/sh\nexit 0\n', { mode: 0o755 });
-    assert.equal(installOne(`${dir}=cobolwork`, { write: true, cw: REPO }).ok, false);
+    assert.equal(installOne(`${dir}=cobolwork`, { write: true, unpinned: true, cw: REPO }).ok, false);
     assert.equal(readFileSync(hook, 'utf8'), '#!/bin/sh\nexit 0\n');
-    assert.equal(installOne(`${dir}=cobolwork`, { write: true, force: true, cw: REPO }).ok, true);
+    assert.equal(installOne(`${dir}=cobolwork`, { write: true, force: true, unpinned: true, cw: REPO }).ok, true);
     assert.match(readFileSync(hook, 'utf8'), new RegExp(MSG_HOOK_MARKER));
-    assert.equal(installOne(dir, { write: true, uninstall: true }).ok, true);
+    assert.equal(installOne(dir, { write: true, uninstall: true, cw: REPO }).ok, true);
     assert.ok(!existsSync(hook));
     assert.equal(spawnSync('git', ['config', '--get', 'commitwork.rules'], { cwd: dir }).status, 1);
   });

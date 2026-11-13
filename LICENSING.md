@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-18 482044ae -->
+<!-- verified-against: 2026-10-18 -->
 # Licensing
 
 commitwork is offered under three licences, each over a different part of the tree, and none of

@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # Multi-agent evaluation protocol
 
 How to run a multi-agent evaluation on a task, and the rules that keep one from breaking. Each rule

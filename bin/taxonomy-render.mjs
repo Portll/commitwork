@@ -11,9 +11,22 @@
  * Self-contained by house rule: no CDN, no external font, file:// safe. Print CSS included so the
  * same file is the PDF source.
  *
+ * Two private overlays are merged before anything is rendered, and their ABSENCE is the public
+ * shape: the mitigation layers of products that are not this one, and the register's prose as it was
+ * written before private products in it were named by capability. A clone with no private store
+ * renders the public form, which is the form docsite/imported/taxonomy-reference.html carries — and
+ * writing that path from a register with either overlay merged is refused, because a published
+ * artefact whose content depends on who ran the generator holds the boundary only by luck.
+ *
  * Usage: taxonomy-render.mjs [--json <path>] [--out <path>] [--check] [--dark]
  *   --check  validate the registry (id/prefix agreement, machine-name uniqueness, gaps, stpa) and exit
- * Env: CW_TAXONOMY_JSON (read at call time; --json wins over it).
+ *
+ * exit 0  wrote the page, or --check found the registry valid
+ * exit 1  the registry is invalid (every error named), or the published page was asked for from a
+ *   register with the private overlays merged
+ *
+ * env, read at call time: CW_TAXONOMY_JSON (--json wins over it) · CW_TAXONOMY_MITIGATIONS the
+ *   private mitigation overlay · CW_TAXONOMY_PROSE the private prose overlay
  */
 import { isMainModule } from '../lib/is-main.mjs';
 import { esc } from '../lib/html-escape.mjs';
@@ -21,7 +34,7 @@ import { readFileSync } from 'node:fs';
 import { redactForPublish } from '../lib/publish-redactions.mjs';
 import { redactScannersForPublish } from '../lib/publish-scanner-redactions.mjs';
 import { dirname, resolve } from 'node:path';
-import { taxonomyMitigationsPathFor } from '../monitor/store-paths.mjs';
+import { taxonomyMitigationsPathFor, taxonomyProsePathFor } from '../monitor/store-paths.mjs';
 import { fileURLToPath } from 'node:url';
 
 import { validateAgainstSchema } from '../monitor/registry.mjs';
@@ -262,6 +275,115 @@ export function mergeMitigationOverlay(doc, { path = null, env = process.env } =
   return doc;
 }
 
+// The record kinds a prose pair can be scoped to, and the field each is identified by. A key is a
+// PLACE — a class id, a remediation title, a cycle label, an area — never a position: an array index
+// is a line number by another name, and a record that moves must not read as a different record.
+const PROSE_SCOPES = Object.freeze({
+  'class:': ['classes', 'id'],
+  'remediation:': ['remediations', 'title'],
+  'cycle:': ['cycleLog', 'cycle'],
+  'attribution:': ['attributionPlan', 'area'],
+});
+// `doc` scope is the document's own prose with the keyed collections held out, so a document pair
+// cannot reach into a class and a class pair cannot reach the document.
+const PROSE_DOC_HELD_OUT = Object.freeze(['classes', 'remediations', 'cycleLog', 'attributionPlan']);
+
+// The record a key names, and the top-level keys held out of the walk. The record is the LIVE
+// subtree, never a copy: a copy would take every replacement and the register would render
+// unchanged, which is a merge that reports success and does nothing.
+function proseRecord(doc, key, where) {
+  if (key === 'doc') return { node: doc, heldOut: new Set(PROSE_DOC_HELD_OUT) };
+  for (const [prefix, [collection, idField]] of Object.entries(PROSE_SCOPES)) {
+    if (!key.startsWith(prefix)) continue;
+    const want = key.slice(prefix.length);
+    const found = (doc[collection] || []).filter((e) => e && e[idField] === want);
+    // Both directions refuse. Zero is a stale overlay, which would silently publish the public text
+    // while the maintainer believed the original was restored; more than one is ambiguous, and
+    // picking either would make the merge depend on declaration order.
+    if (found.length === 0) throw new Error(`${where} names ${key}, which the register does not declare`);
+    if (found.length > 1) throw new Error(`${where} names ${key}, which matches ${found.length} records in ${collection} — a key must name exactly one`);
+    return { node: found[0], heldOut: null };
+  }
+  throw new Error(`${where} carries key "${key}", which names no record kind (expected doc or one of ${Object.keys(PROSE_SCOPES).join(', ')})`);
+}
+
+/** Replace `from` with `to` in every string under `node`, counting the replacements. */
+function replaceStrings(node, from, to, heldOut = null) {
+  let n = 0;
+  if (Array.isArray(node)) {
+    node.forEach((v, i) => {
+      if (typeof v !== 'string') { n += replaceStrings(v, from, to); return; }
+      const c = v.split(from).length - 1;
+      if (c) { n += c; node[i] = v.split(from).join(to); }
+    });
+    return n;
+  }
+  if (node && typeof node === 'object') {
+    for (const [k, v] of Object.entries(node)) {
+      if (heldOut && heldOut.has(k)) continue;
+      if (typeof v !== 'string') { n += replaceStrings(v, from, to); continue; }
+      const c = v.split(from).length - 1;
+      if (c) { n += c; node[k] = v.split(from).join(to); }
+    }
+  }
+  return n;
+}
+
+/**
+ * Merge the private prose overlay into the register, if there is one.
+ *
+ * An instance account names the tool the instance was measured in, and that name is what lets
+ * another reader go and look. Which product provides a capability is configuration about a private
+ * fleet rather than part of this product, so the tracked register names the capability — the register
+ * declares that vocabulary in `fleetVocabulary` and the page prints it — and the sentences as they
+ * were written live in the overlay, each paired with the public text it replaced.
+ *
+ * ABSENCE IS THE PUBLIC SHAPE, not an error, and only ENOENT means that: a clone with no private
+ * store renders the capability form, which is the form the published page is meant to carry. An
+ * overlay that exists and cannot be read, parsed or applied THROWS, because a half-restored register
+ * is a document nobody can characterise — part fleet record, part public form, with nothing saying
+ * which sentence is which.
+ *
+ * A pair is matched by its PUBLIC TEXT inside one named record and must match exactly once there.
+ * Zero occurrences is a stale pair and refuses; more than one is ambiguous and refuses. That is the
+ * whole addressing scheme: no index, no offset, nothing that an edit elsewhere in the file can move.
+ */
+export function mergeProseOverlay(doc, { path = null } = {}) {
+  const p = path || taxonomyProsePathFor(REPO);
+  let raw;
+  try { raw = readFileSync(p, 'utf8'); }
+  catch (e) {
+    if (e.code === 'ENOENT') return doc;
+    throw new Error(`taxonomy prose overlay at ${p} could not be read (${e.code || e.message}) — refusing to render a register that is missing prose it may carry`);
+  }
+  let ov;
+  try { ov = JSON.parse(raw); }
+  catch (e) { throw new Error(`taxonomy prose overlay at ${p} is not valid JSON: ${e.message}`); }
+  const where = `taxonomy prose overlay at ${p}`;
+  if (!isPlainObject(ov.prose)) throw new Error(`${where} declares no prose object`);
+  for (const [key, pairs] of Object.entries(ov.prose)) {
+    if (!Array.isArray(pairs)) throw new Error(`${where}: ${key} is not a list of pairs`);
+    const { node, heldOut } = proseRecord(doc, key, where);
+    for (const pair of pairs) {
+      if (!isPlainObject(pair) || !nonEmpty(pair.public) || !nonEmpty(pair.private)) {
+        throw new Error(`${where}: ${key} carries a pair without both a public and a private string`);
+      }
+      const n = replaceStrings(node, pair.public, pair.private, heldOut);
+      if (n !== 1) {
+        // Both halves of this change live in different repositories, so the message has to be true
+        // in both orders: the register may have been edited without the overlay following, or the
+        // overlay may be ahead of a register that has not landed yet. Naming one would send a
+        // reader to the wrong file half the time.
+        throw new Error(`${where}: ${key} carries a pair whose public text appears ${n} time(s) in that record, not once`
+          + ` — "${pair.public.slice(0, 60)}…". The two are out of step: either this register's prose`
+          + ` was edited without the overlay following it, or the overlay is ahead of the register being read`
+          + ` (${n === 0 ? 'the public sentence is not in that record' : 'it is there more than once'}).`);
+      }
+    }
+  }
+  return doc;
+}
+
 /**
  * The mitigation axis: what each product does against a class, and what is proposed. Same rule as
  * stpa and rca — THE VOCABULARY IS READ, NEVER RESTATED — with one difference in the treatment of
@@ -323,7 +445,15 @@ function validateMitigations({ classes, mitigationVocabulary: V, mitigationProve
  * Validate before rendering. A registry that renders a malformed row as a pretty table is the same
  * false clean as everything it catalogues, so this runs on every render, not only under --check.
  */
-export function validate(doc) {
+/**
+ * `publicDoc` is the register BEFORE the private overlays were merged, and only the
+ * fleet-vocabulary usage check reads it. That check asks whether a declared capability term is a
+ * term the register actually uses, which is a property of the PUBLISHED document: in a merged
+ * register the capability names have been replaced by the product names on purpose, so running it
+ * there fails every term and says the opposite of the truth. Not skipped when the overlays are in
+ * play — pointed at the document the question is about.
+ */
+export function validate(doc, { publicDoc = null } = {}) {
   const { families, classes, scaleBounds } = doc;
   // Shape first, and UNCONDITIONALLY: the checks below bail out early on a missing scaleBounds, and
   // a shape check that a malformed registry can skip past is the false clean this file catalogues.
@@ -416,7 +546,49 @@ export function validate(doc) {
   validateStpa(doc, errors);
   validateRca(doc, errors);
   validateMitigations(doc, errors);
+  validateFleetVocabulary(doc, errors, publicDoc || doc);
   return errors;
+}
+
+/**
+ * The capability vocabulary: the names the register uses for tools that are not this product.
+ *
+ * Same rule as every other vocabulary here — each term carries the sentence a second reader applies,
+ * because a term nobody can re-judge is a label. The extra rule is the one that makes the vocabulary
+ * a claim rather than a decoration: a declared term MUST appear somewhere in the register's prose.
+ * A term that appears nowhere is either a tool whose records have gone, or a substitution somebody
+ * reverted, and in both cases the register is telling a reader it generalised something it did not.
+ *
+ * This is the witness that reads the TRACKED register alone. The other one is the prose overlay's
+ * own merge, which reads the private half against this file and refuses when a public sentence it
+ * names is no longer there; the two cannot fail together, because one of them needs the private
+ * store to run at all and the other must work in a clone that has none.
+ */
+function validateFleetVocabulary(doc, errors, publicDoc) {
+  const V = doc.fleetVocabulary;
+  if (V === undefined) return;   // a register that generalises nothing declares nothing
+  if (!isPlainObject(V) || !nonEmpty(V.note) || !isPlainObject(V.terms) || Object.keys(V.terms).length === 0) {
+    errors.push('fleetVocabulary must carry a note and at least one term — a page that substitutes a capability for a product name and says so nowhere is the withheld-evidence-as-evidence defect this register exists to name');
+    return;
+  }
+  // The prose the terms are supposed to appear in, with the vocabulary itself held out: a term that
+  // occurs only in its own declaration is exactly the dead term this check is for.
+  const prose = [];
+  const walk = (node) => {
+    if (typeof node === 'string') { prose.push(node); return; }
+    if (Array.isArray(node)) { for (const v of node) walk(v); return; }
+    if (isPlainObject(node)) for (const [k, v] of Object.entries(node)) if (k !== 'fleetVocabulary') walk(v);
+  };
+  walk(publicDoc);
+  const haystack = prose.join('\n');
+  for (const [term, def] of Object.entries(V.terms)) {
+    if (!isPlainObject(def) || !nonEmpty(def.test)) {
+      errors.push(`fleetVocabulary.terms["${term}"]: no test — a term a second reader cannot apply is a label, not a substitution`);
+    }
+    if (!haystack.includes(term)) {
+      errors.push(`fleetVocabulary.terms["${term}"] appears nowhere in the register's prose — a declared substitution with nothing substituted tells a reader something was generalised when it was not`);
+    }
+  }
 }
 
 // Machine names are one long token; left to itself the browser breaks them mid-word
@@ -584,7 +756,13 @@ function main() {
         accent: PAPER_LIGHT.acc, ctrl: PAPER_LIGHT.acc, impl: PAPER_LIGHT.mut, both: PAPER_LIGHT.acc2,
         uca: PAPER_LIGHT.crit, cause: PAPER_LIGHT.ok, rel: PAPER_LIGHT.acc2 };
 
-  let doc = mergeMitigationOverlay(JSON.parse(readFileSync(jsonPath, 'utf8')));
+  const register = JSON.parse(readFileSync(jsonPath, 'utf8'));
+  const publicForm = JSON.stringify(register);
+  let doc = mergeProseOverlay(mergeMitigationOverlay(register));
+  // Whether the private stores were on disk for THIS run, decided by whether either overlay changed
+  // anything rather than by whether a path exists: an empty overlay and no overlay produce the same
+  // document, and only the document decides what the page discloses.
+  const mergedPrivate = JSON.stringify(doc) !== publicForm;
   // This page renders the SAME register as bin/taxonomy-web.mjs, so it needs the same
   // record-scoped scanner redaction. Wiring only the other generator left GuardDog x3 and
   // Prowler x1 on docsite/imported/taxonomy-reference.html — the page lib/publish-redactions.mjs
@@ -595,7 +773,7 @@ function main() {
   // be able to claim a version the data does not carry.
   const out = outPath || resolve(REPO, 'reports', `FAILURE-TAXONOMY-v${doc.version}${dark ? '-dark' : ''}.html`);
 
-  const errors = validate(doc);
+  const errors = validate(doc, { publicDoc: mergedPrivate ? JSON.parse(publicForm) : null });
 
   if (errors.length) {
     for (const e of errors) console.error(`registry: ${e}`);
@@ -692,11 +870,39 @@ function main() {
   <label><input type="checkbox" id="lay-prop" checked> proposed — what we propose adding, on every class with closure possible and gain remaining</label>
   <span class="hint">Toggles hide rows on screen only; print carries every layer.</span>
 </fieldset>`;
+  // COMPUTED, never restated: mitigationProvenance.caveat says the page counts these, and a
+  // hand-written census over a growing register is the M7 defect.
+  const mitCensus = () => {
+    const per = new Map();
+    let none = 0;
+    for (const c of doc.classes) {
+      const ms = c.mitigations || [];
+      if (!ms.length) { none += 1; continue; }
+      for (const p of new Set(ms.map((e) => e.product))) per.set(p, (per.get(p) || 0) + 1);
+    }
+    const n = doc.classes.length;
+    const byProduct = [...per].sort(([a], [b]) => (a < b ? -1 : 1)).map(([p, k]) => `${esc(p)} ${k}`).join(' · ');
+    const noLever = doc.classes.filter((c) => (c.mitigations || []).some((e) => e.status === 'no-lever')).length;
+    const proposals = doc.classes.filter((c) => (c.proposals || []).length).length;
+    return `Classes carrying a record, per product, counted from this page: ${byProduct || 'none'}`
+      + ` · ${none} of ${n} carry no record on any layer here`
+      + ` · ${noLever} carry a no-lever record, which is a judgement that no gate exists and not a clean`
+      + ` · ${proposals} carry a proposal.`;
+  };
   const mitLegend = !MV ? '' : `<b>Mitigation layers</b>, one row under each class: `
     + Object.entries(MV.products).map(([k, d]) => `<span class="tag prod">${esc(k)}</span> ${esc(d.layer)}`).join(' · ')
     + `. States: ` + Object.entries(MV.statuses).map(([k, d]) => `<span class="tag st ${esc(k)}" title="${esc(d.test)}">${esc(k)}</span>`).join(' ')
     + ` · <span class="tag rel grey">no record</span> nothing recorded for that layer. Hover a state for its test.<br>`
-    + `<b>Mitigation records are one rater.</b> ${esc(doc.mitigationProvenance.rater)}, ${esc(doc.mitigationProvenance.date)}, ${esc(doc.mitigationProvenance.method)}. ${esc(doc.mitigationProvenance.caveat)}<br>`;
+    + `<b>Mitigation records are one rater.</b> ${esc(doc.mitigationProvenance.rater)}, ${esc(doc.mitigationProvenance.date)}, ${esc(doc.mitigationProvenance.method)}. ${esc(doc.mitigationProvenance.caveat)}<br>`
+    + `${mitCensus()}<br>`;
+
+  // The capability vocabulary, printed BESIDE the records it applies to rather than filed somewhere
+  // a reader has to go and look: a substitution a reader cannot see is indistinguishable from a
+  // record that never named anything.
+  const FV = doc.fleetVocabulary;
+  const fleetLegend = !FV ? '' : `<b>Tools that are not this product are named by capability.</b> ${esc(FV.note)} `
+    + Object.entries(FV.terms).map(([t, d]) => `<span class="tag prod" title="${esc(d.test)}">${esc(t)}</span>`).join(' ')
+    + ` Hover a term for the sentence that decides whether a record is about it.<br>`;
 
   const famIndex = `
 <nav class="famindex" aria-label="Families, in order">
@@ -926,6 +1132,7 @@ ${doc.families.map((f) => { const s = famStats(f.prefix); return `    <li><a hre
     Causal edges: ${rcaLegend}.<br>
     <b>STPA is one rater.</b> ${esc(P.rater)}, ${esc(P.date)}, ${esc(P.method)}. ${esc(P.caveat)}<br>
     ${mitLegend}
+    ${fleetLegend}
   </div>
 </div>
 ${layerControls}
@@ -987,6 +1194,14 @@ ${mitRow(c)}`).join('\n')}
   // write below still replaced the real page — versioning off, overwrite on. writeAtomic
   // resolves against cwd exactly as this does, so guard and write now agree on the target.
   if (resolve(out) === DOCSITE_TAXONOMY_REF) {
+    // The published page is the PUBLIC shape. A machine that holds the private overlays renders a
+    // different document from the one a clone renders, so writing this path from a merged register
+    // is refused and the way out is named.
+    if (mergedPrivate) {
+      console.error('taxonomy-render: refusing to write the published page from a register with the private overlays merged.');
+      console.error(`  Render the maintainer's copy to reports/ (drop --out), or unset CW_TAXONOMY_MITIGATIONS / CW_TAXONOMY_PROSE and point them at a path that does not exist.`);
+      process.exit(1);
+    }
     let previous = null;
     try { previous = readFileSync(out, 'utf8'); } catch { /* first write */ }
     snapshotBeforeWrite('taxonomy-reference', 'generated', previous);

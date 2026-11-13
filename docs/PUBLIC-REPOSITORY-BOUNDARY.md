@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-21 04af5bde -->
+<!-- verified-against: 2026-10-21 -->
 # Public repository and private sidecar
 
 The release starts from a reviewed snapshot of the current implementation, with one new root

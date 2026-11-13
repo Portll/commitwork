@@ -177,6 +177,27 @@ describe('wp-advisories: what is not measured is said so', () => {
     assert.equal(r.summary.components.versionUnknown, 1);
   });
 
+  test('a plugin repository is looked up by its Text Domain, and the source must name the same plugin', async () => {
+    const src = scratch('cw-wp-src-');
+    advisories(src, 'plugin', 'acme-forms', { name: 'Acme Forms', closed: 0, vulnerability: [rec('CVE-2026-2000', below('2.2.0'), CVSS(7.5))] });
+    advisories(src, 'plugin', 'acme', { name: 'ACME Toolkit by Someone Else', closed: 0, vulnerability: [rec('CVE-2026-9000', below('9'), CVSS(9.8))] });
+    const header = (domain) => `<?php\n/**\n * Plugin Name: Acme Forms\n * Version: 2.1.0\n${domain ? ` * Text Domain: ${domain}\n` : ''} */\n`;
+
+    const ok = await withSource(src, () => scanTree(write(scratch(), { 'plugin.php': header('acme-forms'), 'readme.txt': '=== Acme Forms ===' })));
+    assert.equal(ok.summary.installs[0].layout, 'plugin-repo');
+    assert.equal(ok.summary.voidReason, undefined);
+    const row = at(ok, 'wp-plugin-vulnerable', 'plugin.php');
+    assert.equal(row.component, 'acme-forms');
+    assert.equal(row.sev, 'high');
+    assert.ok(!ok.summary.notMeasured.some((n) => n.component === 'core'), 'a plugin repository has no core to be unmeasured');
+
+    const other = await withSource(src, () => scanTree(write(scratch(), { 'acme.php': header('') })));
+    assert.equal(other.summary.installs[0].slugFrom, 'main file name');
+    assert.deepEqual(other.findings, [], 'a slug that names another plugin attributes none of its records');
+    assert.match(other.summary.notMeasured.find((n) => n.slug === 'acme').reason, /names ACME Toolkit by Someone Else on the advisory source, not Acme Forms/);
+    assert.equal(other.summary.partial, true);
+  });
+
   test('no WordPress is a void', async () => {
     const r = await withSource(scratch('cw-wp-src-'), () => scanTree(write(scratch(), { 'a.txt': 'x' })));
     assert.equal(r.summary.filesScanned, 0);

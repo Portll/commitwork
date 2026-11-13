@@ -73,6 +73,7 @@ const tmp = mkdtempSync(join(tmpdir(), 'cw-bundler-audit-'));
 const merged = { results: [], _scanned: [] };
 let failures = 0;
 let sawFindings = false;
+let offline = false;
 
 try {
   for (const lock of locks) {
@@ -85,11 +86,31 @@ try {
       // an absolute value produces `Could not find "/abs/path/Gemfile.lock" in "/cwd"` and, true to
       // this tool's form, still exits 0 while writing nothing. cwd is the only reliable selector.
       //
-      // --update only on the FIRST lockfile: the advisory database is global, so re-fetching it per
-      // lockfile turns a 2-lockfile repo into two network round trips for identical data.
-      const args = ['check', '-F', 'json', '-o', out];
-      if (merged._scanned.length === 0) args.splice(1, 0, '--update');
-      execFileSync('bundle-audit', args, { cwd: dirname(lock), stdio: ['ignore', 'pipe', 'pipe'] });
+      // --update IS A NETWORK FETCH, AND IT IS OPTIONAL. The advisory database is global and cached
+      // on disk, so a scan is possible with no network at all; --update only refreshes it. Passing
+      // it unconditionally makes the scan IMPOSSIBLE on an offline host: bundle-audit 0.9.3 exits 1
+      // and writes no JSON when the fetch fails, which this script reads as "the tool failed" and
+      // turns into exit 3 for every lockfile. So: try WITH --update first, and on a failed fetch
+      // retry WITHOUT it against the cached database. A stale database is a weaker witness than a
+      // fresh one, but it is a witness; no artifact is not.
+      //
+      // The retry is per-lockfile rather than first-lockfile-only. The old `_scanned.length === 0`
+      // guard was meant to fetch once, but `_scanned` only grows on SUCCESS — so when the first
+      // lockfile failed, every later one re-fetched too, the opposite of the intent.
+      try {
+        execFileSync('bundle-audit', ['check', '--update', '-F', 'json', '-o', out], { cwd: dirname(lock), stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (e) {
+        const first = typeof e.status === 'number' ? e.status : 3;
+        // Only a FAILED FETCH is worth retrying. A real findings run (exit 1) already wrote its
+        // JSON, and re-running it would just repeat the same advisories.
+        if (first > 1 || existsSync(out)) status = first;
+        else {
+          try {
+            execFileSync('bundle-audit', ['check', '-F', 'json', '-o', out], { cwd: dirname(lock), stdio: ['ignore', 'pipe', 'pipe'] });
+            offline = true;
+          } catch (e2) { status = typeof e2.status === 'number' ? e2.status : 3; }
+        }
+      }
     } catch (e) { status = typeof e.status === 'number' ? e.status : 3; }
 
     if (status > 1) { failures += 1; console.error(`bundle-audit exited ${status} on ${rel}`); continue; }
@@ -115,5 +136,9 @@ if (!merged._scanned.length) {
 
 writeFileSync(outJson, `${JSON.stringify(merged, null, 2)}\n`);
 console.error(`audited ${merged._scanned.length}/${locks.length} lockfile(s): ${merged._scanned.join(', ')}`);
+// SAY WHEN THE DATABASE WAS STALE. A reader comparing this artifact against a fresh advisory has
+// to be able to tell that the scan ran offline against a cached database, or a missed CVE reads as
+// a clean result rather than as the weaker witness it is.
+if (offline) console.error('advisory database could not be refreshed (no network) — scanned against the cached copy');
 if (failures) console.error(`${failures} lockfile(s) could not be audited — the artifact covers the rest`);
 process.exit(sawFindings ? 1 : 0);

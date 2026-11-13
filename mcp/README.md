@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # mcp/ — commitwork as an MCP server
 
 commitwork's job is to verify what your agents ship. The agents doing the shipping (Claude

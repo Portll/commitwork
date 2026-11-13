@@ -9,9 +9,13 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { egressMode, proxyEnv, startProxy, recordObservation, upstreamProxy, containerised, OBSERVED_FILE } from '../lib/egress-observe.mjs';
+import { validateAgainstSchema } from '../../lib/json-schema.mjs';
 
 const CW = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const COMMITWORK = join(CW, 'bin', 'commitwork.mjs');
+const LEDGER_SCHEMA = join(CW, 'schema', 'egress-ledger.schema.json');
+const OBSERVED_SCHEMA = join(CW, 'schema', 'egress-observed.schema.json');
+const schemaErrors = (doc, path) => validateAgainstSchema(doc, { path }).errors;
 
 test('egressMode: off, observe, enforce, and a refusal for anything else', () => {
   assert.equal(egressMode({}), null); assert.equal(egressMode({ CW_EGRESS_OBSERVE: '0' }), null);
@@ -40,11 +44,35 @@ test('startProxy/stop: a proxy comes up for a lane and its ledger comes back; en
   // Assert
   assert.ok(p.port > 0, JSON.stringify(p));
   assert.deepEqual([ledger.lane, ledger.mode, ledger.destinations], ['fixture', 'observe', []], ledger.why);
+  assert.deepEqual(schemaErrors(ledger, LEDGER_SCHEMA), [], 'the proxy\'s ledger matches schema/egress-ledger.schema.json');
   assert.match(absent.refused, /enforce needs an allowlist/);
   assert.match(bad.refused, /egress proxy could not start: .*decoration/);
   assert.ok(badMs < 4000, 'a startup failure is read from the port file, not waited out');
   assert.deepEqual(readdirSync(state), [], 'every lane directory is removed');
   assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')).lanes.map((l) => l.check), ['a', 'b']);
+});
+
+test('stop() stands in for a ledger the proxy never wrote with null destinations, and the ledger schema refuses an empty list there', (t) => {
+  // Arrange
+  const state = mkdtempSync(join(tmpdir(), 'cw-egress-state-')); t.after(() => rmSync(state, { recursive: true, force: true }));
+  const fake = mkdtempSync(join(tmpdir(), 'cw-egress-fake-')); t.after(() => rmSync(fake, { recursive: true, force: true }));
+  mkdirSync(join(fake, 'bin'));
+  // a proxy that listens and exits on SIGTERM without a ledger, so the stand-in is not a timing race
+  writeFileSync(join(fake, 'bin', 'egress-proxy.mjs'), `import { writeFileSync, renameSync } from 'node:fs';
+const pf = process.argv[process.argv.indexOf('--port-file') + 1];
+writeFileSync(pf + '.tmp', '1\\n'); renameSync(pf + '.tmp', pf);
+process.on('SIGTERM', () => process.exit(0)); setInterval(() => {}, 1000);\n`);
+  const p = startProxy({ lane: 'fixture', mode: 'observe', cwRoot: fake, env: { ...process.env, CW_EGRESS_STATE_DIR: state } });
+  // Act
+  const standIn = p.port > 0 ? p.stop({ waitMs: 300 }) : null;
+  const asRead = schemaErrors(standIn, LEDGER_SCHEMA);
+  const asEmpty = schemaErrors({ ...standIn, destinations: [] }, LEDGER_SCHEMA);
+  // Assert
+  assert.ok(p.port > 0, JSON.stringify(p));
+  assert.deepEqual([standIn.destinations, standIn.why], [null, 'ledger not written (ENOENT)']);
+  assert.deepEqual(asRead, []);
+  // the exact message, so a schema that failed to load cannot pass as a rejection
+  assert.deepEqual(asEmpty, ['schema: (root): matched 0 of 2 oneOf branches (exactly 1 required)']);
 });
 
 function targetServer(dir) {
@@ -58,6 +86,7 @@ srv.listen(0, '127.0.0.1', () => writeFileSync(${JSON.stringify(portFile)}, Stri
 }
 
 test('a networked fixture lane run under CW_EGRESS_OBSERVE=1 dials through the runner\'s proxy and the observation lands beside its report', async (t) => {
+  // Arrange
   const dir = mkdtempSync(join(tmpdir(), 'cw-egress-run-')); t.after(() => rmSync(dir, { recursive: true, force: true }));
   const repo = join(dir, 'repo'); const reports = join(dir, 'reports'); mkdirSync(repo); mkdirSync(reports);
   const tgt = targetServer(dir); t.after(() => { try { tgt.child.kill('SIGKILL'); } catch { /* gone */ } });
@@ -79,10 +108,16 @@ req.on('error', (e) => { console.error(e.message); process.exit(1); }); req.end(
   }));
   const env = { ...process.env, CW_REPORT_DIR: reports, CW_SKIP_SETUP: '1', CW_EGRESS_OBSERVE: '1', CW_EGRESS_STATE_DIR: join(dir, 'egress-state') };
   for (const k of ['HTTPS_PROXY', 'HTTP_PROXY', 'ALL_PROXY', 'https_proxy', 'http_proxy', 'all_proxy']) delete env[k];
-  const r = spawnSync(process.execPath, [COMMITWORK, 'run', 'probe', '--manifest', manifest, '--repo', repo, '--no-fail-fast'], { encoding: 'utf8', env });
+  const run = (extra = {}) => spawnSync(process.execPath, [COMMITWORK, 'run', 'probe', '--manifest', manifest, '--repo', repo, '--no-fail-fast'], { encoding: 'utf8', env: { ...env, ...extra } });
+  // Act
+  const r = run();
+  const upstream = run({ HTTPS_PROXY: 'http://corp-proxy.invalid:3128', CW_REPORT_DIR: join(dir, 'reports-up') });
+  const enforce = run({ CW_EGRESS_OBSERVE: 'enforce', CW_EGRESS_ALLOWLIST: join(dir, 'absent.json'), CW_REPORT_DIR: join(dir, 'reports2') });
+  // Assert
   const out = `${r.stdout}\n${r.stderr}`;
   assert.ok(existsSync(join(reports, OBSERVED_FILE)), `no observation written:\n${out}`);
   const doc = JSON.parse(readFileSync(join(reports, OBSERVED_FILE), 'utf8'));
+  assert.deepEqual(schemaErrors(doc, OBSERVED_SCHEMA), [], 'the observation file matches schema/egress-observed.schema.json');
   assert.deepEqual(doc.lanes.map((l) => l.check), ['dials-out'], 'the egress-none lane is not observed');
   const lane = doc.lanes[0];
   assert.deepEqual([lane.egress, lane.mode, lane.coverage], ['registry', 'observe', 'proxy-honouring clients only']);
@@ -90,11 +125,14 @@ req.on('error', (e) => { console.error(e.message); process.exit(1); }); req.end(
   assert.equal(lane.repo, 'repo');
   assert.equal(existsSync(tgt.hits), false, 'the loopback service the sandbox denies stays unreachable through the proxy');
 
-  const upstream = spawnSync(process.execPath, [COMMITWORK, 'run', 'probe', '--manifest', manifest, '--repo', repo, '--no-fail-fast'], { encoding: 'utf8', env: { ...env, HTTPS_PROXY: 'http://corp-proxy.invalid:3128', CW_REPORT_DIR: join(dir, 'reports-up') } });
-  const up = JSON.parse(readFileSync(join(dir, 'reports-up', OBSERVED_FILE), 'utf8')).lanes[0];
+  const upDoc = JSON.parse(readFileSync(join(dir, 'reports-up', OBSERVED_FILE), 'utf8'));
+  const up = upDoc.lanes[0];
   assert.deepEqual([up.check, up.destinations], ['dials-out', null], upstream.stdout);
   assert.match(up.unobserved, /upstream HTTPS_PROXY is set/);
+  assert.deepEqual(schemaErrors(upDoc, OBSERVED_SCHEMA), [], 'an unobserved lane matches the observation schema');
+  // the exact message, so a schema that failed to load cannot pass as a rejection
+  assert.deepEqual(schemaErrors({ ...upDoc, lanes: [{ ...up, destinations: [] }] }, OBSERVED_SCHEMA),
+    ['schema: lanes[0]: matched 0 of 3 oneOf branches (exactly 1 required)'], 'the schema refuses an empty list on an unobserved lane');
 
-  const enforce = spawnSync(process.execPath, [COMMITWORK, 'run', 'probe', '--manifest', manifest, '--repo', repo, '--no-fail-fast'], { encoding: 'utf8', env: { ...env, CW_EGRESS_OBSERVE: 'enforce', CW_EGRESS_ALLOWLIST: join(dir, 'absent.json'), CW_REPORT_DIR: join(dir, 'reports2') } });
   assert.match(`${enforce.stdout}\n${enforce.stderr}`, /egress enforce: enforce needs an allowlist/, 'enforce with no allowlist refuses the lane rather than running it open');
 });

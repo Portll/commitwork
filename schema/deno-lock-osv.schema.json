@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.online/schema/deno-lock-osv.schema.json",
+  "title": "deno-lock-osv.json — what of a deno.lock reached osv-scanner, and what could not",
+  "description": "Emitted by bin/deno-lock-osv.mjs. osv-scanner cannot read deno.lock, so its npm packages are restated in osv-scanner's own input format and scanned from there. JSR and remote modules have no OSV ecosystem: they are listed here as unscanned and must never be read as clean. A record with error set and written null means the lane scanned NOTHING from deno.lock.",
+  "type": "object",
+  "required": ["tool", "generatedAt", "lockVersion", "npm", "jsr", "jsrUnscanned", "remote", "written", "error"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": { "enum": ["deno-lock-osv"] },
+    "generatedAt": { "type": "string" },
+    "lockVersion": { "type": ["string", "null"], "description": "deno.lock `version` as read; null when the file could not be parsed that far." },
+    "npm": { "type": "integer", "minimum": 0, "description": "Distinct npm name@version pairs handed to osv-scanner." },
+    "jsr": { "type": "array", "items": { "type": "string" }, "description": "JSR package@version keys present in the lock. Each is a dependency no advisory feed here covers." },
+    "jsrUnscanned": { "enum": [true], "description": "Always true: there is no JSR ecosystem in OSV. Stated so a reader cannot take the jsr list for a scanned set." },
+    "remote": { "type": "integer", "minimum": 0, "description": "https-imported modules in the lock, likewise unscanned." },
+    "written": { "type": ["string", "null"], "description": "Name of the osv-scanner input, relative to the converter's output directory, or null when nothing was handed over (no npm packages, or error)." },
+    "error": { "type": ["string", "null"], "description": "Why the lock could not be converted. Non-null means the npm packages were NOT scanned." }
+  }
+}

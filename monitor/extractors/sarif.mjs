@@ -18,17 +18,14 @@ import { readSarif, ruleIndex, cweOf, isSuppressed, sarifBand, ruleTitle, descri
 import { classifyPath } from '../fixture-paths.mjs'; // a test corpus is a different population, not a cleaner one
 import { classifyWorktreePath } from '../worktree-paths.mjs'; // a second checkout is the same population counted twice
 import { coverageForLane, coverageLicensesAZero } from '../codeql-coverage.mjs'; // an unread file cannot testify that it is empty
-import { _zero, _detailFor, capMessage } from './core.mjs';
+import { _zero, _emptyArtifact, _detailFor, capMessage } from './core.mjs';
 
 export function _sarifCounts(dir, file, collect, coverageOf = null, sevOf = null) {
   // Maps sarif-read states onto this file's vocabulary; 'unreadable' joins 'absent' as null
   // (a non-affirmed completion reads through checks-status provenance, never as counts)
   const r = readSarif(join(dir, file));
   if (r.state === 'absent' || r.state === 'unreadable') return null;
-  // `empty` has TWO live meanings and this is the one place that must not merge them: a self-gated
-  // check with genuinely no source, and a tool killed before it wrote a byte. Both keep `nosrc` so
-  // existing consumers still render grey; `emptyArtifact` is the discriminator a void-carry needs.
-  if (r.state === 'empty') return { ..._zero(), ran: true, nosrc: true, emptyArtifact: true };
+  if (r.state === 'empty') return { ..._emptyArtifact(join(dir, file)), emptyArtifact: true };
   if (r.state === 'unparseable') return { ..._zero(), ran: true, unparseable: true };
   if (r.state === 'never-ran') return { ..._zero(), ran: true, neverran: true };
   if (r.state === 'tool-failed') return { ..._zero(), ran: true, toolfailed: true };

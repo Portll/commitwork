@@ -25,6 +25,7 @@ import { renderPage, renderAndWritePage } from '../lib/docsite-page.mjs';
 const check = process.argv.includes('--check');
 const errors = [];
 const drift = [];
+const unbuilt = [];
 let built = 0;
 let verified = 0;
 
@@ -50,8 +51,17 @@ for (const doc of manifest.docs) {
     const dest = join(rootOf(doc), 'pages', relative(join(rootOf(doc), 'imported'), sourcePath(doc)));
     if (check) {
       let have = null;
-      try { have = readFileSync(dest); } catch { /* missing = drift */ }
-      if (have === null || !have.equals(readFileSync(sourcePath(doc)))) drift.push(`${doc.slug}: ${dest} ${have === null ? 'is missing' : 'differs from its imported source'}`);
+      try { have = readFileSync(dest); }
+      catch (e) {
+        // ABSENT is not DRIFT. pages/ is build output and nothing publishes from it (the bundle is
+        // assembled from imported/), and an export drops the taxonomy preview by export-ignore. An
+        // unbuilt preview is counted and printed, so it never reads as a verified one. Only ENOENT:
+        // a copy that exists and cannot be read is a failure naming the entry.
+        if (e.code !== 'ENOENT') { errors.push(`${doc.slug}: imported preview at ${dest} is unreadable: ${e.message}`); continue; }
+        unbuilt.push(`${doc.slug}: ${dest} has not been built`);
+        continue;
+      }
+      if (!have.equals(readFileSync(sourcePath(doc)))) drift.push(`${doc.slug}: ${dest} differs from its imported source`);
       else verified++;
       continue;
     }
@@ -96,7 +106,8 @@ for (const root of roots) {
 if (errors.length) { console.error(`docsite-build: FAILED\n  ${errors.join('\n  ')}`); process.exit(2); }
 if (check) {
   if (drift.length) { console.error(`docsite-build --check: DRIFT\n  ${drift.join('\n  ')}`); process.exit(1); }
-  console.log(`docsite-build --check: clean (${verified} verified)`);
+  const notBuilt = unbuilt.length ? `, ${unbuilt.length} imported preview(s) not built:\n  ${unbuilt.join('\n  ')}` : '';
+  console.log(`docsite-build --check: clean (${verified} verified)${notBuilt}`);
 } else {
   console.log(`docsite-build: ${built} built, ${verified} imported verified`);
 }

@@ -8,7 +8,7 @@ import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unread
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { KEY_LEN, openArchive, unpackEntries } from '../archive-container.mjs';
-import { selectBatches, buildArchive, verifyArchive, coveredBatches, archiveDir, assertStable } from '../archive-batches.mjs';
+import { selectBatches, buildArchive, verifyArchive, coveredBatches, archiveDir, assertStable, redactionCoverage } from '../archive-batches.mjs';
 
 const KEY = Buffer.alloc(KEY_LEN, 3);
 const NOW = Date.UTC(2026, 7, 23, 12, 0, 0);
@@ -157,6 +157,108 @@ describe('build and verify', () => {
     assert.deepEqual(carrying(false), ['gitleaks.json', 'semgrep.sarif'],
       'the fixture must actually contain the canary unredacted, or this test cannot fail');
     assert.deepEqual(carrying(true), [], 'the canary survived --redact — including the SARIF snippet.text case');
+  });
+
+  // JSON LINES. `trufflehog --json` writes one record per LINE into a file named .json, so a
+  // whole-document JSON.parse fails on record two — which filed the single biggest carrier of
+  // plaintext values in the tree as `unparseable` and copied it through at full fidelity.
+  const trufflehogLines = (canary, lead = []) => [...lead,
+    JSON.stringify({ SourceMetadata: { Data: { Git: { commit: 'a1', file: 'x.env', line: 3 } } }, DetectorName: 'AWS', Verified: true, Raw: canary, RawV2: `${canary}#v2` }),
+    JSON.stringify({ SourceMetadata: { Data: { Git: { commit: 'b2', file: 'y.env', line: 9 } } }, DetectorName: 'Github', Verified: false, Raw: `${canary}-two` }),
+  ].join('\n') + '\n';
+
+  const twoBatchesOf = (files) => {
+    const { root } = makeReports([{ agoMs: 20 * day, area: 'alpha', files }, { agoMs: 1 * day, area: 'alpha', files }]);
+    return { root, picked: selectBatches(root, { now: NOW }).picked };
+  };
+
+  test('--redact reaches JSON LINES — asserted on the bytes of a trufflehog report', () => {
+    const CANARY = 'CANARY-SECRET-VALUE-7c41de';
+    const { root, picked } = twoBatchesOf({ 'repo-a/trufflehog.json': trufflehogLines(CANARY) });
+    const build = (redact) => {
+      const built = buildArchive({ root, batches: picked, key: KEY, redact, now: NOW });
+      const entries = unpackEntries(openArchive(built.buf, KEY).plaintext);
+      return { built, entries, carrying: entries.filter((e) => e.data.includes(CANARY)).map((e) => e.path) };
+    };
+    // NEGATIVE CONTROL FIRST: without --redact the value must be there, or the assertion below
+    // would pass over a fixture that never carried it.
+    assert.equal(build(false).carrying.length, 1, 'the fixture must carry Raw unredacted, or this test cannot fail');
+
+    const after = build(true);
+    assert.deepEqual(after.carrying, [], 'trufflehog Raw/RawV2 survived --redact');
+    // Redacted, not emptied: a restore is still evidence, with both records still one per line.
+    const body = after.entries.find((e) => e.path.endsWith('trufflehog.json')).data.toString('utf8');
+    assert.match(body, /"DetectorName":"Github"/);
+    assert.equal(body.split('\n').filter((l) => l.trim()).length, 2, 'both records survive, one per line');
+    // The over-report direction, which the under-report test below cannot see: a file redaction
+    // DID process must not be named as one it could not.
+    assert.deepEqual(after.built.manifest.redaction.notRedacted, [], 'a processed file must not be named as unprocessed');
+  });
+
+  test('a non-JSON banner line is copied verbatim and COUNTED — never dropped, never called redacted', () => {
+    // The stream interleaves banners (monitor/extractors/secrets.mjs skips them for the same
+    // reason). Dropping one would change what a restore returns; calling the file redacted because
+    // most of it was processed would be a claim about bytes nothing looked inside.
+    const CANARY = 'CANARY-SECRET-VALUE-2b90aa';
+    const BANNER = '2026-08-23T11:02:14Z info-0 trufflehog: scanning git history';
+    const { root, picked } = twoBatchesOf({ 'repo-a/trufflehog.json': trufflehogLines(CANARY, [BANNER]) });
+    const built = buildArchive({ root, batches: picked, key: KEY, redact: true, now: NOW });
+    const entries = unpackEntries(openArchive(built.buf, KEY).plaintext);
+    const body = entries.find((e) => e.path.endsWith('trufflehog.json')).data.toString('utf8');
+    assert.ok(!body.includes(CANARY), 'the records beside the banner must still be redacted');
+    assert.ok(body.includes(BANNER), 'the banner must survive a restore verbatim');
+
+    const named = built.manifest.redaction.notRedacted.find((n) => n.path.endsWith('trufflehog.json'));
+    assert.ok(named, 'a partially processed file must be NAMED, not shipped as redacted');
+    assert.match(named.why, /records redacted=2, other lines copied verbatim=1/);
+    assert.equal(named.secretBearing, true);
+  });
+
+  test('a truncated pretty-printed report stays UNPARSEABLE — not partly-redacted lines', () => {
+    // The line reader's false-positive direction, which the two tests above cannot see: a single
+    // line of a pretty-printed document can parse on its own (the last array element, no trailing
+    // comma), and counting that as a record would describe a file nothing understood as one
+    // redaction had partly covered. The bytes must also come through untouched.
+    const CANARY = 'CANARY-SECRET-VALUE-31ff80';
+    const truncated = ['{', '  "runs": [', '    { "results": [', `      "${CANARY}"`].join('\n');
+    const { root, picked } = twoBatchesOf({ 'repo-a/gitleaks.json': truncated });
+    const built = buildArchive({ root, batches: picked, key: KEY, redact: true, now: NOW });
+    const named = built.manifest.redaction.notRedacted.find((n) => n.path.endsWith('gitleaks.json'));
+    assert.match(named.why, /unparseable/);
+    const entries = unpackEntries(openArchive(built.buf, KEY).plaintext);
+    assert.equal(entries.find((e) => e.path.endsWith('gitleaks.json')).data.toString('utf8'), truncated);
+  });
+
+  test('redaction is DETERMINISTIC — the same report twice gives byte-identical entries', () => {
+    const { root, picked } = twoBatchesOf({ 'repo-a/trufflehog.json': trufflehogLines('CANARY-SECRET-VALUE-5d1c0e') });
+    const hashes = () => {
+      const m = buildArchive({ root, batches: picked, key: KEY, redact: true, now: NOW }).manifest;
+      return m.entries.map((e) => `${e.path} ${e.sha256}`);
+    };
+    assert.deepEqual(hashes(), hashes());
+  });
+
+  test('the manifest COUNTS the secret-bearing files redaction did not reach, and says so in one line', () => {
+    // `fidelity: 'redacted'` names the MODE that ran, and a reader takes it for a guarantee. So the
+    // gap is a number in the same sealed manifest — and it has to read 0 only when it really is 0.
+    const reached = twoBatchesOf({ 'repo-a/trufflehog.json': trufflehogLines('CANARY-SECRET-VALUE-aa17f2') });
+    const clean = buildArchive({ root: reached.root, batches: reached.picked, key: KEY, redact: true, now: NOW });
+    assert.equal(clean.manifest.redaction.unredactedSecretBearing, 0);
+    assert.match(redactionCoverage(clean.manifest), /none of them secret-bearing/);
+
+    // The other direction: a secret-bearing report redaction could NOT process must raise the count
+    // and must say the words a human needs before uploading the artifact.
+    const missed = twoBatchesOf({ 'repo-a/gitleaks.json': '{ this is not json', 'repo-a/notes.txt': 'plain' });
+    const partial = buildArchive({ root: missed.root, batches: missed.picked, key: KEY, redact: true, now: NOW });
+    assert.equal(partial.manifest.redaction.unredactedSecretBearing, 1, 'gitleaks.json is secret-bearing and was not processed');
+    assert.match(redactionCoverage(partial.manifest), /1 secret-bearing — those are still PLAINTEXT/);
+    // notes.txt is also unprocessed; the COUNT is about the ones that can carry a value.
+    assert.equal(partial.manifest.redaction.notRedacted.length, 2);
+  });
+
+  test('without --redact there is no coverage line to read — absence, not a claim of zero', () => {
+    const { root, picked } = mk();
+    assert.equal(redactionCoverage(buildArchive({ root, batches: picked, key: KEY, now: NOW }).manifest), null);
   });
 
   test('--redact drops the known value fields, and SAYS it is redacted', () => {

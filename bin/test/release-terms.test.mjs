@@ -1,11 +1,14 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileTerms, loadTerms, scanTree, summarise, termsGate, maskPath } from '../lib/release-terms.mjs';
+import {
+  compileTerms, loadTerms, scanTree, summarise, termsGate, maskPath,
+  applyAcceptances, draftAcceptances, loadAcceptances, digestOccurrence, occurrenceKey,
+} from '../lib/release-terms.mjs';
 import { main, parseArgs, EXIT } from '../release-terms.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -369,6 +372,230 @@ describe('summarise and termsGate', () => {
     assert.ok(s.files.some((f) => f.path === 'example-sibling-service/readme.txt'));
     assert.deepEqual(s.exceptions.map((e) => e.path), ['docs/example-interface.md', 'docs/CHANGELOG.md']);
     rmSync(root, { recursive: true, force: true });
+  });
+});
+
+// A record the gate can read but that settles nothing: the shape loadAcceptances returns when the
+// sidecar has none, so every occurrence stays open.
+const NOTHING_ACCEPTED = { source: 'no-sidecar', origin: 'no-sidecar', fingerprint: null, note: '', acceptances: [] };
+
+/** The draft a reviewer is handed, signed. Every row is granted against the measurement the scan
+ *  just made, which is the only thing that can clear the gate. */
+function signedFor(root, list, disposition = 'public-by-design') {
+  const draft = draftAcceptances(applyAcceptances(scanTree(root, list), list, NOTHING_ACCEPTED));
+  return {
+    source: 'test', fingerprint: 'signed', note: draft.note,
+    acceptances: draft.acceptances.map((r) => ({
+      ...r, disposition, reason: 'synthetic fixture from the example list',
+      test: 'grep the example list for the term', reviewer: 'test', reviewedAt: '2026-10-21',
+    })),
+  };
+}
+
+describe('per-term acceptances', () => {
+  test('the digest binds the count and the pattern, and the key is the place with no line in it', () => {
+    const place = { file: 'a.md', rule: 'internal-tool', term: 'internal-tool#workflow-dependency', where: 'content', count: 1 };
+    const d = digestOccurrence(place, 'pattern\0gi');
+    assert.equal(digestOccurrence({ ...place }, 'pattern\0gi'), d, 'same inputs, same digest');
+    assert.notEqual(digestOccurrence({ ...place, count: 2 }, 'pattern\0gi'), d, 'one more occurrence of the same term');
+    assert.notEqual(digestOccurrence(place, 'other\0gi'), d, 'the rule rewritten behind the same label');
+    assert.equal(occurrenceKey(place), 'a.md\0internal-tool\0internal-tool#workflow-dependency\0content');
+    assert.equal(occurrenceKey({ ...place, line: 400 }), occurrenceKey(place), 'a line number is not part of an identity');
+  });
+
+  test('an unreviewed tree fails, and an acceptance bound to its measurement clears it to contested', () => {
+    const root = plantedTree();
+    // A rule-level exception withholds a whole file with no count, and the next test covers that
+    // remainder. Dropping it, not the file, keeps the exception from going stale.
+    const doc = example();
+    for (const r of doc.rules) delete r.exceptPaths;
+    const list = { fingerprint: 'test', ...compileTerms(doc, 'example') };
+    const before = termsGate(root, { load: () => list, loadAccepted: () => NOTHING_ACCEPTED });
+    assert.equal(before.status, 'fail');
+    assert.equal(before.detail.unreviewedCount, before.detail.hitCount);
+    assert.equal(before.detail.acceptedCount, 0);
+    assert.match(before.detail.summary, /unreviewed$/);
+
+    const g = termsGate(root, { load: () => list, loadAccepted: () => signedFor(root, list) });
+    assert.equal(g.status, 'contested', 'an occurrence a person read and defended is not a failure');
+    assert.equal(g.detail.acceptedCount, g.detail.hitCount, 'and the detector\'s own count is not erased');
+    assert.equal(g.detail.unreviewedCount, 0);
+    assert.equal(g.detail.lapsedCount, 0);
+    assert.deepEqual(g.detail.stale, [], 'every row matched an occurrence');
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  // Acceptances settle hits, never exceptions. Once every hit is accepted, what is left is judged as
+  // a clean count is: a remainder that rests on a whole-file exception with no count was never
+  // measured, so the gate reports that instead of contested.
+  test('accepted hits over a remainder an uncounted exception withheld are cannot-check, not contested', () => {
+    const root = plantedTree();
+    const list = LIST();
+    const g = termsGate(root, { load: () => list, loadAccepted: () => signedFor(root, list) });
+    assert.equal(g.detail.acceptedCount, g.detail.hitCount, 'every hit is accepted');
+    assert.ok(g.detail.withheldCount > 0, 'and the CHANGELOG exception withheld something');
+    assert.equal(g.status, 'cannot-check');
+    assert.match(g.detail.error, /no measured count/);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  // The direction that lies when it is missing: a gate whose acceptances outlive the measurement
+  // they were granted against reports a tree as settled while nobody has read what is in it now.
+  test('a NEW occurrence of an accepted term lapses the acceptance rather than inheriting it', () => {
+    const root = plantedTree();
+    const list = LIST();
+    const record = signedFor(root, list);
+    // The precondition is that the acceptance is in force, stated without the gate's vocabulary: this
+    // test must fail for the binding alone, and never share a failure with the third-state test.
+    const held = termsGate(root, { load: () => list, loadAccepted: () => record });
+    assert.equal(held.detail.acceptedCount, held.detail.hitCount);
+
+    appendFileSync(join(root, 'a.md'), 'Example-Internal-Tool again.\n');
+    const g = termsGate(root, { load: () => list, loadAccepted: () => record });
+    assert.equal(g.status, 'fail', 'an acceptance that survives a changed hit set is a signature doing no work');
+    assert.equal(g.detail.lapsedCount, 2, 'the row was granted against one occurrence and the file now holds two');
+    const row = g.detail.lapsed.find((r) => r.rule === 'internal-tool' && r.where === 'content');
+    assert.deepEqual([row.path, row.count, row.grantedAgainst], ['a.md', 2, 1]);
+    assert.equal(g.detail.unreviewedCount, 0, 'a lapsed acceptance is reported apart from one that never existed');
+    assert.ok(!JSON.stringify(g).toLowerCase().includes('example-internal-tool'), 'the matched term leaked into the gate detail');
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('the same accepted term in a new file is a new occurrence, not one the old row covers', () => {
+    const root = plantedTree();
+    const list = LIST();
+    const record = signedFor(root, list);
+    writeFileSync(join(root, 'elsewhere.md'), 'example-internal-tool over here.\n');
+    const g = termsGate(root, { load: () => list, loadAccepted: () => record });
+    assert.equal(g.status, 'fail');
+    assert.equal(g.detail.unreviewedCount, 1, 'a new place is unreviewed, not lapsed');
+    assert.equal(g.detail.lapsedCount, 0);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('rewriting the pattern behind an accepted term lapses it, label unchanged', () => {
+    const root = plantedTree();
+    const record = signedFor(root, LIST());
+    // Same label, same matches, a different pattern: nobody has read what internal-tool#workflow-dependency now means.
+    const doc = example();
+    doc.rules[0].words[0].word = 'Example-Internal-Tool';
+    const rewritten = { fingerprint: 'rewritten', ...compileTerms(doc, 'example') };
+    const g = termsGate(root, { load: () => rewritten, loadAccepted: () => record });
+    assert.equal(g.status, 'fail');
+    assert.ok(g.detail.lapsedCount > 0, 'an acceptance granted against the old pattern must not cover the new one');
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('pending and remove-it rulings leave the occurrence open, and a row matching nothing is stale', () => {
+    const root = plantedTree();
+    const list = LIST();
+    const signed = signedFor(root, list);
+    for (const disposition of ['pending', 'rename', 'redact', 'move-to-sidecar']) {
+      const record = { ...signed, acceptances: signed.acceptances.map((r) => ({ ...r, disposition })) };
+      const g = termsGate(root, { load: () => list, loadAccepted: () => record });
+      assert.equal(g.status, 'fail', `${disposition} is a ruling that the term must go, not an acceptance`);
+      assert.equal(g.detail.acceptedCount, 0, disposition);
+      assert.equal(g.detail.unreviewedCount, g.detail.hitCount, disposition);
+    }
+    const ghost = { ...signed, acceptances: [{ ...signed.acceptances[0], file: 'gone.md' }] };
+    const g = termsGate(root, { load: () => list, loadAccepted: () => ghost });
+    assert.deepEqual(g.detail.stale.map((r) => r.path), ['gone.md'], 'a row covering no occurrence is reported, never silently kept');
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('an acceptance record that cannot be read is cannot-check, never clean and never a finding', () => {
+    const root = plantedTree();
+    const g = termsGate(root, { load: LIST, loadAccepted: () => { throw new Error('EACCES'); } });
+    assert.equal(g.status, 'cannot-check');
+    assert.match(g.detail.error, /term acceptances cannot be read \(EACCES\)/);
+    assert.equal(g.detail.hitCount, undefined, 'an unmeasured gate publishes no counts at all');
+    rmSync(root, { recursive: true, force: true });
+  });
+});
+
+describe('loadAcceptances', () => {
+  const draftOf = (root, list) => draftAcceptances(applyAcceptances(scanTree(root, list), list, NOTHING_ACCEPTED));
+
+  test('CW_RELEASE_TERM_ACCEPTANCES is read at call time; a named record that is missing or invalid throws', () => {
+    const d = dir();
+    const root = plantedTree();
+    const p = join(d, 'acceptances.json');
+    const draft = draftOf(root, LIST());
+    writeFileSync(p, JSON.stringify(draft));
+    const loaded = loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } });
+    assert.equal(loaded.source, p);
+    assert.equal(loaded.acceptances.length, draft.acceptances.length);
+    assert.match(loaded.fingerprint, /^[0-9a-f]{12}$/);
+
+    assert.throws(() => loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: join(d, 'absent.json') } }), /ENOENT/);
+    writeFileSync(p, '{ not json');
+    assert.throws(() => loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } }), /not JSON/);
+    writeFileSync(p, JSON.stringify({ note: 'no rows key' }));
+    assert.throws(() => loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } }), /acceptances/);
+    rmSync(d, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('an accepting row with no evidence digest, test, reviewer or date refuses to load', () => {
+    const d = dir();
+    const root = plantedTree();
+    const p = join(d, 'acceptances.json');
+    const signed = signedFor(root, LIST()).acceptances[0];
+    const write = (row) => writeFileSync(p, JSON.stringify({ note: 'one row', acceptances: [row] }));
+    const refuses = (row, why) => {
+      write(row);
+      assert.throws(() => loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } }), /accepted without an evidence digest/, why);
+    };
+    write(signed);
+    assert.equal(loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } }).acceptances.length, 1, 'the signed row itself loads');
+    refuses({ ...signed, evidence: null }, 'no digest is an acceptance bound to nothing');
+    refuses({ ...signed, reason: '  ' }, 'no reason');
+    refuses({ ...signed, test: '' }, 'no test another person can apply');
+    refuses({ ...signed, reviewer: '' }, 'nobody signed it');
+    refuses({ ...signed, reviewedAt: null }, 'no date');
+    write({ ...signed, disposition: 'pending', evidence: null, reason: '', test: '', reviewer: '', reviewedAt: null });
+    assert.equal(loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } }).acceptances.length, 1,
+      'a pending row accepts nothing, so it needs no signature');
+    writeFileSync(p, JSON.stringify({ note: 'twice', acceptances: [signed, { ...signed, count: 9 }] }));
+    assert.throws(() => loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } }), /ruled on twice/);
+    rmSync(d, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('no sidecar, or a sidecar without the record, accepts nothing; only its COMMIT counts', () => {
+    const d = dir();
+    const root = plantedTree();
+    const absent = loadAcceptances({ env: { CW_SIDECAR: join(d, 'absent') } });
+    assert.deepEqual([absent.origin, absent.acceptances], ['no-sidecar', []]);
+    const side = join(d, 'sidecar');
+    mkdirSync(join(side, 'monitor'), { recursive: true });
+    const git = (...a) => execFileSync('git', ['-C', side, ...a], { stdio: 'ignore' });
+    git('init', '-q');
+    writeFileSync(join(side, 'README.md'), 'sidecar\n');
+    git('add', '-A');
+    git('-c', 'commit.gpgsign=false', '-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'one');
+    const bare = loadAcceptances({ env: { CW_SIDECAR: side } });
+    assert.deepEqual([bare.origin, bare.acceptances], ['sidecar-absent', []],
+      'a sidecar with no record is named apart from no sidecar at all');
+
+    const signed = signedFor(root, LIST());
+    writeFileSync(join(side, 'monitor', 'release-term-acceptances.json'), JSON.stringify({ note: 'ruled', acceptances: signed.acceptances }));
+    assert.deepEqual(loadAcceptances({ env: { CW_SIDECAR: side } }).acceptances, [],
+      'an uncommitted acceptance cannot clear the gate');
+    git('add', '-A');
+    git('-c', 'commit.gpgsign=false', '-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'two');
+    const loaded = loadAcceptances({ env: { CW_SIDECAR: side } });
+    assert.match(loaded.source, /^sidecar HEAD:monitor\/release-term-acceptances\.json$/);
+    assert.equal(loaded.acceptances.length, signed.acceptances.length);
+    rmSync(d, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('the shipped example validates, and accepts nothing', () => {
+    const p = join(REPO, 'monitor', 'release-term-acceptances.example.json');
+    const loaded = loadAcceptances({ env: { CW_RELEASE_TERM_ACCEPTANCES: p } });
+    assert.ok(loaded.acceptances.length > 0, 'the example shows the shape of a row');
+    assert.deepEqual([...new Set(loaded.acceptances.map((r) => r.disposition))], ['pending']);
   });
 });
 

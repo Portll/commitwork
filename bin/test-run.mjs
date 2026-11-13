@@ -82,6 +82,10 @@ export const AMBIENT_OUTPUTS = [
   // mcp/server.mjs persists every run_checks job here; the MCP tests spawn the server with none set.
   { env: 'CW_MCP_JOB_STORE', live: join(CW, 'reports', 'mcp-jobs'), as: 'dir', files: /\.json$/ },
   { env: 'CW_NONDET_STORE', live: join(CW, 'monitor', 'private', 'nondeterministic', 'divergence'), as: 'dir', files: /\.jsonl$/ },
+  // monitor/isolation-freshness.mjs --measure records what the sandbox-effects suite established on
+  // this host. Listed BEFORE any test writes it: a suite run must never be able to publish an
+  // isolation verdict for the host, least of all one it produced with the suite stubbed.
+  { env: 'CW_ISOLATION_RECORD', live: join(CW, 'reports', 'isolation-measured.json'), as: 'file' },
 ];
 
 // The gitignored trees production code writes into. Snapshotted by size and mtime, following a

@@ -14,12 +14,20 @@
  * THE JSON REMAINS THE SOURCE OF TRUTH. This is a projection: --build drops and rebuilds every
  * taxonomy table from the file, records the file's sha256 in taxonomy_meta, and is idempotent.
  * A database that could drift from the registry silently would be a C10 with an index on it, so
- * --open, --find and --sql rebuild first whenever the stored hash differs, and refuse (exit 1)
+ * --open, --find and --sql rebuild first whenever a stored hash differs, and refuse (exit 1)
  * rather than answer when the registry cannot be read or built.
+ *
+ * TWO HASHES, BECAUSE THE PROJECTION HAS TWO SOURCES. The registry supplies the rows; this file
+ * supplies the shape, and they drift independently. Keyed on the registry alone, a store built by
+ * an older edition of this file reads as current: measured, a store carrying last edition's
+ * narrower taxonomy_search answered --find with "no class matches" and the line "the projection
+ * was confirmed current before this search", which is exactly the unsupported pass the registry
+ * exists to prevent. taxonomy_meta carries sourceSha256 AND schemaSha256 (the digest of the DDL
+ * the build applied), and a read rebuilds when either one differs or is absent.
  *
  * Usage:
  *   taxonomy-db.mjs --build            rebuild the taxonomy tables from the registry
- *   taxonomy-db.mjs --verify           compare the stored source hash against the registry on disk
+ *   taxonomy-db.mjs --verify           compare the stored hashes against the registry and this DDL
  *   taxonomy-db.mjs --open             list classes not fully closed, worst first
  *   taxonomy-db.mjs --sql "<query>"    run a read-only query (SELECT/WITH only)
  * Env: CW_DB (default monitor/commitwork.db), CW_TAXONOMY_JSON — both read at call time.
@@ -189,6 +197,31 @@ ${v ? stpaSchemaFor(v) : ''}`;
 const TABLES = ['taxonomy_stpa', 'taxonomy_attribution_class', 'taxonomy_attribution', 'taxonomy_remediation_class',
   'taxonomy_remediation', 'taxonomy_class', 'taxonomy_family', 'taxonomy_meta'];
 
+// Views are DISCOVERED from the file, never listed here. A name list re-derives only the views it
+// names and keeps last edition's for any it omits (taxonomy_search, for one). ESCAPE because `_`
+// is a LIKE wildcard, so an unescaped pattern would also match a `taxonomyXfoo` view.
+const viewsIn = (db) =>
+  db.prepare("SELECT name FROM sqlite_master WHERE type = 'view' AND name LIKE 'taxonomy\\_%' ESCAPE '\\'")
+    .all().map((r) => r.name);
+
+/**
+ * The edition of the DDL a build of `doc` would apply, as one digest, or null when it cannot be
+ * generated at all.
+ *
+ * The store records this beside the registry hash because freshness keyed on the registry ALONE
+ * cannot see this direction: change the schema here, leave the registry untouched, and a read
+ * opens a store whose shape is last edition's and reports it current. Null is NOT a match — the
+ * build refuses by name a moment later, and "cannot determine" must never read as "agrees".
+ */
+export const editionHash = (doc) => {
+  try {
+    if (!doc?.scaleBounds || !doc?.stpaVocabulary) return null;
+    return createHash('sha256').update(schemaFor(doc.scaleBounds, doc.stpaVocabulary)).digest('hex');
+  } catch {
+    return null;   // a vocabulary too malformed to generate DDL from; build() names the field
+  }
+};
+
 // Kept for consumers that imported the constant before the bounds were declared as data. It carries
 // no taxonomy_stpa: that table's CHECKs need a vocabulary, and only the registry may supply one.
 export const SCHEMA = schemaFor({ closureMin: 0, closureMax: 4, gainMin: 0, gainMax: 4 });
@@ -249,8 +282,11 @@ export function build(db, doc, sourceHash) {
   db.exec('BEGIN IMMEDIATE');
   try {
     // Views carry no data and nothing references them, so they are re-derived every build; an
-    // IF NOT EXISTS view would keep a column list from before taxonomy_stpa existed.
-    db.exec('DROP VIEW IF EXISTS taxonomy_open_stpa; DROP VIEW IF EXISTS taxonomy_open; DROP TABLE IF EXISTS taxonomy_stpa;');
+    // IF NOT EXISTS view would keep a column list from before taxonomy_stpa existed. Taking the
+    // names from the file also retires a view this edition no longer creates, rather than leaving
+    // it in the store still answering.
+    for (const name of viewsIn(db)) db.exec(`DROP VIEW IF EXISTS "${name}"`);
+    db.exec('DROP TABLE IF EXISTS taxonomy_stpa;');
     // CREATE TABLE IF NOT EXISTS CANNOT EVOLVE A SHAPE. When the registry grew a `predicate` column
     // the existing file kept the old twelve-column table, every build refused with "no column named
     // predicate", and the store froze at 97 classes while the registry moved to 179 — a projection
@@ -261,7 +297,7 @@ export function build(db, doc, sourceHash) {
       for (const t of TABLES) db.exec(`DROP TABLE IF EXISTS ${t}`);
     }
     db.exec(schemaFor(b, v));
-    fill(db, doc, sourceHash);
+    fill(db, doc, sourceHash, editionHash(doc));
     db.exec('COMMIT');
   } catch (e) {
     db.exec('ROLLBACK');
@@ -270,7 +306,7 @@ export function build(db, doc, sourceHash) {
   return { classes: doc.classes.length, families: doc.families.length };
 }
 
-function fill(db, doc, sourceHash) {
+function fill(db, doc, sourceHash, editionSha) {
   // Drop rows rather than tables: a rebuild must not invalidate anything another domain in this
   // database has already referenced, and DELETE keeps the foreign keys enforced during the swap.
   for (const t of TABLES) db.exec(`DELETE FROM ${t}`);
@@ -313,6 +349,10 @@ function fill(db, doc, sourceHash) {
   meta.run('version', String(doc.version));
   meta.run('verifiedAgainst', doc.verifiedAgainst || '');
   meta.run('sourceSha256', sourceHash);
+  // The DDL this build applied. NOT NULL and bound unconditionally: a store that could hold rows
+  // without recording the shape they were loaded into is the stale edition this key exists to
+  // detect, and a caller that cannot supply it has no business writing the projection.
+  meta.run('schemaSha256', editionSha);
   meta.run('classes', String(doc.classes.length));
   meta.run('families', String(doc.families.length));
   meta.run('scoreProvenance', doc.scoreProvenance || '');
@@ -326,9 +366,11 @@ const readSource = () => {
   return { doc: JSON.parse(raw), hash: createHash('sha256').update(raw).digest('hex') };
 };
 
-const storedHash = (db) => {
+// Only an absent taxonomy_meta reads as "nothing recorded"; every other sqlite error propagates,
+// because a store this process cannot interrogate is not a store that agrees with the registry.
+const storedMeta = (db, key) => {
   try {
-    return db.prepare("SELECT value FROM taxonomy_meta WHERE key = 'sourceSha256'").get()?.value ?? null;
+    return db.prepare('SELECT value FROM taxonomy_meta WHERE key = ?').get(key)?.value ?? null;
   } catch (e) {
     if (/no such table/.test(e.message)) return null;
     throw e;
@@ -337,27 +379,32 @@ const storedHash = (db) => {
 
 /**
  * A read-only connection, inside an open read transaction, whose snapshot was built from the registry
- * bytes read in this call — rebuilding first when the stored hash differs. A stale build that
- * answers anyway makes a missing class read exactly like "no such class". Every failure throws
- * rather than answering from the old build: an absent, unreadable or unparseable registry, and a
- * registry the build refuses. The hash is re-read inside the transaction because another process
- * may rebuild between our build and our read; the loop bound turns a registry that never settles
- * into a refusal.
+ * bytes read in this call BY THIS EDITION of the schema — rebuilding first when either hash differs.
+ * A stale build that answers anyway makes a missing class read exactly like "no such class". Every
+ * failure throws rather than answering from the old build: an absent, unreadable or unparseable
+ * registry, and a registry the build refuses. Both hashes are read inside the transaction because
+ * another process may rebuild between our build and our read; the loop bound turns a registry that
+ * never settles into a refusal.
  */
 export function openFresh({ file = dbPath(), source = readSource, attempts = 3 } = {}) {
   let rebuilt = false;
   for (let i = 0; i < attempts; i++) {
     const { doc, hash } = source();
+    const edition = editionHash(doc);
     if (existsSync(file)) {
       const ro = new DatabaseSync(file, { readOnly: true, timeout: 5000 });
       let ok = false;
       try {
         ro.exec('BEGIN');
-        ok = storedHash(ro) === hash;
+        // Both, and a null edition never matches: the rows and the shape have separate sources,
+        // so agreement on one says nothing about the other.
+        ok = edition !== null
+          && storedMeta(ro, 'sourceSha256') === hash
+          && storedMeta(ro, 'schemaSha256') === edition;
       } finally {
         if (!ok) ro.close();
       }
-      if (ok) return { db: ro, hash, rebuilt };
+      if (ok) return { db: ro, hash, edition, rebuilt };
     }
     const rw = new DatabaseSync(file, { timeout: 5000 });
     try { build(rw, doc, hash); } finally { rw.close(); }
@@ -395,21 +442,30 @@ if (isMain) {
       process.exit(1);
     }
     db.close();
-    console.log(`built ${dbPath()} — v${doc.version}, ${n.classes} classes, ${n.families} families, source ${hash.slice(0, 12)}`);
+    console.log(`built ${dbPath()} — v${doc.version}, ${n.classes} classes, ${n.families} families, source ${hash.slice(0, 12)}, shape ${editionHash(doc).slice(0, 12)}`);
     process.exit(0);
   }
 
   if (process.argv.includes('--verify')) {
-    const { hash } = readSource();
+    const { doc, hash } = readSource();
+    const edition = editionHash(doc);
     const db = new DatabaseSync(dbPath(), { readOnly: true });
-    const row = db.prepare("SELECT value FROM taxonomy_meta WHERE key = 'sourceSha256'").get();
+    const storedSource = storedMeta(db, 'sourceSha256');
+    const shape = storedMeta(db, 'schemaSha256');
     db.close();
-    if (!row) { console.error('taxonomy tables carry no source hash — rebuild with --build'); process.exit(1); }
-    if (row.value !== hash) {
-      console.error(`DRIFT: database was built from ${row.value.slice(0, 12)}, registry on disk is ${hash.slice(0, 12)} — rebuild with --build`);
+    if (!storedSource) { console.error('taxonomy tables carry no source hash — rebuild with --build'); process.exit(1); }
+    if (storedSource !== hash) {
+      console.error(`DRIFT: database was built from ${storedSource.slice(0, 12)}, registry on disk is ${hash.slice(0, 12)} — rebuild with --build`);
       process.exit(1);
     }
-    console.log(`in sync with the registry (${hash.slice(0, 12)})`);
+    // The shape drifts on its own, and a verify that reads only the registry hash calls last
+    // edition's store in sync — a pass over the one thing it never measured.
+    if (edition === null || shape !== edition) {
+      const applies = edition ? edition.slice(0, 12) : 'a shape the registry cannot generate';
+      console.error(`DRIFT: database shape is ${shape ? shape.slice(0, 12) : 'unrecorded'}, this build applies ${applies} — rebuild with --build`);
+      process.exit(1);
+    }
+    console.log(`in sync with the registry (${hash.slice(0, 12)}) and the schema edition (${edition.slice(0, 12)})`);
     process.exit(0);
   }
 

@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 fc0917d7 -->
+<!-- verified-against: 2026-10-13 -->
 # Upstream findings
 
 Defects in third-party scanners that commitwork's own checks surfaced, recorded so that a reader

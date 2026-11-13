@@ -17,6 +17,7 @@ const CLOSED_SCHEMA_DEBT = [
   'bin/comment-baseline.json',
   'cra/controls.json',
   'lib/memory-layer-contract.json',
+  'manifests/wp-weakness-catalogue.json',
   'monitor/approach-taxonomy.json',
   'monitor/config-correctness-ledger.example.json',
   'monitor/detector-bindings.json',
@@ -290,7 +291,7 @@ test('every shipped example of a private record validates against its schema', (
 
 test('the count of applied schemas may not fall', () => {
   // Raise only after a consumer is proven to reject an invalid document through the schema.
-  const FLOOR = 29; // monitor/private/releases.json's schema: loadSources in bin/release-report.mjs refuses an invalid list (bin/test/release-report.test.mjs); before it, monitor/release-terms.example.json's: compileTerms in bin/lib/release-terms.mjs (bin/test/release-terms.test.mjs)
+  const FLOOR = 30; // monitor/release-term-acceptances.example.json's schema: loadAcceptances in bin/lib/release-terms.mjs refuses an invalid record, and the gate reports cannot-check rather than clean (bin/test/release-terms.test.mjs); before it, monitor/private/releases.json's schema: loadSources in bin/release-report.mjs refuses an invalid list (bin/test/release-report.test.mjs); before it, monitor/release-terms.example.json's: compileTerms in bin/lib/release-terms.mjs (bin/test/release-terms.test.mjs)
   const applied = inv().entries.filter((e) => e.binding === 'validator').length;
   assert.ok(applied >= FLOOR, `${applied} schemas are applied at runtime, floor is ${FLOOR}`);
   assert.equal(applied, FLOOR,

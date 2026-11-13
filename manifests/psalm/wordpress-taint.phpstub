@@ -5,8 +5,13 @@
 // Public WordPress stubs (php-stubs/wordpress-stubs) declare types and nothing else, so psalm sees
 // $wpdb->query() as an ordinary method and traces no SQL injection through it: measured 2026-10-08
 // on a synthetic plugin, the stubs found exactly what no stubs found. This file adds only what taint
-// analysis needs: the database sinks, the one pass-through every request read goes through, and the
-// escapes. It declares nothing else and is never executed.
+// analysis needs: the database sinks, the REST and shortcode sources, maybe_unserialize, the one
+// pass-through every request read goes through, and the escapes. It declares nothing else and is
+// never executed.
+//
+// Not expressible here, measured 2026-11-12: a sink of a kind psalm does not define (an option name,
+// a user meta key, a redirect target) never fires, because psalm's `input` source carries only its
+// own kinds. Those classes need an entry-point analysis, not a stub.
 
 class wpdb
 {
@@ -44,10 +49,11 @@ class wpdb
     public function get_col($query = null, $x = 0) {}
 
     /**
-     * Placeholders are bound by prepare(); a query string built from request input BEFORE prepare()
-     * is still injectable, and psalm cannot tell the two apart, so this escape over-trusts that case.
+     * The query template is the sink and the bound $args are not: a template built from request
+     * input is injectable whatever prepare() does with the placeholders, and a constant one passes.
+     * No flow is declared to the return, so a prepared query is clean at the query() sink.
      *
-     * @psalm-taint-escape sql
+     * @psalm-taint-sink sql $query
      * @return string
      */
     public function prepare($query, ...$args) {}
@@ -119,3 +125,102 @@ function wp_kses($content, $allowed_html, $allowed_protocols = array()) {}
  * @return int
  */
 function absint($maybeint) {}
+
+/**
+ * Request input reached through the REST API. Psalm sees these only where the callback's parameter
+ * is typed WP_REST_Request; an untyped $request is mixed and stays invisible to it. Array access
+ * ($request['id']) is not traced: a source on offsetGet() produced nothing, measured 2026-11-12.
+ *
+ * @template-implements ArrayAccess<string, mixed>
+ */
+class WP_REST_Request implements ArrayAccess
+{
+    /**
+     * @psalm-taint-source input
+     * @return mixed
+     */
+    public function get_param($key) {}
+
+    /**
+     * @psalm-taint-source input
+     * @return array
+     */
+    public function get_params() {}
+
+    /**
+     * @psalm-taint-source input
+     * @return array|null
+     */
+    public function get_json_params() {}
+
+    /**
+     * @psalm-taint-source input
+     * @return array
+     */
+    public function get_body_params() {}
+
+    /**
+     * @psalm-taint-source input
+     * @return array
+     */
+    public function get_query_params() {}
+
+    /**
+     * @psalm-taint-source input
+     * @return array
+     */
+    public function get_url_params() {}
+
+    /**
+     * @psalm-taint-source input
+     * @return array
+     */
+    public function get_file_params() {}
+
+    /**
+     * @psalm-taint-source input
+     * @return string
+     */
+    public function get_body() {}
+
+    /**
+     * @psalm-taint-source input
+     * @return string|null
+     */
+    public function get_header($key) {}
+
+    /** @return bool */
+    public function offsetExists($offset): bool {}
+
+    /** @return mixed */
+    public function offsetGet($offset): mixed {}
+
+    /** @return void */
+    public function offsetSet($offset, $value): void {}
+
+    /** @return void */
+    public function offsetUnset($offset): void {}
+}
+
+/**
+ * A shortcode's attributes are written by any user who can edit a post, contributors included, so
+ * the merged result is input. The $atts parameter of the callback itself is untyped and psalm cannot
+ * see it; this catches the conventional shortcode_atts() read and not a raw $atts read.
+ *
+ * @psalm-taint-source input
+ * @return array
+ */
+function shortcode_atts($pairs, $atts, $shortcode = '') {}
+
+/**
+ * @psalm-taint-sink unserialize $data
+ * @return mixed
+ */
+function maybe_unserialize($data) {}
+
+/**
+ * @psalm-taint-escape html
+ * @psalm-taint-escape sql
+ * @return string
+ */
+function sanitize_key($key) {}

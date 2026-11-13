@@ -836,10 +836,43 @@ function verbVerdict(name, args, rawArgs, env, ctx, nested) {
   if (name === 'eval') return args.length ? nested(args.join(' ')) : null;
   if (name === 'git') return gitCommand(args, rawArgs, env, ctx, nested);
   if (name === 'find') return findCommand(args, rawArgs, nested);
+  const npm = name === 'npm' ? npmCommand(args) : null;
+  if (npm) return npm;
   const what = INTERPRETERS.test(name) ? interpreterReads(name, args)
     : FILE_READERS.has(name) ? readerFiles(name, args).map(secretIn).find(Boolean)
       : null;
   return what ? credentialRead(what) : sendsOut(name, args);
+}
+
+// ---- npm init and the --prefix that does not move it ------------------------
+// fact: npm 11.19 ignores --prefix for init and writes the CURRENT directory's package.json / deny, since no flag moves init elsewhere
+const NPM_INIT = new Set(['init', 'create', 'innit']);
+// Global options whose next argument is their value, so it is not read as the subcommand.
+const NPM_VALUE_OPTIONS = new Set(['--loglevel', '--registry', '--userconfig', '--globalconfig', '--cache', '--workspace', '-w', '--scope', '--tag', '--otp']);
+
+/** The directory an npm command's `--prefix`/`-C` names, and its subcommand, whichever order they come in. */
+function npmCommand(args) {
+  let sub = null;
+  let dir = null;
+  for (let j = 0; j < args.length; j += 1) {
+    const a = args[j];
+    const joined = /^(?:--prefix|-C)=(.*)$/.exec(a);
+    if (joined) { dir ??= joined[1] || null; continue; }
+    if (a === '--prefix' || a === '-C') { dir ??= args[j + 1] ?? null; j += 1; continue; }
+    if (NPM_VALUE_OPTIONS.has(a)) { j += 1; continue; }
+    if (a.startsWith('-')) continue;
+    if (!sub) sub = a;
+  }
+  if (!dir || !NPM_INIT.has(sub)) return null;
+  return {
+    decision: 'deny',
+    reason:
+      `\`npm --prefix ${dir} ${sub}\` writes the package.json of the CURRENT directory, not ${dir}'s: `
+      + 'npm ignores --prefix for init, so run from a shared checkout this replaces that checkout\'s '
+      + "own manifest and dependency list with npm's defaults.\n"
+      + `  · Run it inside the target instead: \`(cd ${dir} && npm init -y)\`.\n`
+      + '  · No flag moves init to another directory; a prefix is accepted and silently ignored.',
+  };
 }
 
 // The files a reader opens: `head -n 5 f` → f; jq's first operand is its filter, not a file.
@@ -1391,7 +1424,7 @@ function commitIntent(name, args, ctx) {
     if (!GIT_COMMITTERS.has(sub) || rest.some((a) => NO_NEW_COMMIT.test(a))) return null;
     const given = gitMessage(sub, rest, ctx);
     const range = given.explicit || given.unreadable ? null : landsRange(sub, rest);
-    return { what: `git ${sub}`, message: range ? landingMessage(dir, range, `git ${sub}`) : given };
+    return { what: `git ${sub}`, message: range ? landingMessage(dir, range, `git ${sub}`) : given, dir };
   }
   let script = name;
   let rest = args;
@@ -1523,6 +1556,7 @@ function recordDecision(intent, v, ctx, env) {
     subject: normMessage(intent.message.text).split('\n')[0].slice(0, 120),
     answeredAt: v.answeredAt ?? null, session: env.CLAUDE_CODE_SESSION_ID ?? null,
     transcript: typeof ctx.transcriptPath === 'string' ? basename(ctx.transcriptPath) : null, cwd: ctx.cwd ?? null,
+    ...(v.headless ? { headless: v.headless } : {}),
     ...(intent.message.lands ? { lands: intent.message.lands.map((c) => ({ sha: c.sha, messageSha256: sha256(c.message), subject: c.message.split('\n')[0].slice(0, 120) })) } : {}),
   };
   try {
@@ -1539,6 +1573,8 @@ function commitVerdict(intent, ctx, env) {
   const head = `Human commit messages only is on (Agent security). A person chooses every commit message.\n  · command: ${intent.what}\n`;
   const who = securityPosture().commitApprover({ env, permissionMode: ctx.permissionMode });
   if (!who.canAsk) {
+    const headless = headlessRoute(intent, ctx, env, head);
+    if (headless) return headless;
     return { decision: 'deny', why: 'nobody-to-ask', reason: `${head}  · message:\n${indented(intent.message.text)}\n  · Nobody can be asked here, so it is refused. Why: ${who.why}.\n  · A person can make this commit from their own terminal.` };
   }
   if (intent.message.unreadable) {
@@ -1584,21 +1620,109 @@ const TAMPER = [
   [writesTo(TRANSCRIPT_PATH), 'a session transcript, which is where the person\'s commit-message answers are read from'],
   [writesTo(SETTINGS_PATH), 'the settings store that holds this switch'],
   [/\bhumanCommitMessagesOnly\b["'`]?\s*[:=]\s*["'`]?(?:false|0|off)\b|["'`]humanCommitMessagesOnly["'`][^}]{0,40}["'`]?value["'`]?\s*:\s*["'`]?(?:false|0|off)\b|\bCW_HUMAN_COMMIT_MESSAGES_ONLY=["']?(?:0|false|off)\b[^\n]*(?:settings|launchctl|plist|\.zshrc|\.profile)/, 'the human-commit setting, toward off'],
+  [/\bheadlessCommitMessages\b["'`]?\s*[:=]\s*["'`]?(?:true|1|on)\b|["'`]headlessCommitMessages["'`][^}]{0,40}["'`]?value["'`]?\s*:\s*["'`]?(?:true|1|on)\b/, 'the headless-commit setting, toward on'],
 ];
 
+// ── the headless route ───────────────────────────────────────────────────────
+// Where nobody can be asked, a person's headlessCommitMessages setting lets a commit run when a fresh
+// record names its exact message. A record is a claim: any process on this uid can write the store.
+// Its staged hash and review reference reach the ledger as claimed, neither recomputed nor resolved.
+export const HEADLESS_RECORD_SCHEMA = 'commitwork.headless-commit/1';
+const HEADLESS_SCHEMA_FILE = join(HOOK_ROOT, 'schema', 'headless-commit.schema.json');
+export const headlessRecordsPath = (env = process.env) => env.CW_HEADLESS_COMMIT_RECORDS || join(HOOK_ROOT, '.claude', 'store', 'commit-headless.jsonl');
+
+let jsonSchemaModule = null;
+const jsonSchemaLib = () => (jsonSchemaModule ??= createRequire(import.meta.url)('../../lib/json-schema.mjs'));
+let commitMsgModule = null;
+const commitMsgLib = () => (commitMsgModule ??= createRequire(import.meta.url)('../commit-msg.mjs'));
+
+/** { rows } or { error }. Only ENOENT is an empty store; one bad row refuses the whole store. */
+function readHeadlessRecords(path) {
+  let raw;
+  try { raw = readFileSync(path, 'utf8'); } catch (e) {
+    return e.code === 'ENOENT' ? { rows: [] } : { error: `${path}: ${e.code ?? e.message}` };
+  }
+  try {
+    const { checkSchemaSupport, checkNode } = jsonSchemaLib();
+    const schema = JSON.parse(readFileSync(HEADLESS_SCHEMA_FILE, 'utf8'));
+    const errors = [];
+    checkSchemaSupport(schema, '', errors);
+    const rows = raw.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l));
+    rows.forEach((row, i) => checkNode(row, schema, `row ${i + 1}`, errors));
+    return errors.length ? { error: `${path}: ${errors[0]}` } : { rows };
+  } catch (e) {
+    return { error: `${path}: ${e.message}` };
+  }
+}
+
+/** bin/commit-msg.mjs's verdict on the message, under the rules its repository names. */
+function headlessLint(intent, ctx) {
+  const dir = intent.dir ?? ctx.cwd ?? process.cwd();
+  const config = (key) => {
+    const r = gitEnvLib().scannedGit(dir, ['config', '--get', key]);
+    if (r.status === 0) return r.stdout.trim();
+    if (r.status === 1) return null;
+    throw new Error(`git config ${key} exited ${r.status}`);
+  };
+  try {
+    const { cleanMessage, checkMessage } = commitMsgLib();
+    const char = config('core.commentChar');
+    return checkMessage(cleanMessage(intent.message.text, char?.length === 1 ? char : '#'), config('commitwork.rules'));
+  } catch (e) {
+    return { ok: false, unavailable: true, lines: [`the commit-message lint could not run: ${e.message}`] };
+  }
+}
+
+/** The verdict where nobody can be asked, or null when the route does not apply. The env can only turn it off. */
+function headlessRoute(intent, ctx, env, head) {
+  const setting = securityPosture().securitySetting('headlessCommitMessages', { env });
+  if (setting.value !== true || setting.source !== 'store') return null;
+  if (!intent.message.explicit || intent.message.unreadable) return null;
+  const refuse = (why, state) => ({
+    decision: 'deny', why,
+    reason: `${head}  · message:\n${indented(intent.message.text)}\n  · The headless route refused it: ${state}\n  · A person can make this commit from their own terminal.`,
+  });
+  const path = headlessRecordsPath(env);
+  const store = readHeadlessRecords(path);
+  if (store.error) return refuse('headless-store-unreadable', `the record store cannot be read as records (${store.error}).`);
+  const messageSha256 = sha256(normMessage(intent.message.text));
+  const named = store.rows.filter((r) => r.messageSha256 === messageSha256);
+  if (!named.length) return refuse('headless-no-record', `no record in ${path} names this message.`);
+  const now = ctx.now ?? (env.CW_NOW ? Date.parse(env.CW_NOW) : Date.now());
+  const ageOf = (r) => now - Date.parse(r.at);
+  const fresh = named.filter((r) => ageOf(r) >= 0 && ageOf(r) <= APPROVAL_TTL_MS).sort((a, b) => ageOf(a) - ageOf(b))[0];
+  if (!fresh) return refuse('headless-stale-record', `no record naming this message was written in the last ${APPROVAL_TTL_MS / 60_000} minutes.`);
+  const lint = headlessLint(intent, ctx);
+  if (!lint.ok) return refuse(lint.unavailable ? 'headless-lint-unavailable' : 'headless-lint-refused', lint.lines.join('\n'));
+  return {
+    decision: 'allow', why: 'headless-route', reason: null,
+    headless: { recordedAt: fresh.at, writerModel: fresh.writerModel, reviewRef: fresh.reviewRef, stagedKind: fresh.stagedKind, stagedSha256: fresh.stagedSha256 },
+  };
+}
+
+// The record store joins the tamper rules under its file name, wherever the env puts it. An
+// interpreter naming the file is matched; one computing the name is not.
+const headlessStoreName = (env) => basename(headlessRecordsPath(env));
+function headlessStoreWrites(env) {
+  const name = headlessStoreName(env).replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+  const what = 'the headless commit records, which this gate reads where nobody can be asked';
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- name is the store's file name with every metacharacter escaped on the line above
+  return [[writesTo(String.raw`[^\s'"]*${name}`), what], [new RegExp(String.raw`^(?=[\s\S]*${name})(?=[\s\S]*\b(?:writeFile|writeFileSync|appendFile|appendFileSync|rename|renameSync|copyFile|copyFileSync)\b)`), what]];
+}
+
 function gateTamper(raw, ctx) {
-  if (!/\.claude\/projects\/|\.commitwork\/settings\.json|humanCommitMessagesOnly/.test(raw)) return null;
   const env = ctx.env ?? process.env;
+  if (!/\.claude\/projects\/|\.commitwork\/settings\.json|humanCommitMessagesOnly|headlessCommitMessages/.test(raw) && !raw.includes(headlessStoreName(env))) return null;
   if (securityPosture().securitySetting('humanCommitMessagesOnly', { env }).value !== true) return null;
-  const hit = TAMPER.find(([re]) => re.test(raw));
+  const hit = [...TAMPER, ...headlessStoreWrites(env)].find(([re]) => re.test(raw));
   return hit ? { decision: 'deny', reason: `Human commit messages only is on, and this command rewrites ${hit[1]}. Only a person changes that, from the panel's Agent security settings.` } : null;
 }
 
 /** Write/Edit on a file the human-commit gate reads, while the gate is on. */
 function gateFileTamper(filePath, env = process.env) {
-  if (!/\/\.claude\/projects\/.*\.jsonl$|\/\.commitwork\/settings\.json$/.test(filePath)) return null;
+  if (!/\/\.claude\/projects\/.*\.jsonl$|\/\.commitwork\/settings\.json$/.test(filePath) && basename(filePath) !== headlessStoreName(env)) return null;
   if (securityPosture().securitySetting('humanCommitMessagesOnly', { env }).value !== true) return null;
-  return { decision: 'deny', reason: 'Human commit messages only is on, and this file is one the gate reads: a session transcript or the settings store. Only a person changes it.' };
+  return { decision: 'deny', reason: 'Human commit messages only is on, and this file is one the gate reads: a session transcript, the settings store or the headless commit records. Only a person changes it.' };
 }
 
 // Posture writes (D27-3, ruled 2026-10-13), guarded whatever the human-commit setting says: the
@@ -1606,10 +1730,11 @@ function gateFileTamper(filePath, env = process.env) {
 // handed to the processes a command starts.
 // askOutcome refuses the class whenever unattended, under every posture. A heuristic over the
 // command text, like the tamper rules above.
-// Each posture key's env var plus the store override; bin/test/guard-posture.test.mjs holds this
-// equal to lib/security-posture.mjs, which is not loaded here for a command that raises no ask.
-export const POSTURE_ENV = Object.freeze(['CW_UNATTENDED_POSTURE', 'CW_BYPASS_IS_UNATTENDED', 'CW_MISSING_MODE_IS_UNATTENDED', 'CW_HUMAN_COMMIT_MESSAGES_ONLY', 'CW_MCP_REPO_ROOTS', 'CW_MCP_REPO_CODE', 'CW_MCP_REPO_CODE_REPOS', 'CW_MCP_REPO_ROOTS_REVIEW_DAYS', 'CW_SETTINGS', 'CW_SETTINGS_STORE']);
-export const POSTURE_KEY_NAMES = Object.freeze(['unattendedPosture', 'bypassCountsAsUnattended', 'missingModeIsUnattended', 'humanCommitMessagesOnly', 'runChecksRoots', 'runChecksRepoCode', 'runChecksRepoCodeRepos', 'runChecksRootsReviewDays']);
+// Each posture key's env var, the store override and the headless record path;
+// bin/test/guard-posture.test.mjs holds this equal to lib/security-posture.mjs, which is not loaded
+// here for a command that raises no ask.
+export const POSTURE_ENV = Object.freeze(['CW_UNATTENDED_POSTURE', 'CW_BYPASS_IS_UNATTENDED', 'CW_MISSING_MODE_IS_UNATTENDED', 'CW_HUMAN_COMMIT_MESSAGES_ONLY', 'CW_HEADLESS_COMMIT_MESSAGES', 'CW_HEADLESS_COMMIT_RECORDS', 'CW_MCP_REPO_ROOTS', 'CW_MCP_REPO_CODE', 'CW_MCP_REPO_CODE_REPOS', 'CW_MCP_REPO_ROOTS_REVIEW_DAYS', 'CW_SETTINGS', 'CW_SETTINGS_STORE']);
+export const POSTURE_KEY_NAMES = Object.freeze(['unattendedPosture', 'bypassCountsAsUnattended', 'missingModeIsUnattended', 'humanCommitMessagesOnly', 'headlessCommitMessages', 'runChecksRoots', 'runChecksRepoCode', 'runChecksRepoCodeRepos', 'runChecksRootsReviewDays']);
 const POSTURE_KEY = new RegExp(String.raw`\b(?:${POSTURE_KEY_NAMES.join('|')})\b`);
 const POSTURE_WRITES = [
   [writesTo(SETTINGS_PATH), 'writes the settings store that holds the posture'],

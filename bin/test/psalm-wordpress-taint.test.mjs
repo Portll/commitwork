@@ -66,6 +66,20 @@ describe('psalm on a WordPress tree loads commitwork\'s taint stub', { skip: pro
     assert.deepEqual(results, []);
   });
 
+  test('REST params, shortcode attributes and maybe_unserialize are traced; a prepare() template is the sink', (t) => {
+    if (!psalmPresent()) return t.skip('psalm is not installed here — NOT measured');
+    const src = `<?php
+/* Plugin Name: commitwork wp sources canary */
+function cw_rest(WP_REST_Request $request) { global $wpdb; $id = $request->get_param('id'); $wpdb->query("DELETE FROM t WHERE id = $id"); }
+function cw_sc($atts) { $a = shortcode_atts(array('t' => ''), $atts); echo $a['t']; }
+function cw_mu() { maybe_unserialize($_COOKIE['c']); }
+function cw_tpl() { global $wpdb; $o = $_GET['o']; $wpdb->get_results($wpdb->prepare("SELECT * FROM t ORDER BY $o LIMIT %d", 5)); }
+function cw_const() { global $wpdb; $wpdb->query($wpdb->prepare("SELECT 1 WHERE a = %s", $_GET['a'])); }
+`;
+    const { results } = runLane({ 'wp.php': src }, ROOT);
+    assert.deepEqual(results.filter(([r]) => r !== 'TaintedTextWithQuotes'), [['TaintedSql', 3], ['TaintedHtml', 4], ['TaintedUnserialize', 5], ['TaintedSql', 6]]);
+  });
+
   test('a PHP tree with no WordPress marker does not get the stub', (t) => {
     if (!psalmPresent()) return t.skip('psalm is not installed here — NOT measured');
     const { log } = runLane({ 'app.php': '<?php\nfunction f() { return 1; }\n' }, ROOT);

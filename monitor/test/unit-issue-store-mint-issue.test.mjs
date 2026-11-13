@@ -125,3 +125,54 @@ test('a declared organisation reaches the id and an empty one falls back to the 
   assert.notEqual(idFor('ACME'), idFor('ZETA'));
   assert.equal(idFor(''), idFor(null));
 });
+
+const caught = (fn) => {
+  try { fn(); } catch (e) { return e; }
+  throw new Error('expected the call to throw');
+};
+
+// A store that minted one issue, with its counter rewound to the ordinal that issue already holds.
+const occupied = () => {
+  const fields = classified('first');
+  const live = store();
+  const { id } = mintIssue(live, fields, AT);
+  const doc = structuredClone(live);
+  doc.nextOrdinal = 1;
+  const withKey = (key) => ({ ...fields, source: { ...fields.source, key } });
+  return { doc, id, live, withKey };
+};
+
+test('an occupied id throws ISSUE_ID_OCCUPIED naming the id and the lagging counter', () => {
+  const { doc, id, withKey } = occupied();
+  const err = caught(() => mintIssue(doc, withKey('second'), AT));
+  assert.equal(err.code, 'ISSUE_ID_OCCUPIED');
+  assert.ok(err.message.includes(id), `message should name ${id}, got: ${err.message}`);
+  assert.match(err.message, /nextOrdinal is 1\b/);
+  assert.match(err.message, /counter is behind its issues/);
+});
+
+test('an occupied id throws before any mutation at all', () => {
+  const { doc, withKey } = occupied();
+  const before = structuredClone(doc);
+  assert.throws(() => mintIssue(doc, withKey('second'), AT), { code: 'ISSUE_ID_OCCUPIED' });
+  assert.deepEqual(doc, before);
+});
+
+test('a mapped source key still returns existed true when the counter is behind', () => {
+  const { doc, id, withKey } = occupied();
+  const before = structuredClone(doc);
+  assert.deepEqual(mintIssue(doc, withKey('first'), AT), { id, existed: true });
+  assert.deepEqual(doc, before);
+});
+
+test('a free ordinal still mints beside the issues the store already holds', () => {
+  const { live, id, withKey } = occupied();
+  const doc = structuredClone(live);
+  const r = mintIssue(doc, withKey('second'), AT);
+  assert.equal(r.existed, false);
+  assert.equal(doc.nextOrdinal, 3);
+  assert.deepEqual(Object.keys(doc.issues), [id, r.id]);
+  assert.equal(doc.issues[r.id].source.key, 'second');
+  assert.equal(doc.byKey.second, r.id);
+  assert.equal(doc.events.length, 2);
+});

@@ -82,12 +82,15 @@ test('the shared-state chokepoints hold their own lock, so no caller can forget 
     { file: 'cra/lib.mjs', fn: 'updateCases', why: 'cra/cases.json is the hash-chained CRA Article 14 ledger, written by the 30-minute watch agent and by every operator CLI action on a live statutory clock. Eight concurrent acks reported success and one landed' },
     { file: 'admin/auth.mjs', fn: 'withStoreLock', why: 'the auth store holds TOTP single-use burn state and recovery-code burns; a lost write un-burns a consumed code and reverts the replay protection' },
     { file: 'monitor/a11y-attestations.mjs', fn: 'withAttestationsLock', why: 'an attestation is a WCAG conformance claim someone cites; a lost write drops a ruling while the file still verifies' },
+    { file: 'monitor/ingest-external.mjs', fn: 'defaultQuarantineSink', why: 'the refusal ledger, written by mcp, http and cli alike; an unlocked pair of refusals both report an append, one is lost and `dropped` stays zero' },
+    { file: 'admin/routes/cra.mjs', fn: 'withProductsLock', why: 'products.json is a compare-and-swap on the hash the wizard loaded; unlocked, writers sharing one baseHash were each told 200 while only one document reached disk' },
   ];
   for (const { file, fn, why } of cases) {
     const src = readFileSync(join(CW, file), 'utf8');
     assert.match(src, /from '(?:(?:\.\.\/)+monitor|\.)\/lockfile\.mjs'/,
       `${file} must take its lock from the shared primitive — ${why}`);
-    assert.match(src, new RegExp(`function ${fn}\\b[\\s\\S]{0,3000}?acquireLock\\(`),
+    // acquireLockOrReason is the three-outcome acquire from the same module, not a second mutex.
+    assert.match(src, new RegExp(`function ${fn}\\b[\\s\\S]{0,3000}?acquireLock(?:OrReason)?\\(`),
       `${fn}() in ${file} must acquire the lock itself rather than trusting callers to — ${why}`);
   }
 });

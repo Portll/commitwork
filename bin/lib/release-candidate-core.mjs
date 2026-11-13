@@ -170,12 +170,18 @@ export function testCounts(text) {
   return { tests: n('tests'), pass: n('pass'), fail: n('fail'), skipped: n('skipped'), cancelled: n('cancelled'), todo: n('todo') };
 }
 
-export const STATUSES = Object.freeze(['pass', 'fail', 'cannot-check', 'not-run']);
+export const STATUSES = Object.freeze(['pass', 'contested', 'fail', 'cannot-check', 'not-run']);
 
-/** accepted only when every gate passed; any fail blocks; anything else is incomplete. */
+// `contested` is a gate whose every finding a person read and signed off against the measurement it
+// was made on. It is not a pass — the gate's own line says contested, so the verdict never reads as a
+// clean tree — and it is not a failure, so it does not block. Everything outside this pair, named or
+// not, leaves the candidate incomplete: an unknown status has never been judged.
+const CLEARS = Object.freeze(['pass', 'contested']);
+
+/** accepted only when every gate passed or was contested; any fail blocks; anything else is incomplete. */
 export function overallVerdict(gates) {
   if (gates.some((g) => g.status === 'fail')) return { verdict: 'blocked', exit: 1 };
-  if (gates.length && gates.every((g) => g.status === 'pass')) return { verdict: 'accepted', exit: 0 };
+  if (gates.length && gates.every((g) => CLEARS.includes(g.status))) return { verdict: 'accepted', exit: 0 };
   return { verdict: 'incomplete', exit: 2 };
 }
 

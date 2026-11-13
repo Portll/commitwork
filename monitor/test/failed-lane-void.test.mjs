@@ -43,6 +43,75 @@ describe('extractor: an empty artifact is read with its exit sidecar', () => {
   });
 });
 
+describe('extractor: an empty SARIF or cobolwork report is read with its exit sidecar', () => {
+  const lanes = [
+    ['sastSemgrep', 'semgrep.sarif'],
+    ['maliciousPackages', 'osv.sarif'],
+    ['sastCobol', 'cobolwork.json'],
+  ].map(([key, report]) => ({ key, report, extract: SCANNER_SPECS.find(([k]) => k === key)[2] }));
+
+  for (const { key, report, extract } of lanes) {
+    test(`${key}: empty ${report} beside exit 2 is toolfailed, never no-subject`, () => withDir((d) => {
+      writeFileSync(join(d, report), '');
+      writeFileSync(join(d, `${report}.exit`), '2\n');
+      const c = extract(d);
+      assert.equal(c.toolfailed, true);
+      assert.equal(c.emptyArtifact, true);
+      assert.equal(c.nosrc, undefined);
+    }));
+
+    test(`${key}: empty ${report} with exit 0, exit 1 or no sidecar stays nosrc`, () => {
+      for (const exit of ['0', '1', null]) {
+        withDir((d) => {
+          writeFileSync(join(d, report), '');
+          if (exit !== null) writeFileSync(join(d, `${report}.exit`), exit);
+          const c = extract(d);
+          assert.equal(c.nosrc, true, `exit ${exit}`);
+          assert.equal(c.emptyArtifact, true, `exit ${exit}`);
+          assert.equal(c.toolfailed, undefined, `exit ${exit}`);
+        });
+      }
+    });
+  }
+});
+
+describe('extractor: an exit that means the tool collected nothing is not a failed tool', () => {
+  const lanes = [
+    ['maliciousPackages', 'osv.sarif', '128', '127'],
+    ['actionsPosture', 'zizmor.sarif', '3', '2'],
+  ].map(([key, report, collectedNothing, failed]) => ({ key, report, collectedNothing, failed, extract: SCANNER_SPECS.find(([k]) => k === key)[2] }));
+
+  for (const { key, report, collectedNothing, failed, extract } of lanes) {
+    test(`${key}: empty ${report} beside exit ${collectedNothing} stays nosrc`, () => withDir((d) => {
+      writeFileSync(join(d, report), '');
+      writeFileSync(join(d, `${report}.exit`), `${collectedNothing}\n`);
+      const c = extract(d);
+      assert.equal(c.nosrc, true);
+      assert.equal(c.emptyArtifact, true);
+      assert.equal(c.toolfailed, undefined);
+    }));
+
+    test(`${key}: empty ${report} beside exit ${failed} is toolfailed`, () => withDir((d) => {
+      writeFileSync(join(d, report), '');
+      writeFileSync(join(d, `${report}.exit`), `${failed}\n`);
+      const c = extract(d);
+      assert.equal(c.toolfailed, true);
+      assert.equal(c.nosrc, undefined);
+    }));
+  }
+
+  test('sastSemgrep: exit 128 and exit 3 belong to other tools and stay toolfailed', () => {
+    const extract = SCANNER_SPECS.find(([k]) => k === 'sastSemgrep')[2];
+    for (const exit of ['128', '3']) {
+      withDir((d) => {
+        writeFileSync(join(d, 'semgrep.sarif'), '');
+        writeFileSync(join(d, 'semgrep.sarif.exit'), exit);
+        assert.equal(extract(d).toolfailed, true, `exit ${exit}`);
+      });
+    }
+  });
+});
+
 describe('runner: coverage of a lane that wrote nothing', () => {
   const check = { id: 'sast-codeql-python', report: { file: 'codeql-python.sarif', format: 'sarif' } };
 

@@ -13,6 +13,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { writeJSONAtomic, stableStringify } from '../cra/lib.mjs';
+import { acquireLock } from './lockfile.mjs';
 import { validateAgainstSchema, SLUG_RE } from './registry.mjs';
 import { sessionWho, classifyWho } from './attribution.mjs';
 import { appendRemediationEvent, mutateIssue } from './issue-store.mjs';
@@ -133,15 +134,25 @@ const PAYLOAD_CAP = 4096;
 
 // Append one refusal atomically. Bounded — unauthenticated writers are a disk-fill primitive —
 // with `dropped` keeping the loss visible; payloads capped and stored as opaque strings.
+// Locked here rather than at the call sites: mcp, http and cli all reach this sink concurrently, and
+// the document is replaced whole, so an unlocked pair on one snapshot loses an entry uncounted.
 export function defaultQuarantineSink(entry, { path = quarantinePath(), max = QUARANTINE_MAX() } = {}) {
-  const doc = loadQuarantine({ path });
-  doc.entries.push(entry);
-  if (doc.entries.length > max) {
-    doc.dropped = (doc.dropped || 0) + (doc.entries.length - max);
-    doc.entries.splice(0, doc.entries.length - max);
-  }
-  writeJSONAtomic(path, doc);
-  return doc;
+  const held = acquireLock(`${path}.lock`, {
+    staleMs: 30_000, label: 'ingest-quarantine', attempts: 50, spinMs: 20,
+    onStale: (ageMs) => console.warn(`[ingest] breaking a stale quarantine lock (${Math.round(ageMs / 1000)}s old) at ${path}.lock`),
+  });
+  // Throw, never return: refuse() reports a throw as `quarantined:false`.
+  if (!held.ok) throw new Error(`ingest quarantine at ${path} is locked by another writer (${path}.lock); nothing was recorded`);
+  try {
+    const doc = loadQuarantine({ path });
+    doc.entries.push(entry);
+    if (doc.entries.length > max) {
+      doc.dropped = (doc.dropped || 0) + (doc.entries.length - max);
+      doc.entries.splice(0, doc.entries.length - max);
+    }
+    writeJSONAtomic(path, doc);
+    return doc;
+  } finally { held.release(); }
 }
 
 function quarantineEntry({ at, channel, who, refused, errors, payload }) {

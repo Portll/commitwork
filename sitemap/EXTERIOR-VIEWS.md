@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # SiteMap — "City from the Outside": 6 Exterior Views
 
 Companion to `demo.html`. The interior layers (functions, roads, wiring, air bridges, sewer,

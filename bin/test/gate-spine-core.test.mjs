@@ -53,6 +53,18 @@ describe('a blind sensor never blocks, and never reads as clean', () => {
     assert.equal(v.block, false);
     assert.equal(v.reason, 'satisfied');
   });
+
+  test('a blind decoy arm renders UNKNOWN, never the same line as a real read', () => {
+    const filed = [{ task: '1', at: '2026-08-12T01:00:00Z' }];
+    const blind = assess({ ...base, tasks: null, spineRecords: filed });
+    const read = assess({ ...base, tasks: [{ id: '1', status: 'active' }], spineRecords: filed });
+    assert.equal(blind.grey, true, 'half the gate did not run; the verdict must carry that');
+    assert.equal(read.grey, undefined);
+    assert.match(render(blind), /^spine gate: UNKNOWN/);
+    assert.match(render(blind), /store could not be read/);
+    assert.doesNotMatch(render(read), /UNKNOWN/);
+    assert.notEqual(render(blind), render(read), 'the two states printed byte-identical lines until 2026-10-20');
+  });
 });
 
 describe('the feedback arm — the loop is closed, so a decoy is visible', () => {

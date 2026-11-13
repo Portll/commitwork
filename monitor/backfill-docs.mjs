@@ -15,6 +15,7 @@ import { dirname, join, resolve, basename } from 'node:path';
 import { outDirFor } from './area.mjs'; // THE OUT resolver: CW_MONITOR_OUT, then the area's out
 import { loadRegistry } from './registry.mjs'; // the ONE validated loader — never a raw parse
 import { readSarif, ruleIndex } from './sarif-read.mjs'; // the one SARIF reader
+import { packageFromOsvMessage } from '../lib/osv-message.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CW = resolve(HERE, '..');
@@ -52,9 +53,9 @@ function parseOsv(dir, voids = []) {
     const rule = rules[res.ruleId] || {};
     const cvss = parseFloat((rule.properties && rule.properties['security-severity']) || 0) || 0;
     const m = (res.message && res.message.text) || '';
-    const pm = m.match(/Package '([^'@]+)@([^']+)'/);
+    const pm = packageFromOsvMessage(m);
     const loc = res.locations && res.locations[0] && res.locations[0].physicalLocation;
-    out.push({ tool: 'osv', id: res.ruleId, severity: sevFromCvss(cvss), package: pm ? pm[1] : '', version: pm ? pm[2] : '',
+    out.push({ tool: 'osv', id: res.ruleId, severity: sevFromCvss(cvss), package: pm ? pm.name : '', version: pm ? pm.version : '',
       path: (loc && loc.artifactLocation && loc.artifactLocation.uri) || '' });
   }
   return out;

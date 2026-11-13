@@ -39,6 +39,7 @@ SCRIPT_ABS_DIR=$(dirname "$0")
   lang=""
   prev=""
   for a in "$@"; do [ "$prev" = "--language" ] && lang="$a"; prev="$a"; done
+  printf '%s\n' "$@" > "${d}/args-$lang"
   sh "${d}/behave-$lang.sh"
 } 2> ${TMP_LOG}
 exit $?
@@ -98,6 +99,23 @@ describe('what the lane covers is what the bundle has queries for', () => {
     assert.deepEqual(rec.languages.map((l) => l.id), ['c', 'java']);
     assert.equal(rec.sourceCounts.c, 1, 'the excluded vendored .c is not a source of this repo');
     assert.equal(rec.languages.find((l) => l.id === 'c').results, 2);
+  });
+
+  test('each frontend runs only its own languages\' queries, so a C query never scans a PHP graph', () => {
+    const rd = dir('rd');
+    const qdb = querydb([
+      { language: 'c', name: 'format-controlled-printf', tags: ['badfn', 'default'] },
+      { language: 'php', name: 'shell-exec', tags: ['remote-code-execution', 'default'] },
+      { language: 'php', name: 'phpjoern_xss', tags: ['xss', 'default'] },
+      { language: 'java', name: 'sql-injection', tags: ['default'] },
+      { language: 'android', name: 'tap-jacking', tags: ['android'] },
+    ]);
+    const launcher = fakeLauncher({ querydb: qdb, languages: { php: SCAN_OK(), java: SCAN_OK() } });
+    assert.equal(runLane(srcTree({ 'a.php': '<?php', 'B.java': 'class B {}' }), rd, RX, { PATH: '/usr/bin:/bin', CW_JOERN_SCAN: launcher }), 0);
+    const namesFor = (lang) => { const a = readFileSync(join(launcher, '..', `args-${lang}`), 'utf8').split('\n'); return a[a.indexOf('--names') + 1]; };
+    assert.equal(namesFor('php'), 'phpjoern_xss,shell-exec');
+    assert.equal(namesFor('java'), 'sql-injection,tap-jacking', 'java also takes the android queries it maps');
+    assert.deepEqual(laneJson(rd).languages.find((l) => l.id === 'php').queries, ['phpjoern_xss', 'shell-exec']);
   });
 
   test('a tree with nothing the bundle covers scans nothing and says so', () => {

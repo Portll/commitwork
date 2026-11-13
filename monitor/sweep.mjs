@@ -17,7 +17,8 @@ import { loadRegistry, areaBySlug, primaryArea } from './registry.mjs';
 import { outDirFor } from './area.mjs'; // the OUT resolver — never re-derive the chain here
 import { annotationsPathFor, stateBaseFor } from './store-paths.mjs';
 import { runLens as sandboxCoverage, summaryLine as sandboxCoverageLine } from './sandbox-coverage.mjs';
-import { acquireSweepSlot, DEFAULT_SLOTS } from './sweep-slot.mjs'; // bounded concurrency — see its header for the measurements
+import { acquireSweepSlot, keepSweepSlot, DEFAULT_SLOTS } from './sweep-slot.mjs'; // bounded concurrency — see its header for the measurements
+import { describeAge } from './lockfile.mjs';
 import { calendarLateness, catchUpDeadlineMs, lateAfterMin } from './sweep-calendar.mjs'; // a start hours after its slot is a catch-up
 import { getSetting } from './settings.mjs';       // env > store > default, read at CALL time
 import { sweepReuseEnv } from '../bin/lib/lane-reuse.mjs';
@@ -697,16 +698,28 @@ if (SLOT_N > 0) {
       : { slots: SLOT_N, deadlineMs: catchUpDeadlineMs(lateness, { now: START_MS }), label: `sweep:${scopeArea || 'all'}` }),
     sleep: (ms) => { try { execFileSync('sleep', [String(Math.ceil(ms / 1000))]); } catch { /* interrupted is fine */ } },
     onWait: (n) => console.log(`${TAG} all ${n} ${selfSweep() ? 'self-sweep' : 'sweep'} slots busy — waiting for a turn (CW_SWEEP_SLOTS=0 disables)`),
+    // A takeover names what it took over from; a previous holder that was alive is a sweep that
+    // stopped refreshing, which is worth a look even though the slot was rightly reclaimed.
+    onStale: (s) => console.log(crit(`${TAG} broke a stale slot ${s.slot}: previous holder pid ${s.holder ? s.holder.pid : '?'} (${s.holder ? s.holder.label : 'no token'}), ${describeAge(s.ageMs)}, alive: ${s.holderAlive}, start matches: ${s.holderMatches}`)),
   });
   if (got.ok !== true) {
     console.log(crit(`${TAG} DEFERRED — ${got.reason}. This area was NOT swept; its freshness will go stale, which is`));
     console.log(crit(`${TAG} the honest reading. This should be RARE: a quiet-box sweep of a small area takes ~5 minutes,`));
     console.log(crit(`${TAG} so ${SLOT_N} permits is ample for the fleet. A deferral means something genuinely overran —`));
     console.log(crit(`${TAG} look at what is holding a slot rather than raising CW_SWEEP_SLOTS to make this go away.`));
+    for (const h of got.holders || []) {
+      console.log(crit(`${TAG}   slot ${h.slot}: held by pid ${h.holder ? h.holder.pid : '?'} (${h.holder ? h.holder.label : 'token unreadable'}), ${describeAge(h.heldFor)}, alive: ${h.holderAlive}`));
+    }
     process.exit(0); // not a failure: a deferral is a scheduling outcome, and a red here would train the operator to ignore it
   }
   slotHeld = got;
   console.log(`${TAG} admitted on ${selfSweep() ? 'self-sweep ' : ''}slot ${got.slot}/${selfSweep() ? 1 : SLOT_N}${got.waitedMs > 1000 ? ` after ${Math.round(got.waitedMs / 1000)}s wait` : ''}`);
+  // The permit's stamp goes stale in 30 minutes and a sweep runs for hours: keep it fresh, and say
+  // so when it cannot be. The normal exit releases through the lock's own releaseOnExit; a signal
+  // death skips 'exit', and keepSweepSlot covers that.
+  keepSweepSlot(got, {
+    onRefreshFailed: (r) => console.error(crit(`${TAG} slot ${got.slot} refresh failed (${r.reason})${r.reason === 'lost' ? ' — another sweep took this slot over; two sweeps may be running' : ' — the stamp is ageing toward takeover'}`)),
+  });
 }
 
 let scanned = 0;

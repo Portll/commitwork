@@ -2,13 +2,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { collectEnv } from '../reference.mjs';
-import { basename, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const real = basename(fileURLToPath(import.meta.url));
-const selfOtherCase = real.replace('.test.', '.Test.');
-const selfDotted = './' + selfOtherCase;
+const FIXTURE = 'fixture-source.mjs';
+const FIXTURE_SRC = [
+  'export function read(env, key) {',
+  "  return [env.CW_PLAIN_ONE, env['CW_BRACKET_2'], env[key], 'CW_ONLY_QUOTED'];",
+  '}',
+].join('\n');
+
 const row = (name, how, readers) => ({ name, how, readers, description: null });
 const rowsFor = (readers) => [
   row('CW_BRACKET_2', 'direct', readers),
@@ -16,33 +20,58 @@ const rowsFor = (readers) => [
   row('CW_PLAIN_ONE', 'direct', readers),
 ];
 
+function withFixture(fn) {
+  const root = mkdtempSync(join(tmpdir(), 'collectEnv-'));
+  try {
+    // The skipped names exist and hold the same reads, so a skip is by name, not by a failed read.
+    const stem = FIXTURE.replace(/\.mjs$/, '');
+    mkdirSync(join(root, 'test'));
+    for (const name of [FIXTURE, `test/${FIXTURE}`, `${stem}.test.mjs`, `${stem}.MJS`, `${stem}.txt`]) writeFileSync(join(root, name), FIXTURE_SRC);
+    return fn(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
 test('a JavaScript source under a test directory is skipped without being read', () => {
-  assert.deepEqual(collectEnv(dirname(here), ['test/' + real]), []);
+  withFixture((root) => {
+    assert.deepEqual(collectEnv(root, ['test/' + FIXTURE]), []);
+  });
 });
 
 test('a file named *.test.mjs or with an extension other than js, mjs, cjs, sh or bash is skipped', () => {
-  const stem = selfOtherCase.slice(0, -3);
-  assert.deepEqual(collectEnv(here, [real, stem + 'MJS', stem + 'txt']), []);
+  withFixture((root) => {
+    const stem = FIXTURE.replace(/\.mjs$/, '');
+    assert.deepEqual(collectEnv(root, [stem + '.test.mjs', stem + '.MJS', stem + '.txt']), []);
+  });
 });
 
 test('a source or script that cannot be read contributes nothing', () => {
-  assert.deepEqual(collectEnv(here, ['no-such-source.mjs', 'no-such-script.sh']), []);
+  withFixture((root) => {
+    assert.deepEqual(collectEnv(root, ['no-such-source.mjs', 'no-such-script.sh']), []);
+  });
 });
 
-test("this file's env.CW_PLAIN_ONE and env['CW_BRACKET_2'] are direct reads, and its quoted 'CW_ONLY_QUOTED' is indirect because env[key] also appears", () => {
-  assert.deepEqual(collectEnv(here, [selfOtherCase]), rowsFor([selfOtherCase]));
+test("a fixture's env.CW_PLAIN_ONE and env['CW_BRACKET_2'] are direct reads, and its quoted 'CW_ONLY_QUOTED' is indirect because env[key] also appears", () => {
+  withFixture((root) => {
+    assert.deepEqual(collectEnv(root, [FIXTURE]), rowsFor([FIXTURE]));
+  });
 });
 
 test('a reader listed twice appears once and readers are sorted by path with ./ before letters', () => {
-  assert.deepEqual(
-    collectEnv(here, [selfOtherCase, selfDotted, selfOtherCase]),
-    rowsFor([selfDotted, selfOtherCase]),
-  );
+  withFixture((root) => {
+    assert.deepEqual(
+      collectEnv(root, [FIXTURE, './' + FIXTURE, FIXTURE]),
+      rowsFor(['./' + FIXTURE, FIXTURE]),
+    );
+  });
 });
 
 test('skipped and unreadable entries do not change what a readable source reports', () => {
-  assert.deepEqual(
-    collectEnv(here, ['no-such-script.sh', real, selfOtherCase, 'notes.md']),
-    rowsFor([selfOtherCase]),
-  );
+  withFixture((root) => {
+    assert.deepEqual(
+      collectEnv(root, ['no-such-script.sh', FIXTURE, 'notes.md']),
+      rowsFor([FIXTURE]),
+    );
+  });
 });

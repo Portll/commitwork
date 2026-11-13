@@ -62,6 +62,7 @@ function parseAllowlists(src) {
 
 // The size bound (--max-target-megabytes). { mb } is a determination (number, or null = flag
 // genuinely absent); { unknown, reason } is a refusal to determine — the two never share an answer.
+// `cmd` is the secrets-gitleaks command the bound was read off.
 function maxTargetMB() {
   let raw;
   try { raw = readFileSync(baselinePath(), 'utf8'); }
@@ -70,9 +71,14 @@ function maxTargetMB() {
   try { m = JSON.parse(raw); } catch { return { unknown: true, reason: 'unparsed' }; }
   const check = (m.checks || []).find((c) => c.id === 'secrets-gitleaks');
   if (!check) return { unknown: true, reason: 'undeclared' };   // no check, so nothing to read a bound off
-  const hit = /--max-target-megabytes[ =](\d+)/.exec((check.local || []).join(' '));
-  return { mb: hit ? Number(hit[1]) : null };
+  const cmd = (check.local || []).join(' ');
+  const hit = /--max-target-megabytes[ =](\d+)/.exec(cmd);
+  return { mb: hit ? Number(hit[1]) : null, cmd };
 }
+
+// The gitignore bound is computed per scan from the target's own rules, so it is a note: the set
+// belongs to the scanned repository and is not this one's to list.
+const GITIGNORED_NOTE = (tool, log) => `every path the scanned repository's own .gitignore rules ignore is also excluded (git ls-files --others --ignored --exclude-standard, computed per scan by ${tool}) — an uncommitted .env, a local build tree or a cache that is gitignored is NOT scanned by this lane. When git cannot list them the lane runs on the declared bounds alone and ${log} says so; the set itself is in the scanned repository, not here`;
 
 let cache = null;
 
@@ -104,6 +110,8 @@ export function scanScope() {
     source: relSource(path),
     maxTargetMB: mt.unknown ? null : mt.mb,
     ...(mt.unknown ? { maxTargetUnknown: mt.reason } : {}),
+    // an unreadable manifest yields no note; maxTargetUnknown already says the command was not read
+    notes: !mt.unknown && mt.cmd.includes('gitleaks-scope-config.mjs') ? [GITIGNORED_NOTE('bin/gitleaks-scope-config.mjs', 'gitleaks.log')] : [],
     // rule-scoped blocks last: the bigger (every-rule) claim reads first
     blocks: blocks
       .map((b) => ({

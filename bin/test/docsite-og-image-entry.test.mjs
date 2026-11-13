@@ -134,19 +134,37 @@ const stressExits = (args, env = process.env) => Promise.all(Array.from({ length
   c.on('exit', (code, signal) => { clearTimeout(timer); done(code ?? signal); });
 })));
 
+// The control does as much work as one renderer run and exits the same way, naturally. Under this
+// stress Node itself can hang ANY process at shutdown once it has run for a while (nodejs/node#54918
+// "Deadlock at process shutdown", #64274 "Hang at shutdown", both open): on 2026-11-12, 4-core Linux,
+// Node 22.23, a bare setTimeout(2 s) hung 5/24 and a 2 s busy loop 4/24, while a millisecond
+// allocation loop hung none. A short control therefore says nothing about a renderer that runs longer.
+// This one spins hot integer work and deflate until its own CPU time reaches what one unstressed
+// renderer run took, so 24 at once stretch it the same way they stretch the renderer. If Node hangs
+// it, the renderer cannot exit more cleanly than it, and the run skips with the counts. A renderer
+// that reintroduces process.exit() is still caught by the static exitHazards test above.
+const workControl = (cpuMs) => "const z=require('node:zlib');const b=new Uint8Array(1200*630*3);"
+  + `for(let r=0;process.cpuUsage().user<${cpuMs}*1000;r++){for(let i=0;i<b.length;i++)b[i]=(b[i]*31+i*7+r)&255;z.deflateSync(b,{level:1});}`;
+
 test('the renderer exits under concurrent-allocation stress', async (t) => {
-  const control = await stressExits(['-e', 'const a = []; for (let i = 0; i < 2e5; i++) a.push({ i });']);
-  const controlHung = control.filter((c) => c === 'hung').length;
-  if (controlHung) {
-    t.skip(`Node ${process.version} hung ${controlHung}/${STRESS_RUNS} allocation-only controls under the same stress`);
-    return;
-  }
+  // Arrange
   const { root, png } = site(t);
   mkdirSync(join(root, 'public'), { recursive: true });
   writeFileSync(png, Buffer.from('not the card'));
   const env = { ...process.env, CW_DOCSITE_ROOT: root };
   delete env.CW_DOCSITE_PRIVATE;
+  const t0 = Date.now();
+  spawnSync(process.execPath, [OG, '--check'], { env, stdio: 'ignore' });
+  const work = Math.max(50, Date.now() - t0);
+  const control = await stressExits(['-e', workControl(work)]);
+  const controlHung = control.filter((c) => c === 'hung').length;
+  if (controlHung) {
+    t.skip(`Node ${process.version} hung ${controlHung}/${STRESS_RUNS} controls doing ${work} ms of CPU work and exiting naturally, under the same stress (nodejs/node#54918); the renderer's exit was NOT measured`);
+    return;
+  }
+  // Act
   const exits = await stressExits([OG, '--check'], env);
+  // Assert
   assert.ok(!exits.includes('hung'), `"hung" is the deadlock: ${exits.join(', ')}`);
   const killed = exits.filter((e) => typeof e === 'string');
   const killedBy = [...new Set(killed)].join(', ');

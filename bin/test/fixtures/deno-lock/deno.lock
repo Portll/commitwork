@@ -1,0 +1,28 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@std/path@1.0.8": "1.0.8",
+    "npm:lodash@4.17.20": "4.17.20",
+    "npm:minimist@1.2.5": "1.2.5"
+  },
+  "jsr": {
+    "@std/path@1.0.8": {
+      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
+    }
+  },
+  "npm": {
+    "lodash@4.17.20": {
+      "integrity": "sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA=="
+    },
+    "minimist@1.2.5": {
+      "integrity": "sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/path@1.0.8",
+      "npm:lodash@4.17.20",
+      "npm:minimist@1.2.5"
+    ]
+  }
+}

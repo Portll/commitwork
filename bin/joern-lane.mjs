@@ -97,17 +97,22 @@ export function runJoern(launcher, args, { cwd, outPath, errPath, env = process.
   } finally { closeSync(out); }
 }
 
-/** Query languages and tags from a dumped query db; null when it cannot be read. */
+/** Query languages, tags and per-language query names from a dumped query db; null when it cannot be read. */
 export function readQueryDb(path) {
   let q; try { q = JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
   const list = Array.isArray(q) ? q : (q && q.queries) || null;
   if (!Array.isArray(list) || !list.length) return null;
-  const languages = {}; const tags = new Set();
+  const languages = {}; const tags = new Set(); const names = {};
   for (const x of list) {
     if (x && x.language) languages[x.language] = (languages[x.language] || 0) + 1;
     for (const t of (x && x.tags) || []) if (t !== 'metrics') tags.add(t);
+    if (x && x.language && x.name) (names[x.language] ||= []).push(x.name);
   }
-  return { languages: Object.fromEntries(Object.entries(languages).sort(([a], [b]) => (a < b ? -1 : 1))), tags: [...tags].sort() };
+  const byKey = ([a], [b]) => (a < b ? -1 : 1);
+  return {
+    languages: Object.fromEntries(Object.entries(languages).sort(byKey)), tags: [...tags].sort(),
+    names: Object.fromEntries(Object.entries(names).sort(byKey).map(([l, v]) => [l, [...new Set(v)].sort()])),
+  };
 }
 
 /** Source files per frontend, walking the tree the way the exclusion policy prunes it. */
@@ -211,7 +216,9 @@ export function runLane(src, reportDir, rx, env = process.env) {
     mkdirSync(work, { recursive: true });
     const outPath = join(runDir, `${f.id}.txt`);
     const errPath = join(runDir, `${f.id}.log`);
-    const r = runJoern(launcher, [src, '--overwrite', '--language', f.language, '--tags', tags, '--frontend-args', '--exclude-regex', rx],
+    // joern-scan runs every tag-matched query on any graph; --names keeps C queries (format string) off PHP.
+    const names = db ? [...new Set(f.queryLanguages.flatMap((l) => db.names[l] || []))].sort() : null;
+    const r = runJoern(launcher, [src, '--overwrite', '--language', f.language, ...(names && names.length ? ['--names', names.join(',')] : []), '--tags', tags, '--frontend-args', '--exclude-regex', rx],
       { cwd: work, outPath, errPath, env });
     rmSync(work, { recursive: true, force: true });
     const stdout = existsSync(outPath) ? readFileSync(outPath, 'utf8') : '';
@@ -223,7 +230,9 @@ export function runLane(src, reportDir, rx, env = process.env) {
     const exit = r.status === null ? (r.signal ? `signal ${r.signal}` : r.error || 'no status') : r.status;
     const ok = exit === 0 && ran;
     const row = { id: f.id, language: f.language, files: counts[f.id], exit, scanRan: ran,
-      results: (stdout.match(/^Result: /gm) || []).length };
+      results: (stdout.match(/^Result: /gm) || []).length,
+      queries: names && names.length ? names : null,
+      ...(names && names.length ? {} : { queryFilter: 'tags only: no query names for this language, so queries written for another language can match' }) };
     if (!ok) {
       row.reason = failureLine(stderr, stdout)
         || (ran ? `exited ${exit} after its scan pass` : `exited ${exit} with no scan pass${haveErr ? '' : ' (stderr went to the shared /tmp log and is not attributable to this run)'}`);

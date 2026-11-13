@@ -7,18 +7,22 @@
 # ── manifests/gitleaks.toml, verbatim from here ─────────────────────────────────────────────────
 # gitleaks scan scope — what a filesystem secret scan must NOT walk.
 #
-# WHY THIS FILE EXISTS. `gitleaks detect --no-git --source .` walks the working tree and does NOT
-# respect .gitignore. A checkout that holds a service's runtime data, such as a multi-gigabyte
+# WHY THIS FILE EXISTS. It holds the directories excluded on every scan that loads it. A scan
+# walks the working tree, and a checkout with a service's runtime data, such as a multi-gigabyte
 # Meilisearch LMDB file (.tools/search/data.ms/indexes/*/data.mdb), can keep one run busy for hours.
 # A sweep that never finishes produces no failure — it produces nothing, so the repository silently
 # stops being scanned.
 #
 # THE RULE APPLIED HERE. Skip what is not source: dependency trees, build output, and runtime data
-# a service wrote. Do NOT skip merely-untracked files — an uncommitted .env is exactly what this
-# scan exists to find, so `.gitignore` is deliberately not used as the filter. Each entry below is
-# a directory a tool or a runtime owns, not something a person edits.
+# a service wrote. Each entry below is a directory a tool or a runtime owns, not something a person
+# edits. secrets-gitleaks adds the target's gitignored paths through bin/gitleaks-scope-config.mjs,
+# which writes a per-scan config extending this file; secrets-cobol-jcl does the same over
+# cobolwork's rules. A gitignored .env is outside those scans, and an untracked file no ignore rule
+# matches is inside them. When git cannot list the paths, the lane scans with its base config alone,
+# gitignored files included, and the lane log says so. secrets-betterleaks loads this file directly
+# and adds no gitignored paths.
 #
-# NOT A SILENT CAP: bin/commitwork.mjs prints the scope in the check's own report line, and
+# NOT A SILENT CAP: the panel states this scope on the secrets tab (monitor/scan-scope.mjs), and
 # `--max-target-megabytes` is a backstop for a large file in a directory nobody thought to list —
 # it is set high enough that no plausible source file is affected.
 

@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-24 2bc3c0ef -->
+<!-- verified-against: 2026-10-24 -->
 # The commitwork runner slot
 
 A slot runs GitHub Actions jobs for a declared repository on the commitwork image. Jobs reach it
@@ -170,7 +170,7 @@ hard failure when:
 
 ## As measured, 2026-10-22
 
-On Docker Desktop 29.6.2 for arm64, with the commitwork image built from `2bc3c0ef` with
+On Docker Desktop 29.6.2 for arm64, with the commitwork image built from a commit with
 `SCANNERS=gitleaks`, the runner files from this directory, and a private probe repository:
 
 - **Seccomp.** `container/smoke.sh --min 5`: unconfined, 19 lanes ran (15 with no network, 4

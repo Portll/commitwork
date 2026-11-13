@@ -5,7 +5,15 @@
 // no list is cannot-check, never clean. Reports carry rule ids and term labels, never the matched
 // text and never a term's own `why` or `test`, which name the private thing as plainly as the term.
 //
-// env: CW_RELEASE_TERMS (a list file; overrides the sidecar) · CW_SIDECAR · CW_RELEASE_NAMES_SIDECAR_REF
+// The list is a DETECTOR, not the policy: an occurrence it reports can be a term a person has read
+// and judged not to be disclosure. That judgement is the acceptance record beside the list, one row
+// per occurrence, bound to the digest of the measurement it was granted against. So the gate has
+// three outcomes, not two: a clean tree passes, a tree whose every occurrence is accepted is
+// CONTESTED, and anything unreviewed or lapsed fails.
+//
+// env: CW_RELEASE_TERMS (a list file; overrides the sidecar) ·
+//      CW_RELEASE_TERM_ACCEPTANCES (an acceptance record; overrides the sidecar) ·
+//      CW_SIDECAR · CW_RELEASE_NAMES_SIDECAR_REF
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, lstatSync, existsSync } from 'node:fs';
@@ -16,7 +24,14 @@ import { validateAgainstSchema } from '../../lib/json-schema.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const TERMS_REL = 'monitor/release-terms.json';
+export const ACCEPTANCES_REL = 'monitor/release-term-acceptances.json';
 export const termsSchemaPath = () => resolve(REPO, 'schema', 'release-terms.schema.json');
+export const acceptancesSchemaPath = () => resolve(REPO, 'schema', 'release-term-acceptances.schema.json');
+
+// The dispositions that settle an occurrence. The rest — pending, rename, redact, move-to-sidecar —
+// are rulings that the term must GO, so they leave it open and the gate red: a judged term awaiting
+// its edit is not an accepted one.
+export const ACCEPTING = Object.freeze(['generic-capability', 'public-by-design', 'upstream-content', 'detector-defect']);
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- every glob part is escaped; only * and ** become [^/]* and .*
@@ -106,6 +121,77 @@ export function loadTerms({ repo = REPO, env = process.env } = {}) {
   let doc;
   try { doc = JSON.parse(raw); } catch (e) { throw new Error(`${source}: not JSON (${e.message})`); }
   return { source, fingerprint: createHash('sha256').update(raw).digest('hex').slice(0, 12), ...compileTerms(doc, source) };
+}
+
+/** An occurrence's identity: the place a term fired. Never a line — this scan has none, and a term
+ *  that moves within its file is the same occurrence having moved, not one ending and another starting. */
+export const occurrenceKey = (o) => `${o.file}\0${o.rule}\0${o.term}\0${o.where}`;
+
+/**
+ * The digest an acceptance is granted against. The count is in the basis, so a new occurrence of an
+ * accepted term changes it and the acceptance lapses rather than covering the new one. The pattern
+ * is in it too: `internal-tool#1` can be rewritten to match something else entirely while keeping
+ * its label, and an acceptance granted against the old pattern says nothing about the new one.
+ */
+export function digestOccurrence(o, pattern) {
+  const basis = JSON.stringify({ file: o.file, rule: o.rule, term: o.term, where: o.where, count: o.count, pattern: pattern ?? null });
+  return createHash('sha256').update(basis).digest('hex').slice(0, 16);
+}
+
+// Two different absences, both of them empty and neither of them a pass: no sidecar at all, and a
+// sidecar that has committed no record. `origin` is the field that says which, and unlike `source`
+// it names no path, so a gate report can carry it.
+const empty = (origin) => Object.freeze({ source: origin, origin, fingerprint: null, note: '', acceptances: [] });
+
+function parseAcceptances(raw, source) {
+  let doc;
+  try { doc = JSON.parse(raw); } catch (e) { throw new Error(`${source}: not JSON (${e.message})`); }
+  const v = validateAgainstSchema(doc, { path: acceptancesSchemaPath() });
+  if (v.errors.length) throw new Error(`${source}: ${v.errors[0]}`);
+  const seen = new Set();
+  for (const a of doc.acceptances) {
+    // Paths stay out of these messages: the record is private and the message reaches a gate report.
+    const where = `${a.rule} ${a.term} ${a.where}`;
+    const k = occurrenceKey(a);
+    if (seen.has(k)) throw new Error(`${source}: ${where} is ruled on twice for one file`);
+    seen.add(k);
+    if (ACCEPTING.includes(a.disposition)
+      && !(/^[0-9a-f]{16}$/.test(String(a.evidence)) && a.reason.trim() && a.test.trim() && a.reviewer.trim() && a.reviewedAt)) {
+      throw new Error(`${source}: ${where} is accepted without an evidence digest, a reason, a test another person can apply, a reviewer and a date`);
+    }
+  }
+  return doc;
+}
+
+/**
+ * The per-term acceptance record, or an EMPTY one. No sidecar, or no record committed in it, means
+ * nothing has been accepted, so every occurrence stays open — the direction that fails closed. A
+ * record that is named but cannot be read, or that does not parse or validate, throws, and the gate
+ * reports cannot-check. Read from the sidecar's COMMIT: an uncommitted row cannot clear the gate.
+ */
+export function loadAcceptances({ repo = REPO, env = process.env } = {}) {
+  let raw, source, origin;
+  if (env.CW_RELEASE_TERM_ACCEPTANCES) {
+    source = env.CW_RELEASE_TERM_ACCEPTANCES;
+    origin = 'file';
+    raw = readFileSync(source, 'utf8');
+  } else {
+    const sidecar = sidecarFor(repo, env);
+    if (!existsSync(sidecar)) return empty('no-sidecar');
+    const ref = sidecarRef();
+    const listed = execFileSync('git', ['-C', sidecar, 'ls-tree', '--name-only', ref, '--', ACCEPTANCES_REL],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    if (!listed) return empty('sidecar-absent');
+    source = `sidecar ${ref}:${ACCEPTANCES_REL}`;
+    origin = 'sidecar';
+    raw = execFileSync('git', ['-C', sidecar, 'show', `${ref}:${ACCEPTANCES_REL}`],
+      { encoding: 'utf8', maxBuffer: 1 << 24, stdio: ['ignore', 'pipe', 'pipe'] });
+  }
+  const doc = parseAcceptances(raw, source);
+  return {
+    source, origin, fingerprint: createHash('sha256').update(raw).digest('hex').slice(0, 12),
+    note: doc.note, acceptances: doc.acceptances,
+  };
 }
 
 function walk(root, rel = '', out = []) {
@@ -270,21 +356,82 @@ export function termsVerdict(s) {
   return { status: 'pass' };
 }
 
-/** The release gate: pass, fail, or cannot-check with the reason. */
-export function termsGate(dest, { load = loadTerms } = {}) {
+const termPatterns = ({ rules }) => new Map(rules.flatMap((r) => r.terms.map((t) => [t.label, `${t.re.source}\0${t.re.flags}`])));
+
+/**
+ * Split a scan by the acceptance record. Three lists, held apart: `accepted` (a signed row whose
+ * digest still matches the measurement), `lapsed` (a row granted against a different measurement or
+ * a since-rewritten pattern), and `open` (no row at all, or a row that rules the term must go).
+ * Rows that matched no occurrence come back as `stale`. Every entry carries the digest of the
+ * measurement as it stands, which is what a reviewer would have to grant an acceptance against.
+ */
+export function applyAcceptances(scan, list, record) {
+  const patterns = termPatterns(list);
+  const rows = new Map((record.acceptances || []).map((a) => [occurrenceKey(a), { row: a, used: 0 }]));
+  const accepted = [], lapsed = [], open = [];
+  for (const h of scan.hits) {
+    const place = { file: h.path, rule: h.rule, term: h.term, where: h.where, count: h.count };
+    const o = { ...place, evidence: digestOccurrence(place, patterns.get(place.term)) };
+    const held = rows.get(occurrenceKey(place));
+    if (held) held.used += 1;
+    if (!held) open.push(o);
+    else if (!ACCEPTING.includes(held.row.disposition)) open.push({ ...o, disposition: held.row.disposition });
+    else if (held.row.evidence === o.evidence) accepted.push({ ...o, disposition: held.row.disposition });
+    else lapsed.push({ ...o, disposition: held.row.disposition, grantedAgainst: held.row.count });
+  }
+  const stale = [...rows.values()].filter((r) => !r.used)
+    .map((r) => ({ file: r.row.file, rule: r.row.rule, term: r.row.term, where: r.row.where, disposition: r.row.disposition }));
+  return { accepted, lapsed, open, stale };
+}
+
+/** The record a reviewer edits: one PENDING row per occurrence the gate has not settled, carrying the
+ *  digest it would have to be granted against. Pending accepts nothing — it is the question, not the
+ *  answer — so a drafted record leaves the gate exactly as red as it was. */
+export function draftAcceptances(applied, { reviewedAt = null } = {}) {
+  const rows = [...applied.open, ...applied.lapsed]
+    .map((o) => ({
+      file: o.file, rule: o.rule, term: o.term, where: o.where, count: o.count, evidence: o.evidence,
+      disposition: 'pending', reason: '', test: '', reviewer: '', reviewedAt,
+    }))
+    .sort((a, b) => (occurrenceKey(a) < occurrenceKey(b) ? -1 : 1));
+  return { note: `${rows.length} denied-term occurrence(s) awaiting a ruling`, acceptances: rows };
+}
+
+/** The release gate: pass, contested, fail, or cannot-check with the reason. */
+export function termsGate(dest, { load = loadTerms, loadAccepted = loadAcceptances } = {}) {
   const skip = (why) => ({ gate: 'terms', status: 'cannot-check', detail: { error: why } });
   let list;
   try { list = load(); } catch (e) { return skip(`the denied-term list cannot be read (${e.message})`); }
   if (!list) return skip(`no denied-term list: set CW_RELEASE_TERMS or commit ${TERMS_REL} to the sidecar`);
-  const s = summarise(scanTree(dest, list), list);
+  let record;
+  try { record = loadAccepted(); } catch (e) { return skip(`the term acceptances cannot be read (${e.message})`); }
+  const scan = scanTree(dest, list);
+  const s = summarise(scan, list);
   const v = termsVerdict(s);
   if (!s.examined) return skip(v.error);
+  const applied = applyAcceptances(scan, list, record);
+  const tally = (rows) => rows.reduce((n, r) => n + r.count, 0);
+  const acceptedCount = tally(applied.accepted), lapsedCount = tally(applied.lapsed), unreviewedCount = tally(applied.open);
+  // Three states, the way undetermined is held apart from the severity buckets: a tree that carries
+  // an occurrence a person read and defended is not clean, and it is not a failure either. hitCount
+  // stays the detector's own number, so accepting a term never erases what fired. Acceptances settle
+  // hits only: what is left is judged as a clean count is, so an accepted tree whose remainder rests
+  // on an unmeasured or short exception is cannot-check, not contested.
+  const settled = !unreviewedCount && !lapsedCount;
+  const rest = settled && acceptedCount ? termsVerdict({ ...s, hitCount: 0, grossHitCount: s.withheldCount }) : v;
+  const status = !settled ? 'fail' : rest.status === 'pass' && acceptedCount ? 'contested' : rest.status;
+  const row = (r) => ({ path: maskPath(r.file, list), rule: r.rule, term: r.term, where: r.where, disposition: r.disposition ?? null,
+    ...(r.count ? { count: r.count, evidence: r.evidence } : {}), ...(r.grantedAgainst ? { grantedAgainst: r.grantedAgainst } : {}) });
   return {
     gate: 'terms',
-    status: v.status,
-    detail: { list: list.fingerprint, examined: s.examined, skipped: s.skipped, offendingFiles: s.offendingFiles,
+    status,
+    detail: { list: list.fingerprint, acceptances: record.fingerprint, acceptanceOrigin: record.origin ?? null, acceptanceRows: (record.acceptances || []).length,
+      examined: s.examined, skipped: s.skipped, offendingFiles: s.offendingFiles,
       hitCount: s.hitCount, withheldCount: s.withheldCount, grossHitCount: s.grossHitCount, withheld: s.withheld,
+      acceptedCount, lapsedCount, unreviewedCount,
       exceptions: s.exceptions, byRule: s.byRule, byDir: s.byDir, files: s.files.slice(0, 100),
-      ...(v.error ? { error: v.error } : {}) },
+      lapsed: applied.lapsed.slice(0, 50).map(row), stale: applied.stale.slice(0, 50).map(row),
+      ...(rest.error ? { error: rest.error } : {}),
+      ...(s.hitCount ? { summary: `${s.hitCount} denied term(s) in ${s.offendingFiles} file(s): ${acceptedCount} accepted, ${lapsedCount} lapsed, ${unreviewedCount} unreviewed` } : {}) },
   };
 }

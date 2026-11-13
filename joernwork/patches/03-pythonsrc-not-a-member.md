@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # 03 — `pythonsrc` is advertised and detected, but `ImportCode` has no such member
 
 **Fixed upstream** in joernio/joern#6243 (merged 2026-09-07), which maps PYTHONSRC to the

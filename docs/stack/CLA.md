@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # Contributor Licence Agreement
 
 commitwork's contributor licence agreement is [.github/CLA.md](../../.github/CLA.md), version 1 of

@@ -100,3 +100,29 @@ test('returns zero counts with toolfailed when exit file contains whitespace aro
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('returns nosrc for osv.sarif beside exit 128 and for zizmor.sarif beside exit 3', () => {
+  const dir = mkdtempSync(join(tmpdir(), '_emptyArtifact-'));
+  try {
+    for (const [name, exit] of [['osv.sarif', '128'], ['zizmor.sarif', '3']]) {
+      const p = join(dir, name);
+      writeFileSync(`${p}.exit`, exit);
+      assert.deepEqual(_emptyArtifact(p), { crit: 0, high: 0, med: 0, low: 0, total: 0, ran: true, nosrc: true }, name);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('returns toolfailed when one tool leaves the other tool\'s collected-nothing exit', () => {
+  const dir = mkdtempSync(join(tmpdir(), '_emptyArtifact-'));
+  try {
+    for (const [name, exit] of [['osv.sarif', '3'], ['zizmor.sarif', '128'], ['osv.sarif', '127']]) {
+      const p = join(dir, name);
+      writeFileSync(`${p}.exit`, exit);
+      assert.deepEqual(_emptyArtifact(p), { crit: 0, high: 0, med: 0, low: 0, total: 0, ran: true, toolfailed: true }, `${name} ${exit}`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

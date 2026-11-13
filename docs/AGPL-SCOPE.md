@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-07 50a278af -->
+<!-- verified-against: 2026-10-07 -->
 # Where the AGPL boundary falls
 
 > This document states where the AGPL boundary falls for commitwork as published at

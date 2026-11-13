@@ -173,8 +173,46 @@ function redactBuffer(buf, name) {
     }
     return o;
   };
-  try { return { data: Buffer.from(JSON.stringify(strip(JSON.parse(buf.toString('utf8'))))), redacted: true }; }
-  catch (e) { return { data: buf, redacted: false, why: `unparseable (${e.message.slice(0, 60)})` }; }
+  const text = buf.toString('utf8');
+  try { return { data: Buffer.from(JSON.stringify(strip(JSON.parse(text)))), redacted: true }; }
+  catch (e) { return redactJsonLines(text, buf, strip, e); }
+}
+
+/**
+ * JSON LINES, which is what the report carrying the most plaintext secret values in the tree
+ * actually is. `trufflehog --json` emits one record per line and the secrets-history check redirects
+ * it to `trufflehog.json` (manifests/security-baseline.json), so a whole-document JSON.parse fails
+ * on the second record: without a line reader that file is filed `unparseable` and copied through at
+ * FULL FIDELITY, `Raw` and `RawV2` intact, by the one path whose purpose is removing them. Nothing
+ * about it is unreadable — monitor/extractors/secrets.mjs has read it a line at a time all along.
+ *
+ * That stream also interleaves non-JSON banners. A line that is not a record is copied VERBATIM and
+ * COUNTED, never dropped — dropping it would change what a restore returns — and its presence keeps
+ * `redacted` false, because "most of this file was processed" is not the same claim as "this file
+ * was redacted" and only one of them is established.
+ *
+ * A record is an OBJECT. A line of a pretty-printed document that happens to parse alone (the last
+ * element of an array, `"foo"` with no trailing comma) is not a record, and counting it as one would
+ * describe a truncated SARIF as partly-redacted JSON lines instead of as the unparseable file it is.
+ */
+function redactJsonLines(text, buf, strip, wholeErr) {
+  let records = 0;
+  let copied = 0;
+  // split/join on '\n' round-trips blank and trailing lines exactly, so re-running on the same
+  // report yields the same bytes.
+  const out = text.split('\n').map((line) => {
+    if (!line.trim()) return line;
+    let o;
+    try { o = JSON.parse(line); } catch { copied++; return line; }
+    if (!o || typeof o !== 'object') { copied++; return line; }
+    records++;
+    return JSON.stringify(strip(o));
+  });
+  // Not JSON lines at all — a truncated document, or a log. The whole-document error is the
+  // accurate description of that, so keep it and keep the original bytes.
+  if (!records) return { data: buf, redacted: false, why: `unparseable (${wholeErr.message.slice(0, 60)})` };
+  if (!copied) return { data: Buffer.from(out.join('\n')), redacted: true };
+  return { data: Buffer.from(out.join('\n')), redacted: false, why: `JSON lines: records redacted=${records}, other lines copied verbatim=${copied}` };
 }
 
 // ---- build / verify -------------------------------------------------------
@@ -199,7 +237,11 @@ export function buildArchive({ root, batches, key, level = 3, redact = false, no
     secretBearingFiles: secretBearing,
     // Coverage STATED, not implied: a denylist cannot be complete, so publish what it applied and
     // every file it could not process. A reader can then judge the gap instead of assuming none.
-    redaction: redact ? { fields: [...VALUE_FIELDS], notRedacted } : null,
+    // The count is here as a NUMBER because `fidelity: 'redacted'` names the mode that ran and a
+    // reader takes it for a guarantee; a scanner report this pass did not reach is still plaintext.
+    redaction: redact
+      ? { fields: [...VALUE_FIELDS], notRedacted, unredactedSecretBearing: notRedacted.filter((n) => n.secretBearing).length }
+      : null,
   };
   // Two-pass: the manifest names the frame count, so seal once to learn it, then re-seal with the
   // count inside. The manifest is sealed WITH the data — a manifest outside the ciphertext could be
@@ -239,6 +281,22 @@ export function verifyArchive(file, key) {
   return { ok, manifest, frames, missing, wrong, extra, bytes: buf.length };
 }
 
+/**
+ * The coverage sentence a human reads before deciding that anything may be uploaded or deleted.
+ * `fidelity=redacted` names the mode that RAN; printed alone it reads as a guarantee the denylist
+ * cannot give, so the files the pass did not reach are printed beside it with the same emphasis.
+ * Returns null when no redaction was asked for — absence of a claim, not a claim of zero.
+ */
+export function redactionCoverage(manifest) {
+  const r = manifest && manifest.redaction;
+  if (!r) return null;
+  const total = manifest.entries.length;
+  const left = r.notRedacted.length;
+  const sb = r.unredactedSecretBearing;
+  return `redaction reached ${total - left} of ${total} files · ${left} not processed`
+    + (sb ? `, of which ${sb} secret-bearing — those are still PLAINTEXT inside this archive` : ', none of them secret-bearing');
+}
+
 // ---- coverage -------------------------------------------------------------
 // Append-only, and keyed on VERIFIED archives only: counting an unverified one would let a partial
 // run mask a gap that a human then deletes the source for.
@@ -274,6 +332,8 @@ function main(argv) {
     const r = verifyArchive(verifyTarget, keychainKey());
     console.log(`[archive] ${path.basename(verifyTarget)} — ${r.ok ? 'VERIFIED' : 'FAILED'}`);
     console.log(`[archive]   ${r.manifest.entries.length} entries · ${r.frames} frames · ${(r.bytes / 1e6).toFixed(1)} MB · fidelity=${r.manifest.fidelity}`);
+    const vcov = redactionCoverage(r.manifest);
+    if (vcov) console.log(`[archive]   ${vcov}`);
     if (!r.ok) {
       for (const p of r.missing.slice(0, 5)) console.log(`[archive]   MISSING ${p}`);
       for (const p of r.wrong.slice(0, 5)) console.log(`[archive]   HASH MISMATCH ${p}`);
@@ -317,6 +377,8 @@ function main(argv) {
   writeAtomic(finalPath, built.buf);   // atomic: a partial write never becomes an archive
   console.log(`[archive] wrote ${finalPath}`);
   console.log(`[archive]   ${todo.length} batches · ${built.entryCount} entries · ${built.manifest.frames} frames · ${(built.buf.length / 1e6).toFixed(1)} MB · fidelity=${built.manifest.fidelity}`);
+  const cov = redactionCoverage(built.manifest);
+  if (cov) console.log(`[archive]   ${cov}`);
   console.log(`[archive]   ${built.manifest.secretBearingFiles} secret-bearing files inside — this artifact is sensitive until decrypted by someone entitled to it`);
   console.log('[archive] NOT yet counted as coverage. Run --verify on it; nothing should be deleted until that passes.');
   console.log('[archive] This tool never deletes and never uploads. Offload is a human act.');

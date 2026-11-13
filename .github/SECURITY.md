@@ -1,6 +1,6 @@
 # Security Policy
 
-<!-- verified-against: 2026-10-18 a25e49d2 -->
+<!-- verified-against: 2026-10-18 -->
 
 commitwork is a repository security scanner, local CI runner and scheduled monitoring system with
 remediation and compliance-evidence tooling. This document says where to send a vulnerability, what

@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-10 8ffada77 -->
+<!-- verified-against: 2026-10-10 -->
 # Terms of Use — overwatch-layer, spine, memory-layer and commitwork
 
 > **Draft. Not yet in force, and not legal advice.** These terms were drafted by the project for

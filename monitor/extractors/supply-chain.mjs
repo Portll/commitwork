@@ -19,6 +19,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { safeParseFile } from '../safe-parse.mjs';
 import { readSarif, ruleIndex, ruleTitle, ruleTitleText } from '../sarif-read.mjs';
+import { packageFromOsvMessage } from '../../lib/osv-message.mjs';
 import { classifyPath } from '../fixture-paths.mjs'; // a test corpus is a different population, not a cleaner one
 import { classify as classifyReach, NOTE as REACH_NOTE } from '../advisory-reach.mjs'; // a name collision is not an installed package
 import { _zero, _emptyArtifact, _detailFor, _titled, _ecosystemOf, capMessage, _wtBucket, _setAsideWorktree, _worktreesOf } from './core.mjs';
@@ -131,10 +132,7 @@ export function _malCounts(dir, file) {
   // Same typed-state mapping as _sarifCounts
   const r = readSarif(join(dir, file));
   if (r.state === 'absent' || r.state === 'unreadable') return null;
-  // `empty` has TWO live meanings and this is the one place that must not merge them: a self-gated
-  // check with genuinely no source, and a tool killed before it wrote a byte. Both keep `nosrc` so
-  // existing consumers still render grey; `emptyArtifact` is the discriminator a void-carry needs.
-  if (r.state === 'empty') return { ..._zero(), ran: true, nosrc: true, emptyArtifact: true };
+  if (r.state === 'empty') return { ..._emptyArtifact(join(dir, file)), emptyArtifact: true };
   if (r.state === 'unparseable') return { ..._zero(), ran: true, unparseable: true };
   if (r.state === 'never-ran') return { ..._zero(), ran: true, neverran: true };
   if (r.state === 'tool-failed') return { ..._zero(), ran: true, toolfailed: true };
@@ -152,9 +150,7 @@ export function _malCounts(dir, file) {
         msg].filter((s) => typeof s === 'string').join('\n');
       const mal = hay.match(_MAL_ID);
       if (!mal) continue;
-      // the same message grammar parseOsv reads, but greedy on the name so a scoped package
-      // ('@ctrl/tinycolor@4.1.1') keeps its scope instead of failing the match
-      const pm = msg.match(/Package '([^']+)@([^']+)'/);
+      const pm = packageFromOsvMessage(msg);
       const loc = res.locations && res.locations[0] && res.locations[0].physicalLocation;
       // A confirmed-malicious package inside a TEST FIXTURE is a different claim from one in the
       // dependency tree: a dependency updater's fixtures can keep a real worm deliberately, to prove
@@ -165,11 +161,11 @@ export function _malCounts(dir, file) {
       if (fcls.fixture) {
         fx.crit++; fx.total++;
         fx.byPattern[fcls.pattern] = (fx.byPattern[fcls.pattern] || 0) + 1;
-        fx.rows.push({ id: mal[0], package: pm ? pm[1] : '', version: pm ? pm[2] : '', pattern: fcls.pattern });
+        fx.rows.push({ id: mal[0], package: pm ? pm.name : '', version: pm ? pm.version : '', pattern: fcls.pattern });
         continue;
       }
       const uri = (loc && loc.artifactLocation && loc.artifactLocation.uri) || '';
-      const version = pm ? pm[2] : '';
+      const version = pm ? pm.version : '';
       // Fixture FIRST, then reachability: which population a row describes is the stronger
       // statement, and a fixture row is set aside whether or not the advisory reaches it.
       // A MAL- advisory with `introduced: 0` matches every version of a NAME, so a collision
@@ -179,13 +175,13 @@ export function _malCounts(dir, file) {
       if (!reach.reachable) {
         un.total++;
         un.byCode[reach.code] = (un.byCode[reach.code] || 0) + 1;
-        un.rows.push({ id: mal[0], package: pm ? pm[1] : '', version, ecosystem: _ecosystemOf(uri),
+        un.rows.push({ id: mal[0], package: pm ? pm.name : '', version, ecosystem: _ecosystemOf(uri),
           unknown: true, unknownReason: reach.unknownReason,
           code: reach.code, reason: reach.reason, claimedSeverity: 'crit' });
         continue;
       }
       c.crit++; c.total++;
-      rows.push({ id: mal[0], package: pm ? pm[1] : '', version,
+      rows.push({ id: mal[0], package: pm ? pm.name : '', version,
         ecosystem: _ecosystemOf(uri),
         advisory: `https://osv.dev/vulnerability/${mal[0]}` });
     }

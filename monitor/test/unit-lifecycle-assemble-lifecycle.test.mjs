@@ -35,8 +35,8 @@ test('null records pass through and the reach join stays at zero without an inde
 });
 
 test('an owner map scoped to another area is ignored while every other scope applies', () => {
-  const ownerMap = { $scope: { area: 'a1' }, repos: { 'sqx-billing-api': { team: 'T', technology: 'Go' } } };
-  const run = (ctx) => one(rec({ repo: 'sqx-billing-api' }), ctx);
+  const ownerMap = { $scope: { area: 'a1' }, repos: { 'billing-api': { team: 'T', technology: 'Go' } } };
+  const run = (ctx) => one(rec({ repo: 'billing-api' }), ctx);
   const other = run({ ownerMap, area: 'a2' });
   assert.equal(other.bugBelongsTo, null);
   assert.equal(other.repoTechnology, 'Billing Api');

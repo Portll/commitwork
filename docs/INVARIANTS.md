@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 fc0917d7 -->
+<!-- verified-against: 2026-10-13 -->
 # Invariants register
 
 The engineering invariants of this repository, one row each, with the test that enforces it, the

@@ -9,6 +9,7 @@ import { classify as classifyReach, inheritUndetermined } from './advisory-reach
 import { fixFromOsvHelp } from './osv-fix.mjs';
 import { fixFromRange } from './fix-range.mjs';
 import { readSarif, ruleIndex } from './sarif-read.mjs';
+import { packageFromOsvMessage } from '../lib/osv-message.mjs';
 import { kevStaleDays } from '../cra/lib.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -46,10 +47,8 @@ export function parseOsv(dir) {
     const rule = rules[res.ruleId] || {};
     const cvss = parseFloat((rule.properties && rule.properties['security-severity']) || 0) || 0;
     const m = res.message && res.message.text || '';
-    // GREEDY on the name, so a SCOPED package keeps its scope: '@ctrl/tinycolor@4.1.1' begins with
-    // '@', which a `[^'@]+` name cannot match, and _malCounts below must read the same message the
-    // same way. See the migration bridge at keyOf for why the key change needed one.
-    const pm = m.match(/Package '([^']+)@([^']+)'/);
+    // A scoped name keeps its scope; see the migration bridge at keyOf for why the key change needed one.
+    const pm = packageFromOsvMessage(m);
     const title = ((rule.shortDescription && rule.shortDescription.text) || res.ruleId).replace(/^(CVE|GHSA|MAL)-\S+:\s*/, '');
     const id = res.ruleId;
     const loc = res.locations && res.locations[0] && res.locations[0].physicalLocation;
@@ -64,7 +63,7 @@ export function parseOsv(dir) {
     // CVE-2026-53668 and npm-audit's GHSA-jjmj-jmhj-qwj2 are ONE finding. Read from the artifact,
     // never from the network: a rollup must produce the same answer offline and years later.
     const aliases = (rule.deprecatedIds || []).filter((x) => typeof x === 'string');
-    const version = pm ? pm[2] : '';
+    const version = pm ? pm.version : '';
     // ...and the mirror of that rule. A MAL- advisory whose range is `introduced: 0` matches every
     // version of a NAME, so a name collision publishes a critical about something the repo never
     // installed: a package pinned from git (version '6f48f578'), or fs@0.0.1-security, which IS
@@ -81,17 +80,17 @@ export function parseOsv(dir) {
     // Cargo.lock pin makes the two indistinguishable. Same routing as the MAL- demotion above:
     // classify, never drop — the row keeps id, package, version, path and its original claim, and
     // moves out of crit/high/med/low into `unknown`/`undetermined`.
-    const pkgKey = `${pm ? pm[1] : ''}@${version}`;
+    const pkgKey = `${pm ? pm.name : ''}@${version}`;
     const resolvedSet = declaredVerdict && declaredVerdict.get(path);
     const notDeclared = !!resolvedSet && resolvedSet.has(pkgKey);
     const claimed = !reach.reachable ? 'unknown' : (malicious ? 'crit' : sevFromCvss(cvss));
     // Preserve the remediation target that osv-scanner renders in rule.help.text.
-    const fixed = fixFromOsvHelp((rule.help && rule.help.text) || '', { id, aliases, pkg: pm ? pm[1] : '' });
+    const fixed = fixFromOsvHelp((rule.help && rule.help.text) || '', { id, aliases, pkg: pm ? pm.name : '' });
     out.push({ tool: 'osv', id, cvss, severity: notDeclared ? 'unknown' : claimed, malicious,
       ...(notDeclared ? { undetermined: true, unknown: true, resolutionBasis: 'resolved',
         undeterminedCode: 'version-not-declared', claimedSeverity: claimed,
         undeterminedReason: `the manifest ${path.replace(/^file:\/\/\/?/, '')} does not state ${pkgKey}; osv-scanner resolved it from an unpinned requirement, so this describes the lowest tree the declared floors permit rather than what this repository installs` } : {}),
-      package: pm ? pm[1] : '', version, path, aliases,
+      package: pm ? pm.name : '', version, path, aliases,
       ...(reach.reachable ? {} : { undetermined: true, unknown: true, unknownReason: reach.unknownReason, undeterminedCode: reach.code, undeterminedReason: reach.reason, claimedSeverity: 'crit' }),
       fixed, title, advisory: id.startsWith('GHSA') ? `https://github.com/advisories/${id}` : `https://osv.dev/vulnerability/${id}` });
   }

@@ -5,7 +5,8 @@
 // Invariants: explicit uncertainty — an unreadable file is UNSCANNED, never clean, and a run with a
 // scan failure can never exit 0; the placeholder test reads the CREDENTIAL substring only, never
 // the whole match; bytes are read through Node, never shell grep (a C locale silently suppresses
-// matches in UTF-8-dense files).
+// matches in UTF-8-dense files); and tracked mode counts the working-tree files it did NOT read,
+// because a verdict over the tracked set reads as a verdict over the directory it was run in.
 //
 // usage:
 //   node bin/secrets-sweep.mjs [--paths <p>[,<p>…]] [--json] [--all] [--fail-on-context]
@@ -470,6 +471,27 @@ export function trackedFiles(root) {
   return out.split('\0').filter(Boolean);
 }
 
+/** Every working-tree file git does NOT track, relative to `root` — the population tracked mode
+ *  never opens. Deliberately without `--exclude-standard`: an ignored file can hold a credential,
+ *  so a listing that honours ignore rules would reproduce the blind spot it is here to measure.
+ *  THROWS on any git failure — an unknown scope is not an empty one. */
+export function untrackedFiles(root) {
+  const out = scannedGitOut(root, ['ls-files', '--others', '-z'], { maxBuffer: 256 * 1024 * 1024 });
+  return out.split('\0').filter(Boolean);
+}
+
+/** The SKIP_DIRS prefix `rel` sits under, or null. Out-of-scope counting prunes on the same policy
+ *  the walker uses — `node_modules` would otherwise be the whole number — and the prefix is named
+ *  in skippedDirs rather than dropped, because a silently omitted directory is the same defect one
+ *  level down. */
+export function skippedPrefix(rel) {
+  const parts = rel.split('/');
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (SKIP_DIRS.has(parts[i])) return parts.slice(0, i + 1).join('/');
+  }
+  return null;
+}
+
 /** Materialise a git ref into a scratch directory — the committed tree is not the worktree.
  *  `git archive` needs no lock and cannot disturb concurrent sessions. */
 export function materialiseRef(root, ref = 'HEAD') {
@@ -509,6 +531,37 @@ export function sweep(paths = DEFAULT_PATHS) {
     if (targets.length === 0) {
       return emptyResult(root, ['<git ls-files>'], mode,
         [{ file: '<git ls-files>', failure: 'git reported zero tracked files' }]);
+    }
+  }
+
+  // The population this mode does not enter, counted and located. A gitignored file holding a
+  // credential is never opened in tracked mode, and without this count a verdict over the tracked
+  // set reads as one over the directory. `--paths <dir>` scans them; the walker reaches ignored
+  // files. A count is not a finding: nothing here is scanned, so nothing here is a verdict either.
+  let outOfScope = null;
+  if (mode === 'tracked') {
+    try {
+      const pruned = new Set();
+      const dirs = new Set();
+      const nestedRepos = new Set();
+      let count = 0;
+      for (const p of untrackedFiles(root)) {
+        const prefix = skippedPrefix(p);
+        if (prefix) { pruned.add(prefix); continue; }
+        // A trailing slash is git collapsing a nested repository — `--others` never lists inside
+        // one, so this entry stands for an UNKNOWN number of files. Counting it as one file would
+        // report `.claude/worktrees/x/` as a single out-of-scope path when it holds thousands, so
+        // it is named apart from the count rather than folded into it.
+        if (p.endsWith('/')) { nestedRepos.add(p); continue; }
+        count++;
+        dirs.add(dirname(p));
+      }
+      pushAll(skippedDirs, [...pruned]);
+      outOfScope = { count, dirs: [...dirs].sort(), nestedRepos: [...nestedRepos].sort() };
+    } catch (e) {
+      // Not an empty population — an unmeasured one, and a scope we cannot state is a scope we
+      // cannot publish a clean verdict over.
+      failures.push({ file: '<git ls-files --others>', failure: `cannot list untracked files: ${e.message}` });
     }
   }
 
@@ -574,6 +627,7 @@ export function sweep(paths = DEFAULT_PATHS) {
     failures,
     skippedDirs,
     fixtureFiles,
+    outOfScope,
     summary: {
       [VERDICT.SECRET]: by(VERDICT.SECRET).length,
       [VERDICT.CONTEXT]: by(VERDICT.CONTEXT).length,
@@ -582,6 +636,9 @@ export function sweep(paths = DEFAULT_PATHS) {
       unscannedFiles: unscanned.length,
       scanFailures: failures.length,
       declaredFixtures: fixtureFiles.length,
+      // null, never 0, when the mode does not establish it: a zero here would claim the working
+      // tree holds nothing outside the scope, which only tracked mode ever asks git about.
+      outOfScopeFiles: outOfScope ? outOfScope.count : null,
     },
   };
 }
@@ -590,10 +647,11 @@ export function sweep(paths = DEFAULT_PATHS) {
 function emptyResult(root, paths, mode, failures) {
   return {
     root, mode, paths, scannedFiles: 0,
-    findings: [], unscanned: [], failures, skippedDirs: [], fixtureFiles: [],
+    findings: [], unscanned: [], failures, skippedDirs: [], fixtureFiles: [], outOfScope: null,
     summary: {
       [VERDICT.SECRET]: 0, [VERDICT.CONTEXT]: 0, [VERDICT.PLACEHOLDER]: 0,
       scannedFiles: 0, unscannedFiles: 0, scanFailures: failures.length, declaredFixtures: 0,
+      outOfScopeFiles: null,
     },
   };
 }
@@ -671,6 +729,24 @@ function render(result, { all = false } = {}) {
   }
   L.push('');
 
+  // Only tracked mode establishes this, so only tracked mode gets to say anything about it.
+  if (result.outOfScope) {
+    L.push(`OUT OF SCOPE  ${result.outOfScope.count}  — working-tree files git does not track; this run never opened them`);
+    const dirs = all ? result.outOfScope.dirs : result.outOfScope.dirs.slice(0, 20);
+    for (const d of dirs) L.push(`  ${d}`);
+    if (!all && result.outOfScope.dirs.length > dirs.length) {
+      L.push(`  … ${result.outOfScope.dirs.length - dirs.length} more directories (--all, or --json)`);
+    }
+    if (result.outOfScope.nestedRepos.length) {
+      L.push(`  plus ${result.outOfScope.nestedRepos.length} nested repositories of unknown size, NOT in the count above:`);
+      for (const d of all ? result.outOfScope.nestedRepos : result.outOfScope.nestedRepos.slice(0, 10)) L.push(`    ${d}`);
+    }
+    if (result.outOfScope.count || result.outOfScope.nestedRepos.length) {
+      L.push('  The verdict above covers the tracked tree. Scan these with --paths <dir>.');
+    }
+    L.push('');
+  }
+
   L.push(`SCAN FAILURES  ${result.failures.length}`);
   for (const f of result.failures) L.push(`  ${f.file}  ${f.failure}`);
   return L.join('\n');
@@ -709,7 +785,9 @@ const HELP = `commitwork secrets-sweep — pattern + entropy + context sweep
   node bin/secrets-sweep.mjs [--paths <p>[,<p>…]] [--head [<ref>]] [--json] [--all]
                              [--fail-on-context] [--no-fixture-exempt] [--max-bytes <n>]
 
-  default scope: every git-tracked file (reports/ is gitignored, so it is excluded by that)
+  default scope: every git-tracked file (reports/ is gitignored, so it is excluded by that).
+                 Untracked and ignored working-tree files are counted under OUT OF SCOPE and
+                 located by directory — they are not scanned, and not reported clean either.
   --head         scan the COMMITTED tree instead of the worktree, including files deleted
                  from the working copy but still present in the ref
   env: CW_SECRETS_ROOT, CW_SECRETS_MAX_BYTES, CW_SECRETS_NO_FIXTURE_EXEMPT

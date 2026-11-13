@@ -127,7 +127,7 @@ test('returns language counts and tags for a valid queries array', () => {
     };
     writeFileSync(p, JSON.stringify(data));
     const r = readQueryDb(p);
-    assert.deepEqual(r, { languages: { c: 1, java: 2, python: 2 }, tags: ["perf", "security"] });
+    assert.deepEqual(r, { languages: { c: 1, java: 2, python: 2 }, tags: ["perf", "security"], names: {} });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

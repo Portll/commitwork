@@ -18,6 +18,7 @@
 // monitor/extractors.mjs re-exports every public name here.
 
 import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { rowsFor } from '../detail-schema.mjs';
 import { unknownReasonOf } from '../unknown.mjs'; // ONE predicate; lanes name a reason, not a new adjective
 import { ecosystemOf } from '../advisory-reach.mjs'; // a name collision is not an installed package
@@ -25,11 +26,14 @@ import { classifyWorktreePath } from '../worktree-paths.mjs'; // an agent worktr
 import { sortedTitles } from '../sarif-read.mjs';
 
 export const _zero = () => ({ crit: 0, high: 0, med: 0, low: 0, total: 0 });
+// fact: osv-scanner exits 128 and zizmor exits 3 when they ran and collected nothing to audit / otherwise a repo with no package source or no workflow file is published as a failed tool (expiry: never, prev: wrong)
+const COLLECTED_NOTHING_EXIT = Object.freeze({ 'osv.sarif': 128, 'zizmor.sarif': 3 });
 // fact: an empty artifact beside an exit above 1 is a tool that died before writing, not a repo with nothing to scan / otherwise a tool that cannot start publishes no-subject on a repo holding a lockfile (expiry: never, prev: wrong)
 export function _emptyArtifact(p) {
   let exit = 0;
   try { exit = parseInt(readFileSync(`${p}.exit`, 'utf8').trim(), 10) || 0; } catch (e) { if (e.code !== 'ENOENT') return { ..._zero(), ran: true, unparseable: true }; }
-  return exit > 1 ? { ..._zero(), ran: true, toolfailed: true } : { ..._zero(), ran: true, nosrc: true };
+  const failed = exit > 1 && exit !== COLLECTED_NOTHING_EXIT[basename(p)];
+  return failed ? { ..._zero(), ran: true, toolfailed: true } : { ..._zero(), ran: true, nosrc: true };
 }
 
 // ── per-finding detail (the drill-down behind the scanner tabs) ────────────────────────────────

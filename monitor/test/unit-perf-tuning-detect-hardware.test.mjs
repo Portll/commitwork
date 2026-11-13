@@ -1,7 +1,21 @@
 // Detects CPU cores, RAM, architecture, platform, model, disk class, and container status (monitor/perf-tuning.mjs detectHardware).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { cpus, totalmem, arch as osArch, platform as osPlatform } from 'node:os';
 import { detectHardware } from '../perf-tuning.mjs';
+
+// The fallback values detectHardware() reports when no CW_PERF_* override is given, computed from
+// node:os exactly as the module computes them so the expectations hold on any host.
+const fallback = () => {
+  const list = cpus() || [];
+  return {
+    cores: list.length || 1,
+    ramGB: Math.round(totalmem() / (1024 ** 3)),
+    arch: osArch(),
+    platform: osPlatform(),
+    model: list[0]?.model || 'unknown',
+  };
+};
 
 test('returns cores from env when CW_PERF_CORES is set', () => {
   const r = detectHardware({ env: { CW_PERF_CORES: '8' } });
@@ -10,12 +24,12 @@ test('returns cores from env when CW_PERF_CORES is set', () => {
 
 test('returns cores from cpus length when CW_PERF_CORES is unset', () => {
   const r = detectHardware({ env: {} });
-  assert.equal(r.cores, 18);
+  assert.equal(r.cores, fallback().cores);
 });
 
-test('returns cores as 1 when CW_PERF_CORES is 0 and cpus is empty', () => {
+test('ignores a CW_PERF_CORES override of 0 and returns the detected core count', () => {
   const r = detectHardware({ env: { CW_PERF_CORES: '0' } });
-  assert.equal(r.cores, 18);
+  assert.equal(r.cores, fallback().cores);
 });
 
 test('returns ramGB from env when CW_PERF_RAM_GB is set', () => {
@@ -25,7 +39,7 @@ test('returns ramGB from env when CW_PERF_RAM_GB is set', () => {
 
 test('returns ramGB from totalmem when CW_PERF_RAM_GB is unset', () => {
   const r = detectHardware({ env: {} });
-  assert.equal(r.ramGB, 48);
+  assert.equal(r.ramGB, fallback().ramGB);
 });
 
 test('returns arch from env when CW_PERF_ARCH is set', () => {
@@ -35,7 +49,7 @@ test('returns arch from env when CW_PERF_ARCH is set', () => {
 
 test('returns arch from osArch when CW_PERF_ARCH is unset', () => {
   const r = detectHardware({ env: {} });
-  assert.equal(r.arch, "arm64");
+  assert.equal(r.arch, fallback().arch);
 });
 
 test('returns platform from env when CW_PERF_PLATFORM is set', () => {
@@ -45,12 +59,12 @@ test('returns platform from env when CW_PERF_PLATFORM is set', () => {
 
 test('returns platform from osPlatform when CW_PERF_PLATFORM is unset', () => {
   const r = detectHardware({ env: {} });
-  assert.equal(r.platform, "darwin");
+  assert.equal(r.platform, fallback().platform);
 });
 
 test('returns model from cpus list when available', () => {
   const r = detectHardware({ env: {} });
-  assert.equal(r.model, "Apple M5 Pro");
+  assert.equal(r.model, fallback().model);
 });
 
 test('returns diskClass from env when CW_PERF_DISK is set', () => {

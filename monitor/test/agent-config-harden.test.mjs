@@ -246,7 +246,7 @@ describe('the CLI', () => {
     const text = readFileSync(join(repo, '.mcp.json'), 'utf8');
     const r = spawnSync(process.execPath, [BIN], { encoding: 'utf8', env: { ...process.env, CW_AGENT_CONFIG_ROOT: repo } });
     assert.equal(r.status, 0, r.stderr);
-    assert.match(r.stdout, /^--- a\/\.mcp\.json\n\+\+\+ b\/\.mcp\.json\n@@ /);
+    assert.match(r.stdout, /^diff --git a\/\.mcp\.json b\/\.mcp\.json\n--- a\/\.mcp\.json\n\+\+\+ b\/\.mcp\.json\n@@ /);
     assert.match(r.stdout, /\+.*"canary-mcp-fetch@2\.3\.4"/);
     assert.match(r.stderr, /dry-run; nothing written/);
     assert.equal(readFileSync(join(repo, '.mcp.json'), 'utf8'), text);

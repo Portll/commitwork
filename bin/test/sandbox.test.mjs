@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { buildSandbox, assertMountAllowed, shellQuote, POSTURES } from '../lib/sandbox.mjs';
+import { buildSandbox, assertMountAllowed, dockerHostPath, shellQuote, POSTURES } from '../lib/sandbox.mjs';
 import { coresFor } from '../../monitor/perf-tuning.mjs';
 
 const CLI = join(fileURLToPath(new URL('../..', import.meta.url)), 'bin/sandbox.mjs');
@@ -198,6 +198,52 @@ describe('refusals — fail closed', () => {
   });
 });
 
+// ── WINDOWS HOST PATHS ──────────────────────────────────────────────────────────────────────────
+//
+// Under Git Bash, $PWD is the MSYS form /c/Users/x/repo. A container lane runs with MSYS path
+// conversion off (scanner-env.mjs laneWindowsEnv), so that form reaches this library verbatim and
+// docker.exe rejects it. The platform is taken from the spec so these cases run on every host.
+describe('the host side of a -v is written for the platform docker runs on', () => {
+  test('on win32 every spelling of a drive path is emitted as C:/... — upper-cased letter, forward slashes', () => {
+    for (const host of ['C:\\Users\\x\\repo', 'c:/Users/x/repo', 'C:/Users/x/repo/', '/c/Users/x/repo']) {
+      const { args } = buildSandbox({ posture: 'analyse', name: 'cw-t', platform: 'win32', mounts: [{ host, path: '/src', source: true }] });
+      assert.deepEqual(pairOf(args, '-v'), ['C:/Users/x/repo:/src:ro'], host);
+    }
+    assert.equal(dockerHostPath('/c/Users/x/repo', 'win32'), 'C:/Users/x/repo');
+    assert.equal(dockerHostPath('d:\\locks', 'win32'), 'D:/locks');
+    assert.equal(dockerHostPath('/d/locks', 'win32'), 'D:/locks');
+    assert.equal(dockerHostPath('/srv/x', 'win32'), '/srv/x', 'a path with no drive letter is not guessed at');
+  });
+
+  test('off win32 the emitted host is unchanged: separators normalised, nothing re-lettered', () => {
+    for (const platform of ['darwin', 'linux']) {
+      const { args } = buildSandbox({ posture: 'analyse', name: 'cw-t', platform, mounts: [{ host: '/c/Users/x/repo', path: '/src', source: true }] });
+      assert.deepEqual(pairOf(args, '-v'), ['/c/Users/x/repo:/src:ro'], `${platform}: /c/... is an ordinary directory here`);
+      assert.equal(dockerHostPath('c:/x', platform), 'c:/x');
+      assert.equal(dockerHostPath('C:\\x', platform), 'C:/x', 'backslashes were always normalised, on every platform');
+    }
+    const before = buildSandbox({ posture: 'analyse', name: 'cw-t', mounts: [{ host: '/repo', path: '/src', mode: 'ro', source: true }] }).args;
+    const after = buildSandbox({ posture: 'analyse', name: 'cw-t', platform: process.platform === 'win32' ? 'linux' : process.platform, mounts: [{ host: '/repo', path: '/src', mode: 'ro', source: true }] }).args;
+    assert.deepEqual(after, before, 'naming the platform explicitly changes nothing on a POSIX host');
+  });
+
+  test('the converted path is the one the guard checks: a credential directory or a drive root is refused in any spelling', () => {
+    for (const host of ['/c/Users/x/.ssh', 'C:\\Users\\x\\.aws\\credentials', 'c:/Users/x/.docker/config.json']) {
+      assert.throws(() => buildSandbox({ posture: 'analyse', name: 'cw-t', platform: 'win32', mounts: [{ host, path: '/x' }] }),
+        /contains credential material/, `${host} was allowed`);
+    }
+    for (const host of ['C:\\', 'c:/', '/c', '/']) {
+      assert.throws(() => buildSandbox({ posture: 'analyse', name: 'cw-t', platform: 'win32', mounts: [{ host, path: '/x' }] }),
+        /filesystem root/, `${host} was allowed`);
+    }
+    // MSYS leaves a driveless /etc alone, and so does the conversion
+    assert.throws(() => buildSandbox({ posture: 'analyse', name: 'cw-t', platform: 'win32', mounts: [{ host: '/etc', path: '/x' }] }), /host-equivalent/);
+    assert.throws(() => assertMountAllowed('C:'), /filesystem root/);
+    // control: an ordinary Windows repo path is allowed, so the refusals above are not vacuous
+    assert.ok(assertMountAllowed(dockerHostPath('/c/Users/x/Repositories/thing', 'win32')));
+  });
+});
+
 describe('opening egress is possible but never silent', () => {
   // Warnings are matched by SUBJECT rather than counted. A spec with no CPU bound warns about that
   // too, and a count would have read the second warning as a broken egress claim.
@@ -234,6 +280,22 @@ describe('the CLI is a thin shell, not a second implementation', () => {
     assert.equal(code, 0, out);
     assert.deepEqual(JSON.parse(out), buildSandbox(spec).args,
       'the CLI derives its own flags — it must call buildSandbox, or the two drift the way sweep.mjs --exclude did');
+  });
+
+  test('--mount-source keeps a Windows drive letter in the host instead of splitting on its colon', () => {
+    const { out, code } = cli(['--posture', 'analyse', '--name', 'cw-t', '--mount-source', 'C:\\repo:/src:ro', '--mount', 'D:/locks:/locks', '--json']);
+    assert.equal(code, 0, out);
+    // backslashes are normalised on every host; re-lettering is win32-only and not reached here
+    assert.deepEqual(pairOf(JSON.parse(out), '-v'), ['D:/locks:/locks:ro', 'C:/repo:/src:ro']);
+    const bare = cli(['--posture', 'analyse', '--name', 'cw-t', '--mount-source', 'C:\\repo', '--json']);
+    assert.equal(bare.code, 2, 'a drive path with no container path is still not host:path');
+    assert.match(bare.out, /is not host:path/);
+  });
+
+  test('a drive-letter credential path is refused by the CLI, so the guard read the whole host and not the letter', () => {
+    const r = cli(['--posture', 'analyse', '--name', 'cw-t', '--mount', 'C:\\Users\\x\\.ssh:/x:ro', '--json']);
+    assert.equal(r.code, 2, r.out);
+    assert.match(r.out, /contains credential material \(\.ssh\)/);
   });
 
   test('the CLI derives the CPU bound from CW_CHECK, so no manifest command repeats the number', () => {

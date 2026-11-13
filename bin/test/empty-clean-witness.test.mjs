@@ -101,6 +101,38 @@ describe('deps-osv over a lockfile the scanner has no extractor for', () => {
   });
 });
 
+describe('deps-osv over a lone deno.lock converted by bin/deno-lock-osv.mjs', () => {
+  const MEASURED = {
+    scanner: 'osv-scanner 2.6.0 / osv-scalibr 0.5.2',
+    measuredOn: '2026-11-05',
+    lock: 'bin/test/fixtures/deno-lock/deno.lock',
+    packagesExtracted: 2,
+    exit: 1,
+    uri: 'deno-osv-scanner.json',
+    results: ['CVE-2020-28500', 'CVE-2021-23337', 'CVE-2026-4800', 'CVE-2021-44906', 'CVE-2025-13465'],
+  };
+  const sarif = JSON.stringify({ version: '2.1.0', runs: [{ tool: { driver: { name: 'osv-scanner', rules: [] } },
+    results: MEASURED.results.map((ruleId) => ({ ruleId, level: 'warning',
+      locations: [{ physicalLocation: { artifactLocation: { uri: `file:///deno-locks/${MEASURED.uri}` } } }] })) }] });
+  const classify = (body, exit) => {
+    const d = dir();
+    writeFileSync(join(d, 'osv.sarif'), body);
+    writeFileSync(join(d, 'osv.sarif.exit'), `${exit}\n`);
+    try { return classifyReport(CHECK, d, d); } finally { rmSync(d, { recursive: true, force: true }); }
+  };
+
+  test('the converted npm half is a findings run, not a void', () => {
+    const r = classify(sarif, MEASURED.exit);
+    assert.equal(r.sev, 'med');
+    assert.equal(r.summary, `${MEASURED.results.length} (0e/${MEASURED.results.length}w)`);
+  });
+
+  test('a deno.lock with nothing converted still reads as a void', () => {
+    assert.equal(classify('', 128).sev, 'noscan');
+    assert.notEqual(classify(sarif, MEASURED.exit).sev, classify('', 128).sev);
+  });
+});
+
 describe('shellcheck: advisory-only output exits 1 and is a result, not a failure', () => {
   const SC = { id: 'shell-lint', report: { file: 'shellcheck.json', format: 'shellcheck' } };
   const runSc = ({ exit, comments }) => {

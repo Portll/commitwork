@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-11-04 d38ea2d5 -->
+<!-- verified-against: 2026-11-04 -->
 # commitwork
 
 **Repository security scanner, local CI runner and scheduled monitor, with remediation and
@@ -46,7 +46,7 @@ tool. If the daemon is installed but stopped, they record n/a. They never record
 - **Produces compliance evidence.** `cra/` maps the same evidence onto EU CRA Art. 14 cases,
   CycloneDX SBOM and VEX, POA&M, SOC 2 and OSCAL, all as drafts.
 
-[release/CLAUDE.public.md](release/CLAUDE.public.md#house-invariants) lists the engineering
+[CLAUDE.md](CLAUDE.md#house-invariants) lists the engineering
 invariants. [docs/INVARIANTS.md](docs/INVARIANTS.md) names the test that enforces each one:
 
 - **Fail closed.** A parse failure is never an empty result. Only `ENOENT` means "legitimately
@@ -730,7 +730,7 @@ versioned in a private sidecar, so this index does not list it.
 
 - [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) — how to contribute: the contributor licence agreement every contributor signs once before their first change is merged, how CLA assistant records it on a pull request, what is welcome without one (bug reports, reproductions, design discussion), the house invariants a change has to satisfy, how to tell your failure from the known test baseline, and the warning that `fixtures/scan-canary/dirty/` will trip your scanner. Lives under `.github/` for the same reason as the security policy
 - [.github/CLA.md](.github/CLA.md) — the contributor licence agreement, version 1 of 7 October 2026: the agreement cobolwork and ironwork use, adapted to commitwork's AGPL-3.0-or-later, PolyForm Internal Use and Apache-2.0 wire-layer licences. A licence, not an assignment; section 8 keeps every accepted contribution under AGPL-3.0-or-later permanently, and section 9 passes it to the company on incorporation
-- [release/CLAUDE.public.md](release/CLAUDE.public.md) — the agent instructions the public snapshot ships as its CLAUDE.md: what commitwork is, the commands, the house invariants and how to read the larger files. `bin/release-candidate.mjs` swaps it in; the operational CLAUDE.md for the shared working tree is export-ignored
+- [CLAUDE.md](CLAUDE.md) — the agent instructions the public snapshot ships as its CLAUDE.md: what commitwork is, the commands, the house invariants and how to read the larger files. `bin/release-candidate.mjs` swaps it in; the operational CLAUDE.md for the shared working tree is export-ignored
 - [.github/SECURITY.md](.github/SECURITY.md) — the security policy: where to send a vulnerability (john@portll.net, the single contact for all four components of the distribution), the 48h/7d response windows, and what is in scope. Two parts are commitwork-specific rather than boilerplate — a **false clean is explicitly in scope and is the most serious class of defect here**, because a check that lies is worse in this system than a crash; and the posture table names the defaults that are load-bearing (`--trust-repo-manifest`, `CW_ALLOW_UNSIGNED`, `CW_OAUTH_LIVE_EXCHANGE`) so an operator can tell a deliberate posture from an accident. Lives under `.github/` because root is reserved and GitHub reads it there
 - [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) — the threat model for scanning untrusted repositories: per command (`run`, `scan`, `brief`, `doctor`, the monitor sweep, MCP `run_checks`/`run_checks_start`, the pre-commit hook and the standalone target tools), what commitwork executes, reads and reaches over the network. It covers the controls between a scanned tree and the host (`--trust-repo-manifest`, the host sandbox, container postures, lane environment allowlists, the single confined `claude` builder), the attacker model, trust boundaries, residual risks with severity, and what is not defended
 - [LICENSING.md](LICENSING.md) — the three licences and what each covers: AGPL-3.0-or-later, **or** PolyForm Internal Use 1.0.0 by written agreement, with Apache-2.0 carved out over the wire layer `manifests/wire-layer.json` lists. The grants apply to commitwork as published at github.com/Portll/commitwork. Also: when you would need the second, why this pair, PolyForm Internal Use having no SPDX identifier, and three open questions (the licensor's legal entity, hosting and redistribution, governing law)

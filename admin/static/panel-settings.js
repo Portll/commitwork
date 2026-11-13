@@ -16,7 +16,7 @@
 // ── Agent security (GET/POST /api/security-posture, lib/security-posture.mjs) ───────────────────
 // The keys lib/security-posture.mjs POSTURE_KEYS names; admin/test/security-posture-route.test.mjs
 // holds the two lists equal.
-const SECP_KEYS=['unattendedPosture','bypassCountsAsUnattended','missingModeIsUnattended','humanCommitMessagesOnly','runChecksRoots','runChecksRepoCode','runChecksRepoCodeRepos','runChecksRootsReviewDays'];
+const SECP_KEYS=['unattendedPosture','bypassCountsAsUnattended','missingModeIsUnattended','humanCommitMessagesOnly','headlessCommitMessages','runChecksRoots','runChecksRepoCode','runChecksRepoCodeRepos','runChecksRootsReviewDays'];
 let SECP=null;
 const secpShow=(v)=>Array.isArray(v)?(v.length?v.join(', '):'none — no repository allowed'):typeof v==='boolean'?(v?'on':'off'):String(v);
 async function loadSecurityPosture(){

@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { build, SCHEMA, MSG_NO_VOCABULARY, schemaDrift, schemaFor, openFresh } from '../taxonomy-db.mjs';
+import { build, SCHEMA, MSG_NO_VOCABULARY, schemaDrift, schemaFor, openFresh, editionHash } from '../taxonomy-db.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(HERE, '..', 'taxonomy-db.mjs');
@@ -293,4 +293,85 @@ test('schemaDrift is false for a store already at the current shape', () => {
   // first version of this test asserted against the wrong constant and failed for that reason.
   const applied = schemaFor(doc.scaleBounds, doc.stpaVocabulary);
   assert.equal(schemaDrift(db, applied), false, 'a matching store must not be recreated on every build');
+});
+
+// The shape taxonomy_search had before --find was widened past descriptions. Written out rather
+// than derived from the current DDL: a fixture generated from the code under test cannot disagree
+// with it, and disagreeing is the whole of what these tests measure.
+const NARROW_SEARCH = "CREATE VIEW taxonomy_search AS SELECT id, prefix, ordinal, name, layer, closure, gain,"
+  + " lower(coalesce(description,'')) AS text, description, predicate, example, score_basis FROM taxonomy_class";
+
+// A token that exists in `predicate` and nowhere else, so finding it proves the view reads that
+// column and missing it proves the view is last edition's.
+const PREDICATE_ONLY = 'zqpredicateonlyzq';
+const tokenDoc = () => ({
+  ...doc,
+  classes: doc.classes.map((c, i) => (i ? c : { ...c, predicate: `${c.predicate} ${PREDICATE_ONLY}` })),
+});
+
+test('a store built by an older edition of the schema is rebuilt, not answered from', () => {
+  const d = tokenDoc();
+  const { db: file } = tmpReg(d);
+  const source = () => ({ doc: d, hash: 'registry-has-not-moved' });
+
+  // Exactly what an older edition of taxonomy-db.mjs leaves behind: the registry hash is still
+  // right, nothing records which shape loaded the rows, and taxonomy_search is the narrower view.
+  const rw = new DatabaseSync(file);
+  build(rw, d, 'registry-has-not-moved');
+  rw.exec("DELETE FROM taxonomy_meta WHERE key = 'schemaSha256'");
+  rw.exec(`DROP VIEW taxonomy_search; ${NARROW_SEARCH}`);
+  rw.close();
+
+  // Measured on the previous edition: rebuilt false, and the search below returned no rows — under
+  // --find that prints "the projection was confirmed current before this search", a pass asserted
+  // over a column the view had stopped reading.
+  const r = openFresh({ file, source });
+  assert.equal(r.rebuilt, true, 'a shape from another edition is staleness the registry hash cannot see');
+  const hits = r.db.prepare('SELECT id FROM taxonomy_search WHERE text LIKE ?').all(`%${PREDICATE_ONLY}%`);
+  r.db.close();
+  assert.deepEqual(hits.map((h) => h.id), [d.classes[0].id],
+    'the effect, not the flag: the rebuilt view must read the column the search claims to cover');
+});
+
+test('a store this edition built is answered from, not rebuilt on every read', () => {
+  const { db: file } = tmpReg();
+  const source = () => ({ doc, hash: 'steady' });
+  openFresh({ file, source }).db.close();
+  // The direction that flatters: a freshness check that rebuilds unconditionally would pass the
+  // test above while telling every reader nothing, and the "rebuilt the store" notice would stop
+  // meaning that anything had moved.
+  const again = openFresh({ file, source });
+  assert.equal(again.rebuilt, false, 'an unchanged registry at the current shape is not stale');
+  assert.equal(again.edition, editionHash(doc));
+  again.db.close();
+});
+
+test('every taxonomy view is re-derived by a build, including one this schema no longer creates', () => {
+  const db = fresh();
+  build(db, doc, 'x');
+  const sqlOf = (n) => db.prepare("SELECT sql FROM sqlite_master WHERE type = 'view' AND name = ?").get(n)?.sql ?? null;
+  const current = sqlOf('taxonomy_search');
+  assert.ok(current && current !== NARROW_SEARCH, 'the fixture must differ from the current view, or this proves nothing');
+
+  db.exec(`DROP VIEW taxonomy_search; ${NARROW_SEARCH}`);
+  db.exec('CREATE VIEW taxonomy_retired AS SELECT id FROM taxonomy_class');
+  build(db, doc, 'x');
+
+  assert.equal(sqlOf('taxonomy_search'), current,
+    'dropping views by name kept the one the list forgot at whatever edition wrote it');
+  assert.equal(sqlOf('taxonomy_retired'), null, 'a view this schema no longer creates must not be left answering');
+});
+
+test('--verify refuses a store whose shape is unrecorded, however current its registry hash', () => {
+  const { db: file, reg } = tmpReg();
+  const env = { CW_DB: file, CW_TAXONOMY_JSON: reg };
+  assert.equal(run(['--build'], env).code, 0);
+  assert.equal(run(['--verify'], env).code, 0);
+
+  const rw = new DatabaseSync(file);
+  rw.exec("DELETE FROM taxonomy_meta WHERE key = 'schemaSha256'");
+  rw.close();
+  const r = run(['--verify'], env);
+  assert.equal(r.code, 1, 'in sync with the registry is not in sync with the schema');
+  assert.match(r.stderr, /DRIFT: database shape is unrecorded/);
 });

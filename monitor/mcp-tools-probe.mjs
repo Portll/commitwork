@@ -83,8 +83,9 @@ const realOr = (p) => { try { return realpathSync(p); } catch { return p; } };
 // guard: an argument opens a read only below home's level and outside every credential store / `"args": ["/"]` would make the whole disk readable to the server (expiry: never, prev: broken)
 export function argReadAllowed(p, home) {
   const h = realOr(home);
-  if (p === h || h.startsWith(`${p}/`)) return false;
-  try { assertMountAllowed(p); return true; } catch { return false; }
+  const rp = realOr(p);
+  if (rp === h || h.startsWith(`${rp}/`)) return false;
+  try { assertMountAllowed(rp); return true; } catch { return false; }
 }
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
@@ -137,6 +138,9 @@ export function speak(argv, { env, cwd, timeout }) {
       }
     });
     child.on('exit', (code, signal) => finish({ ok: false, why: `exited ${signal || code} before answering tools/list${said()}` }));
+    // A server that exits before reading its stdin turns these writes into EPIPE. Its exit is the
+    // verdict ('exited … before answering'), so the write error is expected and must not throw.
+    child.stdin.on('error', (e) => { if (e.code !== 'EPIPE' && e.code !== 'ECONNRESET') finish({ ok: false, why: `stdin: ${e.code || e.message}` }); });
     for (const f of RPC) child.stdin.write(`${JSON.stringify(f)}\n`);
   });
 }

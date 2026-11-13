@@ -20,6 +20,7 @@ export const NOT_ENFORCED = Object.freeze({
   bypassCountsAsUnattended: null,
   missingModeIsUnattended: null,
   humanCommitMessagesOnly: null,
+  headlessCommitMessages: null,
   runChecksRoots: null,
   runChecksRepoCode: null,
   runChecksRepoCodeRepos: null,

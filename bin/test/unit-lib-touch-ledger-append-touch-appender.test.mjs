@@ -1,12 +1,21 @@
 // A ledger appender that writes one session touch row per call and returns 1 or 0 (bin/lib/touch-ledger-append.mjs touchAppender).
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { touchAppender } from '../lib/touch-ledger-append.mjs';
 
 const AT = '2026-01-02T03:04:05.000Z';
+// The appender's default is the checkout's own .claude/store/touches.jsonl. A probe that names no
+// ledger would write there, and bin/test/sidecar-paths.test.mjs reads that as a store written with
+// nothing versioning it, so every probe gets a scratch ledger unless it names its own.
+const TMP = mkdtempSync(join(tmpdir(), 'cw-touch-appender-'));
+const LEDGER = join(TMP, 'touches.jsonl');
+after(() => rmSync(TMP, { recursive: true, force: true }));
 const pick = (row) => Object.fromEntries(['s', 'p', 'at'].filter((k) => Object.hasOwn(row, k)).map((k) => [k, row[k]]));
 
-const probe = ({ session, repo = '/repo', pid, ledger }) => {
+const probe = ({ session, repo = '/repo', pid, ledger = LEDGER }) => {
   const saved = process.env.CLAUDE_PID;
   if (pid === undefined) delete process.env.CLAUDE_PID;
   else process.env.CLAUDE_PID = pid;

@@ -30,7 +30,7 @@ async function rig(t, { tamper = false, signing, platform = 'linux', brew = fals
   if (licenses === 'shipped') writeFileSync(join(pkg, 'LICENSE'), 'MIT licence text');
   if (licenses === 'missing') members.pop();
   const ASSET = platform === 'win32' ? 'zz-leaks_1.0.0_windows.zip' : `zz-leaks_1.0.0_${platform}.tar.gz`;
-  if (platform === 'win32') execFileSync('zip', ['-qj', join(d, ASSET), join(pkg, bin), join(pkg, 'README.md')]);
+  if (platform === 'win32') execFileSync('zip', ['-qj', join(d, ASSET), ...members.map((m) => join(pkg, m))]);
   else execFileSync('tar', ['-czf', join(d, ASSET), '-C', pkg, ...members]);
   const body = readFileSync(join(d, ASSET));
   const sha256 = createHash('sha256').update(tamper ? Buffer.concat([body, Buffer.from('x')]) : body).digest('hex');
@@ -107,6 +107,18 @@ test('a Windows pin is a zip holding the .exe, read by the same tar verb and ins
   assert.ok(existsSync(join(binDir, 'zz-leaks.exe')), out);
   assert.equal(existsSync(join(binDir, 'README.md')), false);
   assert.match(out, /installed: zz-leaks/);
+});
+
+test('a Windows pin\x27s licence file is copied out of the zip, and a zip holding none is refused', { skip: !POSIX && 'sh stubs' }, async (t) => {
+  const shipped = await rig(t, { platform: 'win32', signing: 'none', licenses: 'shipped' });
+  const missing = await rig(t, { platform: 'win32', signing: 'none', licenses: 'missing' });
+  const a = await shipped.run(['--yes']);
+  const b = await missing.run(['--yes']);
+  assert.ok(existsSync(join(shipped.binDir, 'zz-leaks.exe')), a.out);
+  assert.equal(readFileSync(join(shipped.licenseDir, 'zz-leaks', 'LICENSE'), 'utf8'), 'MIT licence text');
+  assert.equal(existsSync(join(shipped.licenseDir, 'zz-leaks', 'README.md')), false);
+  assert.match(b.out, /zz-leaks: no licence file in zz-leaks_1\.0\.0_windows\.zip/);
+  assert.equal(existsSync(join(missing.binDir, 'zz-leaks.exe')), false);
 });
 
 test('a pinned release asset is verified, its binary alone installed, and the off-PATH directory named', { skip: !POSIX && 'tar archives and sh stubs' }, async (t) => {

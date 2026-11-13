@@ -12,26 +12,31 @@
 // the other runs the UNPATCHED module to completion, so each outcome is witnessed by a pristine
 // process. Nothing in monitor/ was changed; a pause point that is never reached fails the test.
 //
-// Decision table, measured 2026-10-18 and asserted below — recorded, not endorsed:
-//   holder pid reused by a live non-sweep, fresh stamp   HELD      (stamp alone; pid never probed)
-//   holder pid dead, fresh stamp                         HELD      (crashed sweep keeps its permit)
-//   holder pid alive, stamp 31 min old                   TAKEN OVER, silently (sweeps run for hours)
+// Decision table, asserted below. The token carries host + startedAt since 2026-10-19 and the lock
+// probes the pid (ESRCH dead, EPERM alive, zombie dead, anything else unknown) when the token
+// names this host; 'unknown' is never dead, so it falls to the stamp-age rule.
+//   holder pid dead, fresh stamp                         TAKEN   (a corpse holds nothing)
+//   holder pid reused by a live non-sweep, fresh stamp   TAKEN   (startedAt does not match the pid)
+//   holder pid alive, start matches, stamp 31 min old    TAKEN, loudly — the holder stopped refreshing
+//   holder pid alive, start matches, refreshed           HELD    (refresh() re-stamps `at`)
 //   holder pid alive, stamp 29 min old                   HELD
+//   liveness unknown (kill throws an odd code)           HELD by stamp age
+//   token names another host / pre-field token           HELD by stamp age — the pid is not ours to read
 //   owner.json unreadable, fresh mtime                   HELD, age from mtime
 //   owner.json unreadable, mtime zeroed                  HELD, age unknown — never stale, never absent
 //   lock directory unreadable                            HELD
-//   refused acquireSweepSlot()                           carries no holder; only the disk names one
+//   refused acquireSweepSlot()                           names the holder, its age and its liveness
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, utimesSync, chmodSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, utimesSync, chmodSync, existsSync, statSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { tmpdir } from 'node:os';
+import { tmpdir, hostname } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { acquireSweepSlot, slotName } from '../sweep-slot.mjs';
-import { inspectLock } from '../lockfile.mjs';
+import { acquireSweepSlot, keepSweepSlot, slotName } from '../sweep-slot.mjs';
+import { inspectLock, ownStartMs, DEFAULT_STALE_MS } from '../lockfile.mjs';
 import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -310,97 +315,351 @@ describe('two sweeps racing for one slot — every pause point of the real claim
   });
 });
 
-// ── the holder the slot cannot vouch for ───────────────────────────────────────────────────────
-function plant(root, { pid, at, mtimeAt = at, label = 'sweep:planted' }) {
+// ── the holder the slot vouches for, or does not ───────────────────────────────────────────────
+// plant() writes the token claim() writes: host defaults to this host and startedAt to this
+// process's start, so a planted `pid: process.pid` reads as a live, matching holder. `legacy`
+// writes the pre-field shape (pid, nonce, at, label) for the compatibility cases.
+function plant(root, { pid, at, mtimeAt = at, label = 'sweep:planted', host = hostname(), startedAt = ownStartMs(), legacy = false }) {
   const lock = join(root, slotName(0));
   mkdirSync(lock, { recursive: true });
   const token = { pid, nonce: `planted-${randomBytes(4).toString('hex')}`, at, label };
+  if (!legacy) Object.assign(token, { host, startedAt });
   writeFileSync(join(lock, OWNER), JSON.stringify(token));
   utimesSync(lock, mtimeAt / 1000, mtimeAt / 1000);
   return { lock, token, bytes: readFileSync(join(lock, OWNER), 'utf8') };
 }
 const scratch = () => mkdtempSync(join(tmpdir(), 'cw-slot-holder-'));
-const contend = (root) => acquireSweepSlot(root, { slots: 1, deadlineMs: 0, label: 'contender' });
+const contend = (root, extra = {}) => acquireSweepSlot(root, { slots: 1, deadlineMs: 0, label: 'contender', ...extra });
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+const ownerBytes = (lock) => readFileSync(join(lock, OWNER), 'utf8');
+// `kill` that throws a given errno — the seam for the branches a real pid table cannot be made to take.
+const throwing = (code) => () => { const e = new Error(code); e.code = code; throw e; };
 
-describe('what the slot decides about its holder — recorded, not endorsed', () => {
-  test('a reused pid (live process that is NOT a sweep) with a fresh stamp is HELD: the stamp alone decides, the pid is recorded and never probed — known limitation', { timeout: SYNC_TEST_MS }, () => {
+describe('what the slot decides about its holder', () => {
+  test('a DEAD pid with a fresh stamp is TAKEN — a crashed sweep holds nothing, whatever its stamp says', { timeout: SYNC_TEST_MS }, () => {
     const root = scratch();
+    let got = null;
+    try {
+      assert.equal(alive(DEAD_PID), false, 'precondition: the sentinel pid must not exist');
+      const p = plant(root, { pid: DEAD_PID, at: Date.now(), label: 'sweep:crashed' });
+      const before = inspectLock(p.lock);
+      assert.equal(before.holderAlive, false, 'ESRCH is a verdict, not a guess');
+      assert.equal(before.stale, true, 'a dead holder is stale at any age — inspect says what acquire will do');
+      const stale = [];
+      got = contend(root, { onStale: (s) => stale.push(s) });
+      assert.equal(got.ok, true, 'TAKEN — the stamp is fresh and the pid is a corpse');
+      assert.equal(got.slot, 0);
+      assert.equal(stale.length, 1, 'the takeover is reported once');
+      assert.equal(stale[0].holder.pid, DEAD_PID); assert.equal(stale[0].holder.label, 'sweep:crashed');
+      assert.equal(stale[0].holderAlive, false); assert.equal(stale[0].slot, 0);
+      assert.notEqual(inspectLock(p.lock).holder.nonce, p.token.nonce, 'the corpse\'s token was replaced');
+    } finally { if (got && got.ok) got.release(); rmSync(root, { recursive: true, force: true }); }
+  });
+
+  test('a reused pid (live process whose start is not the token\'s) with a fresh stamp is TAKEN — startedAt tells a stranger from the holder', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    let got = null;
     // A long-lived node process stands in for whatever inherited the pid. Killed on every exit path.
     const impostor = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 300000)'], { stdio: 'ignore' });
     const kill = () => { try { impostor.kill('SIGKILL'); } catch { /* gone */ } };
     process.once('exit', kill);
     try {
       assert.ok(alive(impostor.pid), 'precondition: the impostor must be alive when the slot decides');
-      const p = plant(root, { pid: impostor.pid, at: Date.now() });
-      const got = contend(root);
-      assert.equal(got.ok, false, 'HELD — the token names a live pid and a fresh stamp, and nothing distinguishes it from a sweep');
-      assert.match(got.reason, /slots held/);
-      assert.equal(readFileSync(join(p.lock, OWNER), 'utf8'), p.bytes, 'the impostor token is left in place');
-      assert.equal(inspectLock(p.lock).holder.pid, impostor.pid);
-      // The token carries pid, nonce, at, label and nothing else — no start time, no command line —
-      // so there is nothing a refusal of the impostor could be based on.
-      assert.deepEqual(Object.keys(inspectLock(p.lock).holder).sort(), ['at', 'label', 'nonce', 'pid']);
-    } finally { kill(); process.off('exit', kill); rmSync(root, { recursive: true, force: true }); }
+      // The dead holder started an hour ago; the impostor started just now.
+      const p = plant(root, { pid: impostor.pid, at: Date.now(), startedAt: Date.now() - 60 * MIN });
+      const before = inspectLock(p.lock);
+      assert.equal(before.holderAlive, true, 'the pid IS alive');
+      assert.equal(before.holderMatches, false, 'but it is not the process that wrote the token');
+      assert.equal(before.stale, true);
+      got = contend(root);
+      assert.equal(got.ok, true, 'TAKEN — pid reuse is a dead holder');
+      assert.deepEqual(Object.keys(inspectLock(p.lock).holder).sort(), ['at', 'host', 'label', 'nonce', 'pid', 'startedAt'], 'the token names host and start');
+    } finally { if (got && got.ok) got.release(); kill(); process.off('exit', kill); rmSync(root, { recursive: true, force: true }); }
   });
 
-  test('a DEAD pid with a fresh stamp is HELD — a crashed sweep keeps its permit until the stamp goes stale', { timeout: SYNC_TEST_MS }, () => {
+  test('a live pid whose start DOES match the token, fresh stamp, is HELD — nothing distinguishes it from a sweep, and nothing should', { timeout: SYNC_TEST_MS }, () => {
     const root = scratch();
     try {
-      assert.equal(alive(DEAD_PID), false, 'precondition: the sentinel pid must not exist');
-      const p = plant(root, { pid: DEAD_PID, at: Date.now() });
+      const p = plant(root, { pid: process.pid, at: Date.now() });
+      const s = inspectLock(p.lock);
+      assert.equal(s.holderAlive, true); assert.equal(s.holderMatches, true); assert.equal(s.stale, false);
       const got = contend(root);
-      assert.equal(got.ok, false, 'HELD — pid liveness is not consulted; only the stamp is');
-      assert.match(got.reason, /slots held/);
-      assert.equal(readFileSync(join(p.lock, OWNER), 'utf8'), p.bytes);
+      assert.equal(got.ok, false);
+      assert.equal(ownerBytes(p.lock), p.bytes, 'the holder\'s token is untouched');
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 
-  test('a LIVE pid with a 31-minute stamp is TAKEN OVER, silently — the slot bound is 30 min of hold, not a sweep\'s duration', { timeout: SYNC_TEST_MS }, () => {
+  test('a LIVE, matching holder with a 31-minute stamp that did NOT refresh is TAKEN, loudly — an unrefreshed stamp is the only bound on a hung sweep', { timeout: SYNC_TEST_MS }, () => {
     const root = scratch();
     let got = null;
     try {
       const p = plant(root, { pid: process.pid, at: Date.now() - 31 * MIN });
       assert.ok(alive(process.pid));
-      got = contend(root);
-      assert.equal(got.ok, true, 'TAKEN OVER — a running holder past staleMs loses its permit to the next contender');
+      const stale = [];
+      got = contend(root, { onStale: (s) => stale.push(s) });
+      assert.equal(got.ok, true, 'TAKEN — alive and matching, but the stamp says it stopped refreshing');
       assert.equal(got.slot, 0);
       const now = inspectLock(p.lock);
       assert.notEqual(now.holder.nonce, p.token.nonce, 'the live holder\'s token was replaced');
       assert.equal(now.holder.label, 'contender');
-      // Nothing above the lock primitive hears about it: acquireSweepSlot passes no onStale, and
-      // the sweep passes no staleMs, so the default governs and the takeover is logged nowhere.
-      assert.ok(!/onStale|staleMs/.test(readFileSync(SWEEP_SLOT, 'utf8')), 'sweep-slot.mjs neither sets staleMs nor listens for a takeover (current rule)');
+      assert.equal(stale.length, 1, 'never silent');
+      assert.equal(stale[0].holder.nonce, p.token.nonce);
+      assert.equal(stale[0].holderAlive, true); assert.equal(stale[0].holderMatches, true);
+      assert.ok(stale[0].ageMs >= 31 * MIN - 1000);
+      // And the sweep itself wires it: it passes onStale and hands the permit to keepSweepSlot,
+      // whose behaviour the 'a kept permit' tests below witness in a real child.
       const sweepSrc = readFileSync(SWEEP, 'utf8');
       const call = sweepSrc.slice(sweepSrc.indexOf('acquireSweepSlot(join('), sweepSrc.indexOf('});', sweepSrc.indexOf('acquireSweepSlot(join(')));
-      assert.ok(call.length > 0 && !/staleMs/.test(call), 'sweep.mjs takes the slot with the default staleMs (current rule)');
+      assert.ok(call.length > 0 && /onStale/.test(call), 'sweep.mjs listens for a takeover');
+      assert.match(sweepSrc, /keepSweepSlot\(got, \{/, 'sweep.mjs keeps the permit it was admitted on');
     } finally { if (got && got.ok) got.release(); rmSync(root, { recursive: true, force: true }); }
+  });
+
+  test('a LIVE, matching holder with a 31-minute stamp that REFRESHED is HELD — refresh() is what keeps a long sweep\'s permit', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    let held = null;
+    try {
+      held = acquireSweepSlot(root, { slots: 1, deadlineMs: 0, label: 'sweep:long' });
+      assert.equal(held.ok, true);
+      const lock = join(root, slotName(0));
+      // Age the stamp by hand, as 31 minutes of running would, keeping the identity.
+      const aged = { ...JSON.parse(ownerBytes(lock)), at: Date.now() - 31 * MIN };
+      writeFileSync(join(lock, OWNER), JSON.stringify(aged));
+      assert.equal(inspectLock(lock).stale, true, 'precondition: without a refresh this permit is up for taking');
+      const r = held.refresh();
+      assert.equal(r.ok, true, `refresh must succeed on a lock still ours: ${JSON.stringify(r)}`);
+      const after = inspectLock(lock);
+      assert.equal(after.stale, false);
+      assert.equal(after.holder.nonce, aged.nonce, 'the identity survives a refresh');
+      assert.ok(after.ageMs < 5_000, `the stamp is fresh again; got ${after.ageMs}`);
+      const got = contend(root);
+      assert.equal(got.ok, false, 'HELD — a refreshed permit is a live one');
+      assert.equal(got.holder.nonce, aged.nonce);
+    } finally { if (held && held.ok) held.release(); rmSync(root, { recursive: true, force: true }); }
   });
 
   test('a LIVE pid with a 29-minute stamp is HELD — the threshold is the default 30 minutes', { timeout: SYNC_TEST_MS }, () => {
     const root = scratch();
     try {
       const p = plant(root, { pid: process.pid, at: Date.now() - 29 * MIN });
+      assert.equal(DEFAULT_STALE_MS, 30 * MIN);
       const got = contend(root);
       assert.equal(got.ok, false);
-      assert.equal(readFileSync(join(p.lock, OWNER), 'utf8'), p.bytes);
+      assert.equal(ownerBytes(p.lock), p.bytes);
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 
-  test('the acquisition path never probes a pid — the rule above is the stamp, and this fails the day that changes', { timeout: SYNC_TEST_MS }, () => {
-    const src = readFileSync(LOCKFILE, 'utf8');
-    assert.ok(!/process\.kill\(/.test(src), 'lockfile.mjs now probes pids: rewrite the holder tests above to the new rule');
-    assert.ok(!/process\.kill\(/.test(readFileSync(SWEEP_SLOT, 'utf8')));
-  });
-
-  test('a refused acquireSweepSlot() does not name the holder — only the on-disk token does (current shape)', { timeout: SYNC_TEST_MS }, () => {
+  test('liveness UNKNOWN (kill throws an unexpected code) is HELD by stamp age — never dead; EPERM is alive', { timeout: SYNC_TEST_MS }, () => {
     const root = scratch();
     try {
-      const p = plant(root, { pid: DEAD_PID, at: Date.now(), label: 'sweep:team-x' });
+      // Fresh stamp, dead pid on the real pid table — the seam is the only thing keeping it held.
+      const p = plant(root, { pid: DEAD_PID, at: Date.now() });
+      const odd = inspectLock(p.lock, { kill: throwing('EWHATEVER') });
+      assert.equal(odd.holderAlive, 'unknown'); assert.equal(odd.holderMatches, 'unknown'); assert.equal(odd.stale, false);
+      assert.equal(contend(root, { kill: throwing('EWHATEVER') }).ok, false, 'HELD — unknown is not a takeover licence');
+      assert.equal(ownerBytes(p.lock), p.bytes);
+      const other = inspectLock(p.lock, { kill: throwing('EPERM') });
+      assert.equal(other.holderAlive, true, 'EPERM is a pid that exists under another user');
+      assert.equal(contend(root, { kill: throwing('EPERM') }).ok, false);
+      // Control: the same token under the real kill is dead and stale — the seam was load-bearing.
+      assert.equal(inspectLock(p.lock).stale, true);
+      // Unknown with an OLD stamp still falls to the stamp rule: taken.
+      const q = plant(root, { pid: DEAD_PID, at: Date.now() - 31 * MIN });
+      const got = contend(root, { kill: throwing('EWHATEVER') });
+      assert.equal(got.ok, true, 'stamp age still governs when liveness is unknown');
+      assert.notEqual(inspectLock(q.lock).holder.nonce, q.token.nonce);
+      got.release();
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  test('a pre-field token (no host, no startedAt) is read and HELD by stamp age — the pid is not probed without a host to probe it on', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    try {
+      const p = plant(root, { pid: DEAD_PID, at: Date.now(), legacy: true });
+      assert.deepEqual(Object.keys(p.token).sort(), ['at', 'label', 'nonce', 'pid']);
+      const s = inspectLock(p.lock);
+      assert.equal(s.held, true); assert.equal(s.holderAlive, 'unknown'); assert.equal(s.holderMatches, 'unknown'); assert.equal(s.stale, false);
+      assert.equal(contend(root).ok, false, 'HELD — fail closed to the stamp rule');
+      assert.equal(ownerBytes(p.lock), p.bytes);
+      const q = plant(root, { pid: DEAD_PID, at: Date.now() - 31 * MIN, legacy: true });
+      const got = contend(root);
+      assert.equal(got.ok, true, 'and the stamp rule still breaks it when stale');
+      assert.notEqual(inspectLock(q.lock).holder.nonce, q.token.nonce);
+      got.release();
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  test('a token from ANOTHER host is HELD by stamp age — a pid over a shared mount is somebody else\'s pid table', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    try {
+      const p = plant(root, { pid: DEAD_PID, at: Date.now(), host: `not-${hostname()}` });
+      const s = inspectLock(p.lock);
+      assert.equal(s.holderAlive, 'unknown'); assert.equal(s.stale, false);
+      assert.equal(contend(root).ok, false);
+      assert.equal(ownerBytes(p.lock), p.bytes);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  test('a refused acquireSweepSlot() names the holder, its age and its liveness — the deferral line can print it', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    try {
+      const p = plant(root, { pid: process.pid, at: Date.now() - 2 * MIN, label: 'sweep:team-x' });
       const got = contend(root);
       assert.equal(got.ok, false);
-      assert.deepEqual(Object.keys(got).sort(), ['ok', 'reason', 'slots', 'waitedMs'], 'the deferral line has no holder to print');
-      assert.equal(inspectLock(p.lock).holder.label, 'sweep:team-x', 'the identity is on disk for whoever looks');
+      assert.deepEqual(Object.keys(got).sort(), ['heldFor', 'holder', 'holderAlive', 'holders', 'ok', 'reason', 'slots', 'waitedMs']);
+      assert.equal(got.holder.label, 'sweep:team-x'); assert.equal(got.holder.pid, process.pid);
+      assert.ok(got.heldFor >= 2 * MIN - 1000 && got.heldFor < 3 * MIN, `heldFor is the hold age; got ${got.heldFor}`);
+      assert.equal(got.holderAlive, true);
+      assert.equal(got.holders.length, 1);
+      assert.deepEqual(Object.keys(got.holders[0]).sort(), ['heldFor', 'holder', 'holderAlive', 'holderMatches', 'slot']);
+      assert.equal(got.holders[0].slot, 0); assert.equal(got.holders[0].holder.nonce, p.token.nonce);
+      assert.equal(inspectLock(p.lock).holder.label, 'sweep:team-x', 'and the identity is still on disk');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+});
+
+// ── a kept permit: refreshed on a timer, released on a signal, never what keeps a process alive ─
+// `keep.mjs` is the sweep's own hold, in a child: acquire, keepSweepSlot({ refreshMs: 40 }), then
+// either wait for a signal (mode 'wait') or fall off the end of the script (mode 'end').
+const KEEPER = `
+import { acquireSweepSlot, keepSweepSlot, slotName } from ${JSON.stringify(pathToFileURL(SWEEP_SLOT).href)};
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+const [root, mode, sig] = process.argv.slice(2);
+const got = acquireSweepSlot(root, { slots: 1, label: 'sweep:kept', deadlineMs: 0 });
+if (got.ok !== true) { process.stderr.write('keeper: not admitted: ' + got.reason + '\\n'); process.exit(99); }
+keepSweepSlot(got, { refreshMs: 40, onRefreshFailed: (r) => writeFileSync(join(sig, 'refresh-failed'), JSON.stringify(r)) });
+writeFileSync(join(sig, 'kept'), String(process.pid));
+if (mode === 'wait') setTimeout(() => { process.stderr.write('keeper: never signalled\\n'); process.exit(98); }, ${CAP_MS});
+`;
+function spawnKeeper(f, mode) {
+  const script = join(f.dir, 'keep.mjs');
+  writeFileSync(script, KEEPER);
+  const c = spawn(process.execPath, [script, f.root, mode, f.sig], { env: { ...process.env, CW_SELF_SWEEP: '0' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let err = '';
+  c.stderr.on('data', (b) => { err += b; });
+  const done = new Promise((res) => c.on('exit', (code, signal) => res({ code, signal, err })));
+  const kid = { label: 'keeper', pid: c.pid, done, kill: () => { try { c.kill('SIGKILL'); } catch { /* gone */ } } };
+  f.kids.push(kid);
+  return kid;
+}
+const ownerAt = (lock) => JSON.parse(readFileSync(join(lock, OWNER), 'utf8')).at;
+
+describe('a kept permit (keepSweepSlot) — what sweep.mjs holds for the life of a sweep', () => {
+  test('the stamp is re-written on the interval while the holder runs, and SIGTERM releases the slot and still kills the holder', { timeout: CHILD_TEST_MS }, async () => {
+    const f = fixture();
+    try {
+      const k = spawnKeeper(f, 'wait');
+      await waitFor('the keeper to be admitted', () => existsSync(join(f.sig, 'kept')));
+      const lock = join(f.root, slotName(0));
+      const first = ownerAt(lock);
+      await waitFor('a refresh to land', () => ownerAt(lock) > first);
+      const s = inspectLock(lock);
+      assert.equal(s.holder.pid, k.pid); assert.equal(s.holderAlive, true); assert.equal(s.holderMatches, true);
+      assert.equal(existsSync(join(f.sig, 'refresh-failed')), false, 'no refresh failed while the permit was ours');
+      process.kill(k.pid, 'SIGTERM');
+      const r = await k.done;
+      assert.equal(r.signal, 'SIGTERM', `the keeper must still die by the signal (exit ${r.code}): ${r.err}`);
+      assertClean(f.root, 'after a signal death the slot is free and nothing is left behind');
+    } finally { teardown(f); }
+  });
+
+  test('a keeper whose script ends exits on its own — the refresh timer is unref\'d — and the exit releases the slot', { timeout: CHILD_TEST_MS }, async () => {
+    const f = fixture();
+    try {
+      const k = spawnKeeper(f, 'end');
+      const r = await k.done;
+      assert.equal(r.code, 0, `the keeper must exit by itself: signal ${r.signal}, ${r.err}`);
+      assert.equal(existsSync(join(f.sig, 'kept')), true, 'it was admitted first');
+      assertClean(f.root, 'after a natural exit');
+    } finally { teardown(f); }
+  });
+
+  test('in-process: stop() removes the handlers and the timer; the handler releases and defers the re-raise to a remaining listener', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    const before = process.listenerCount('SIGTERM');
+    let held = null;
+    try {
+      held = acquireSweepSlot(root, { slots: 1, deadlineMs: 0, label: 'sweep:inproc' });
+      assert.equal(held.ok, true);
+      const stop = keepSweepSlot(held, { refreshMs: 60_000, signals: ['SIGTERM'] });
+      assert.equal(process.listenerCount('SIGTERM'), before + 1, 'one handler installed');
+      stop();
+      assert.equal(process.listenerCount('SIGTERM'), before, 'stop() removes it');
+      // Re-install, then fire the handler with another listener present: it must release and
+      // NOT re-raise (a real re-raise here would kill the test runner).
+      keepSweepSlot(held, { refreshMs: 60_000, signals: ['SIGTERM'] });
+      let other = 0;
+      const peer = () => { other++; };
+      process.on('SIGTERM', peer);
+      try {
+        process.emit('SIGTERM', 'SIGTERM');
+        assert.equal(other, 1, 'the peer handler ran');
+        assert.equal(inspectLock(join(root, slotName(0))).held, false, 'the handler released the slot');
+      } finally { process.off('SIGTERM', peer); }
+      assert.equal(process.listenerCount('SIGTERM'), before, 'the once-handler is gone after firing');
+    } finally { if (held && held.ok) held.release(); rmSync(root, { recursive: true, force: true }); }
+  });
+});
+
+// ── refresh(): the long holder's re-stamp ──────────────────────────────────────────────────────
+describe('refresh() re-stamps `at` atomically and keeps the identity', () => {
+  test('after refresh: `at` advanced, nonce and startedAt unchanged, one whole owner.json and no temp file', { timeout: SYNC_TEST_MS }, async () => {
+    const root = scratch();
+    let held = null;
+    try {
+      held = acquireSweepSlot(root, { slots: 1, deadlineMs: 0, label: 'sweep:refresh' });
+      assert.equal(held.ok, true);
+      const lock = join(root, slotName(0));
+      const before = JSON.parse(ownerBytes(lock));
+      await sleep(15); // `at` must move by a measurable amount
+      const r = held.refresh();
+      assert.equal(r.ok, true);
+      const after = JSON.parse(ownerBytes(lock));
+      assert.ok(after.at > before.at, `at must advance: ${before.at} -> ${after.at}`);
+      assert.equal(r.at, after.at, 'the handle reports the stamp it wrote');
+      assert.equal(after.nonce, before.nonce); assert.equal(after.startedAt, before.startedAt);
+      assert.equal(after.pid, before.pid); assert.equal(after.host, before.host); assert.equal(after.label, before.label);
+      assert.deepEqual(readdirSync(lock), [OWNER], 'the write went through a sibling temp + rename, and the temp is gone');
+      assert.deepEqual(disk(root).debris, [], 'no guard left behind');
+      assert.ok(Math.abs(statSync(lock).mtimeMs - after.at) < 2_000, 'the directory mtime follows the stamp, so the mtime fallback reads fresh too');
+    } finally { if (held && held.ok) held.release(); rmSync(root, { recursive: true, force: true }); }
+  });
+
+  test('refresh on a lock that changed hands is refused as lost and leaves the successor\'s token byte-identical', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    let successor = null;
+    try {
+      const held = acquireSweepSlot(root, { slots: 1, deadlineMs: 0, label: 'sweep:old' });
+      assert.equal(held.ok, true);
+      const lock = join(root, slotName(0));
+      // Age it by hand, let a contender take it over, then the old holder tries to refresh.
+      writeFileSync(join(lock, OWNER), JSON.stringify({ ...JSON.parse(ownerBytes(lock)), at: Date.now() - 31 * MIN }));
+      successor = contend(root);
+      assert.equal(successor.ok, true, 'precondition: the slot changed hands');
+      const theirs = ownerBytes(lock);
+      const r = held.refresh();
+      assert.deepEqual(r, { ok: false, reason: 'lost' });
+      assert.equal(ownerBytes(lock), theirs, 'the old holder must not write over the successor');
+      held.release();
+      assert.equal(ownerBytes(lock), theirs, 'nor release it');
+    } finally { if (successor && successor.ok) successor.release(); rmSync(root, { recursive: true, force: true }); }
+  });
+
+  test('refresh after release is refused, and refresh is itself refused while a breaker holds the guard', { timeout: SYNC_TEST_MS }, () => {
+    const root = scratch();
+    try {
+      const held = acquireSweepSlot(root, { slots: 1, deadlineMs: 0, label: 'sweep:x' });
+      assert.equal(held.ok, true);
+      const lock = join(root, slotName(0));
+      const guard = `${lock}.breaking`;
+      mkdirSync(guard); // a breaker mid-removal
+      try { assert.deepEqual(held.refresh(), { ok: false, reason: 'busy' }, 'a refresh never races the compare-and-delete'); }
+      finally { rmSync(guard, { recursive: true, force: true }); }
+      assert.equal(held.refresh().ok, true, 'and succeeds once the guard clears');
+      held.release();
+      assert.deepEqual(held.refresh(), { ok: false, reason: 'released' });
+      assertClean(root, 'after release');
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 });

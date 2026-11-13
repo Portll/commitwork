@@ -1,6 +1,6 @@
 # Scope: what commitwork supports, refuses and does not measure
 
-<!-- verified-against: 2026-10-22 1ac07fea -->
+<!-- verified-against: 2026-10-22 -->
 
 This is the 1.0 scope statement. It says which lanes and platforms commitwork supports, what it
 refuses to do, what it does not measure, and what it does not do at all. As of 2026-10-08, every

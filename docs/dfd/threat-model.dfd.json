@@ -1,0 +1,759 @@
+{
+  "v": 1,
+  "kind": "dfd",
+  "$comment": "Hand-authored dfd@1 of docs/THREAT-MODEL.md (verified-against 2026-10-20 779588ed). Each node's note and each flow's evidence.refs cite the section it comes from; a ref is the GitHub-style heading anchor. Groups are the trust boundaries the document names (Trust boundaries 1-5) plus the network and the commitwork system boundary. Every flow is witness authored, existence unknown: the threat model was derived from reading code and states that none of its residual risks was exercised as an attack, so no flow here is confirmed by observation. Elements the document marks not determined are unknown. The credential stores carry no flow: the sandbox denies them after every allow.",
+  "title": "commitwork scanning an untrusted repository (docs/THREAT-MODEL.md)",
+  "source": {
+    "producer": "authored",
+    "note": "Drawn from docs/THREAT-MODEL.md, verified-against 2026-10-20 779588ed. Not regenerated: when that document changes, this one must be re-read against it."
+  },
+  "groups": [
+    {
+      "id": "network",
+      "label": "Network: internet, issuers and the scan target",
+      "boundary": "trust"
+    },
+    {
+      "id": "host",
+      "label": "Operator host, outside the sandbox",
+      "boundary": "trust"
+    },
+    {
+      "id": "commitwork",
+      "label": "commitwork",
+      "boundary": "system"
+    },
+    {
+      "id": "sandbox",
+      "label": "Host sandbox: sandbox-exec / bwrap",
+      "boundary": "trust"
+    },
+    {
+      "id": "container",
+      "label": "Container posture",
+      "boundary": "trust"
+    },
+    {
+      "id": "model",
+      "label": "Model boundary",
+      "boundary": "trust"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "repo-author",
+      "kind": "external",
+      "label": "Malicious repository author",
+      "subtype": "actor",
+      "note": "docs/THREAT-MODEL.md § Attacker model: controls every file in the scanned tree, symlinks, file names and commit messages"
+    },
+    {
+      "id": "dep-author",
+      "kind": "external",
+      "label": "Malicious dependency",
+      "subtype": "actor",
+      "note": "docs/THREAT-MODEL.md § Attacker model: a package the tree depends on, fetched by a lane that resolves or builds"
+    },
+    {
+      "id": "operator",
+      "kind": "external",
+      "label": "Operator",
+      "subtype": "actor",
+      "group": "host",
+      "note": "docs/THREAT-MODEL.md § Repo-local manifests do not execute without consent: passes the command, --trust-repo-manifest, --allow-build, CW_SANDBOX"
+    },
+    {
+      "id": "operator-env",
+      "kind": "external",
+      "label": "Operator environment",
+      "subtype": "env",
+      "group": "host",
+      "note": "docs/THREAT-MODEL.md § Lane environment (`bin/lib/scanner-env.mjs`): the process environment a lane's is narrowed from"
+    },
+    {
+      "id": "registries",
+      "kind": "external",
+      "label": "Package registries, advisory APIs, rule packs",
+      "subtype": "endpoint",
+      "group": "network",
+      "unknown": true,
+      "note": "docs/THREAT-MODEL.md § `commitwork run <group|check>` (`bin/commitwork.mjs`, `cmdRun`): api.osv.dev, api.deps.dev, vuln.go.dev, registry.npmjs.org, socket.dev, ghcr.io; trivy, CodeQL, bundler-audit and cargo-audit defaults not determined"
+    },
+    {
+      "id": "issuers",
+      "kind": "external",
+      "label": "Credential issuers",
+      "subtype": "endpoint",
+      "group": "network",
+      "note": "docs/THREAT-MODEL.md § `commitwork run <group|check>` (`bin/commitwork.mjs`, `cmdRun`) · docs/THREAT-MODEL.md § Residual risks R11: verifiers lanes send candidate credentials to the services that issued them"
+    },
+    {
+      "id": "github",
+      "kind": "external",
+      "label": "GitHub API",
+      "subtype": "endpoint",
+      "group": "network",
+      "note": "docs/THREAT-MODEL.md § `commitwork run <group|check>` (`bin/commitwork.mjs`, `cmdRun`): github lanes call it for the tree's origin"
+    },
+    {
+      "id": "target",
+      "kind": "external",
+      "label": "DAST target (--url / CW_TARGET_URL)",
+      "subtype": "endpoint",
+      "group": "network",
+      "note": "docs/THREAT-MODEL.md § `commitwork run <group|check>` (`bin/commitwork.mjs`, `cmdRun`) · docs/THREAT-MODEL.md § Residual risks R3: target lanes send traffic to it; a loopback URL opens that port to target lanes"
+    },
+    {
+      "id": "mcp-client",
+      "kind": "external",
+      "label": "MCP client or agent",
+      "subtype": "actor",
+      "group": "model",
+      "note": "docs/THREAT-MODEL.md § Agent-facing controls · docs/THREAT-MODEL.md § Residual risks R7: may be prompt-injected"
+    },
+    {
+      "id": "claude",
+      "kind": "external",
+      "label": "claude child process",
+      "subtype": "system",
+      "group": "model",
+      "note": "docs/THREAT-MODEL.md § Agent-facing controls: built only by lib/claude-spawn.mjs claudeSpawnPlan; user settings only, empty MCP config, explicit tools"
+    },
+    {
+      "id": "tree",
+      "kind": "store",
+      "label": "Scanned repository tree",
+      "subtype": "file",
+      "group": "sandbox",
+      "note": "docs/THREAT-MODEL.md § Attacker model · docs/THREAT-MODEL.md § Trust boundaries 2: inside the sandbox read set; includes .env, commitwork.json, commitwork.url, security/ scripts, vendor/autoload.php"
+    },
+    {
+      "id": "repo-manifest",
+      "kind": "store",
+      "label": "Repo-local commitwork.json / BOLA manifest",
+      "subtype": "file",
+      "group": "sandbox",
+      "note": "docs/THREAT-MODEL.md § Trust boundaries 1: provenance repo-local, untrusted by default"
+    },
+    {
+      "id": "bundled-manifests",
+      "kind": "store",
+      "label": "Bundled manifests (manifests/)",
+      "subtype": "file",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § Trust boundaries 1: provenance bundled"
+    },
+    {
+      "id": "reports",
+      "kind": "store",
+      "label": "reports/ (every scanned repo's output)",
+      "subtype": "file",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § Residual risks R1: inside the commitwork checkout, so inside the macOS read set; holds trufflehog.json unredacted"
+    },
+    {
+      "id": "secrets",
+      "kind": "store",
+      "label": "Keychain and file: secret references",
+      "subtype": "file",
+      "group": "host",
+      "note": "docs/THREAT-MODEL.md § Lane environment (`bin/lib/scanner-env.mjs`): resolved by lib/secrets.mjs outside the sandbox; ~/.commitwork/secrets.json holds references, not values"
+    },
+    {
+      "id": "gh-token",
+      "kind": "store",
+      "label": "gh session (~/.config/gh)",
+      "subtype": "file",
+      "group": "host",
+      "note": "docs/THREAT-MODEL.md § Lane environment (`bin/lib/scanner-env.mjs`): injected as GH_TOKEN only for a lane that declares it and does not execute repository code"
+    },
+    {
+      "id": "cred-stores",
+      "kind": "store",
+      "label": "Credential stores (~/.ssh, ~/.aws, ~/.gnupg, keychains)",
+      "subtype": "file",
+      "group": "host",
+      "note": "docs/THREAT-MODEL.md § Host sandbox (`bin/lib/sandbox.mjs`): always denied after every allow; masked on Linux. No flow reaches it by design"
+    },
+    {
+      "id": "fleet-registry",
+      "kind": "store",
+      "label": "Operator fleet registry (private sidecar)",
+      "subtype": "file",
+      "group": "host",
+      "note": "docs/THREAT-MODEL.md § Monitor sweep (`monitor/sweep.mjs`): manifest names and live URLs, resolved by monitor/store-paths.mjs, not from the tree"
+    },
+    {
+      "id": "cli",
+      "kind": "process",
+      "label": "commitwork run / scan / brief",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § `commitwork run <group|check>` (`bin/commitwork.mjs`, `cmdRun`) · docs/THREAT-MODEL.md § `commitwork scan` and `commitwork brief` (`cmdScan`, `cmdBrief`): resolveManifestPath, assertManifestTrusted, hostSandboxFor, buildLaneVoid"
+    },
+    {
+      "id": "scanned-git",
+      "kind": "process",
+      "label": "scannedGit (bin/lib/git-env.mjs)",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § git against a scanned tree (`bin/lib/git-env.mjs`): reads the tree's config, executes nothing from it, overrides every driver it names"
+    },
+    {
+      "id": "lane-env",
+      "kind": "process",
+      "label": "Lane environment (scanner-env.mjs)",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § Lane environment (`bin/lib/scanner-env.mjs`): allowlist for lanes that execute repository code, denylist for the rest"
+    },
+    {
+      "id": "secret-resolver",
+      "kind": "process",
+      "label": "lib/secrets.mjs",
+      "group": "host",
+      "note": "docs/THREAT-MODEL.md § Lane environment (`bin/lib/scanner-env.mjs`): runs outside the sandbox, hands declared secrets to the declaring command only"
+    },
+    {
+      "id": "host-lane",
+      "kind": "process",
+      "label": "Host-sandboxed lane",
+      "group": "sandbox",
+      "note": "docs/THREAT-MODEL.md § Host sandbox (`bin/lib/sandbox.mjs`): egress class none|registry|verifiers|github|target; classes other than none do not restrict destinations (R8)"
+    },
+    {
+      "id": "container-lane",
+      "kind": "process",
+      "label": "Container lane (docker run)",
+      "group": "container",
+      "note": "docs/THREAT-MODEL.md § Container postures: --cap-drop ALL, no-new-privileges, pids and memory limits, no writable source mount"
+    },
+    {
+      "id": "sweep",
+      "kind": "process",
+      "label": "Monitor sweep (monitor/sweep.mjs)",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § Monitor sweep (`monitor/sweep.mjs`): spawns bin/commitwork.mjs run per registered repository"
+    },
+    {
+      "id": "mcp-server",
+      "kind": "process",
+      "label": "MCP server (mcp/server.mjs, mcp/jobs.mjs)",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § MCP `run_checks` and `run_checks_start` (`mcp/server.mjs`, `mcp/jobs.mjs`): repoForRun, runChecksRoots, assertRepoCodeAllowed; one job at a time, queue of 8"
+    },
+    {
+      "id": "envelope",
+      "kind": "process",
+      "label": "Untrusted-text envelope (lib/untrusted-text.mjs)",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § Agent-facing controls: content-derived delimiter; injectionSignals is descriptive, never a filter"
+    },
+    {
+      "id": "issue-loop",
+      "kind": "process",
+      "label": "bin/issue-loop.mjs --apply",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § Other tools that act on a target · docs/THREAT-MODEL.md § Residual risks R10: starts claude -p in the scanned repository on a handoff that quotes finding text"
+    },
+    {
+      "id": "judge",
+      "kind": "process",
+      "label": "Agent run judge (monitor/agent-run-judge.mjs)",
+      "group": "commitwork",
+      "note": "docs/THREAT-MODEL.md § Other tools that act on a target: judges the stream-json record before the diff is accepted"
+    }
+  ],
+  "flows": [
+    {
+      "from": "repo-author",
+      "to": "tree",
+      "label": "every file, symlink and commit message",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#attacker-model"
+        ]
+      }
+    },
+    {
+      "from": "repo-author",
+      "to": "repo-manifest",
+      "label": "a repo-local manifest",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#attacker-model"
+        ]
+      }
+    },
+    {
+      "from": "dep-author",
+      "to": "registries",
+      "label": "a malicious package",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#attacker-model"
+        ]
+      }
+    },
+    {
+      "from": "operator",
+      "to": "cli",
+      "label": "command and consent flags",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#repo-local-manifests-do-not-execute-without-consent",
+          "docs/THREAT-MODEL.md#build-executing-lanes-need-consent-on-scan-and-brief"
+        ]
+      }
+    },
+    {
+      "from": "repo-manifest",
+      "to": "cli",
+      "label": "parsed; executed only with --trust-repo-manifest",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#repo-local-manifests-do-not-execute-without-consent"
+        ]
+      }
+    },
+    {
+      "from": "bundled-manifests",
+      "to": "cli",
+      "label": "checks, groups, egress classes",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#trust-boundaries",
+          "docs/THREAT-MODEL.md#host-sandbox-binlibsandboxmjs"
+        ]
+      }
+    },
+    {
+      "from": "tree",
+      "to": "cli",
+      "label": "commitwork.url, read only with consent",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#repo-supplied-scripts-and-targets-in-bundled-manifests-need-the-same-consent",
+          "docs/THREAT-MODEL.md#residual-risks"
+        ]
+      }
+    },
+    {
+      "from": "tree",
+      "to": "scanned-git",
+      "label": "git config --show-scope --list",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#git-against-a-scanned-tree-binlibgit-envmjs"
+        ]
+      }
+    },
+    {
+      "from": "scanned-git",
+      "to": "cli",
+      "label": "status, diff, log with every driver overridden",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#git-against-a-scanned-tree-binlibgit-envmjs"
+        ]
+      }
+    },
+    {
+      "from": "operator-env",
+      "to": "lane-env",
+      "label": "process environment",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#lane-environment-binlibscanner-envmjs"
+        ]
+      }
+    },
+    {
+      "from": "secrets",
+      "to": "secret-resolver",
+      "label": "declared secret references",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#lane-environment-binlibscanner-envmjs"
+        ]
+      }
+    },
+    {
+      "from": "gh-token",
+      "to": "secret-resolver",
+      "label": "gh session token",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#lane-environment-binlibscanner-envmjs"
+        ]
+      }
+    },
+    {
+      "from": "secret-resolver",
+      "to": "lane-env",
+      "label": "declared secrets, GH_TOKEN for a declaring lane",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#lane-environment-binlibscanner-envmjs"
+        ]
+      }
+    },
+    {
+      "from": "cli",
+      "to": "host-lane",
+      "label": "spawn under sandbox-exec / bwrap",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#host-sandbox-binlibsandboxmjs"
+        ]
+      }
+    },
+    {
+      "from": "cli",
+      "to": "container-lane",
+      "label": "docker run with a declared posture",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#container-postures"
+        ]
+      }
+    },
+    {
+      "from": "lane-env",
+      "to": "host-lane",
+      "label": "allowlisted or denylisted environment",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#lane-environment-binlibscanner-envmjs",
+          "docs/THREAT-MODEL.md#residual-risks"
+        ]
+      }
+    },
+    {
+      "from": "tree",
+      "to": "host-lane",
+      "label": "source, lockfiles, scripts, vendor/autoload.php",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun"
+        ]
+      }
+    },
+    {
+      "from": "tree",
+      "to": "container-lane",
+      "label": "read-only source mount",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#container-postures",
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun"
+        ]
+      }
+    },
+    {
+      "from": "host-lane",
+      "to": "reports",
+      "label": "lane artifact",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun"
+        ]
+      }
+    },
+    {
+      "from": "container-lane",
+      "to": "reports",
+      "label": "lane artifact",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun"
+        ]
+      }
+    },
+    {
+      "from": "reports",
+      "to": "host-lane",
+      "label": "other repositories' reports, in the macOS read set (R1)",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#residual-risks"
+        ]
+      }
+    },
+    {
+      "from": "host-lane",
+      "to": "registries",
+      "label": "package and advisory lookups",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun"
+        ]
+      }
+    },
+    {
+      "from": "registries",
+      "to": "host-lane",
+      "label": "packages, rule packs, advisories",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun",
+          "docs/THREAT-MODEL.md#not-defended"
+        ]
+      }
+    },
+    {
+      "from": "host-lane",
+      "to": "issuers",
+      "label": "candidate credentials (R11)",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#residual-risks"
+        ]
+      }
+    },
+    {
+      "from": "host-lane",
+      "to": "github",
+      "label": "API calls for the tree's origin",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun"
+        ]
+      }
+    },
+    {
+      "from": "host-lane",
+      "to": "target",
+      "label": "DAST traffic",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#commitwork-run-groupcheck-bincommitworkmjs-cmdrun",
+          "docs/THREAT-MODEL.md#residual-risks"
+        ]
+      }
+    },
+    {
+      "from": "fleet-registry",
+      "to": "sweep",
+      "label": "manifest names and live URLs",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#monitor-sweep-monitorsweepmjs"
+        ]
+      }
+    },
+    {
+      "from": "sweep",
+      "to": "cli",
+      "label": "run <group> per repository",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#monitor-sweep-monitorsweepmjs"
+        ]
+      }
+    },
+    {
+      "from": "mcp-client",
+      "to": "mcp-server",
+      "label": "run_checks, run_checks_start",
+      "mode": "sync",
+      "role": "feedback",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#mcp-run_checks-and-run_checks_start-mcpservermjs-mcpjobsmjs"
+        ]
+      }
+    },
+    {
+      "from": "mcp-server",
+      "to": "cli",
+      "label": "run <group> --manifest <bundled>",
+      "mode": "async",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#mcp-run_checks-and-run_checks_start-mcpservermjs-mcpjobsmjs"
+        ]
+      }
+    },
+    {
+      "from": "reports",
+      "to": "envelope",
+      "label": "raw report files as resources",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#agent-facing-controls"
+        ]
+      }
+    },
+    {
+      "from": "envelope",
+      "to": "mcp-client",
+      "label": "fenced resources, JSON-encoded tool results",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#agent-facing-controls"
+        ]
+      }
+    },
+    {
+      "from": "reports",
+      "to": "issue-loop",
+      "label": "finding text quoted in the handoff",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#other-tools-that-act-on-a-target",
+          "docs/THREAT-MODEL.md#residual-risks"
+        ]
+      }
+    },
+    {
+      "from": "issue-loop",
+      "to": "claude",
+      "label": "claude -p with PROFILES.issueLoop",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#other-tools-that-act-on-a-target",
+          "docs/THREAT-MODEL.md#agent-facing-controls"
+        ]
+      }
+    },
+    {
+      "from": "claude",
+      "to": "tree",
+      "label": "edits (Read, Edit, Write, Grep, Glob; no shell)",
+      "mode": "sync",
+      "role": "feedback",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#other-tools-that-act-on-a-target"
+        ]
+      }
+    },
+    {
+      "from": "claude",
+      "to": "judge",
+      "label": "stream-json run record",
+      "mode": "async",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#other-tools-that-act-on-a-target"
+        ]
+      }
+    },
+    {
+      "from": "judge",
+      "to": "issue-loop",
+      "label": "accept the diff or block the issue",
+      "mode": "sync",
+      "role": "feedback",
+      "evidence": {
+        "witness": "authored",
+        "existence": "unknown",
+        "refs": [
+          "docs/THREAT-MODEL.md#other-tools-that-act-on-a-target"
+        ]
+      }
+    }
+  ]
+}

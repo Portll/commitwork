@@ -325,3 +325,16 @@ describe('command line', () => {
     assert.match(html, /&lt;script&gt;alert/);
   });
 });
+
+test('with no override, the sources list is releases.json in the private directory of this tree', () => {
+  const state = join(tmp, 'state');
+  const prev = process.env.CW_STATE_DIR;
+  process.env.CW_STATE_DIR = state;
+  try {
+    const { errors } = loadSources();
+    assert.equal(errors.length, 1);
+    assert.ok(errors[0].startsWith(`${join(state, 'monitor', 'private', 'releases.json')}: `), errors[0]);
+  } finally {
+    if (prev === undefined) delete process.env.CW_STATE_DIR; else process.env.CW_STATE_DIR = prev;
+  }
+});

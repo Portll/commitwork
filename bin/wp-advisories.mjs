@@ -21,12 +21,15 @@
 // sat on a release with a published unauthenticated SQL injection is exactly the case where a
 // guessed "probably patched" version would have hidden the cause.
 //
+// A plugin's own source repository (no install, a root Plugin Name header) is looked up as that one
+// plugin; see pluginRepoOf and sameNamedPlugin for how its slug is read and when it is believed.
+//
 // The lane sends the core version and every plugin and theme slug to those two services (EGRESS
 // registry); bin/lib/wp-source.mjs caches the answers privately for CW_WPVULN_TTL_HOURS.
-import { lstatSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { lstatSync, readdirSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import { isMainModule } from '../lib/is-main.mjs';
-import { findInstalls, inventory, cleanHeader, versionCompare, versionSatisfies, SLUG_RX, VERSION_RX } from './lib/wordpress.mjs';
+import { findInstalls, inventory, cleanHeader, versionCompare, versionSatisfies, readHead, headersFrom, SLUG_RX, VERSION_RX } from './lib/wordpress.mjs';
 import { request, mapPool, tally, baseOf, cacheLabel } from './lib/wp-source.mjs';
 import { skipDirs, maxDepth } from './wp-integrity.mjs';
 
@@ -49,6 +52,44 @@ const CORE_RELEASE = /^\d+\.\d+(\.\d+)?$/;
 const SEV_RANK = { '': 0, low: 1, med: 2, high: 3, crit: 4 };
 
 const unentity = (s) => String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&amp;/g, '&');
+
+/**
+ * A plugin's own source repository: a root PHP file with a Plugin Name header and no install around
+ * it. The wordpress.org slug is the directory WordPress installs it under, which a repository does not
+ * carry, so the Text Domain (wordpress.org requires it to equal the slug) is read first and the main
+ * file's name second. Null when the root holds no plugin header.
+ */
+export function pluginRepoOf(root) {
+  let entries;
+  try { entries = readdirSync(root, { withFileTypes: true }); } catch { return null; }
+  const mains = [];
+  const php = entries.filter((e) => e.isFile() && e.name.endsWith('.php') && !e.name.startsWith('.')).sort((a, b) => (a.name < b.name ? -1 : 1));
+  for (const e of php) {
+    let h;
+    try { h = headersFrom(readHead(join(root, e.name)), ['Plugin Name', 'Version', 'Text Domain']); } catch { continue; }
+    if (h['Plugin Name']) mains.push({ file: e.name, name: h['Plugin Name'], version: h.Version || null, textDomain: h['Text Domain'] || null });
+  }
+  if (!mains.length) return null;
+  const m = mains[0];
+  const byDomain = !!m.textDomain && SLUG_RX.test(m.textDomain);
+  return {
+    main: m.file, name: m.name, version: m.version, mains: mains.map((x) => x.file),
+    slug: (byDomain ? m.textDomain : m.file.slice(0, -4)).toLowerCase(), slugFrom: byDomain ? 'Text Domain' : 'main file name',
+  };
+}
+
+const displayName = (s) => unentity(String(s || '').replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))).replace(/&[a-z]+;/gi, ' ')
+  .replace(/[‒-―]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
+
+/**
+ * wordpress.org lists a plugin as its header name plus a tagline ("Code Block Pro – Beautiful Syntax
+ * Highlighting"), so that prefix counts. A longer NAME does not: "Hermit X" is a fork of "Hermit".
+ */
+export function sameNamedPlugin(sourceName, headerName) {
+  const a = displayName(sourceName); const h = displayName(headerName);
+  if (!a || !h) return false;
+  return a === h || (a.startsWith(h) && /^\s*[-:|(]/.test(a.slice(h.length)));
+}
 
 /** {score, sev, kev, exploited, cwes} from a WPVulnerability `impact` (an object, or [] when none). */
 export function impactOf(impact) {
@@ -192,6 +233,22 @@ export async function scanTree(root) {
   }
 
   const jobs = [];
+  // A slug read from a repository is a guess about its wordpress.org directory, and a wrong guess
+  // would attribute another plugin's advisories here, so the source's plugin name must match the
+  // header before any record counts.
+  const repo = found.installs.length ? null : pluginRepoOf(root);
+  if (repo) {
+    summary.installs.push({ path: '.', layout: 'plugin-repo', core: { state: 'not-applicable', version: null, releaseStatus: null }, slug: repo.slug, slugFrom: repo.slugFrom });
+    summary.components.plugins++;
+    if (!repo.version || !SLUG_RX.test(repo.slug) || !VERSION_RX.test(repo.version)) {
+      summary.components.versionUnknown++;
+      const why = !repo.version ? 'the main file carries no Version header' : 'the slug or version is not a shape the advisory source keys on';
+      listed(summary.notMeasured, { component: 'plugin', slug: repo.slug, path: repo.main, reason: `${why}: advisories not matched` });
+    } else {
+      jobs.push({ kind: 'plugin', rule: 'wp-plugin-vulnerable', closedRule: 'wp-plugin-closed', type: 'plugin', key: repo.slug, slug: repo.slug,
+        version: repo.version, path: repo.main, expectName: repo.name, slugFrom: repo.slugFrom });
+    }
+  }
   for (const inst of found.installs) {
     const at = (rel) => (inst.path === '.' ? rel : `${inst.path}/${rel}`);
     const contentRel = (rel) => (inst.contentPath === '.' ? rel : `${inst.contentPath}/${rel}`);
@@ -284,6 +341,13 @@ export async function scanTree(root) {
       listed(summary.unknownToSource, { kind: j.kind, slug: j.slug, version, path: j.path });
       continue;
     }
+    if (j.expectName && !sameNamedPlugin(data.name, j.expectName)) {
+      summary.components.unknownToSource++;
+      listed(summary.notMeasured, { component: 'plugin', slug: j.slug, path: j.path,
+        reason: `the slug ${j.slug} (from the ${j.slugFrom}) names ${cleanHeader(unentity(data.name), 80)} on the advisory source, not ${cleanHeader(j.expectName, 80)}: its records are not attributed to this tree` });
+      partial.push('a plugin repository slug names a different plugin on the advisory source: advisories not matched');
+      continue;
+    }
     summary.components.checked++;
     const all = data && Array.isArray(data.vulnerability) ? data.vulnerability : [];
     let records;
@@ -318,7 +382,7 @@ export async function scanTree(root) {
   for (const k of ['checked', 'unknownToSource', 'unavailable']) summary[k].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   const reasons = [...new Set(partial)];
   if (reasons.length) { summary.partial = true; summary.partialReasons = reasons; }
-  if (!found.installs.length) {
+  if (!found.installs.length && !repo) {
     summary.voidReason = 'no WordPress install in the tree (wp-includes/version.php, or a wp-content holding a plugin or theme), so no version was looked up; a tree without WordPress is a void, not a clean result';
   } else if (summary.filesScanned === 0) {
     summary.voidReason = `no component could be looked up: ${reasons.join('; ') || 'no component states a version'}`;

@@ -158,6 +158,14 @@ export function assess({
     }
   }
 
+  // With the store unreadable the decoy arm above did not run, and that is half of this gate. The
+  // verdict stays open and says so: a clean read and a blind one printed the same line until
+  // 2026-10-20, which is this repo's founding defect in the gate built to prevent it.
+  if (tasks === null) {
+    return verdict(false, 'satisfied',
+      `${edits} files edited, ${spineRecords.length} spine record(s) filed by this session; the task `
+      + 'store could not be read, so the decoy check did not run.', { grey: true });
+  }
   return verdict(false, 'satisfied',
     `${edits} files edited, ${spineRecords.length} spine record(s) filed by this session.`);
 }

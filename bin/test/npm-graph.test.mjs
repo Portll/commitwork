@@ -8,10 +8,10 @@ import { auditLookup } from '../lib/npm-audit-findings.mjs';
 const LOCK = {
   lockfileVersion: 3,
   packages: {
-    '': { name: 'member-repo', workspaces: ['packages/client-a'], dependencies: { 'widget-x': '^2.0.0', alias: 'npm:real-name@^1.0.0' }, devDependencies: { 'test-kit': '^1.0.0' } },
-    'packages/client-a': { name: 'client-a', version: '0.1.0', dependencies: { 'only-ws': '^1.0.0' } },
+    '': { name: 'member-repo', workspaces: ['packages/web-client'], dependencies: { 'widget-x': '^2.0.0', alias: 'npm:real-name@^1.0.0' }, devDependencies: { 'test-kit': '^1.0.0' } },
+    'packages/web-client': { name: 'web-client', version: '0.1.0', dependencies: { 'only-ws': '^1.0.0' } },
     'node_modules/only-ws': { version: '1.0.0' },
-    'node_modules/client-a': { resolved: 'packages/client-a', link: true },
+    'node_modules/web-client': { resolved: 'packages/web-client', link: true },
     'node_modules/widget-x': { version: '2.0.0', dependencies: { 'child-y': '^1.0.0' } },
     'node_modules/widget-x/node_modules/child-y': { version: '1.5.0' },
     'node_modules/child-y': { version: '2.1.0' },
@@ -32,7 +32,7 @@ test('a graph carries every version, its exposure and its shortest chains', () =
   assert.deepEqual([...g.packages.keys()], ['child-y@1.5.0', 'child-y@2.1.0', 'only-ws@1.0.0', 'real-name@1.0.3', 'test-kit@1.0.0', 'widget-x@2.0.0']);
   assert.deepEqual(g.packages.get('child-y@1.5.0').paths, [['widget-x@2.0.0', 'child-y@1.5.0']]);
   assert.equal(g.packages.get('child-y@2.1.0').exposure, 'prod');
-  assert.deepEqual(g.packages.get('only-ws@1.0.0').paths, [['client-a (workspace)', 'only-ws@1.0.0']], 'reached through the workspace link');
+  assert.deepEqual(g.packages.get('only-ws@1.0.0').paths, [['web-client (workspace)', 'only-ws@1.0.0']], 'reached through the workspace link');
   assert.equal(g.packages.get('test-kit@1.0.0').exposure, 'dev');
   assert.ok(g.packages.has('real-name@1.0.3'), 'an alias is looked up under the package it installs');
   assert.ok(GRAPH_READERS['package-lock.json'].read === readNpmGraph);

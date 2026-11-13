@@ -6,7 +6,19 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolvePaths, loadJSON, isOverdue, nowISO, writeJSONAtomic, validateProducts, sha256, clockSpecFor, CLOCK_SPEC } from '../../cra/lib.mjs';
 import { preflight } from '../../cra/preflight.mjs';
 import { evidenceStatus } from '../../cra/evidence-status.mjs';
+import { acquireLockOrReason } from '../../monitor/lockfile.mjs';
 
+// The compare and the swap are one critical section: writeJSONAtomic prevents a torn file, not a
+// lost update. `unavailable` (the disk refused the lock) stays apart from `locked` (a peer holds it).
+function withProductsLock(path, fn) {
+  const got = acquireLockOrReason(`${path}.lock`, {
+    staleMs: 30_000, label: 'cra-products', attempts: 50, spinMs: 20,
+    onStale: (ageMs) => console.warn(`[cra] breaking a stale products lock (${Math.round(ageMs / 1000)}s old)`),
+  });
+  if (!got.ok && got.reason === 'unavailable') return { unavailable: true, code: got.code, message: got.message };
+  if (!got.ok) return { locked: true };
+  try { return { locked: false, value: fn() }; } finally { got.lock.release(); }
+}
 
 // A session OR the operator port, which is the same rule every other lane uses
 // (codeql-remediation.mjs `authed`, packages.mjs, host.mjs), so the CRA page works on the port an
@@ -111,7 +123,8 @@ export const routes = [
   } },
 
   // POST /api/cra/products {products, baseHash} — replace products.json, guarded.
-  // 400 invalid · 409 changed since baseHash · 503 corrupt store (refuse to overwrite blind).
+  // 400 invalid · 409 changed since baseHash · 503 corrupt store (refuse to overwrite blind) or lock
+  // not taken.
   { method: 'POST', path: '/api/cra/products', handle: (ctx) => {
     const { req, send, readJsonBody } = ctx;
     if (!requireSession(ctx, OPERATOR_PORT)) return send(401, { ok: false, error: 'authentication required' });
@@ -120,22 +133,32 @@ export const routes = [
       const doc = body && body.products;
       if (!doc || typeof doc !== 'object') return send(400, { ok: false, error: 'body.products (the products.json document) is required' });
       const p = resolvePaths().products;
-      let currentHash = null;
-      if (existsSync(p)) {
-        let raw;
-        try { raw = readFileSync(p, 'utf8'); } catch (e) { return send(503, { ok: false, error: `products store unreadable: ${e.code || e.message}` }); }
-        try { JSON.parse(raw); } catch { return send(503, { ok: false, error: 'products store is corrupt (unparseable JSON) — refusing to overwrite blind' }); }
-        currentHash = sha256(raw);
+      const outcome = withProductsLock(p, () => {
+        let currentHash = null;
+        if (existsSync(p)) {
+          let raw;
+          try { raw = readFileSync(p, 'utf8'); } catch (e) { return { code: 503, body: { ok: false, error: `products store unreadable: ${e.code || e.message}` } }; }
+          try { JSON.parse(raw); } catch { return { code: 503, body: { ok: false, error: 'products store is corrupt (unparseable JSON) — refusing to overwrite blind' } }; }
+          currentHash = sha256(raw);
+        }
+        if ((body.baseHash ?? null) !== currentHash) {
+          return { code: 409, body: { ok: false, error: 'products.json changed since it was loaded (or no baseHash was supplied) — reload and reapply', currentHash } };
+        }
+        const v = validateProducts(doc);
+        if (v.errors.length) return { code: 400, body: { ok: false, errors: v.errors, advisories: v.advisories } };
+        writeJSONAtomic(p, doc);
+        // Read back under the lock, or the hash and verdict can describe a peer's save.
+        const hash = sha256(readFileSync(p, 'utf8'));           // exactly the on-disk bytes → the next baseHash
+        const fresh = preflight(resolvePaths());
+        return { code: 200, body: { ok: true, hash, advisories: v.advisories, preflight: { ready: fresh.ready, errors: fresh.errors, advisories: fresh.advisories, info: fresh.info } } };
+      });
+      if (outcome.unavailable) {
+        return send(503, { ok: false, unavailable: true, error: `products lock unavailable${outcome.code ? ` (${outcome.code})` : ''}: ${outcome.message}` });
       }
-      if ((body.baseHash ?? null) !== currentHash) {
-        return send(409, { ok: false, error: 'products.json changed since it was loaded (or no baseHash was supplied) — reload and reapply', currentHash });
+      if (outcome.locked) {
+        return send(503, { ok: false, error: 'another writer holds products.json; retry in a moment' });
       }
-      const v = validateProducts(doc);
-      if (v.errors.length) return send(400, { ok: false, errors: v.errors, advisories: v.advisories });
-      writeJSONAtomic(p, doc);
-      const hash = sha256(readFileSync(p, 'utf8'));           // exactly the on-disk bytes → the next baseHash
-      const fresh = preflight(resolvePaths());
-      return send(200, { ok: true, hash, advisories: v.advisories, preflight: { ready: fresh.ready, errors: fresh.errors, advisories: fresh.advisories, info: fresh.info } });
+      return send(outcome.value.code, outcome.value.body);
     });
   } },
 ];

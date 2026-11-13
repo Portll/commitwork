@@ -1,6 +1,6 @@
 # Scan canaries
 
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 
 Two repositories that exist to be scanned. One should come back clean; the other should come back
 with exactly eleven known findings. Together they answer the question this project keeps running

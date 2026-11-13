@@ -1,3 +1,5 @@
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { msysPathconvEnv } from '../../lib/posix-shell.mjs'; // the Git Bash facts live there, not here
 
 // guard: harness credentials never reach a scanner
@@ -64,15 +66,38 @@ export function withheldCredentials(check, env) {
   return Object.keys(scannerEnv(env)).filter((k) => isCredentialKey(k) && !declaresCredential(check, k)).sort();
 }
 
-/** The base env of a lane's shell: an allowlist where the check executes repo code, the denylist otherwise. */
+// fact: an npx lane fetches from a registry the operator chose, with npm config only commitwork's / in a tree carrying an .npmrc, `npx --yes` fetched retire and the scoped @cyclonedx package from the tree's registry, an env registry pin did not override the scoped one, and a tree shipping node_modules/retire at the pinned version had its own copy run, measured 2026-10-19 with npm 11.19 (threat model R6) (expiry: never, prev: broken)
+// The lane passes --prefix=$CW_NPX_PREFIX, so npm reads its project config and local bins from that
+// directory, not the scanned tree, while the tool still runs in the tree. npm refuses one file as
+// both user and global config, so each names its own absent path there.
+export const NPX_PREFIX = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'manifests', 'npx-prefix');
+export const DEFAULT_NPM_REGISTRY = 'https://registry.npmjs.org/';
+export const fetchesWithNpx = (check) => ((check && check.requires && check.requires.tools) || []).includes('npx');
+
+// env, read at call time: CW_NPM_REGISTRY (the registry npx lanes fetch from; default the public npm registry)
+export function npxEnv(env) {
+  return {
+    npm_config_registry: env.CW_NPM_REGISTRY || DEFAULT_NPM_REGISTRY,
+    npm_config_userconfig: join(NPX_PREFIX, 'user.npmrc'),
+    npm_config_globalconfig: join(NPX_PREFIX, 'global.npmrc'),
+    CW_NPX_PREFIX: NPX_PREFIX,
+  };
+}
+
+/**
+ * The base env of a lane's shell: an allowlist where the check executes repo code or fetches its tool
+ * through npx, the denylist otherwise. An npx lane also gets npxEnv.
+ */
 export function laneEnv(check, env) {
-  if (!(check && check.executesRepoCode === true)) {
+  const npx = fetchesWithNpx(check);
+  if (!(check && check.executesRepoCode === true) && !npx) {
     return Object.fromEntries(Object.entries(scannerEnv(env)).filter(([k]) => !OPERATOR_SWITCHES.has(k) && (!isCredentialKey(k) || declaresCredential(check, k))));
   }
   // A secret the check declares is the one credential it may hold.
   const keep = new Set([...((check.requires && check.requires.secrets) || []), ...dockerPassByName(env.BH_DOCKER_ARGS)]);
-  return Object.fromEntries(Object.entries(env).filter(([k]) => REPO_CODE_KEYS.has(k) || keep.has(k)
+  const base = Object.fromEntries(Object.entries(env).filter(([k]) => REPO_CODE_KEYS.has(k) || keep.has(k)
     || REPO_CODE_PREFIXES.some((p) => k.startsWith(p))));
+  return npx ? { ...base, ...npxEnv(env) } : base;
 }
 
 // guard: the gh session reaches only a lane that declares its store and runs no repository code.

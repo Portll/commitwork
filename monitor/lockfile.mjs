@@ -4,23 +4,36 @@
 // A stale lock is taken over loudly; acquisition stamps mtime so a takeover reads fresh.
 // Residual: the `.breaking` guard clears unconditionally past a short grace — worst case is two
 // concurrent breakers, which requires a crash inside a microsecond-long critical section.
+//
+// The token is { pid, nonce, at, label, host, startedAt }. `host` and `startedAt` exist so a
+// holder can be told apart from a corpse and from a stranger wearing its pid: a stamp alone keeps
+// a crashed holder's permit for staleMs and hands a live holder's permit to the next contender
+// at staleMs, and sweeps run for hours. The verdict (holderVerdict) is three-valued and 'unknown'
+// is never dead — a pid is only meaningful on the host that wrote it, so a token from another host,
+// or one with no host (pre-field format), keeps the stamp-age rule. A holder whose stamp would go
+// stale calls refresh() on its handle; a live holder that does not refresh is still taken over,
+// because an unrefreshed stamp is the only bound there is on a hung one.
 
 import { chmodSync, mkdirSync, rmdirSync, rmSync, renameSync, statSync, readFileSync, writeFileSync, unlinkSync, utimesSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { hostname } from 'node:os';
 import { join, dirname, basename } from 'node:path';
 
 export const REPORTS_LOCK = '.reports.lock';
 // The per-area slice-writer lock rollup.mjs holds inline. Exported so a second per-area writer
 // converges onto the identical path — two differently-named locks over one directory is no mutex.
 export const ROLLUP_LOCK = '.rollup.lock';
-const DEFAULT_STALE_MS = 30 * 60 * 1000;
+export const DEFAULT_STALE_MS = 30 * 60 * 1000;
 
 // The owner token file — load-bearing: it is the lock's identity for the compare-and-delete.
 const OWNER = 'owner.json';
 
 // ── observation ────────────────────────────────────────────────────────────────────────────────
 // One read of everything that identifies a lock. Returns null when the lock is not held.
-export function observeLock(lockPath) {
+// `verdict: true` adds the holder's liveness (holderAlive, holderMatches — see holderVerdict); it
+// is off by default because the compare-and-delete reads identity only and must stay microseconds.
+export function observeLock(lockPath, { verdict = false, kill, liveStart } = {}) {
   const owner = readOwner(lockPath);
   let mtimeMs;
   try { mtimeMs = statSync(lockPath).mtimeMs; } catch { return null; }
@@ -31,7 +44,57 @@ export function observeLock(lockPath) {
   const at = plausibleStamp(owner && owner.at, now) ? owner.at
     : plausibleStamp(mtimeMs, now) ? mtimeMs
       : null;
-  return { path: lockPath, owner, mtimeMs, at, ageMs: at === null ? null : Math.max(0, now - at) };
+  const o = { path: lockPath, owner, mtimeMs, at, ageMs: at === null ? null : Math.max(0, now - at) };
+  return verdict ? { ...o, ...holderVerdict(owner, { kill, liveStart }) } : o;
+}
+
+// ── the holder's liveness ──────────────────────────────────────────────────────────────────────
+// holderAlive:   true | false | 'unknown' — process.kill(pid, 0): ESRCH is dead, EPERM is alive
+//                under another user, a zombie is dead, any other error is unknown.
+// holderMatches: true | false | 'unknown' — the token's startedAt against the live pid's start.
+//                false is pid reuse: the holder died and something else inherited its number.
+// Only a token that names THIS host is probed: a pid means nothing across a network mount, and the
+// pre-field format (no host) is the same case. Windows: kill(0) answers liveness; the start of
+// another pid is not read there, so holderMatches is 'unknown' and the stamp-age rule bounds it.
+// 'unknown' is never dead. A guess in the dead direction puts two writers in one critical section.
+export function holderVerdict(owner, { kill = defaultKill, liveStart = defaultLiveStart } = {}) {
+  const unknown = { holderAlive: 'unknown', holderMatches: 'unknown' };
+  if (!owner || !Number.isInteger(owner.pid) || owner.pid <= 0) return unknown;
+  if (typeof owner.host !== 'string' || owner.host !== hostname()) return unknown;
+  let holderAlive;
+  try { kill(owner.pid, 0); holderAlive = true; }
+  catch (e) {
+    const code = e && e.code;
+    holderAlive = code === 'ESRCH' ? false : code === 'EPERM' ? true : 'unknown';
+  }
+  if (holderAlive !== true) return { holderAlive, holderMatches: 'unknown' };
+  const live = liveStart(owner.pid); // { startMs: number|null, zombie: boolean } | null
+  if (live && live.zombie) return { holderAlive: false, holderMatches: 'unknown' };
+  if (!live || live.startMs === null || !plausibleStamp(owner.startedAt, Date.now())) return { holderAlive, holderMatches: 'unknown' };
+  return { holderAlive, holderMatches: Math.abs(live.startMs - owner.startedAt) <= START_TOLERANCE_MS };
+}
+
+// The writer stamps `Date.now() - process.uptime()*1000`, whole seconds: no spawn at claim time,
+// and it is the same number on Windows. The reader derives the live start from `ps -o etime=`
+// (elapsed, [[dd-]hh:]mm:ss) — present on every POSIX ps, whole seconds, and free of the
+// local-time parsing that `lstart` needs. So both sides are "now minus elapsed" and the tolerance
+// covers a second of truncation on each, the gap between exec and Node's clock start, and the ps
+// spawn's own latency on a loaded box — the direction a false mismatch fails in is the unsafe one.
+// A reused pid's start is minutes to days from the token's, never within this window.
+const START_TOLERANCE_MS = 5_000;
+export function ownStartMs() { return Math.round((Date.now() - process.uptime() * 1000) / 1000) * 1000; }
+function defaultKill(pid, sig) { process.kill(pid, sig); }
+function defaultLiveStart(pid) {
+  if (process.platform === 'win32') return null;
+  const before = Date.now();
+  let out;
+  try {
+    out = execFileSync('ps', ['-o', 'stat=,etime=', '-p', String(pid)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5_000 });
+  } catch { return null; }
+  const m = /^\s*(\S+)\s+(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+)\s*$/.exec(out);
+  if (!m) return null;
+  const secs = ((Number(m[2] || 0) * 24 + Number(m[3] || 0)) * 3600) + Number(m[4]) * 60 + Number(m[5]);
+  return { startMs: before - secs * 1000, zombie: m[1][0] === 'Z' };
 }
 
 // Tolerance for a stamp that reads slightly ahead of us — clock skew between two machines writing
@@ -137,52 +200,64 @@ function removeLockDir(p) {
 
 // ── acquisition ────────────────────────────────────────────────────────────────────────────────
 // Synchronous throughout (`attempts > 1` = busy-wait retry, for synchronous request handlers).
-// Returns { ok:true, path, token, release } or { ok:false, path, heldFor, holder }; never exits.
+// Returns { ok:true, path, token, release, refresh } or
+// { ok:false, path, heldFor, holder, holderAlive, holderMatches }; never exits.
 export function acquireLock(lockPath, {
   staleMs = DEFAULT_STALE_MS,
   label = 'writer',
   attempts = 1,           // 1 = single shot (abort/skip callers); >1 = synchronous busy-wait
   spinMs = 20,
   releaseOnExit = false,  // process-lifetime holders only — a per-call holder would leak listeners
-  onStale = null,         // (ageMs, holder, path) => void; the caller owns how loud a takeover is
+  onStale = null,         // (ageMs, holder, path, observed) => void; the caller owns how loud a takeover is
+  kill, liveStart,        // probe seams for holderVerdict; tests only
 } = {}) {
   const rounds = Math.max(1, attempts | 0);
   let heldFor = 0;
   let holder = null;
+  let holderAlive = 'unknown';
+  let holderMatches = 'unknown';
+  const probe = { verdict: true, kill, liveStart };
 
   for (let round = 0; round < rounds; round++) {
     const got = claim(lockPath, label, releaseOnExit);
     if (got) return got;
 
-    const observed = observeLock(lockPath);
+    const observed = observeLock(lockPath, probe);
     if (!observed) continue; // released between our failed claim and our stat — go straight round again
 
     // `ageMs === null` is an age we could not read, and it is NOT a takeover licence. Stealing a
     // live lock puts two writers in the critical section and corrupts the store it guards; refusing
     // to steal a dead one costs a skipped cycle that says so out loud and that
     // `forceReleaseLock()` clears. Only one of those is recoverable, so unknown fails closed.
-    if (observed.ageMs !== null && observed.ageMs >= staleMs) {
-      if (onStale) onStale(observed.ageMs, observed.owner, lockPath);
+    // A holder known dead (ESRCH, zombie, or a pid whose start is not the token's) is stale at
+    // any age; 'unknown' keeps the stamp-age rule.
+    const dead = observed.holderAlive === false || observed.holderMatches === false;
+    if (dead || (observed.ageMs !== null && observed.ageMs >= staleMs)) {
+      if (onStale) onStale(observed.ageMs, observed.owner, lockPath, observed);
       breakStaleLock(lockPath, observed);
       const after = claim(lockPath, label, releaseOnExit); // the takeover IS the acquisition
       if (after) return after;
-      const now = observeLock(lockPath); // somebody else won the lock we freed
+      const now = observeLock(lockPath, probe); // somebody else won the lock we freed
       heldFor = now ? now.ageMs : 0;
       holder = now ? now.owner : null;
+      holderAlive = now ? now.holderAlive : 'unknown';
+      holderMatches = now ? now.holderMatches : 'unknown';
     } else {
       heldFor = observed.ageMs; // may be null — an unreadable age, which callers must render as such
       holder = observed.owner;
+      holderAlive = observed.holderAlive;
+      holderMatches = observed.holderMatches;
     }
     if (round + 1 < rounds) spin(spinMs);
   }
-  return { ok: false, path: lockPath, heldFor, holder };
+  return { ok: false, path: lockPath, heldFor, holder, holderAlive, holderMatches };
 }
 
 // Assemble the lock in a private staging path, swap in with ONE rename — the rename is the
 // test-and-set (ENOTEMPTY against a populated lock), and the lock is never seen half-built or
 // momentarily empty (an empty dir is tokenless AND a legal rename target).
 function claim(lockPath, label, releaseOnExit) {
-  const token = { pid: process.pid, nonce: randomBytes(12).toString('hex'), at: Date.now(), label };
+  const token = { pid: process.pid, nonce: randomBytes(12).toString('hex'), at: Date.now(), label, host: hostname(), startedAt: ownStartMs() };
   const staging = `${lockPath}.new-${process.pid}-${randomBytes(6).toString('hex')}`;
   try { mkdirSync(dirname(lockPath), { recursive: true }); } catch { /* already there, or unwritable — the mkdir below reports it */ }
   mkdirSync(staging);
@@ -226,7 +301,25 @@ function handle(lockPath, token, releaseOnExit) {
     breakStaleLock(lockPath, mine);
   };
   if (releaseOnExit) { onExit = () => { try { release(); } catch { /* exiting anyway */ } }; process.on('exit', onExit); }
-  return { ok: true, path: lockPath, token, release };
+  // Re-stamp `at` so a long hold never reads stale; nonce and startedAt are the identity and stay.
+  // Under the removal guard: a breaker between the identity check and the write would otherwise
+  // rename the lock away, install a successor, and have its token overwritten by this one.
+  // -> { ok:true, at } | { ok:false, reason: 'released' | 'busy' | 'lost' }
+  const refresh = () => {
+    if (released) return { ok: false, reason: 'released' };
+    const guard = `${lockPath}${GUARD_SUFFIX}`;
+    if (!takeGuard(guard)) return { ok: false, reason: 'busy' };
+    try {
+      if (!sameLock(mine, observeLock(lockPath))) return { ok: false, reason: 'lost' };
+      token.at = Date.now();
+      writeAtomic(join(lockPath, OWNER), JSON.stringify(token));
+      const s = token.at / 1000;
+      try { utimesSync(lockPath, s, s); } catch { /* best effort: the token carries `at` regardless */ }
+      mine.at = token.at;
+      return { ok: true, at: token.at };
+    } finally { try { rmdirSync(guard); } catch { /* already cleared */ } }
+  };
+  return { ok: true, path: lockPath, token, release, refresh };
 }
 
 // Synchronous busy-wait, deliberate: the callers are synchronous, nothing to await. Keep it short.
@@ -268,14 +361,16 @@ export function acquireLockOrReason(lockPath, opts) {
 // ── operator surface ───────────────────────────────────────────────────────────────────────────
 // Read-only. `stale` uses the same threshold acquisition does, so what an operator is told matches
 // what the next acquirer will actually do.
-export function inspectLock(lockPath, { staleMs = DEFAULT_STALE_MS } = {}) {
-  const o = observeLock(lockPath);
-  if (!o) return { held: false, path: lockPath, ageMs: null, ageKnown: true, stale: false, holder: null };
+export function inspectLock(lockPath, { staleMs = DEFAULT_STALE_MS, kill, liveStart } = {}) {
+  const o = observeLock(lockPath, { verdict: true, kill, liveStart });
+  if (!o) return { held: false, path: lockPath, ageMs: null, ageKnown: true, stale: false, holder: null, holderAlive: 'unknown', holderMatches: 'unknown' };
   // `ageKnown:false` separates "not held" from "held, age unreadable" — both carry ageMs null, and
   // an operator told "0s old" for the second would be told something we did not measure.
+  const dead = o.holderAlive === false || o.holderMatches === false;
   return {
     held: true, path: lockPath, ageMs: o.ageMs, ageKnown: o.ageMs !== null,
-    stale: o.ageMs !== null && o.ageMs >= staleMs, holder: o.owner,
+    stale: dead || (o.ageMs !== null && o.ageMs >= staleMs), holder: o.owner,
+    holderAlive: o.holderAlive, holderMatches: o.holderMatches,
   };
 }
 
@@ -296,7 +391,7 @@ export function takeReportsLock(reportsRoot, { staleMs = DEFAULT_STALE_MS, label
   const path = join(reportsRoot, lockName);
   return acquireLock(path, {
     staleMs, label, releaseOnExit: true,
-    onStale: (ageMs) => console.error(`[lock] taking over a stale reports lock (${Math.round(ageMs / 60000)} min old) at ${path}`),
+    onStale: (ageMs, holder, p, o) => console.error(`[lock] taking over a stale reports lock (${describeAge(ageMs)}, holder pid ${holder ? holder.pid : '?'} alive: ${o.holderAlive}) at ${p}`),
   });
 }
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // liveness.mjs — the sweep deadman: classifies every area's rollup freshness against wall-clock
-// now. Exit 1 on expired/unknown/hung/tampered; degraded/stale/never-swept warn; unscheduled
-// (undeclared area) never trips — an alarm nobody can satisfy gets muted.
+// now. Exit 1 on expired/unknown/hung/tampered, on a gate journal whose band ranks there, or on
+// host isolation MEASURED and failed; degraded/stale/never-swept warn, as do an unavailable
+// service and isolation nobody has measured; unscheduled (undeclared area) never trips — an alarm
+// nobody can satisfy gets muted.
 //
 // Usage: node monitor/liveness.mjs [path/to/rollup.json]   (explicit path ⇒ single-area)
 //        node monitor/liveness.mjs                          (fan out over all areas)
@@ -400,6 +402,22 @@ if (isMain) {
     console.error(`liveness: the service lane could not run (${e.message}) — availability is UNKNOWN this run, not ok`);
   }
 
+  // ── HOST ISOLATION ────────────────────────────────────────────────────────────────────────────
+  // Sweep freshness says nothing about whether the sandbox postures still isolate. The suite that
+  // measures it (bin/test/sandbox-effects.test.mjs) skips when docker is absent and then reports
+  // zero failures AND zero skips, so a pass/fail gate cannot see that it did not run. The row
+  // carries the fact where the sweep's own freshness is already read.
+  let iso = null;
+  try {
+    const { isolationRow } = await import('./isolation-freshness.mjs');
+    iso = isolationRow();
+    worst = Math.max(worst, iso.rank);
+    (iso.rank >= 1 ? console.error : console.log)(`isolation: ${iso.line}`);
+  } catch (e) {
+    worst = Math.max(worst, 1);
+    console.error(`liveness: the isolation lane could not run (${e.message}) — isolation is UNKNOWN this run, not verified`);
+  }
+
   // ── THE WATCHER'S OWN PULSE (D2/L3) ───────────────────────────────────────────────────────────
   // A gap in this gate's own journal means it stopped running and started again. readJournal, not
   // readJournalFile: the rotation-aware reader, or a rotation manufactures a false gap.
@@ -430,6 +448,7 @@ if (isMain) {
     states: stateTally,
     mode: explicit ? 'single-area' : 'fan-out',
     services: svc ? { checked: svc.checked, counts: svc.counts } : null,
+    isolation: iso ? { state: iso.state, at: iso.at, days: iso.days } : null,
     pulse: pulse ? { state: pulse.state, gapMs: pulse.gapMs } : null,
     exit: worst >= 3 ? 1 : 0,
   });

@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # joernwork
 
 Repairs for [joernio/joern](https://github.com/joernio/joern) found while wiring the `sast-joern`

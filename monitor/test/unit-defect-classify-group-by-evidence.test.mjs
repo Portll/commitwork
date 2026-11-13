@@ -120,7 +120,8 @@ test('handles a closure whose evidence is a bigint by stringifying it', () => {
 });
 
 test('handles a closure whose evidence is a date by stringifying it', () => {
-  assert.deepEqual(groupByEvidence([{ evidence: new Date(0), issueId: 'i1' }]), [{ evidence: "Thu Jan 01 1970 09:30:00 GMT+0930 (Australian Central Standard Time)", issueIds: ["i1"], unusable: false, sha: null }]);
+  const evidence = new Date(0);
+  assert.deepEqual(groupByEvidence([{ evidence, issueId: 'i1' }]), [{ evidence: String(evidence), issueIds: ["i1"], unusable: false, sha: null }]);
 });
 
 test('handles a closure whose evidence is a regex by stringifying it', () => {

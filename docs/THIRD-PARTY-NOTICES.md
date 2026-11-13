@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-24 2bc3c0ef -->
+<!-- verified-against: 2026-10-24 -->
 # Third-party notices
 
 Every third-party work this repository **redistributes** — ships bytes of, or ships a derivation
@@ -192,7 +192,7 @@ runner image on top of it ([container/README.md](../container/README.md),
 machine, and neither has been pushed to a registry. An image passed to anyone else redistributes
 everything below.
 
-Measured on 2026-10-24 on arm64, in images built from the working tree on `2bc3c0ef` with the
+Measured on 2026-10-24 on arm64, in images built from the working tree on a commit with the
 Dockerfile's default `SCANNERS` (gitleaks and trufflehog).
 
 ### The licence directory, `/usr/share/licenses/commitwork`

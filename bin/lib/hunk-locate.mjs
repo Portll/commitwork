@@ -14,24 +14,17 @@
 // that edits through a path the ledger cannot see). `unmatched` is not "theirs" and not "mine";
 // stage-mine leaves it in the working tree and says so.
 import { createHash } from 'node:crypto';
+import { parseUnifiedDiff } from '../../lib/unified-diff.mjs';
 
 const fp = (s) => createHash('sha256').update(s).digest('hex').slice(0, 12);
 
 /** Parse `git diff -U<n> -- <one file>` into hunks. Lines keep their leading ' ', '+', '-'. */
 export function parseHunks(diffText) {
-  const hunks = [];
-  let cur = null;
-  for (const line of String(diffText || '').split('\n')) {
-    const m = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
-    if (m) {
-      cur = { oldStart: +m[1], oldLines: m[2] === undefined ? 1 : +m[2], newStart: +m[3], newLines: m[4] === undefined ? 1 : +m[4], lines: [] };
-      hunks.push(cur);
-      continue;
-    }
-    if (!cur) continue;
-    if (line.startsWith('\\ No newline')) { cur.noNewline = true; continue; }
-    if (/^[ +-]/.test(line)) cur.lines.push(line);
-  }
+  const hunks = parseUnifiedDiff(String(diffText || '')).flatMap((f) => f.hunks.map((h) => {
+    const out = { oldStart: h.oldStart, oldLines: h.oldLines, newStart: h.newStart, newLines: h.newLines, lines: h.lines };
+    if (h.oldNoNewline || h.newNoNewline) out.noNewline = true;
+    return out;
+  }));
   // The NEW-side range each hunk's changed lines occupy, ignoring pure-context leaders/trailers.
   for (const h of hunks) {
     let n = h.newStart;

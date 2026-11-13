@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # sitemap/ — SiteMap tab (S0–S4 live)
 
 **S4: Monolith mode** — the whole repo as ONE megalith in the Sprawl idiom: black-glass

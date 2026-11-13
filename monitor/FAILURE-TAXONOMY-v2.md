@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # The failure taxonomy, v2 — the layer split and the shaded remainder
 
 > **Edition note.** As of 2026-09-25, this is the v2 prose edition, kept as a record. The authoritative

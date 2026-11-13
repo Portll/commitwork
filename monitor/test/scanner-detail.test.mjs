@@ -139,6 +139,13 @@ test('MAL- advisories are extracted with package, ecosystem and advisory link', 
     ecosystem: 'npm', advisory: 'https://osv.dev/vulnerability/MAL-2025-47' });
 });
 
+test('a scoped package in a MAL- message keeps its scope and last-@ version', () => {
+  const d = put(dir(), 'osv.sarif', sarif([malResult('MAL-2025-99', '@babel/core', '7.24.0')]));
+  const c = _malCounts(d, 'osv.sarif');
+  assert.equal(c.findings[0].package, '@babel/core');
+  assert.equal(c.findings[0].version, '7.24.0');
+});
+
 test('an unknown manifest yields no ecosystem rather than a guess', () => {
   const d = put(dir(), 'osv.sarif', sarif([malResult('MAL-2025-1', 'x', '1.0', 'some.unknown')]));
   assert.equal(_malCounts(d, 'osv.sarif').findings[0].ecosystem, '');

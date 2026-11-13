@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-18 ac4181a9 -->
+<!-- verified-against: 2026-10-18 -->
 # Deed of Copyright Assignment — draft for solicitor review
 
 > **Draft. Not in force, and not legal advice.** This deed moves the copyright in the four

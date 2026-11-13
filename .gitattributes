@@ -1,9 +1,15 @@
 # Kept out of `git archive`, which builds the published snapshot.
 /ci export-ignore
 /ci/** export-ignore
-/CLAUDE.md export-ignore
 /docs/TRAPS.md export-ignore
 /monitor/data/advisory-cvss.json export-ignore
+
+# docsite/pages/<slug>.html is a byte copy of docsite/imported/<slug>.html that bin/docsite-build.mjs
+# makes for a local preview; bin/docsite-publish.mjs assembles the bundle from imported/. The
+# taxonomy preview stays tracked, so `docsite-build --check` still reports a hand-edit as DRIFT, and
+# only the export drops it. The imported page ships: a clone has no redaction map and cannot
+# regenerate it.
+/docsite/pages/taxonomy-reference.html export-ignore
 
 # The scan canary's installed packages are byte-exact: RECORD holds their sha256, and a CRLF checkout
 # would turn the clean twin into a tampered one.

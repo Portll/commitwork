@@ -28,7 +28,7 @@ test('the cooldown is declared once: dependabot.yml waits as long as the policy 
 
 test('renovate is one version in all three places it is named', () => {
   const dev = JSON.parse(read('package.json')).devDependencies.renovate.replace(/^[\^~]/, '');
-  const manifest = /npx --yes --package renovate@([\d.]+) --/.exec(read('manifests/security-baseline.json'))?.[1];
+  const manifest = /npx (?:--prefix=\S+ )?--yes --package renovate@([\d.]+) --/.exec(read('manifests/security-baseline.json'))?.[1];
   const dryrun = /const RENOVATE_PIN = 'renovate@([\d.]+)';/.exec(read('monitor/renovate-dryrun.mjs'))?.[1];
   assert.deepEqual([manifest, dryrun], [dev, dev]);
   assert.equal(JSON.parse(read('package-lock.json')).packages['node_modules/renovate'].version, dev, 'the lockfile resolves the same version');

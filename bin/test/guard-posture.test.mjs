@@ -109,7 +109,7 @@ test('a posture write asks a person, and is refused unattended under every postu
 
 test("the guard's posture variable and key lists are the posture module's", () => {
   assert.deepEqual([...POSTURE_KEY_NAMES].sort(), [...POSTURE_KEYS].sort());
-  assert.deepEqual([...POSTURE_ENV].sort(), [...POSTURE_KEYS.map((k) => SETTING_KEYS[k].envVar), 'CW_SETTINGS', 'CW_SETTINGS_STORE'].sort());
+  assert.deepEqual([...POSTURE_ENV].sort(), [...POSTURE_KEYS.map((k) => SETTING_KEYS[k].envVar), 'CW_SETTINGS', 'CW_SETTINGS_STORE', 'CW_HEADLESS_COMMIT_RECORDS'].sort());
 });
 
 test('posture C refuses a push AND appends it to the approval queue, and the reason names the row', () => {

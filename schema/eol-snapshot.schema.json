@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/eol-snapshot.schema.json",
+  "title": "End-of-life snapshot",
+  "description": "Offline copy of endoflife.date release cycles, written by bin/eol-snapshot.mjs and read by bin/eol-scan.mjs. Field names are endoflife.date's (cycle, eol, codename); the compact shape is commitwork's. eol is a date, true (ended, date unpublished), false (not ended), or null (upstream value unreadable).",
+  "$comment": "OASIS OpenEoX Core (CSD01, 2026-07-13) maps eol dates to end_of_life, but has no boolean or null form, so it is not the storage shape. No $ref: monitor/registry.mjs refuses it.",
+  "type": "object",
+  "required": ["source", "fetched", "products"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "fetched": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "products": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9][a-z0-9-]*$" },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["cycle", "eol"],
+          "additionalProperties": false,
+          "properties": {
+            "cycle": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "eol": { "type": ["string", "boolean", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+            "codename": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[^A-Z]*$" }
+          }
+        }
+      }
+    }
+  }
+}

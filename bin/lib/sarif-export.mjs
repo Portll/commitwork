@@ -15,6 +15,8 @@ import { repoDepFindings } from '../../monitor/dep-findings.mjs';
 import { SCANNER_SPECS, SCANNER_LABELS, TOTALS_EXCLUDE, kindOf } from '../../monitor/extractors.mjs';
 import { scannerIdentityParts } from '../../monitor/issue-store.mjs';
 import { writeAtomic } from '../../monitor/lockfile.mjs';
+import { validateRemediation } from '../../lib/remediation-contract.mjs';
+import { sarifFixes, remediationProperty } from '../../lib/sarif-remediation.mjs';
 
 export const SARIF_VERSION = '2.1.0';
 export const SARIF_SCHEMA = 'https://json.schemastore.org/sarif-2.1.0.json';
@@ -103,11 +105,33 @@ function depEntries(dir) {
 const sortEntries = (xs) => xs.sort((a, b) => cmp(a.ruleId, b.ruleId) || cmp(String(a.file), String(b.file))
   || a.line - b.line || cmp(a.message, b.message));
 
+const byIdentityThenOccurrence = (a, b) => cmp(a.identity, b.identity) || a.occurrence - b.occurrence;
+
+// A remediation document is only usable against the scan it was made for: a malformed one is an
+// error, and a fix verified against another repository or commit is not a fix for this one.
+function checkRemediation(remediation, row) {
+  const { errors } = validateRemediation(remediation);
+  if (errors.length) {
+    const shown = errors.slice(0, 3).join('; ');
+    const more = errors.length > 3 ? `; and ${errors.length - 3} more` : '';
+    throw new Error(`remediation.json for ${row.slug} is invalid: ${shown}${more}`);
+  }
+  if (remediation.repository !== row.slug) {
+    throw new Error(`remediation.json for ${row.slug} names repository ${JSON.stringify(remediation.repository)}, not ${JSON.stringify(row.slug)}`);
+  }
+  if (remediation.commit != null && row.commit != null && remediation.commit !== row.commit) {
+    throw new Error(`remediation.json for ${row.slug} names commit ${JSON.stringify(remediation.commit)}, not ${JSON.stringify(row.commit)}`);
+  }
+}
+
 /**
  * One SARIF log for one repository of a finished run.
  * row: { repo, slug, commit?, cells } as scan.json records it; dir: that repo's report directory.
+ * remediation: a commitwork.remediation/1 document, or null. Findings join results on the
+ * (identity, occurrence) pair the fingerprint hashes, never on a line or a path.
  */
-export function buildRepoSarif({ row, dir, toolVersion, generatedAt }) {
+export function buildRepoSarif({ row, dir, toolVersion, generatedAt, remediation = null }) {
+  if (remediation !== null) checkRemediation(remediation, row);
   const lanes = laneEntries(row, dir);
   const deps = depEntries(dir);
   const findings = sortEntries([...deps.findings, ...lanes.findings]);
@@ -118,6 +142,11 @@ export function buildRepoSarif({ row, dir, toolVersion, generatedAt }) {
     if (cell.sev === 'noscan') notes.push({ id: checkId, level: 'warning', text: `${checkId}: did not measure — ${cell.summary || 'no reason recorded'}` });
     else if (cell.sev !== 'skip' && (cell.coverage === 'reduced' || cell.coverage === 'unknown')) {
       notes.push({ id: checkId, level: 'note', text: `${checkId}: ran with ${cell.coverage} coverage${cell.coverageReason ? ` — ${cell.coverageReason}` : ''}; its findings are a floor` });
+    }
+  }
+  if (remediation !== null) {
+    for (const n of remediation.notMeasured) {
+      notes.push({ id: n.lane, level: 'note', text: `${n.lane}: remediation did not measure — ${n.reason}` });
     }
   }
   notes.sort((a, b) => cmp(a.id, b.id) || cmp(a.text, b.text));
@@ -137,6 +166,7 @@ export function buildRepoSarif({ row, dir, toolVersion, generatedAt }) {
   const ruleIndex = new Map(ruleIds.map((id, i) => [id, i]));
 
   const seen = new Map();
+  const resultsByIdentity = new Map();
   const results = findings.map((f) => {
     const uri = repoRelative(f.file, row.repo);
     const result = { ruleId: f.ruleId, ruleIndex: ruleIndex.get(f.ruleId), level: LEVEL[f.sev], message: { text: f.message } };
@@ -148,11 +178,47 @@ export function buildRepoSarif({ row, dir, toolVersion, generatedAt }) {
       const h = sha(f.identity);
       const n = seen.get(h) || 0;
       seen.set(h, n + 1);
-      result.partialFingerprints = { [FINGERPRINT_KEY]: `${h}:${n}` };
+      const fingerprint = `${h}:${n}`;
+      result.partialFingerprints = { [FINGERPRINT_KEY]: fingerprint };
+      resultsByIdentity.set(fingerprint, result);
     }
     result.properties = { severity: f.sev, lane: f.checkId };
     return result;
   });
+
+  const remediationUnmatched = [];
+  const remediationUnprojectable = [];
+  if (remediation !== null) {
+    for (const finding of remediation.findings) {
+      const result = resultsByIdentity.get(`${sha(finding.identity)}:${finding.occurrence}`);
+      if (!result) {
+        remediationUnmatched.push({ identity: finding.identity, occurrence: finding.occurrence });
+        continue;
+      }
+      const property = remediationProperty(finding);
+      if (property !== null) result.properties.commitwork = { remediation: property };
+      const projected = sarifFixes(finding);
+      if (projected.fixes.length) result.fixes = projected.fixes;
+      for (const u of projected.unprojectable) {
+        remediationUnprojectable.push({ identity: finding.identity, occurrence: finding.occurrence, path: u.path, reason: u.reason });
+      }
+    }
+    remediationUnmatched.sort(byIdentityThenOccurrence);
+    remediationUnprojectable.sort((a, b) => byIdentityThenOccurrence(a, b)
+      || cmp(String(a.path), String(b.path)) || cmp(a.reason, b.reason));
+  }
+
+  const commitworkProperties = {
+    repository: row.slug,
+    commit: row.commit || null,
+    suppressedInSource: lanes.suppressed,
+    undetermined: undetermined.map((u) => ({ ruleId: u.ruleId, lane: u.checkId, file: repoRelative(u.file, row.repo) || null,
+      line: u.line || null, message: u.message, claimedSeverity: u.claimed || (u.sev || null), reason: u.reason })),
+  };
+  if (remediation !== null) {
+    commitworkProperties.remediationUnmatched = remediationUnmatched;
+    commitworkProperties.remediationUnprojectable = remediationUnprojectable;
+  }
 
   return {
     $schema: SARIF_SCHEMA,
@@ -167,15 +233,7 @@ export function buildRepoSarif({ row, dir, toolVersion, generatedAt }) {
       }],
       columnKind: 'utf16CodeUnits',
       results,
-      properties: {
-        commitwork: {
-          repository: row.slug,
-          commit: row.commit || null,
-          suppressedInSource: lanes.suppressed,
-          undetermined: undetermined.map((u) => ({ ruleId: u.ruleId, lane: u.checkId, file: repoRelative(u.file, row.repo) || null,
-            line: u.line || null, message: u.message, claimedSeverity: u.claimed || (u.sev || null), reason: u.reason })),
-        },
-      },
+      properties: { commitwork: commitworkProperties },
     }],
   };
 }
@@ -185,19 +243,38 @@ export function commitworkVersion() {
   return JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')).version;
 }
 
+// A run without remediation.json is the normal case; any other read or parse failure is an error,
+// never an absent document.
+function readRemediation(path) {
+  let text;
+  try { text = readFileSync(path, 'utf8'); } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
+  let doc;
+  try { doc = JSON.parse(text); } catch (e) { throw new Error(`remediation.json is not JSON: ${path} (${e.message})`); }
+  if (doc === null) throw new Error(`remediation.json holds null, not a document: ${path}`);
+  return doc;
+}
+
 /**
  * Write one log per repository of a run. `file` writes the single repository's log there instead and
- * refuses a run of more than one. Returns [{ slug, path, results, undetermined, notMeasured }].
+ * refuses a run of more than one. Returns [{ slug, path, results, undetermined, notMeasured, fixes,
+ * remediationUnmatched }]; the last two are null for a repository with no remediation document.
  */
 export function writeRunSarif({ runDir, rows, toolVersion, generatedAt, file = null }) {
   const ordered = [...rows].sort((a, b) => cmp(a.slug, b.slug));
   if (file && ordered.length !== 1) throw new Error(`a single SARIF file holds one repository; this run has ${ordered.length}`);
-  return ordered.map((row) => {
-    const doc = buildRepoSarif({ row, dir: join(runDir, row.slug), toolVersion, generatedAt });
+  // Every log is built before any is written, so a refused repository leaves no partial run behind.
+  const built = ordered.map((row) => {
+    const dir = join(runDir, row.slug);
+    const remediation = readRemediation(join(dir, 'remediation.json'));
+    return { row, measured: remediation !== null, doc: buildRepoSarif({ row, dir, toolVersion, generatedAt, remediation }) };
+  });
+  return built.map(({ row, measured, doc }) => {
     const path = file || join(runDir, row.slug, SARIF_FILE);
     writeAtomic(path, `${JSON.stringify(doc, null, 2)}\n`, { mkdir: true });
     const run = doc.runs[0];
     return { slug: row.slug, path, results: run.results.length, undetermined: run.properties.commitwork.undetermined.length,
-      notMeasured: run.invocations[0].toolExecutionNotifications.length };
+      notMeasured: run.invocations[0].toolExecutionNotifications.length,
+      fixes: measured ? run.results.filter((r) => r.fixes).length : null,
+      remediationUnmatched: measured ? run.properties.commitwork.remediationUnmatched.length : null };
   });
 }

@@ -1,10 +1,30 @@
 // Pools every declared area's defect-signature artifact from the registry into one fleet artifact (monitor/defect-signature.mjs gatherFleetSignatures).
-import { test } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { gatherFleetSignatures } from '../defect-signature.mjs';
+import { EXAMPLE_REGISTRY_PATH } from '../registry.mjs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+
+// gatherFleetSignatures reads registryPath() and the reports root (stateBaseFor via monitor/area.mjs).
+// The expectations below are the ABSENT-registry fallback and an empty reports tree: CW_REGISTRY is
+// the shipped example (the artifact is marked 'example' by path identity, so a copy cannot carry it)
+// and CW_STATE_DIR is a directory this test owns and leaves empty.
+const STATE = mkdtempSync(join(tmpdir(), 'gatherFleetSignatures-state-'));
+const prevRegistry = process.env.CW_REGISTRY;
+const prevState = process.env.CW_STATE_DIR;
+before(() => {
+  process.env.CW_REGISTRY = EXAMPLE_REGISTRY_PATH;
+  process.env.CW_STATE_DIR = STATE;
+});
+after(() => {
+  if (prevRegistry !== undefined) process.env.CW_REGISTRY = prevRegistry;
+  else delete process.env.CW_REGISTRY;
+  if (prevState !== undefined) process.env.CW_STATE_DIR = prevState;
+  else delete process.env.CW_STATE_DIR;
+  rmSync(STATE, { recursive: true, force: true });
+});
 
 const ENV_KEYS = ['CW_DEFECT_SIGNATURE_RATE', 'CW_DEFECT_SIGNATURE_MIN_REPOS'];
 const CONSOLE_KEYS = ['log', 'info', 'warn', 'error', 'debug'];

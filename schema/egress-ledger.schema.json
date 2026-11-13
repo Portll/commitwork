@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commitwork.online/schema/egress-ledger.schema.json",
+  "title": "Egress proxy ledger",
+  "description": "What bin/egress-proxy.mjs writes to --ledger when it stops, and what startProxy().stop() in bin/lib/egress-observe.mjs returns in its place when that file could not be read. The stand-in carries destinations null and the reason, so a lane whose ledger was lost never reads as one that dialled nothing.",
+  "$comment": "Applied by bin/test/egress-observe.test.mjs to a live proxy's ledger. lib/json-schema.mjs has no $ref, so the destination row is repeated in schema/egress-observed.schema.json.",
+  "type": "object",
+  "oneOf": [
+    {
+      "title": "Written ledger",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lane", "mode", "coverage", "denyPrivate", "destinations"],
+      "properties": {
+        "lane": { "type": ["string", "null"], "minLength": 1, "description": "The --lane check id; null when the proxy was started without one." },
+        "mode": { "enum": ["observe", "enforce"] },
+        "coverage": { "const": "proxy-honouring clients only", "description": "Direct egress is still open to a networked lane, so the ledger covers only clients that honour HTTP(S)_PROXY." },
+        "denyPrivate": { "type": "boolean" },
+        "destinations": {
+          "type": "array",
+          "description": "One row per host and port asked for, sorted by host then port.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["host", "port", "allowed", "denied", "local"],
+            "properties": {
+              "host": { "type": "string", "minLength": 1, "pattern": "^[^A-Z]+$", "description": "Lowercased, without brackets or port." },
+              "port": { "type": "integer", "minimum": 0, "maximum": 65535, "description": "A plain-HTTP request takes its URL's port, which can be 0; CONNECT takes 1-65535." },
+              "allowed": { "type": "integer", "minimum": 0, "description": "Requests relayed or attempted. A failed DNS lookup counts here and is answered 502." },
+              "denied": { "type": "integer", "minimum": 0, "description": "Requests refused by the enforce allowlist." },
+              "local": { "type": "integer", "minimum": 0, "description": "Requests refused because the destination resolved to a local, this-host or (with denyPrivate) private address." }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "Ledger not read",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "coverage", "destinations", "why"],
+      "properties": {
+        "mode": { "enum": ["observe", "enforce"] },
+        "coverage": { "const": "proxy-honouring clients only" },
+        "destinations": { "type": "null", "description": "Unmeasured, not empty." },
+        "why": { "type": "string", "pattern": "^ledger not written \\(" }
+      }
+    }
+  ]
+}

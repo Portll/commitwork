@@ -62,6 +62,17 @@ test('a PINNED requirements.txt declares what it pins — pinning is the fix, so
 });
 
 // A version number elsewhere in the file must not vouch for an unrelated package.
+test('a scoped package is parsed at its last @, not skipped', () => {
+  const j = run(
+    { 'requirements.txt': '@babel/core==7.24.0\n' },
+    [result('@babel/core', '7.24.0', 'file:///src/requirements.txt')],
+  );
+  const m = j.manifests['file:///src/requirements.txt'];
+  assert.ok(m, 'the old parse skipped a scoped name entirely, emitting no verdict for it');
+  assert.equal(m.declaredCount, 1, 'a pinned scoped package is declared');
+  assert.deepEqual(m.resolved, []);
+});
+
 test('a version appearing far from the package name does not count as declared', () => {
   const j = run(
     { 'reqs.txt': 'pillow>=1.0\n# a hundred lines of nothing\n\n\n\n\n\n\n\nsomething-else==9.5.0\n' },
@@ -90,4 +101,23 @@ test('a manifest that is not on disk yields no verdict for its findings', () => 
   assert.equal(m.readable, false);
   assert.equal(m.resolvedCount, 0);
   assert.equal(m.declaredCount, 0);
+});
+
+test('a scoped package pinned by a lockfile is declared by construction and never demoted', () => {
+  const j = run(
+    { 'package-lock.json': '{"packages":{"node_modules/@babel/core":{"version":"7.24.0"}}}\n' },
+    [result('@babel/core', '7.24.0', 'file:///src/package-lock.json')],
+  );
+  const m = j.manifests['file:///src/package-lock.json'];
+  assert.equal(m.byConstruction, true);
+  assert.equal(m.declaredCount, 1);
+  assert.equal(m.resolvedCount, 0, 'a lockfile must never be read as resolving a scoped package');
+});
+
+test('a scoped package a floating manifest never names is resolved, with its scope kept in the key', () => {
+  const j = run(
+    { 'requirements.txt': 'datasets>=2.14.0\n' },
+    [result('@scope/pkg', '1.2.3', 'file:///src/requirements.txt')],
+  );
+  assert.deepEqual(j.manifests['file:///src/requirements.txt'].resolved, ['@scope/pkg@1.2.3']);
 });

@@ -1,6 +1,6 @@
 # Secrets sweep — the belt-and-braces method
 
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-11-04 -->
 
 How this repository checks whether it is leaking a credential, why it runs three scanners instead
 of one, and what each of them is blind to. The method is `bin/secrets-sweep.mjs` plus two
@@ -116,6 +116,19 @@ not finish, and nothing in it is published by a push. If it ever needs covering,
 incrementally by sweep directory, not as one pass. The walker appends with `pushAll` rather than a
 `push(...files)` spread, because the V8 argument ceiling is around 125k and a spread over a list
 that long throws `RangeError` before reading a byte.
+
+**The excluded population is counted, because an ignore rule is a blind spot with a reason.**
+Tracked mode reports `OUT OF SCOPE` — how many working-tree files git does not track, and which
+directories they sit in — from `git ls-files --others` deliberately *without*
+`--exclude-standard`. Nothing in that set is scanned, so nothing in it is reported as a finding
+either; what it fixes is the reading. A gitignored file, such as a `sitemap/data/*.sitemap.json`
+egress harvest, can hold a credential that tracked mode never opens. The DSN rule classifies that
+record (`bin/test/secrets-sweep.test.mjs` pins the class on a synthetic harvest), but without the
+count a verdict over the tracked set reads as a verdict over the directory it was run in.
+`--paths <dir>` scans them, because the walker reaches ignored files. `node_modules` and similar
+directories are pruned on the walker's policy and named under `skipped by policy`, because a
+dependency tree would otherwise *be* the count. A nested repository is listed by path apart from the
+count, because git does not enumerate inside it.
 
 **`--head` exists because the worktree is not what ships.** A file deleted from the working copy is
 still in HEAD, one `git checkout` from returning. A tracked
@@ -371,7 +384,8 @@ nobody can later point at is not a pass.
   Re-implementing pack traversal would add no coverage.
 - **A pre-commit hook.** See above — that is the gate-theatre argument, and it is a decision, not
   an omission.
-- **`reports/` coverage.** Gitignored, never pushed, and large.
+- **`reports/` coverage.** Gitignored, never pushed, and large. Tracked mode counts it under
+  `OUT OF SCOPE` and does not scan it.
 - **A `GATE_ROSTER` entry for `secrets-sweep`.** `pre-publish` is on the roster, with a registry
   mapping, so `journalHealth` reports it and the sampler classifies its verdicts. `secrets-sweep`
   deliberately never journals: it is a scanner a caller may run ad hoc, and the ledger hears about

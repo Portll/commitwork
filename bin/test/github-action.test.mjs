@@ -10,6 +10,7 @@ import { join, dirname, delimiter } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseWorkflow, repoOf } from '../pin-actions.mjs';
 import { decide, readSarifSummary, annotation, report, FAIL_ON } from '../lib/github-action.mjs';
+import { probeHostSandbox } from '../lib/sandbox.mjs';
 
 const CW = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const ACTION = readFileSync(join(CW, 'action.yml'), 'utf8');
@@ -253,12 +254,14 @@ test('a repo-supplied script runs only when trust-repo-manifest is true, whateve
   writeFileSync(join(sb.ws, 'app', 'security', 'authz-isolation-test.sh'), '#!/bin/sh\necho \'{"ran":"repo script"}\'\n');
   chmodSync(join(sb.ws, 'app', 'security', 'authz-isolation-test.sh'), 0o755);
   const step = stepNamed('Run the baseline');
-  const held = runStep(step, sb, { inputs: { path: 'app', checks: 'authz-test' }, env: { COMMITWORK_TRUST_REPO_MANIFEST: '1' } });
+  // With no host sandbox a repository-code lane is refused whatever the trust (sandbox-repo-code.test.mjs); trust is the subject here.
+  const unconfined = probeHostSandbox().available ? {} : { CW_SANDBOX: 'off' };
+  const held = runStep(step, sb, { inputs: { path: 'app', checks: 'authz-test' }, env: { COMMITWORK_TRUST_REPO_MANIFEST: '1', ...unconfined } });
   assert.equal(held.status, 0, held.stderr);
   assert.ok(!existsSync(join(held.out['report-dir'], 'authz.json')), 'the script ran without the input');
   const note = JSON.parse(readFileSync(held.out.sarif, 'utf8')).runs[0].invocations[0].toolExecutionNotifications.find((n) => n.descriptor.id === 'authz-test');
   assert.match(note.message.text, /--trust-repo-manifest/);
-  const trusted = runStep(step, sb, { inputs: { path: 'app', checks: 'authz-test', 'trust-repo-manifest': 'true' } });
+  const trusted = runStep(step, sb, { inputs: { path: 'app', checks: 'authz-test', 'trust-repo-manifest': 'true' }, env: unconfined });
   assert.equal(trusted.status, 0, trusted.stderr);
   assert.match(readFileSync(join(trusted.out['report-dir'], 'authz.json'), 'utf8'), /repo script/);
 });

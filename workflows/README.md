@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-09-25 9f254048 -->
+<!-- verified-against: 2026-09-25 -->
 # workflows/ — agent-workflow scripts
 
 Scripts for the Claude Code **Workflow** tool (not CLIs — they run with an ambient `args` binding

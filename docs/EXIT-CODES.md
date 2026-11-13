@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-354 commands: 156 declared, 12 prose, 186 undeclared. Of the declared, 124 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 32 declare a code of 20 or above.
+359 commands: 162 declared, 12 prose, 185 undeclared. Of the declared, 129 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 33 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -44,6 +44,18 @@ Declared in `bin/setup.mjs` (`setupExitCode`).
 | 0 | every requested tool was present or installed, or nothing was requested (report-only, declined) |
 | 20 | a requested install failed, or a tool --only named has no installer here |
 | 21 | nothing failed, but a requested tool needs an administrator; the closing block names the command |
+
+### `commitwork dfd`
+
+Declared in `flow/dfd-cli.mjs` (`runDfd`).
+
+| Exit | Meaning |
+|---:|---|
+| 0 | written |
+| 2 | usage |
+| 20 | the document is not a valid dfd@1 |
+| 21 | an input is absent, unreadable or not a flow graph, --repo is not a git checkout, or --codeql is neither SARIF nor dataflow records |
+| 22 | the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw |
 
 Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`, `update`, `version`, `help`.
 
@@ -221,6 +233,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | when at least one module extracted |
 | 1 | when none |
 
+### `bin/codeql-index-filters.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | rules printed |
+| 1 | the file is unreadable or holds no rule, with nothing on stdout, so the lane sees a failure rather than an empty (unbounded) filter |
+| 2 | usage |
+
 ### `bin/codeql-model-pack.mjs`
 
 | Exit | Meaning |
@@ -279,6 +299,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | done or nothing new |
 | 1 | a run failed |
 | 2 | usage or configuration error. |
+
+### `bin/deno-lock-osv.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | no deno.lock, or the record was written with no error |
+| 1 | the record carries an error and no osv-scanner input was written |
+| 2 | usage, or the record failed validation and the osv-scanner input was removed |
 
 ### `bin/deno-scan.mjs`
 
@@ -454,6 +482,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 |---:|---|
 | 0 | no new failures |
 | 2 | more failures than the baseline (rewake) |
+
+### `bin/gitleaks-scope-config.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | the config to scan with is on stdout: the scope config, or the base config when git cannot list the paths or the target has none |
+| 1 | the base config is unreadable, or the scope config cannot be written; stdout is empty |
+| 2 | usage: a required argument is missing |
 
 ### `bin/graph.mjs`
 
@@ -831,6 +867,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 1 | at least one stale path |
 | 2 | could not measure |
 
+### `bin/taxonomy-render.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | wrote the page, or --check found the registry valid |
+| 1 | the registry is invalid (every error named), or the published page was asked for from a register with the private overlays merged |
+
 ### `bin/test-select.mjs`
 
 | Exit | Meaning |
@@ -989,7 +1032,7 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 
 Prose only: `agent-tag.mjs`, `docsite-build.mjs`, `docsite-og-image.mjs`, `format-phase.mjs`, `hook.mjs`, `manifest-map.mjs`, `scanner-preflight.mjs`, `scanner-taxonomy-render.mjs`, `secrets.mjs`, `spine-replay.mjs`, `taxonomy-db.mjs`, `vex-vocabulary-sync.mjs`.
 
-Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-gates.mjs`, `adjudication-import.mjs`, `adjudication-sampler.mjs`, `advisory-index.mjs`, `annotate.mjs`, `attack-graph.mjs`, `audit.mjs`, `authz-bola.mjs`, `build-admin-panel.mjs`, `build-health.mjs`, `build-security-data.mjs`, `capec-graph.mjs`, `cite-reach.mjs`, `cloudflare-purge.mjs`, `commit-msg.mjs`, `commit-phase.mjs`, `costing-html.mjs`, `cvd-palette.mjs`, `cwe-graph.mjs`, `dep-provenance.mjs`, `deploy.mjs`, `docker-config-path.mjs`, `docker-gc.mjs`, `docsite-new.mjs`, `docsite-publish.mjs`, `exempt.mjs`, `feature-census.mjs`, `feature-inventory.mjs`, `finding-analysis.mjs`, `focus-journal.mjs`, `focus-rekey.mjs`, `go-lane-scan.mjs`, `gradle-deps-scan.mjs`, `gradle-wrapper-verify.mjs`, `idor-run.mjs`, `install-commit-msg.mjs`, `issue-rekey-depsretire.mjs`, `issue-rekey.mjs`, `issue-retire-cobolsecurity.mjs`, `learning-rebuild.mjs`, `ledger-backfill-tree.mjs`, `mainline-data.mjs`, `mass-assign-run.mjs`, `memory-query.mjs`, `memory-upsert.mjs`, `minify-detect.mjs`, `mobile-manifest.mjs`, `node-hazards.mjs`, `osv-declared.mjs`, `parse-renovate.mjs`, `probe-public.mjs`, `projectstatus.mjs`, `python-lane-scan.mjs`, `quality-gates.mjs`, `races.mjs`, `ratchet-corroborate.mjs`, `rate-llm.mjs`, `release-names-reseed.mjs`, `remediation-web.mjs`, `render-report.mjs`, `resolve-sha.mjs`, `rustfmt-lane-scan.mjs`, `sandbox.mjs`, `scan-config-suffix.mjs`, `scan-exclusions.mjs`, `security-work-queue.mjs`, `semgrep-pro-delta.mjs`, `session-roster.mjs`, `session-start-roster.mjs`, `session-title.mjs`, `slices.mjs`, `smoke.mjs`, `spine-ledger.mjs`, `stage-mine.mjs`, `stub-detect.mjs`, `taxonomy-lattice.mjs`, `taxonomy-render.mjs`, `taxonomy-structure.mjs`, `taxonomy-web.mjs`, `test-run.mjs`, `tls-headers-scan.mjs`, `top100-html.mjs`, `touch-ledger.mjs`, `upstream-fetch.mjs`, `verdict-flow.mjs`, `verdict-journal.mjs`, `vuln-profile.mjs`, `weak-random-detect.mjs`, `yarn-audit.mjs`.
+Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-gates.mjs`, `adjudication-import.mjs`, `adjudication-sampler.mjs`, `advisory-index.mjs`, `annotate.mjs`, `attack-graph.mjs`, `audit.mjs`, `authz-bola.mjs`, `build-admin-panel.mjs`, `build-health.mjs`, `build-security-data.mjs`, `capec-graph.mjs`, `cite-reach.mjs`, `cloudflare-purge.mjs`, `commit-msg.mjs`, `commit-phase.mjs`, `costing-html.mjs`, `cvd-palette.mjs`, `cwe-graph.mjs`, `dep-provenance.mjs`, `deploy.mjs`, `docker-config-path.mjs`, `docker-gc.mjs`, `docsite-new.mjs`, `docsite-publish.mjs`, `exempt.mjs`, `feature-census.mjs`, `feature-inventory.mjs`, `finding-analysis.mjs`, `focus-journal.mjs`, `focus-rekey.mjs`, `go-lane-scan.mjs`, `gradle-deps-scan.mjs`, `gradle-wrapper-verify.mjs`, `idor-run.mjs`, `install-commit-msg.mjs`, `issue-rekey-depsretire.mjs`, `issue-rekey.mjs`, `issue-retire-cobolsecurity.mjs`, `learning-rebuild.mjs`, `ledger-backfill-tree.mjs`, `mainline-data.mjs`, `mass-assign-run.mjs`, `memory-query.mjs`, `memory-upsert.mjs`, `minify-detect.mjs`, `mobile-manifest.mjs`, `node-hazards.mjs`, `osv-declared.mjs`, `parse-renovate.mjs`, `probe-public.mjs`, `projectstatus.mjs`, `python-lane-scan.mjs`, `quality-gates.mjs`, `races.mjs`, `ratchet-corroborate.mjs`, `rate-llm.mjs`, `release-names-reseed.mjs`, `remediation-web.mjs`, `render-report.mjs`, `resolve-sha.mjs`, `rustfmt-lane-scan.mjs`, `sandbox.mjs`, `scan-config-suffix.mjs`, `scan-exclusions.mjs`, `security-work-queue.mjs`, `semgrep-pro-delta.mjs`, `session-roster.mjs`, `session-start-roster.mjs`, `session-title.mjs`, `slices.mjs`, `smoke.mjs`, `spine-ledger.mjs`, `stage-mine.mjs`, `stub-detect.mjs`, `taxonomy-lattice.mjs`, `taxonomy-structure.mjs`, `taxonomy-web.mjs`, `test-run.mjs`, `tls-headers-scan.mjs`, `top100-html.mjs`, `touch-ledger.mjs`, `upstream-fetch.mjs`, `verdict-flow.mjs`, `verdict-journal.mjs`, `vuln-profile.mjs`, `weak-random-detect.mjs`, `yarn-audit.mjs`.
 
 ## monitor/
 
@@ -1104,6 +1147,14 @@ Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-g
 | 2 | could not run (claude absent, non-zero exit, timeout, a stub aimed at the default witness path) — witness UNTOUCHED, a failure to measure today does not unsay a real replay |
 | 3 | skipped — not opted in, or the witness is still fresh and --force was not given — witness untouched |
 
+### `monitor/isolation-freshness.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | verified |
+| 1 | the last measurement FAILED |
+| 2 | grey (never measured, stale, partial, unverified, or unreadable) |
+
 ### `monitor/listening-ports.mjs`
 
 | Exit | Meaning |
@@ -1116,7 +1167,7 @@ Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-g
 
 | Exit | Meaning |
 |---:|---|
-| 1 | on expired/unknown/hung/tampered; degraded/stale/never-swept warn; unscheduled (undeclared area) never trips — an alarm nobody can satisfy gets muted. |
+| 1 | on expired/unknown/hung/tampered, on a gate journal whose band ranks there, or on host isolation MEASURED and failed; degraded/stale/never-swept warn, as do an unavailable service and isolation nobody has measured; unscheduled (undeclared area) never trips — an alarm nobody can satisfy gets muted. |
 
 ### `monitor/mcp-tools-probe.mjs`
 

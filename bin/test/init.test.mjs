@@ -108,9 +108,27 @@ test('every optional record names an example that ships, and every shipped examp
   const shipped = ['monitor', 'cra'].flatMap((dir) => readdirSync(join(REPO, dir))
     .filter((f) => f.endsWith('.example.json')).map((f) => `${dir}/${f}`));
   // projects.example.json is the registry's own template, which init writes rather than lists.
-  // release-terms.example.json is a release builder's list, read from the sidecar's committed tree.
-  const named = new Set([...OPTIONAL_RECORDS.map((r) => r.example), 'monitor/projects.example.json', 'monitor/release-terms.example.json']);
+  // release-terms.example.json and its acceptance record are a release builder's, read from the
+  // sidecar's committed tree, so init has nothing to seed for them in a scanned repository.
+  const named = new Set([...OPTIONAL_RECORDS.map((r) => r.example), 'monitor/projects.example.json',
+    'monitor/release-terms.example.json', 'monitor/release-term-acceptances.example.json']);
   assert.deepEqual(shipped.filter((f) => !named.has(f)), []);
+});
+
+test('every optional record resolves to the path its env variable names', () => {
+  const names = OPTIONAL_RECORDS.map((r) => r.env);
+  const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
+  try {
+    for (const k of names) delete process.env[k];
+    for (const r of OPTIONAL_RECORDS) {
+      const override = join(tmpdir(), `cw-init-override-${r.env}`);
+      process.env[r.env] = override;
+      assert.equal(r.at(REPO), override, r.env);
+      delete process.env[r.env];
+    }
+  } finally {
+    for (const k of names) if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k];
+  }
 });
 
 test('a development checkout says its records stay inside it', (t) => {

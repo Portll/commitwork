@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 89deadef -->
+<!-- verified-against: 2026-10-08 -->
 # Release runbook: notes, withdrawal and rollback
 
 This runbook covers what happens around a release: writing its notes, withdrawing (yanking) a

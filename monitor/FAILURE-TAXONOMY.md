@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # The failure taxonomy — the master classification
 
 > **Edition note.** This is the edition-1 prose classification, kept as a record and last reconciled with the registry as of 2026-08-27. The authoritative

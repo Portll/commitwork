@@ -477,6 +477,15 @@ export function mintIssue(doc, fields, at) {
     cls: classForIssue(fields),
     ordinal: doc.nextOrdinal,
   });
+  // guard: an occupied id is a counter behind its issues; minting over it would replace a live issue
+  if (Object.hasOwn(doc.issues, id)) {
+    const err = new Error(
+      `issue ${id} already exists but nextOrdinal is ${doc.nextOrdinal}: the store's counter is behind its issues. `
+      + 'Refusing to overwrite a live issue — repair the counter, then mint.',
+    );
+    err.code = 'ISSUE_ID_OCCUPIED';
+    throw err;
+  }
   doc.nextOrdinal += 1;
   if (sourceKey) doc.byKey[sourceKey] = id;
   doc.issues[id] = newRecord(id, fields, at);

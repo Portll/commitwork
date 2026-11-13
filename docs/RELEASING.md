@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # Releasing commitwork
 
 A release is a **git tag naming the version `package.json` carries at that commit** — `v` plus the

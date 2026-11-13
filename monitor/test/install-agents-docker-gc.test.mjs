@@ -74,11 +74,12 @@ test('paths are derived: DOCKER_CONFIG follows CW_DOCKER_CONFIG at call time, no
   } finally { if (saved === undefined) delete process.env.CW_DOCKER_CONFIG; else process.env.CW_DOCKER_CONFIG = saved; }
 });
 
-test('the home-derived parts follow HOME, so nothing is pinned to one machine', () => {
+test('the home-derived parts follow HOME, so nothing is pinned to one machine', { skip: process.platform !== 'darwin' ? 'launchd is macOS-only; install-agents exits 2 off macOS' : false }, () => {
   const fake = mkdtempSync(join(tmpdir(), 'cw-gc-home-'));
   try {
-    const code = 'import(process.argv[1]).then((m) => process.stdout.write(m.plist(m.AGENTS.find((a) => a.label === process.argv[2]))))';
-    const run = () => spawnSync(process.execPath, ['-e', code, MODULE, LABEL], {
+    // The label goes first: with the module as argv[1] the child counts as running it directly, and the CLI block runs.
+    const code = 'import(process.argv[2]).then((m) => process.stdout.write(m.plist(m.AGENTS.find((a) => a.label === process.argv[1]))))';
+    const run = () => spawnSync(process.execPath, ['-e', code, LABEL, MODULE], {
       encoding: 'utf8', env: { ...process.env, HOME: fake, CW_DOCKER_CONFIG: '', CW_SELF_SWEEP: '0' },
     });
     const a = run();

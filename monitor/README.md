@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-20 779588ed -->
+<!-- verified-against: 2026-11-13 -->
 # monitor/ — the scheduled cross-project security monitor
 
 Promotes commitwork from a per-repo local-CI runner into a **scheduled monitor over declared
@@ -246,6 +246,14 @@ and the rest skip until it lapses again, seven days later. The deep agents do no
 
 `liveness.mjs` is the deadman: fresh ⇒ 0, expired/unknown ⇒ 1, fanning out over every area when
 given no argument. `freshness.mjs` is the pure decision module behind it.
+
+It also carries an `isolation:` row from `isolation-freshness.mjs`, which ages the last measurement
+of container isolation on this host the way `freshness.mjs` ages a scan. The suite that makes the
+measurement (`bin/test/sandbox-effects.test.mjs`) skips when docker is absent, and a skipped
+top-level `describe` registers no subtest — so it reports zero failures AND zero skips, and no
+pass/fail gate can see that it did not run. `node monitor/isolation-freshness.mjs --measure` runs it
+and records `verified` / `partial` / `unverified` / `failed` with the suite's own stated reason;
+anything but a fresh `verified` warns, and only a measured failure fails the deadman.
 
 **On-commit self-refresh.** `node monitor/install-git-hook.mjs --write` installs a `post-commit`
 hook (dry run without `--write`; `--uninstall` removes it; a hook it did not write is never

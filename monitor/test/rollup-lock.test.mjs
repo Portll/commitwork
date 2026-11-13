@@ -122,11 +122,16 @@ write('res-' + IDX, proceeded ? 'PROCEEDED' : 'aborted');
 const { acquireLock } = await import(${JSON.stringify(LOCKFILE)});
 write('ready-' + IDX, '');
 waitForGo();
-// releaseOnExit stays false: the child exits still "holding" the lock, which leaves the on-disk
-// state identical to a live holder in the middle of its critical section. That is the state the
-// next process has to reason about, and the only one it can see.
+// releaseOnExit stays false, and the winner stays ALIVE until every racer has decided: a holder
+// that has exited is a corpse, which the lock takes over at any age (the token names the pid and
+// the pid is probed), so a winner that exited early would be rightly taken by the next racer and
+// the race would measure corpse collection rather than contention against a live holder.
 const got = acquireLock(LOCK, { staleMs: STALE, label: 'racer' + IDX });
 write('res-' + IDX, got.ok ? 'HELD ' + got.token.nonce : 'busy');
+if (got.ok) {
+  const deadline = Date.now() + 25000;
+  while (fs.readdirSync(DIR).filter((f) => f.startsWith('res-')).length < ${RACERS} && Date.now() < deadline) { const u = Date.now() + 2; while (Date.now() < u) { /* spin */ } }
+}
 `, RACERS);
       assert.ok(results.every((r) => r.code === 0), `children must all run: ${JSON.stringify(results)}`);
       const v = verdicts(dir, RACERS);
@@ -250,29 +255,47 @@ describe('C2 — mtime refresh on takeover', () => {
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
-  test('after a takeover a third process reads the lock as FRESH, not stale', () => {
+  test('after a takeover a third process reads the lock as FRESH, not stale', async () => {
     const dir = scratch('fix-mtime');
+    let taker = null;
     try {
       const lock = join(dir, '.rollup.lock');
       plantStaleLock(lock, STALE_MS * 2);
-      const r = spawnSync(process.execPath, ['--input-type=module', '-e', `
-        const { acquireLock } = await import(${JSON.stringify(LOCKFILE)});
-        const got = acquireLock(${JSON.stringify(lock)}, { staleMs: ${STALE_MS}, label: 'taker' });
-        process.stdout.write(got.ok ? got.token.nonce : 'BUSY');
-      `], { encoding: 'utf8' });
-      assert.equal(r.status, 0, `the taker must run: ${r.stderr}`);
-      const takerNonce = r.stdout.trim();
+      // The taker stays alive until the third party has read: a holder that has exited is a corpse,
+      // which reads stale at any age, and what is measured here is the stamp refresh on takeover.
+      const script = join(dir, 'taker.mjs');
+      writeFileSync(script, `${PRELUDE}
+const { acquireLock } = await import(${JSON.stringify(LOCKFILE)});
+const got = acquireLock(LOCK, { staleMs: STALE, label: 'taker' });
+write('taker-nonce', got.ok ? got.token.nonce : 'BUSY');
+if (got.ok) {
+  const deadline = Date.now() + 25000;
+  while (!fs.existsSync(DIR + '/READ') && Date.now() < deadline) { const u = Date.now() + 2; while (Date.now() < u) { /* spin */ } }
+}
+`);
+      process.env.CW_T_DIR = dir;
+      taker = spawnChild(script, 0);
+      await until(() => existsSync(join(dir, 'taker-nonce')), { label: 'the taker to decide' });
+      const takerNonce = readFileSync(join(dir, 'taker-nonce'), 'utf8').trim();
       assert.notEqual(takerNonce, 'BUSY', 'a stale lock must still be takeable — never wedging the pipeline');
 
       const seen = thirdPartyVerdict(lock);
       assert.equal(seen.held, true, 'the taken-over lock must be held');
+      assert.equal(seen.holderAlive, true, 'the taker is alive and the third party can tell');
       assert.equal(seen.stale, false,
         `THE FIX: a third process must read the taken-over lock as FRESH; it read ageMs=${seen.ageMs}`);
       assert.ok(seen.ageMs < 60_000, `the token's acquisition stamp must be refreshed, got ageMs=${seen.ageMs}`);
       assert.ok(seen.mtimeAgeMs < 60_000,
         `and the DIRECTORY mtime must be refreshed too — the fallback path reads that, got ${seen.mtimeAgeMs}ms`);
       assert.equal(seen.holder && seen.holder.nonce, takerNonce, 'the holder on disk must be the taker');
-    } finally { rmSync(dir, { recursive: true, force: true }); }
+      writeFileSync(join(dir, 'READ'), '');
+      const r = await taker.done;
+      assert.equal(r.code, 0, `the taker must run: ${r.err}`);
+    } finally {
+      delete process.env.CW_T_DIR;
+      if (taker) { try { writeFileSync(join(dir, 'READ'), ''); } catch { /* dir gone */ } taker.kill(); }
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

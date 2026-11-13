@@ -1,5 +1,5 @@
 {
-  "version": 18,
+  "version": 19,
   "generatedFrom": [
     "monitor/FALSE-CLEAN-TAXONOMY.md",
     "monitor/FAILURE-TAXONOMY.md",
@@ -7927,6 +7927,40 @@
       ]
     },
     {
+      "id": "G28",
+      "name": "Unrecorded discretion",
+      "machine": "model_generated.unrecorded_discretion",
+      "layer": "CTRL",
+      "description": "No rule, ruling or instruction in force chooses among the actions open to an agent, and it chooses by a default it does not state. When the choice is right nothing is learned. When it is wrong the operator corrects it and a rule is written, after which the case reads as a rule that now exists rather than a judgement that failed, so every review that asks which rule was broken passes over it.",
+      "predicate": "An action taken where no rule, ruling or instruction in force selected among two or more available actions, with no record made at the time naming the alternatives and the default that chose. Decidable after the fact from a correction: the rule the correction produced postdates the call, and the record of the call names no alternative.",
+      "example": "Two instances from one operator-correction stream, 2026-10-28 and 2026-10-29. First: a session found a shared service overloaded and cut its capacity on its own judgement. It offered the operator follow-up choices and none on the change it had already made, and the operator reverted it. Two copies of the service configuration disagreed, and nothing in force said which one governed or how to rank throughput against headroom. The rule that now does was written after the revert. Second: a session stopped a background job that it judged to load a live service, and the operator rejected the call. The project instructions protected the live services and said nothing about jobs of that kind, and that rule too was written afterwards. In both, the agent had a correct picture of the process and its procedure was sound. The record of each call names the action and a reason, but not that a second action was open.",
+      "analogy": "No sign at the fork, so the driver takes the usual road, and the log records the arrival and not the fork.",
+      "closure": 0,
+      "gain": 2,
+      "scoreBasis": "Minted 2026-10-29 for edition 19. The question that produced it was whether a judgement call in a grey area is a recognised failure mode. Read against this registry it was not, and for a structural reason: every class needs a predicate against a hazard, an intent or an invariant, and a grey area is the absence of one when the call is made. Against G16 (silent term resolution), the nearest row: G16 needs a normative document whose term leaves its referent open, and closes when the document fixes the referent. In a G28 instance no document mentions the case, so a gate requiring every normative term to name its referent closes G16 and leaves every G28 instance standing. Against C6 (evidence evaporation): C6 is a decision recorded nowhere, and its verdict journals record what was done. A G28 call can sit in such a journal in full and carry no trace that another action was open. Against A18 (bypass hardened into precedent): A18 starts from a stated reason that later sessions cite. A G28 call has no stated reason to cite, and recording one is what would give A18 its input. The STPA cause controller-discretion was added for this row, because controller-algorithm read 'wrong or incomplete' and filed these calls as rules that failed. Closure 0: nothing records the alternatives of a call no rule made. Gain 2: a discretion record makes the predicate decidable when the call is made rather than from the correction.",
+      "stpa": [
+        {
+          "loop": "agent",
+          "uca": "unsafe",
+          "cause": "controller-discretion"
+        }
+      ],
+      "rca": [
+        {
+          "relation": "assessed-none"
+        }
+      ],
+      "proposals": [
+        {
+          "what": "A discretion record: before an agent takes an action no rule, ruling or instruction selected, it writes the alternatives it saw and the default that chose to a durable record. The census is the operator-correction stream, counting corrections whose resulting rule postdates the call and whose record of the call names no alternative.",
+          "effort": "Med",
+          "date": "2026-10-29",
+          "by": "edition 19 minting pass",
+          "closesTo": 2
+        }
+      ]
+    },
+    {
       "id": "M28",
       "name": "Key not injective over its population",
       "machine": "false_measurement.key_not_injective_over_its_population",
@@ -8961,10 +8995,13 @@
     },
     "cause": {
       "controller-algorithm": {
-        "test": "The rule the controller applied was wrong or incomplete even with a correct picture of the process."
+        "test": "The rule the controller applied selected the action and was wrong or incomplete, even with a correct picture of the process. A choice no rule selected is controller-discretion."
       },
       "controller-model": {
         "test": "The controller's picture of the process was wrong (population, identity, timing, scope) and its rule acted on that picture."
+      },
+      "controller-discretion": {
+        "test": "No rule, ruling or instruction in force selected among the actions available, and the controller chose by a default it did not state, with a correct picture of the process. Where a rule selected the action and was wrong, the value is controller-algorithm; where an instruction from above was itself the defect, higher-input."
       },
       "higher-input": {
         "test": "A controller above supplied an instruction or authority the controller obeyed, and the instruction was the defect."
@@ -9014,7 +9051,7 @@
     "rater": "two machine readers per class: one assigning per family from the class text, one blind re-rating a sample against the vocabulary tests; under recorded rulings of 2026-08-23 (report is a control action; loop names the reading)",
     "date": "2026-08-23",
     "method": "primary entry judged in the loop the description sits in; attention entry added where the class's consequence is a verdict published to the operator; each value chosen by its vocabulary test; blind-sample disagreement rate recorded in this field by the merge step",
-    "caveat": "machine-rated on one registry edition; where a description straddles monitor and agent the primary loop follows where the example sits; disagreement rate: PENDING"
+    "caveat": "machine-rated on one registry edition; where a description straddles monitor and agent the primary loop follows where the example sits; disagreement rate: PENDING; cause controller-discretion added at edition 19 (2026-10-29) with controller-algorithm narrowed to rules that selected the action: the 39 classes rated controller-algorithm before it are not re-read against that boundary, and some of them may be discretion"
   },
   "rcaVocabulary": {
     "note": "Causal edges between classes, over a closed relation set. Every relation was already asserted in tracked prose before it was declared. NOTE ON `basis`: it cites a QUOTE, never a line number. The first cut of this field cited `FAILURE-TAXONOMY.md L615-617`, and two of its four citations had rotted within hours of being written — a peer's edit five lines above moved them. That is the repo's own banned identity form ('never key an identity on a line number') committed by the axis whose subject is causation. A quote moves with the claim it names; a line number names a position the claim has left.",
@@ -9118,8 +9155,31 @@
       "\\b\\d{2,}\\b"
     ],
     "caveat": "This is a derived reading and it is crude in both directions. It passes a row whose only number is incidental, and it fails a row whose count is spelled in words or whose evidence uses an unlisted extension. Published because four sessions running four unstated detectors produced 88, 92, 139 and 142 and none could be reconciled with any other — a count without its predicate is not a measurement, which is the class this catalogue exists to name. THE COUNT DECAYS AND THE RULE DOES NOT. This field was published the same day reading 88 of 188 and was stale within hours at 76 of 195, because roughly twenty sessions add classes and evidence continuously. The path clause is now a closed, reproducible extension list; under that exact predicate the current result is 71 of 199, one fewer than 2026-09-03 because R14 gained a measured instance. Re-derive it before quoting it; a number carried out of this field without re-running the predicate is the M2 this registry catalogues, committed by the field that exists to prevent an unstated one.",
-    "measuredAt": "2026-09-24",
+    "measuredAt": "2026-11-04",
     "count": 61,
-    "of": 207
+    "of": 208
+  },
+  "fleetVocabulary": {
+    "note": "Instances in this register were measured across several tools on one fleet. A tool that is not part of commitwork is named here by the CAPABILITY it provides and never by its product name: which product provides a capability is fleet configuration, and it lives in the private store with every other private input. The accounts as they were written are held in the prose overlay bin/taxonomy-render.mjs merges at render time (CW_TAXONOMY_PROSE); an absent overlay is this public form, not an error. A path into this repository is cited as it stands, because the one fact a reader can check is the file. Where a record’s evidence cannot be stated at all without the product name, the record says so rather than reading as though nothing were withheld.",
+    "terms": {
+      "the oversight layer": {
+        "test": "The record is about the layer of hooks, gates and raters that watches agent work, including its own repository and that repository’s commits."
+      },
+      "the memory store": {
+        "test": "The record is about the store this product writes memories to and reads them back from, including its own repository and that repository’s commits."
+      },
+      "the task store": {
+        "test": "The record is about the task, session and file-claim store a session files its work in."
+      },
+      "the local model host": {
+        "test": "The record is about the local server that loads a model and answers an OpenAI-shaped request, including its own wrapper and logs."
+      },
+      "the sidecar": {
+        "test": "The record is about the separate repository that holds this fleet’s operational records, reached through a CW_* path."
+      },
+      "the decision register": {
+        "test": "The record is about the living register of rulings this fleet keeps outside the tracked tree."
+      }
+    }
   }
 }

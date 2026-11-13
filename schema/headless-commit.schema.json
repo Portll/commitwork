@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/headless-commit.schema.json",
+  "title": "Headless commit record",
+  "description": "One line of the headless record store: a model-written commit message offered to the commit gate where nobody can be asked. The gate matches messageSha256 and at. writerModel, reviewRef, stagedKind and stagedSha256 are required and reach the decision ledger as claimed; the gate does not recompute or resolve them.",
+  "type": "object",
+  "required": ["schema", "at", "messageSha256", "writerModel", "reviewRef", "stagedKind", "stagedSha256"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "commitwork.headless-commit/1" },
+    "at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$", "description": "When the record was written, UTC." },
+    "messageSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256 of the message after the gate's normalisation: CRLF to LF, trailing space off each line, outer blank lines off." },
+    "writerModel": { "type": "string", "pattern": "^\\S+$", "maxLength": 200, "description": "The id of the model that wrote the message." },
+    "reviewRef": { "type": "string", "pattern": "^\\S+$", "maxLength": 500, "description": "A reference to the review record for this message." },
+    "stagedKind": { "enum": ["diff", "tree"], "description": "What stagedSha256 hashes." },
+    "stagedSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256 of the staged diff or tree the message was written for." }
+  }
+}

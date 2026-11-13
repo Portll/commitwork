@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # The failure taxonomy, v3 — the layer split, the shaded remainder, and false progress
 
 > **Edition note.** As of 2026-09-25, this is the v3 prose edition, the last in prose, kept as a record. The authoritative

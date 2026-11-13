@@ -12,6 +12,7 @@ import {
   pruneBaselineShas, PATTERN_BASELINE,
 } from '../lib/release-candidate-core.mjs';
 import { parseArgs, launchlistGate, CANDIDATE_CHECKS, PROJECT_CHECKS, scratchRoot, envScratchDir } from '../release-candidate.mjs';
+import { compileTerms, digestOccurrence } from '../lib/release-terms.mjs';
 import { loadSpec, profilesOf, digestEvidence } from '../../lib/launchlist.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -152,12 +153,17 @@ test('testCounts reads spec and tap summaries, and reports absence as null', () 
   assert.equal(testCounts('nothing').tests, null);
 });
 
-test('overallVerdict accepts only all-pass, and a fail outranks a gap', () => {
+test('overallVerdict accepts all-pass and contested, and a fail outranks a gap', () => {
   const g = (...s) => s.map((status) => ({ status }));
   assert.equal(overallVerdict(g('pass', 'pass')).verdict, 'accepted');
   assert.equal(overallVerdict(g('pass', 'not-run')).verdict, 'incomplete');
   assert.equal(overallVerdict(g('cannot-check', 'fail')).verdict, 'blocked');
   assert.equal(overallVerdict(g()).verdict, 'incomplete', 'no gates is not a pass');
+  // A gate whose findings a person read and signed off is not a failure, so it does not block.
+  assert.deepEqual(overallVerdict(g('pass', 'contested')), { verdict: 'accepted', exit: 0 });
+  assert.equal(overallVerdict(g('contested', 'fail')).verdict, 'blocked', 'and it never outranks a failure');
+  assert.equal(overallVerdict(g('contested', 'cannot-check')).verdict, 'incomplete');
+  assert.equal(overallVerdict(g('pass', 'reviewed')).verdict, 'incomplete', 'a status nobody judged is a gap');
 });
 
 test('parseArgs refuses unknown flags and missing values', () => {
@@ -195,6 +201,57 @@ test('the terms gate reads the candidate: a denied term in a shipped file blocks
   assert.deepEqual(shipped.detail.byRule, { 'internal-tool': { files: 1, hits: 1 } });
   assert.ok(!JSON.stringify(shipped).includes('example-internal-tool'), 'the matched text stays out of the verdict');
   assert.equal(run('example-sibling-service').status, 'pass', 'an export-ignored file is not in the candidate');
+});
+
+// The gate's third state, end to end: the candidate report must read differently for a tree nobody
+// has reviewed and a tree whose every occurrence carries a signed, evidence-bound ruling. Both have
+// the same hitCount, which is the point — the detector's number never changes.
+test('an accepted denied term reads as contested, not as blocked and not as clean', () => {
+  const src = sourceRepo({ ...FILES, 'docs/C.md': 'names example-internal-tool here\n' });
+  const doc = { rules: [{ id: 'internal-tool', why: 'a test term', words: [{ key: 'shipped-word', word: 'example-internal-tool', why: 'a test term', test: 'is this the fixture word?' }] }] };
+  const list = join(tmp(), 'terms.json');
+  writeFileSync(list, JSON.stringify(doc));
+  const term = compileTerms(doc, 'test').rules[0].terms[0];
+  const place = { file: 'docs/C.md', rule: 'internal-tool', term: 'internal-tool#shipped-word', where: 'content', count: 1 };
+  const accepted = join(tmp(), 'acceptances.json');
+  writeFileSync(accepted, JSON.stringify({
+    note: 'one ruling, for this test',
+    acceptances: [{
+      ...place, evidence: digestOccurrence(place, `${term.re.source}\0${term.re.flags}`),
+      disposition: 'generic-capability', reason: 'the doc names the capability the module provides',
+      test: 'read docs/C.md and check it names no product', reviewer: 'release-candidate.test', reviewedAt: '2026-10-21',
+    }],
+  }));
+  const run = (extra, flags = ['--json']) => {
+    const out = join(tmp(), 'rc');
+    let stdout;
+    try {
+      stdout = execFileSync(process.execPath, [CLI, '--out', out, '--skip-tests', ...flags, '--no-journal'], {
+        encoding: 'utf8',
+        env: { ...noPrivateScope({ CW_RELEASE_SOURCE: src, CW_SIDECAR: join(out, 'no-sidecar'), CW_LAUNCHLIST_DIR: join(out, 'no-launchlist') }), CW_RELEASE_TERMS: list, ...extra },
+      });
+    } catch (e) { stdout = String(e.stdout); }
+    if (!flags.includes('--json')) return { text: stdout };
+    const r = JSON.parse(stdout);
+    return { verdict: r.verdict, terms: r.gates.find((g) => g.gate === 'terms') };
+  };
+  const unreviewed = run({});
+  assert.equal(unreviewed.terms.status, 'fail');
+  assert.equal(unreviewed.verdict, 'blocked');
+  assert.equal(unreviewed.terms.detail.summary, '1 denied term(s) in 1 file(s): 0 accepted, 0 lapsed, 1 unreviewed');
+
+  const ruled = run({ CW_RELEASE_TERM_ACCEPTANCES: accepted });
+  assert.equal(ruled.terms.status, 'contested');
+  assert.equal(ruled.verdict, 'incomplete', 'contested does not block; the other gates here cannot run');
+  assert.deepEqual(
+    [ruled.terms.detail.hitCount, ruled.terms.detail.acceptedCount, ruled.terms.detail.lapsedCount, ruled.terms.detail.unreviewedCount],
+    [1, 1, 0, 0]);
+  assert.equal(ruled.terms.detail.hitCount, unreviewed.terms.detail.hitCount, 'accepting a term does not erase what fired');
+
+  // The printed report, not just the JSON: a reader of the gate lines sees which of the two it is.
+  const lineOf = (text) => text.split('\n').find((l) => / terms(\s|$|—)/.test(l)).trim();
+  assert.match(lineOf(run({}, []).text), /^fail\s+terms\s+— 1 denied term\(s\) in 1 file\(s\): 0 accepted, 0 lapsed, 1 unreviewed$/);
+  assert.match(lineOf(run({ CW_RELEASE_TERM_ACCEPTANCES: accepted }, []).text), /^contested\s+terms\s+— 1 denied term\(s\) in 1 file\(s\): 1 accepted, 0 lapsed, 0 unreviewed$/);
 });
 
 test('a candidate whose gates cannot run is incomplete, never accepted, and is journalled', () => {

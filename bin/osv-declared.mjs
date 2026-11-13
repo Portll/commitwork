@@ -33,6 +33,7 @@ import { join, resolve, basename } from 'node:path';
 // The ONE SARIF reader: a hand-rolled `sarif.runs || []` cannot tell a document with no runs from a
 // scanner that never ran, and this file's verdict decides whether real findings get demoted.
 import { readSarif } from '../monitor/sarif-read.mjs';
+import { packageFromOsvMessage } from '../lib/osv-message.mjs';
 
 const [, , repoArg, sarifArg] = process.argv;
 if (!repoArg || !sarifArg) {
@@ -86,9 +87,9 @@ function readManifest(rel) {
 const out = {};
 for (const run of r.runs) {
   for (const res of run.results) {
-    const m = (res.message && res.message.text || '').match(/Package '([^'@]+(?:@[^'@]+)?)@([^']+)'/);
-    if (!m) continue;
-    const [, pkg, version] = m;
+    const pm = packageFromOsvMessage((res.message && res.message.text) || '');
+    if (!pm) continue;
+    const { name: pkg, version } = pm;
     for (const loc of (res.locations || [])) {
       const uri = loc.physicalLocation && loc.physicalLocation.artifactLocation && loc.physicalLocation.artifactLocation.uri;
       if (!uri) continue;

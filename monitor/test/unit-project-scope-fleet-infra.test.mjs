@@ -1,7 +1,28 @@
 // Set of all members from all registry areas (monitor/project-scope.mjs fleetInfra).
-import { test } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { fleetInfra } from '../project-scope.mjs';
+import { mkdtempSync, rmSync, copyFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { EXAMPLE_REGISTRY_PATH } from '../registry.mjs';
+
+// fleetInfra's members come from the registry, and the five names asserted below are the shipped
+// example. project-scope.mjs caches the registry on its first read and calls fleetInfra() at import
+// (FLEET_INFRA), so the module is imported inside before(): by then the override names the fixture.
+const STORE = mkdtempSync(join(tmpdir(), 'fleetInfra-store-'));
+const REGISTRY = join(STORE, 'projects.json');
+copyFileSync(EXAMPLE_REGISTRY_PATH, REGISTRY);
+const prevRegistry = process.env.CW_REGISTRY;
+let fleetInfra;
+before(async () => {
+  process.env.CW_REGISTRY = REGISTRY;
+  ({ fleetInfra } = await import('../project-scope.mjs'));
+});
+after(() => {
+  if (prevRegistry !== undefined) process.env.CW_REGISTRY = prevRegistry;
+  else delete process.env.CW_REGISTRY;
+  rmSync(STORE, { recursive: true, force: true });
+});
 
 test('fleetInfra returns a Set instance', () => {
   const result = fleetInfra();

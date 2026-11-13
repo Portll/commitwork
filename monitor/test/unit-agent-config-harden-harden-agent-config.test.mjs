@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
 const NOTE = 'DRY RUN \u2014 nothing written. Review the diff, `git apply` it, and commit: applying stays a human act.';
-const diffOf = (path, a, b) => `--- a/${path}\n+++ b/${path}\n@@ -1 +1 @@\n-${a}\n\\ No newline at end of file\n+${b}\n\\ No newline at end of file\n`;
+const diffOf = (path, a, b) => `diff --git a/${path} b/${path}\n--- a/${path}\n+++ b/${path}\n@@ -1,1 +1,1 @@\n-${a}\n\\ No newline at end of file\n+${b}\n\\ No newline at end of file\n`;
 
 function withDir(files, fn) {
   const dir = mkdtempSync(join(tmpdir(), 'hardenAgentConfig-'));

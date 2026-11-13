@@ -1,10 +1,29 @@
 // init CLI dispatch: usage, dry-run, apply, and refusal (bin/init.mjs runInit).
-import { test } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { runInit } from '../init.mjs';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+// init reads the state root, the registry and the credential home. The empty "registry declares no
+// repositories" plan holds only while all three are absent, so each override names a path in a
+// state-shaped directory this test owns and leaves empty.
+const STATE = mkdtempSync(join(tmpdir(), 'runInit-state-'));
+const OVERRIDES = {
+  CW_STATE_DIR: STATE,
+  CW_REGISTRY: join(STATE, 'monitor', 'private', 'projects.json'),
+  CW_AUTH_STORE: join(STATE, 'home', 'users.json'),
+};
+const saved = Object.fromEntries(Object.keys(OVERRIDES).map((k) => [k, process.env[k]]));
+before(() => { Object.assign(process.env, OVERRIDES); });
+after(() => {
+  for (const [k, v] of Object.entries(saved)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+  rmSync(STATE, { recursive: true, force: true });
+});
 
 test('returns 2 and prints usage when opts.error is set', () => {
   const dir = mkdtempSync(join(tmpdir(), 'runInit-'));

@@ -222,6 +222,21 @@ export const taxonomyMitigationsPathFor = (root, { ambient = true } = {}) =>
     : join(privateDir(root), 'taxonomy-mitigations.json'));
 
 /**
+ * The failure taxonomy's prose as it was written, before the private products in it were named by
+ * capability instead.
+ *
+ * The mitigation axis is not the only place a record names a tool that is not this product: an
+ * instance account names the tool it was measured in, and that is what makes it re-auditable. The
+ * tracked register therefore names the CAPABILITY and the original sentences live here, paired with
+ * the public text they replaced. An ABSENT overlay is the public shape, exactly as above.
+ * CW_TAXONOMY_PROSE overrides.
+ */
+export const taxonomyProsePathFor = (root, { ambient = true } = {}) =>
+  ((ambient && process.env.CW_TAXONOMY_PROSE)
+    ? resolve(process.env.CW_TAXONOMY_PROSE)
+    : join(privateDir(root), 'taxonomy-prose.json'));
+
+/**
  * The pre-rewrite to rewritten commit map read by bin/resolve-sha.mjs. It indexes private history,
  * so it is private too. CW_COMMIT_MAP overrides.
  */
@@ -281,6 +296,9 @@ export const ownerMapPathFor = privateRecord('CW_OWNER_MAP', 'owner-map.json');
 
 /** The modernization programme worklist. CW_PROGRAM_WORKLIST. Absent = no programmes. */
 export const programWorklistPathFor = privateRecord('CW_PROGRAM_WORKLIST', 'program-worklist.json');
+
+/** The deploy boxes bin/release-report.mjs --fetch reads evidence from. CW_RELEASE_SOURCES. Absent = --fetch refuses. */
+export const releaseSourcesPathFor = privateRecord('CW_RELEASE_SOURCES', 'releases.json');
 
 /** Operator-held BOLA manifests, one <name>.json each. CW_BOLA_MANIFEST_DIR. */
 export const bolaManifestDirFor = privateRecord('CW_BOLA_MANIFEST_DIR', 'bola');

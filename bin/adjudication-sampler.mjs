@@ -121,7 +121,14 @@ export const GATE_REGISTRY = {
     // not place. HEAD's own control run was degraded and the failures cannot be called committed
     // or uncommitted. Not clean, the failures exist. Not alarm, no culprit was established. The
     // rule that decides `regression-disk-undetermined` decides this one. Neither.
-    neither: ['floor-lowered', 'no-tally', 'armed', 'regression-unattributed', 'regression-disk-undetermined', 'regression-incomparable', 'deferred', 'regression-undetermined'],
+    // `selective-steady` (bin/gate-tests.mjs) is the gate having run ONLY the test files that can
+    // reach this turn's changes. Its own message ends "The other test files were not run", so the
+    // clean claim it makes is scoped to a subset and cannot be read as the tree being clean. That
+    // is the `armed` shape again — a comparison happened, but not the one the stratum scores — and
+    // it is emphatically not alarm: nothing failed. Neither.
+    // `selective-skip` is the same path with nothing run at all: the gate declined to select any
+    // test file, so no suite ran and no claim was made. Refusal, on the `deferred` rule. Neither.
+    neither: ['floor-lowered', 'no-tally', 'armed', 'regression-unattributed', 'regression-disk-undetermined', 'regression-incomparable', 'deferred', 'regression-undetermined', 'selective-steady', 'selective-skip'],
     // Fields the message derives from; deliveryReport finds suppressed records whose facts moved.
     factFields: ['verdict', 'fail', 'pass'],
   },

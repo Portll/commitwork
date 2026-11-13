@@ -1,6 +1,6 @@
 # The commitwork theme
 
-<!-- verified-against: 2026-10-18 fe0a6e21 -->
+<!-- verified-against: 2026-10-18 -->
 
 The house style for every commitwork surface: the admin panel and its `/config` page, the docsite,
 generated HTML reports and the terminal. It covers the dark and light colour tokens, type, spacing,
@@ -131,7 +131,7 @@ the panel's 40rem minimum so they fit a half-width column.
 
 ```lockup
 <header class="bar"><div class="row">
-<div class="mark"><span class="seal"><cw-seal></cw-seal></span><span class="mark-text"><span class="wordmark">commitwork</span><span class="build">v0.6.56 · 388d0e86 · 11:42</span></span></div>
+<div class="mark"><span class="seal"><cw-seal></cw-seal></span><span class="mark-text"><span class="wordmark">commitwork</span><span class="build">v0.6.56 · a commit · 11:42</span></span></div>
 <span class="gen" data-state="fresh">rollup 12m ago</span>
 <div class="ctl-wrap"><div class="ctl"><button type="button" class="pri">▶ Run checks</button><button type="button">↻ Refresh</button></div></div>
 </div></header>

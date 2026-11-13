@@ -93,6 +93,7 @@ import { routeFlagOff, offBody } from '../lib/feature-flags.mjs';
 import { routes as overwatchLayerRoutes } from './routes/overwatch-layer.mjs';
 import { routes as docsiteRoutes, docsiteHandle, docsiteOrigins, docsiteHosts } from './routes/docsite.mjs';
 import { routes as launchlistRoutes, launchlistHosts } from './routes/launchlist.mjs';
+import { routes as dfdRoutes } from './routes/dfd.mjs';
 import { routes as offboxRoutes, offboxHosts, handleIngest as offboxIngest } from './routes/offbox.mjs';
 import { routes as jobRoutes, initJobRoutes } from './routes/jobs.mjs';
 import { routes as panelProcessRoutes, initPanelProcessRoutes } from './routes/panel-process.mjs';
@@ -107,6 +108,7 @@ import { routes as graphRoutes } from './routes/graph.mjs';
 import { routes as pullRequestRoutes } from './routes/pull-request.mjs';
 import { routes as inboxRoutes } from './routes/inbox.mjs';
 import { routes as runnerRoutes } from './routes/runner.mjs';
+import { routes as laneTrustRoutes } from './routes/lane-trust.mjs';
 import { initJobs, knownProjects, trigger, running } from './lib/jobs.mjs';
 import { createAutoUpdater, autoUpdateEnabled, runPreflight } from './lib/panel-auto-update.mjs';
 import { createUpdateScheduler, busyReason } from '../lib/update/scheduler.mjs';
@@ -853,7 +855,7 @@ function errorPage(code, title, detail, { back = '/' } = {}) {
 // throw there took the process down for everyone rather than refusing one request. Three unguarded
 // decodeURIComponent calls have the same shape. Fail closed, per request, not per process.
 // Every modular route group, in dispatch order. Adding a group is one import and one entry here.
-const MODULAR_ROUTES = [...secretsRoutes, ...leaksCheckRoutes, ...leaksVerifyRoutes, ...postureRoutes, ...reportRoutes, ...remediationRoutes, ...a11yRoutes, ...profileRoutes, ...configEditRoutes, ...scanConfigRoutes, ...ingestRoutes, ...issueDetailRoutes, ...craRoutes, ...determinationRoutes, ...annotationRoutes, ...oversightRoutes, ...correlationRoutes, ...remediationPolicyRoutes, ...llmRuntimeRoutes, ...hostRoutes, ...verdictRoutes, ...packageRoutes, ...updateRoutes, ...codeqlRemediationRoutes, ...cobolworkRemediationRoutes, ...projectsViewRoutes, ...fleetOverviewRoutes, ...settingsRoutes, ...agentSurfaceRoutes, ...perfRoutes, ...scannerRoutes, ...scanPathRoutes, ...turnsRoutes, ...commentRoutes, ...learningRoutes, ...featuresRoutes, ...overwatchLayerRoutes, ...docsiteRoutes, ...launchlistRoutes, ...offboxRoutes, ...rollupsRoutes, ...jobRoutes, ...panelProcessRoutes, ...panelStateRoutes, ...issuesRoutes, ...dailyRoutes, ...renovateRoutes, ...paletteRoutes, ...feedRoutes, ...journeyRoutes, ...graphRoutes, ...pullRequestRoutes, ...inboxRoutes, ...runnerRoutes];
+const MODULAR_ROUTES = [...secretsRoutes, ...leaksCheckRoutes, ...leaksVerifyRoutes, ...postureRoutes, ...reportRoutes, ...remediationRoutes, ...a11yRoutes, ...profileRoutes, ...configEditRoutes, ...scanConfigRoutes, ...ingestRoutes, ...issueDetailRoutes, ...craRoutes, ...determinationRoutes, ...annotationRoutes, ...oversightRoutes, ...correlationRoutes, ...remediationPolicyRoutes, ...llmRuntimeRoutes, ...hostRoutes, ...verdictRoutes, ...packageRoutes, ...updateRoutes, ...codeqlRemediationRoutes, ...cobolworkRemediationRoutes, ...projectsViewRoutes, ...fleetOverviewRoutes, ...settingsRoutes, ...agentSurfaceRoutes, ...perfRoutes, ...scannerRoutes, ...scanPathRoutes, ...turnsRoutes, ...commentRoutes, ...learningRoutes, ...featuresRoutes, ...overwatchLayerRoutes, ...docsiteRoutes, ...launchlistRoutes, ...offboxRoutes, ...rollupsRoutes, ...jobRoutes, ...panelProcessRoutes, ...panelStateRoutes, ...issuesRoutes, ...dailyRoutes, ...renovateRoutes, ...paletteRoutes, ...feedRoutes, ...journeyRoutes, ...graphRoutes, ...pullRequestRoutes, ...inboxRoutes, ...runnerRoutes, ...laneTrustRoutes, ...dfdRoutes];
 
 // Server copy of the client's VALID_VIEWS — panel-view-paths.test.mjs pins the two sets equal.
 // Includes RETIRED view names still served as aliases ('leaks' -> the secrets view). The server's

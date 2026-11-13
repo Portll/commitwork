@@ -1,11 +1,12 @@
 # What CodeQL is NOT allowed to index. Read into LGTM_INDEX_FILTERS by EVERY sast-codeql-* check in
-# security-baseline.json: sast-codeql (javascript-typescript), -java, -python, -ruby, -cpp, -csharp
-# and -swift. Each refuses to index at all if this file is unreadable, so the list only grows.
+# security-baseline.json: sast-codeql (javascript-typescript), -java, -python, -ruby, -cpp, -csharp,
+# -swift, -rust and -go. Each refuses to index at all if this file is missing, unreadable or holds
+# no rule, so the list only grows.
 #
-# ONE FILE, SEVEN LANGUAGES — and the excludes below are commitwork-shaped, not language-shaped.
+# ONE FILE, NINE LANGUAGES — and the excludes below are commitwork-shaped, not language-shaped.
 # `reports`, `map/data`, `sitemap/vendor` and `evaluations` are this repository's own generated and
 # evidence trees. They are applied to every scanned repo in the fleet regardless of language, which
-# is the over-exclusion risk already stated below, now multiplied by seven. What is NOT here is any
+# is the over-exclusion risk already stated below, now multiplied by nine. What is NOT here is any
 # per-language build output: a python lane indexes `target/debug/build/**` when a repository has it,
 # because nothing in this file names it. Adding it is a real improvement and a real risk in the same
 # edit, so it needs its own measurement rather than a guess: an exclude that removes a genuine source

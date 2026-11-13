@@ -138,10 +138,19 @@ export const POSTURES = {
 // segment is never found: nothing errors, and the container is given the SSH keys.
 const norm = (p) => String(p ?? '').replace(/\\/g, '/').replace(/\/+$/, '') || '/';
 
+// fact: docker.exe reads a drive-letter host path and nothing else / a container lane on Windows runs with MSYS path conversion off (scanner-env.mjs laneWindowsEnv), so Git Bash's $PWD reaches this process verbatim as /c/work/repo and docker rejects it (expiry: never, prev: broken)
+/** The host side of a `-v` as docker on this platform reads it: on win32 `C:\x`, `c:/x` and `/c/x` all become `C:/x`; elsewhere separators are normalised and nothing else. */
+export function dockerHostPath(hostPath, platform = process.platform) {
+  const p = norm(hostPath);
+  if (platform !== 'win32') return p;
+  const drive = p.match(/^([A-Za-z]):(\/.*)?$/) || p.match(/^\/([A-Za-z])(\/.*)?$/);
+  return drive ? `${drive[1].toUpperCase()}:${drive[2] || ''}` : p;
+}
+
 /** Throws if a host path is one no posture may expose. Checked before any posture logic. */
 export function assertMountAllowed(hostPath) {
   const p = norm(hostPath);
-  if (p === '/') throw new Error('sandbox: refusing to mount the filesystem root');
+  if (p === '/' || /^[A-Za-z]:$/.test(p)) throw new Error('sandbox: refusing to mount the filesystem root');
   for (const bad of FORBIDDEN_MOUNTS) {
     if (p === bad || p.startsWith(bad + '/')) {
       throw new Error(`sandbox: refusing to mount ${p} — ${bad} is host-equivalent and no posture may opt into it`);
@@ -163,6 +172,7 @@ export function assertMountAllowed(hostPath) {
  * @param {string} spec.name      container name — REQUIRED so a timeout can reap it
  * @param {Array}  [spec.mounts]  [{ host, path, mode:'ro'|'rw', source?:boolean }]
  * @param {object} [spec.env]     environment passed through
+ * @param {string} [spec.platform] host platform the `-v` host paths are written for (default process.platform)
  * @param {string} [spec.memory]  override the posture floor
  * @param {number} [spec.cpus]    CPU bound in cores, from the check's declared cost class
  * @param {number} [spec.pidsLimit]
@@ -175,6 +185,7 @@ export function buildSandbox(spec = {}) {
   const {
     posture, name, mounts = [], env = {}, memory, cpus, pidsLimit,
     allowNetwork = false, keepContainer = false, egressProxy = null, egressNetwork = null, owner = null,
+    platform = process.platform,
   } = spec;
 
   const p = POSTURES[posture];
@@ -273,7 +284,8 @@ export function buildSandbox(spec = {}) {
   if (p.tmpfs) args.push('--tmpfs', p.tmpfs);
 
   for (const m of mounts) {
-    const host = norm(m.host);
+    // Converted BEFORE the guard, so the path docker is handed is the path that was checked.
+    const host = dockerHostPath(m.host, platform);
     assertMountAllowed(host);
     const mode = m.mode === 'rw' ? 'rw' : 'ro';
     if (m.source && !p.allowSourceMount) {

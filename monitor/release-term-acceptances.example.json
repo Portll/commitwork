@@ -1,0 +1,35 @@
+{
+  "$schema": "../schema/release-term-acceptances.schema.json",
+  "$comment": "The shape of the private per-term acceptance record that bin/lib/release-terms.mjs reads from the sidecar (monitor/release-term-acceptances.json) or from CW_RELEASE_TERM_ACCEPTANCES. Both rows here are PENDING, which accepts nothing: a pending row is the question the gate asks, and the occurrence stays open. An accepting disposition — generic-capability, public-by-design, upstream-content, detector-defect — additionally needs the reason, a test another person can apply, a reviewer, a date, and the evidence digest of the measurement it is granted against. The gate recomputes that digest from the file, rule, term, where, count and the pattern that fired; a new occurrence changes the count, so the acceptance lapses rather than covering it. Every file and term here is synthetic, from monitor/release-terms.example.json.",
+  "note": "2 denied-term occurrence(s) awaiting a ruling",
+  "acceptances": [
+    {
+      "file": "docs/CAPABILITIES.md",
+      "rule": "internal-tool",
+      "term": "internal-tool#workflow-dependency",
+      "where": "content",
+      "count": 3,
+      "evidence": "0123456789abcdef",
+      "disposition": "pending",
+      "reason": "",
+      "test": "",
+      "reviewer": "",
+      "reviewedAt": null,
+      "$comment": "A ruling here would say which capability the module provides and name the interface instead of the tool, per the publication boundary."
+    },
+    {
+      "file": "lib/example-sibling-service-client.mjs",
+      "rule": "internal-tool",
+      "term": "internal-tool#sibling-service",
+      "where": "path",
+      "count": 1,
+      "evidence": "fedcba9876543210",
+      "disposition": "pending",
+      "reason": "",
+      "test": "",
+      "reviewer": "",
+      "reviewedAt": null,
+      "$comment": "A module named after a private tool discloses the tool and describes nothing; the ruling on this one is a rename, not an acceptance."
+    }
+  ]
+}

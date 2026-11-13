@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-06 76228962 -->
+<!-- verified-against: 2026-10-06 -->
 
 Run one A/B build loop: dispatch prompt variant A and prompt variant B to the local LLM, blind-judge the pair on the 12-dim rubric, and persist every loop artefact locally (memory-layer degrades to a replayable backfill file). This is the invokable form of the A/B backbone.
 

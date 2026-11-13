@@ -1507,14 +1507,22 @@
       ],
       "tier": "T1",
       "predicate": "A citation or attribution notation whose slot is populated from more than one identifier space, told apart only by a property the notation does not declare, such as the width of the token. Decidable by counting the widths present in the slot across the corpus, which is a question about the notation and needs no access to either namespace."
+    },
+    "G28": {
+      "substrate": [
+        "SESS",
+        "EXT"
+      ],
+      "tier": "T4",
+      "predicate": "An action taken where no rule, ruling or instruction in force selected among two or more available actions, with no record made at the time naming the alternatives and the default that chose. Decidable after the fact from a correction: the rule the correction produced postdates the call, and the record of the call names no alternative."
     }
   },
   "mapVerifiedAgainst": {
     "at": "2026-10-29",
-    "registryVersion": 18,
-    "registryClasses": 207,
-    "mapped": 201,
+    "registryVersion": 19,
+    "registryClasses": 208,
+    "mapped": 202,
     "unmapped": 6,
-    "note": "Re-derived against the registry, never restated: bin/test/taxonomy-registry-coverage.test.mjs recomputes registryClasses, mapped and unmapped and fails on a stale claim. Every mapped class carries a substrate, a tier, and the predicate the REGISTRY declares, copied verbatim, because a second wording here would be two declarations of one concept in the file whose subject is what decides a class; a copy that drifts from its source is the stale-count defect in prose. Family XI is the first that is mostly T4: actor-to-actor coordination is judged, not parsed, and no recorder closes it. bin/pattern-scan.mjs computes reach from the registry rather than from this number, so a gap here narrows the map, never the scan. Tier distribution as of 2026-10-29: T1 109, T2 43, T3 27, T4 22. The 6 unmapped (A23, C28, C29, M20, K12, L8) arrived at v11 and remain explicit rather than silently inferred."
+    "note": "Re-derived against the registry, never restated: bin/test/taxonomy-registry-coverage.test.mjs recomputes registryClasses, mapped and unmapped and fails on a stale claim. Every mapped class carries a substrate, a tier, and the predicate the REGISTRY declares, copied verbatim, because a second wording here would be two declarations of one concept in the file whose subject is what decides a class; a copy that drifts from its source is the stale-count defect in prose. Family XI is the first that is mostly T4: actor-to-actor coordination is judged, not parsed, and no recorder closes it. bin/pattern-scan.mjs computes reach from the registry rather than from this number, so a gap here narrows the map, never the scan. Tier distribution as of 2026-10-29: T1 109, T2 43, T3 27, T4 23. The 6 unmapped (A23, C28, C29, M20, K12, L8) arrived at v11 and remain explicit rather than silently inferred."
   }
 }

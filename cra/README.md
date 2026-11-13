@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-19 c80908bc -->
+<!-- verified-against: 2026-10-19 -->
 # cra/ — EU Cyber Resilience Act readiness (Phase 1)
 
 Reporting obligations under CRA **Art. 14** start **11 September 2026**: an *actively

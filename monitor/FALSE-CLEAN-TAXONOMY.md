@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-07 fd1b4647 -->
+<!-- verified-against: 2026-10-07 -->
 # The false-clean taxonomy — every way this system has said "fine" while wrong
 
 A **false clean** is any mechanism by which the absence of an alarm is mistaken for the presence

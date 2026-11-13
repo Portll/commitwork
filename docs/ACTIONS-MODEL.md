@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # The GitHub Actions workflow model
 
 commitwork reads a repository's workflow files with its own code and no runtime dependency, and

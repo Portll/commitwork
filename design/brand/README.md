@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 778af2e7 -->
+<!-- verified-against: 2026-10-08 -->
 # commitwork brand
 
 The logo is the seal: a disc, a ring, and a key of two nodes joined by a line, on a 32-unit square.

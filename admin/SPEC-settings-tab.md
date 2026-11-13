@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-19 b1282a0e -->
+<!-- verified-against: 2026-10-19 -->
 # SPEC — Settings tab (global settings) for the admin panel
 
 > **Status: PARTLY BUILT, AND NOT AS SPECIFIED.** Measured against the tree:

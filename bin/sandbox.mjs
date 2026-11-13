@@ -54,7 +54,12 @@ ${Object.entries(POSTURES).map(([k, v]) => `  ${k.padEnd(11)}${v.why}`).join('\n
 }
 
 const parseMount = (raw, source) => {
-  const parts = String(raw ?? '').split(':');
+  // A Windows drive letter (`C:\repo:/src:ro`) is part of the host, not a separator. Split on it and
+  // the guard checks the one-letter host `C` while docker mounts the real path reassembled after it.
+  const s = String(raw ?? '');
+  const drive = /^[A-Za-z]:[\\/]/.test(s) ? 2 : 0;
+  const parts = s.slice(drive).split(':');
+  parts[0] = s.slice(0, drive) + parts[0];
   if (parts.length < 2) {
     console.error(`[sandbox] --mount${source ? '-source' : ''} ${JSON.stringify(raw)} is not host:path[:mode]`);
     process.exit(2);

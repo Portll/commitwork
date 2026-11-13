@@ -42,7 +42,7 @@ const ALLOWED = {
   'bin/canary-harness.mjs': [2, OWN],
   'bin/close-gate.mjs': [1, OWN],
   'bin/commit-msg.mjs': [1, 'a commit-msg hook, running inside the commit it checks'],
-  'bin/commit-phase.mjs': [6, OWN],
+  'bin/commit-phase.mjs': [7, OWN],
   'bin/commitwork.mjs': [1, 'toolchainVintage reads ROOT, commitwork itself; the scan target goes through scannedGit'],
   'bin/daily-run.mjs': [1, 'the operator\'s skill repository the daily command is read from'],
   'bin/docs-doctor.mjs': [4, OWN],
@@ -57,12 +57,13 @@ const ALLOWED = {
   'bin/install-commit-msg.mjs': [1, OWN],
   'bin/install-version-hooks.mjs': [1, 'the hooks directory of the repository it installs into, which the operator names'],
   'bin/lane-fixture.mjs': [4, 'builds the fixture repository it then hands to a lane'],
+  'bin/lib/gate-pin.mjs': [2, `${OWN}: rev-parse and archive, to export the committed copy of the gate`],
   'bin/lib/lexical-ratchet.mjs': [1, OWN],
   'bin/lib/platform-seams.mjs': [1, OWN],
   'bin/lib/provenance-fixture.mjs': [1, 'builds a fixture repository, hooks already off'],
   'bin/lib/release-candidate-core.mjs': [5, 'commitwork\'s release candidate and its sidecar'],
   'bin/lib/release-names-head-scan.mjs': [6, 'commitwork\'s HEAD and its sidecar'],
-  'bin/lib/release-terms.mjs': [2, 'commitwork\'s sidecar, for the committed denied-term list'],
+  'bin/lib/release-terms.mjs': [4, 'commitwork\'s sidecar, for the committed denied-term list and the acceptances beside it'],
   'bin/lib/release-reviews.mjs': [3, 'commitwork\'s release reviews'],
   'bin/lib/scan-target.mjs': [1, 'rev-parse on commitwork\'s own checkout, to keep a scan out of it'],
   'bin/offbox-watch-check.mjs': [1, 'the operator\'s off-host anchor witness repository; gitChildEnv already'],
@@ -90,7 +91,7 @@ const ALLOWED = {
   'monitor/defect-classify.mjs': [1, OWN],
   'monitor/history-chain.mjs': [3, 'the chain-anchor store in commitwork\'s sidecar'],
   'monitor/draft-pr-live.mjs': [1, 'a clone into a fresh directory, with SCANNED_GIT_CONFIG and gitChildEnv already: no repository exists yet for scannedGit to take as -C'],
-  'monitor/install-git-hook.mjs': [1, OWN],
+  'monitor/install-git-hook.mjs': [2, `${OWN}: the hooks dir, and the rule set this checkout declares`],
 };
 
 function sources() {

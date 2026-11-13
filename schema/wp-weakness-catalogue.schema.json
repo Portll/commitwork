@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schema/wp-weakness-catalogue.schema.json",
+  "title": "wp-weakness-catalogue",
+  "description": "manifests/wp-weakness-catalogue.json — the weaknesses bin/wp-posture.mjs evaluates over the typed rows bin/lib/wp-observables.mjs reads from a WordPress tree and, when one is given, a database dump. Each entry is one predicate: an observable `type`, a `verb`, and an optional `where` filter. loadCatalogue() in bin/wp-posture.mjs refuses a verb, type, severity, CWE form, `where` operator, count `than` or unknown route it does not implement; this schema is that same closed vocabulary written once. An entry loadCatalogue refuses is reported as `invalid` in the scan summary, so a shape this schema accepts and the reader refuses (or the reverse) is a finding nobody sees.",
+  "type": "object",
+  "required": ["entries"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": 1,
+      "description": "Catalogue format version."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reported in the scan summary as catalogue.name."
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the catalogue is and how a predicate is written. Read by people, not by the scanner."
+    },
+    "routes": {
+      "type": "object",
+      "description": "Keyed by route id; each value says what the route reaches. An entry's `enables` must name a key here, which loadCatalogue checks and this JSON Schema subset cannot express.",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "componentClasses": {
+      "type": "object",
+      "description": "Keyed by class name. classify() in bin/lib/wp-observables.mjs tags a component with every class whose `slugs` contains its slug or whose `nameRegex` matches its display name, so a row's `classes` is the sorted list of these keys.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "slugs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Plugin or theme directory slugs that are in this class."
+          },
+          "nameRegex": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Case-insensitive pattern over a component's display name."
+          }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "description": "One predicate per weakness.",
+      "items": {
+        "type": "object",
+        "required": ["id", "sev", "cwe", "predicate", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{2,63}$",
+            "description": "Rule id, reported with every finding. loadCatalogue also refuses a duplicate."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human name, reported with each finding and in the passed list."
+          },
+          "sev": {
+            "enum": ["crit", "high", "med", "low"],
+            "description": "The house severity scale."
+          },
+          "cwe": {
+            "type": "string",
+            "pattern": "^CWE-[0-9]+$"
+          },
+          "predicate": {
+            "type": "object",
+            "required": ["verb", "type"],
+            "additionalProperties": false,
+            "properties": {
+              "verb": {
+                "enum": ["exists", "absent", "count-gt", "count-lt"],
+                "description": "exists: one finding per matching row, capped. absent: one finding when no row matches. count-gt/count-lt: one finding when the match count crosses `than`."
+              },
+              "type": {
+                "enum": ["wp-install", "wp-component", "wp-option", "wp-setting", "wp-user", "audit-source", "served-dir", "file", "server-directive"],
+                "description": "The observable type the predicate counts. bin/lib/wp-observables.mjs is the owner of this list (TYPES)."
+              },
+              "where": {
+                "type": "object",
+                "description": "An AND over row fields. A field takes a scalar (equality), a list (membership) or an operator object.",
+                "additionalProperties": { "description": "Scalar equality, list membership, or an operator object (every operator in it must match).", "oneOf": [
+                  { "type": ["string", "number", "boolean", "null"] },
+                  { "type": "array", "items": { "type": ["string", "number", "boolean", "null"] } },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "neq": { "type": ["string", "number", "boolean", "null"] },
+                      "in": { "type": "array", "items": { "type": ["string", "number", "boolean", "null"] } },
+                      "notIn": { "type": "array", "items": { "type": ["string", "number", "boolean", "null"] } },
+                      "gt": { "type": "number" },
+                      "gte": { "type": "number" },
+                      "lt": { "type": "number" },
+                      "lte": { "type": "number" },
+                      "contains": { "type": ["string", "number"] },
+                      "notContains": { "type": ["string", "number"] },
+                      "startsWith": { "type": "string" },
+                      "endsWith": { "type": "string" },
+                      "regex": { "type": "string" },
+                      "exists": { "type": "boolean" }
+                    }
+                  }
+                ] }
+              },
+              "given": {
+                "type": "object",
+                "description": "Precondition: no matching row makes the entry not applicable, an unmeasured given.type makes it not measured.",
+                "required": ["type"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "enum": ["wp-install", "wp-component", "wp-option", "wp-setting", "wp-user", "audit-source", "served-dir", "file", "server-directive"]
+                  },
+                  "where": {
+                    "type": "object",
+                    "additionalProperties": { "description": "Scalar equality, list membership, or an operator object (every operator in it must match).", "oneOf": [
+                      { "type": ["string", "number", "boolean", "null"] },
+                      { "type": "array", "items": { "type": ["string", "number", "boolean", "null"] } },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "neq": { "type": ["string", "number", "boolean", "null"] },
+                          "in": { "type": "array", "items": { "type": ["string", "number", "boolean", "null"] } },
+                          "notIn": { "type": "array", "items": { "type": ["string", "number", "boolean", "null"] } },
+                          "gt": { "type": "number" },
+                          "gte": { "type": "number" },
+                          "lt": { "type": "number" },
+                          "lte": { "type": "number" },
+                          "contains": { "type": ["string", "number"] },
+                          "notContains": { "type": ["string", "number"] },
+                          "startsWith": { "type": "string" },
+                          "endsWith": { "type": "string" },
+                          "regex": { "type": "string" },
+                          "exists": { "type": "boolean" }
+                        }
+                      }
+                    ] }
+                  }
+                }
+              },
+              "than": {
+                "type": "number",
+                "description": "The count a count-gt or count-lt verb compares against. loadCatalogue refuses a count verb without a finite `than`; the keyword needed to say that here (if/then) is not implemented by lib/json-schema.mjs."
+              }
+            }
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Template reported with each finding. {field} is substituted from the matching row, plus {count} and {than}."
+          },
+          "enables": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Route ids, each a key of `routes`."
+          },
+          "refs": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "guideline": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The public guideline item the entry follows. Carried for readers; the scanner does not dereference it."
+              }
+            }
+          },
+          "course": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Remediation prose, reported with each finding."
+          }
+        }
+      }
+    }
+  }
+}

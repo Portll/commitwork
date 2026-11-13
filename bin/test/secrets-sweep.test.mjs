@@ -10,12 +10,12 @@ import { execFileSync } from 'node:child_process';
 import { withUnreadable, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
 import { mkdtempSync, writeFileSync, mkdirSync, chmodSync, rmSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
   sweep, scanLine, exitCode, isPlaceholder, isRepoDigest, looksHighEntropy, truncate,
-  VERDICT, UNSCANNED, parseArgs, secretsRoot, maxBytes, pushAll,
+  VERDICT, UNSCANNED, parseArgs, secretsRoot, maxBytes, pushAll, untrackedFiles, skippedPrefix,
   isBinding, dsnService, looksLikeIdentifier, FIXTURE_MARKER, isIntegrityDigest,
 } from '../secrets-sweep.mjs';
 import { scoreCounts, runScenario, SCENARIOS, PLANTS, DECOYS } from '../secrets-canary.mjs';
@@ -632,9 +632,183 @@ test('the default scope is every tracked file, and an untracked file is out of i
     assert.equal(r.scannedFiles, 1);
     assert.equal(r.summary[VERDICT.SECRET], 1);
     assert.equal(r.findings[0].file, 'src/a.md');
+    // out of scope is a number, not a silence: the untracked file was never opened, and the
+    // result says so rather than letting one file's verdict read as the directory's.
+    assert.equal(r.summary.outOfScopeFiles, 1);
+    assert.deepEqual(r.outOfScope.dirs, ['.']);
   } finally {
     if (prev === undefined) delete process.env.CW_SECRETS_ROOT; else process.env.CW_SECRETS_ROOT = prev;
   }
+});
+
+
+// ── (b2) a DSN in a gitignored sitemap harvest ──────────────────────────────────────────────
+// The rule classifies this record; the gap is SCOPE. The path is gitignored, so tracked mode never
+// opens the file, and without an out-of-scope count it says nothing about having skipped it.
+//
+// The record is the shape `sitemap/build-fixture.mjs` writes (JSON.stringify(…, null, 1)). The key
+// is synthetic.
+const SITEMAP_DSN_KEY = '4f1c9a7e2b6d4081af35c0e8d79b1246';
+const SITEMAP_HARVEST = [
+  '{',
+  ' "links": [',
+  '  {',
+  '   "url": "http://zipkin:4317",',
+  '   "host": "zipkin:4317",',
+  '   "source": "svc-orders/src/main/java/io/example/OrderApplication.java:40",',
+  '   "service": "svc-orders",',
+  '   "count": 1',
+  '  },',
+  '  {',
+  `   "url": "https://${SITEMAP_DSN_KEY}@app.glitchtip.com/7",`,
+  '   "host": "app.glitchtip.com",',
+  '   "source": "web-frontend/packages/app/vite.config.ts:28",',
+  '   "service": "web-frontend",',
+  '   "count": 1',
+  '  }',
+  ' ]',
+  '}',
+  '',
+].join('\n');
+
+/** The second witness: a literal search for a credential VALUE, sharing no code and no heuristic
+ *  with the scanner's rules. It walks the TREE rather than the scanner's file list: a witness built
+ *  from the scanner's own population agrees with it and is wrong in the same place. */
+function filesContaining(root, value) {
+  const hits = [];
+  const descend = (dir) => {
+    for (const ent of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const abs = join(dir, ent.name);
+      if (ent.isDirectory()) { if (ent.name !== '.git') descend(abs); continue; }
+      if (!ent.isFile()) continue;
+      if (readFileSync(abs, 'latin1').includes(value)) hits.push(relative(root, abs).split(sep).join('/'));
+    }
+  };
+  descend(root);
+  return hits.sort();
+}
+
+test('the sitemap harvest record classifies as the DSN class the sweep exists for', () => {
+  const root = fixture({ 'e/data/commitwork.sitemap.json': SITEMAP_HARVEST });
+  const r = sweepIn(root);
+  const dsn = r.findings.filter((f) => f.cls === 'credential-url/dsn-userinfo');
+  assert.equal(dsn.length, 1);
+  assert.equal(dsn[0].file, 'e/data/commitwork.sitemap.json');
+  assert.equal(dsn[0].verdict, VERDICT.SECRET);
+  assert.equal(dsn[0].service, 'glitchtip', 'the report has to name which service is exposed');
+  // The neighbouring record is a host:port URL with no userinfo, and must stay quiet.
+  assert.equal(r.findings.filter((f) => f.cls.startsWith('credential-url/')).length, 1);
+});
+
+test('a find-by-value pass over the tree agrees with the scanner, in both directions', () => {
+  const root = fixture({
+    'e/data/commitwork.sitemap.json': SITEMAP_HARVEST,
+    'e/notes/audit.md': `quoted in a note: https://${SITEMAP_DSN_KEY}@app.glitchtip.com/7\n`,
+    'e/notes/clean.md': 'this one carries nothing\n',
+  });
+  const r = sweepIn(root);
+  const named = [...new Set(r.findings
+    .filter((f) => f.cls === 'credential-url/dsn-userinfo')
+    .map((f) => f.file))].sort();
+  const carrying = filesContaining(root, SITEMAP_DSN_KEY);
+  // The directions are asserted apart because only one of them lies to you: a file the value pass
+  // found and the scanner did not is a false clean.
+  assert.deepEqual(carrying.filter((f) => !named.includes(f)), [],
+    'files carrying the key that the scanner did not name');
+  assert.deepEqual(named.filter((f) => !carrying.includes(f)), [],
+    'files the scanner named that do not carry the key');
+  assert.equal(named.length, 2);
+});
+
+test('an ignored file holding a DSN is counted and located, never implied clean', () => {
+  // The path is gitignored, so it is not in tracked mode's population at all.
+  const root = gitFixture({ '.gitignore': 'data/*.sitemap.json\n', 'src/a.md': 'nothing here\n' });
+  mkdirSync(join(root, 'data'), { recursive: true });
+  writeFileSync(join(root, 'data', 'commitwork.sitemap.json'), SITEMAP_HARVEST);
+  const prev = process.env.CW_SECRETS_ROOT;
+  process.env.CW_SECRETS_ROOT = root;
+  try {
+    const r = sweep();
+    // An unopened file is NOT a finding — reporting one would be a verdict nothing established.
+    assert.equal(r.summary[VERDICT.SECRET], 0);
+    assert.equal(exitCode(r), 0);
+    // …and it is not a clean verdict over the directory either. This is the assertion that fails
+    // without the accounting.
+    assert.equal(r.summary.outOfScopeFiles, 1);
+    assert.deepEqual(r.outOfScope.dirs, ['data']);
+    // The second witness, over the tree: something in here does carry a credential.
+    assert.deepEqual(filesContaining(root, SITEMAP_DSN_KEY), ['data/commitwork.sitemap.json']);
+
+    // And the remedy the report points at actually reaches it — the walker was never the problem.
+    const wide = sweep(['.']);
+    assert.equal(wide.summary[VERDICT.SECRET], 1);
+    assert.equal(wide.findings[0].cls, 'credential-url/dsn-userinfo');
+    assert.equal(wide.findings[0].file, 'data/commitwork.sitemap.json');
+  } finally {
+    if (prev === undefined) delete process.env.CW_SECRETS_ROOT; else process.env.CW_SECRETS_ROOT = prev;
+  }
+});
+
+test('out-of-scope is null outside tracked mode, never zero', () => {
+  const root = fixture({ 'e/x.md': 'ok\n' });
+  const r = sweepIn(root);
+  assert.equal(r.outOfScope, null);
+  assert.equal(r.summary.outOfScopeFiles, null,
+    'a zero would publish a measurement paths mode never makes');
+});
+
+test('the out-of-scope count prunes node_modules on policy and names it', () => {
+  const root = gitFixture({ 'src/a.md': 'nothing here\n' });
+  mkdirSync(join(root, 'node_modules', 'pkg'), { recursive: true });
+  writeFileSync(join(root, 'node_modules', 'pkg', 'index.js'), 'module.exports = 1;\n');
+  writeFileSync(join(root, 'loose.md'), 'untracked\n');
+  const prev = process.env.CW_SECRETS_ROOT;
+  process.env.CW_SECRETS_ROOT = root;
+  try {
+    const r = sweep();
+    assert.equal(r.summary.outOfScopeFiles, 1, 'a dependency tree would otherwise BE the number');
+    assert.deepEqual(r.outOfScope.dirs, ['.']);
+    assert.ok(r.skippedDirs.includes('node_modules'), 'pruned by policy, named — not dropped');
+  } finally {
+    if (prev === undefined) delete process.env.CW_SECRETS_ROOT; else process.env.CW_SECRETS_ROOT = prev;
+  }
+});
+
+test('a nested repository is named apart from the count, not counted as one file', () => {
+  // `git ls-files --others` never lists inside a nested repository — it emits the directory with a
+  // trailing slash. Folding that into the file count would report a sibling worktree holding
+  // thousands of files as a single out-of-scope path, which is a wrong number, not a coarse one.
+  const root = gitFixture({ 'src/a.md': 'nothing here\n' });
+  mkdirSync(join(root, 'nested'), { recursive: true });
+  execFileSync('git', ['-C', join(root, 'nested'), 'init', '-q', '-b', 'main']);
+  writeFileSync(join(root, 'nested', 'inner.md'), `k: ${FAKE.aws}\n`);
+  writeFileSync(join(root, 'loose.md'), 'untracked\n');
+  const prev = process.env.CW_SECRETS_ROOT;
+  process.env.CW_SECRETS_ROOT = root;
+  try {
+    const r = sweep();
+    assert.equal(r.summary.outOfScopeFiles, 1, 'only loose.md is a file git enumerated');
+    assert.deepEqual(r.outOfScope.nestedRepos, ['nested/']);
+    assert.ok(!r.outOfScope.dirs.includes('nested'),
+      'a collapsed directory is not a file in its own parent');
+  } finally {
+    if (prev === undefined) delete process.env.CW_SECRETS_ROOT; else process.env.CW_SECRETS_ROOT = prev;
+  }
+});
+
+test('untrackedFiles throws outside a repository — an unknown scope is not an empty one', () => {
+  const root = fixture({ 'e/x.md': 'ok\n' });
+  assert.throws(() => untrackedFiles(root), /./,
+    'returning [] here would report the whole working tree as in scope');
+});
+
+test('the skip-policy prefix matches a directory segment, never the filename', () => {
+  assert.equal(skippedPrefix('node_modules/pkg/index.js'), 'node_modules');
+  assert.equal(skippedPrefix('admin/node_modules/pkg/index.js'), 'admin/node_modules');
+  // The false-negative direction, asserted apart: a FILE named node_modules is not a policy skip,
+  // and pruning it would drop a real out-of-scope path out of the count instead of a dependency tree.
+  assert.equal(skippedPrefix('docs/node_modules'), null);
+  assert.equal(skippedPrefix('sitemap/data/commitwork.sitemap.json'), null);
 });
 
 test('tracked mode in a non-git directory is a scan failure, never a narrower clean', () => {

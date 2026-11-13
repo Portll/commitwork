@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-22 ea17bc2e -->
+<!-- verified-against: 2026-10-22 -->
 # Draft remediation pull requests
 
 commitwork can open a pull request that clears a reachable Go dependency advisory, on the default

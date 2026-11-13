@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 a0195b2f -->
+<!-- verified-against: 2026-10-08 -->
 # codegraph/ — a symbol graph of this repository
 
 Answers the questions an agent asks before it edits: **what does this module export, who imports it,

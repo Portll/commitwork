@@ -166,3 +166,24 @@ test('STATE_PATHS names the three in-tree stores, each the default of a resolver
   assert.equal(paths.privateDir('/r'), join('/r', 'monitor', 'private'));
   assert.equal(paths.reportsRootFor('/r', { ambient: false }), join('/r', 'reports'));
 });
+
+test('releaseSourcesPathFor defaults to releases.json in the private dir', () => {
+  withEnv({ CW_RELEASE_SOURCES: null }, () => {
+    assert.equal(paths.releaseSourcesPathFor('/r'), join('/r', 'monitor', 'private', 'releases.json'));
+  });
+});
+
+test('releaseSourcesPathFor honours CW_RELEASE_SOURCES, resolved, and { ambient: false } refuses it', () => {
+  const override = 'scratch/rel/../sources.json';
+  withEnv({ CW_RELEASE_SOURCES: override }, () => {
+    assert.equal(paths.releaseSourcesPathFor('/r'), resolve(override));
+    assert.equal(paths.releaseSourcesPathFor('/r', { ambient: false }), join('/r', 'monitor', 'private', 'releases.json'));
+  });
+});
+
+test('releaseSourcesPathFor reads CW_RELEASE_SOURCES at call time, not at import', () => {
+  const a = join(REPO, 'a.json');
+  const b = join(REPO, 'b.json');
+  withEnv({ CW_RELEASE_SOURCES: a }, () => assert.equal(paths.releaseSourcesPathFor('/r'), resolve(a)));
+  withEnv({ CW_RELEASE_SOURCES: b }, () => assert.equal(paths.releaseSourcesPathFor('/r'), resolve(b)));
+});

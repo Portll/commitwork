@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-20 779588ed -->
+<!-- verified-against: 2026-10-20 -->
 # admin/ — the :7878 panel
 
 Zero-dependency local web panel over the monitor's evidence (`node:http` + siblings only).

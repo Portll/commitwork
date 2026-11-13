@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { isMainModule } from '../lib/is-main.mjs';
 import { parseJsonc, npxPackage, isPinned, isLocalSpec, packageName, broadPermission, isBashGrant, denyCoversCredentials, CREDENTIAL_DENY } from '../bin/agent-config.mjs';
+import { unifiedDiff } from '../lib/unified-diff.mjs';
 
 export const MCP_FILES = Object.freeze(['.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json']);
 export const SETTINGS_FILES = Object.freeze(['.claude/settings.json', '.claude/settings.local.json']);
@@ -165,43 +166,7 @@ export function addCredentialDeny(text) {
   return { text: lines.join('\n'), added };
 }
 
-/** A whole-file unified diff in the form `git apply` reads. Line-level LCS; files here are small. */
-export function unifiedDiff(path, before, after) {
-  if (before === after) return '';
-  const A = before.split('\n');
-  const B = after.split('\n');
-  const aNL = before.endsWith('\n');
-  const bNL = after.endsWith('\n');
-  if (aNL) A.pop();
-  if (bNL) B.pop();
-  const n = A.length;
-  const m = B.length;
-  const L = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
-  for (let i = n - 1; i >= 0; i--) {
-    for (let j = m - 1; j >= 0; j--) {
-      L[i][j] = A[i] === B[j] && !(i === n - 1 && j === m - 1 && aNL !== bNL) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
-    }
-  }
-  const ops = [];
-  let i = 0;
-  let j = 0;
-  while (i < n && j < m) {
-    if (A[i] === B[j] && L[i][j] === L[i + 1][j + 1] + 1) { ops.push([' ', A[i]]); i++; j++; }
-    else if (L[i + 1][j] >= L[i][j + 1]) { ops.push(['-', A[i]]); i++; }
-    else { ops.push(['+', B[j]]); j++; }
-  }
-  while (i < n) ops.push(['-', A[i++]]);
-  while (j < m) ops.push(['+', B[j++]]);
-  const body = [];
-  const lastA = ops.map((o, k) => (o[0] !== '+' ? k : -1)).reduce((a, b) => Math.max(a, b), -1);
-  const lastB = ops.map((o, k) => (o[0] !== '-' ? k : -1)).reduce((a, b) => Math.max(a, b), -1);
-  ops.forEach(([t, l], k) => {
-    body.push(t + l);
-    if ((k === lastA && !aNL) || (k === lastB && !bNL)) body.push('\\ No newline at end of file');
-  });
-  const range = (start, len) => (len === 1 ? `${start}` : `${start},${len}`);
-  return `--- a/${path}\n+++ b/${path}\n@@ -${range(n ? 1 : 0, n)} +${range(m ? 1 : 0, m)} @@\n${body.join('\n')}\n`;
-}
+export { unifiedDiff };
 
 // ── default seams, each refusing rather than guessing ────────────────────────────────────────────
 

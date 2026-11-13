@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 340 | 278 | 62 |
-| Exit codes (declared in the header) | 354 | 156 | 198 |
-| `CW_*` environment variables (described in an `env` header) | 931 | 222 | 709 |
+| Commands (a usage line in the header) | 344 | 282 | 62 |
+| Exit codes (declared in the header) | 359 | 162 | 197 |
+| `CW_*` environment variables (described in an `env` header) | 939 | 227 | 712 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -39,6 +39,7 @@ From `usage()` in `bin/commitwork.mjs`.
 | `commitwork setup [--yes] [--only a,b]` | install missing scanners via the local package manager (brew/winget/scoop/pipx); also offered on the first interactive launch |
 | `commitwork hook install [--repo <path>] [--chain] [--lanes secrets,gitleaks] [--unrun block\|warn]` | a pre-commit hook that checks the staged content (the index) for secrets before a commit lands; hook uninstall / hook run (see bin/hook.mjs) |
 | `commitwork update [--check] [--channel stable\|beta] [--yes]` | install a newer signed release (bin/update.mjs); --login / --token-stdin / --logout manage the token |
+| `commitwork dfd --repo <path> [--codeql <file>] [--out <file>]` | draw a data flow diagram: of another repository (its JS/TS sources read, never run, and its CodeQL code flows), of a SARIF file alone (--codeql), of this tree's flow graph (--graph) or of a dfd@1 file (--from); what it could not read is counted (commitwork dfd --help) |
 | `commitwork version` | print the installed version (also --version) |
 | `commitwork help` | undocumented |
 
@@ -81,6 +82,7 @@ Exit codes:
 - `commitwork setup`: 0 every requested tool was present or installed, or nothing was requested (report-only, declined) · 20 a requested install failed, or a tool --only named has no installer here · 21 nothing failed, but a requested tool needs an administrator; the closing block names the command (declared in `bin/setup.mjs`)
 - `commitwork hook`: undeclared
 - `commitwork update`: undeclared
+- `commitwork dfd`: 0 written · 2 usage · 20 the document is not a valid dfd@1 · 21 an input is absent, unreadable or not a flow graph, --repo is not a git checkout, or --codeql is neither SARIF nor dataflow records · 22 the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw (declared in `flow/dfd-cli.mjs`)
 - `commitwork version`: undeclared
 - `commitwork help`: undeclared
 
@@ -406,6 +408,13 @@ What CodeQL runs to extract Go, in place of its autobuilder.
 - Usage: `codeql-go-build.mjs [root] (exit 0 when at least one module extracted, 1 when none)`
 - Exit: 0 when at least one module extracted · 1 when none
 
+### `bin/codeql-index-filters.mjs`
+
+bin/codeql-index-filters.mjs — a CodeQL filter file as the value of LGTM_INDEX_FILTERS.
+
+- Usage: `node bin/codeql-index-filters.mjs <filter-file>`
+- Exit: 0 rules printed · 1 the file is unreadable or holds no rule, with nothing on stdout, so the lane sees a failure rather than an empty (unbounded) filter · 2 usage
+
 ### `bin/codeql-model-pack.mjs`
 
 bin/codeql-model-pack.mjs — a repository's own CodeQL sources and sinks, as a model pack.
@@ -497,6 +506,11 @@ bin/daily-run.mjs — the /daily report for a monitor area: build the digest for
 
 - Usage: `daily-run.mjs --area <slug> | --all scheduled run: one report per new complete batch`
 - Exit: 0 done or nothing new · 1 a run failed · 2 usage or configuration error.
+
+### `bin/deno-lock-osv.mjs`
+
+- Usage: `node bin/deno-lock-osv.mjs <repoDir> <outDir>`
+- Exit: 0 no deno.lock, or the record was written with no error · 1 the record carries an error and no osv-scanner input was written · 2 usage, or the record failed validation and the osv-scanner input was removed
 
 ### `bin/deno-scan.mjs`
 
@@ -793,6 +807,13 @@ commitwork test gate — runs the suite in the background and wakes the model on
 - Usage: undocumented
 - Exit: 0 no new failures · 2 more failures than the baseline (rewake)
 
+### `bin/gitleaks-scope-config.mjs`
+
+`gitleaks detect --no-git` consults no ignore rules, so the target's gitignored paths are allowlisted here.
+
+- Usage: `node bin/gitleaks-scope-config.mjs <baseConfig> <outDir> [outName]`
+- Exit: 0 the config to scan with is on stdout: the scope config, or the base config when git cannot list the paths or the target has none · 1 the base config is unreadable, or the scope config cannot be written; stdout is empty · 2 usage: a required argument is missing
+
 ### `bin/go-lane-scan.mjs`
 
 commitwork — run a Go scanner ONCE PER MODULE, not once per repo.
@@ -876,7 +897,8 @@ commitwork init — first-run state for a fresh clone: the private store directo
 
 Installs bin/commit-msg.mjs as each repository's commit-msg hook and records its rule set in `git config commitwork.rules`.
 
-- Usage: `node bin/install-commit-msg.mjs [--write] [--force] [--uninstall] <repo>[=<rule set>]…`
+- Usage: `node bin/install-commit-msg.mjs [--write] [--force] [--uninstall] [--unpinned] <repo>[=<rule set>]…`
+- Usage: `node bin/install-commit-msg.mjs --refresh [--write] [--force]`
 - Exit: undeclared
 
 ### `bin/install-version-hooks.mjs`
@@ -1574,7 +1596,7 @@ stub-detect.mjs — stub/unfinished-work marker scanner (hygiene lane, not a vul
 taxonomy-db.mjs — load monitor/failure-taxonomy.json into commitwork's SQLite store.
 
 - Usage: undocumented
-- Option: `--open, --find and --sql rebuild first whenever the stored hash differs, and refuse (exit 1)`
+- Option: `--open, --find and --sql rebuild first whenever a stored hash differs, and refuse (exit 1)`
 - Exit: stated in the header in a form not tabulated (prose)
 
 ### `bin/taxonomy-lattice.mjs`
@@ -1592,7 +1614,7 @@ taxonomy-render.mjs — render monitor/failure-taxonomy.json as a self-contained
 
 - Usage: `taxonomy-render.mjs [--json <path>] [--out <path>] [--check] [--dark]`
 - Option: `--check validate the registry (id/prefix agreement, machine-name uniqueness, gaps, stpa) and exit`
-- Exit: undeclared
+- Exit: 0 wrote the page, or --check found the registry valid · 1 the registry is invalid (every error named), or the published page was asked for from a register with the private overlays merged
 
 ### `bin/taxonomy-structure.mjs`
 
@@ -2167,6 +2189,13 @@ commitwork self-monitor hook — installs a post-commit trigger that spawns a de
 - Usage: undocumented
 - Exit: undeclared
 
+### `monitor/isolation-freshness.mjs`
+
+monitor/isolation-freshness.mjs — when container isolation was last MEASURED on this host, and what the measurement said.
+
+- Usage: `node monitor/isolation-freshness.mjs [--measure] [--json]`
+- Exit: 0 verified · 1 the last measurement FAILED · 2 grey (never measured, stale, partial, unverified, or unreadable)
+
 ### `monitor/issue-escalate.mjs`
 
 monitor/issue-escalate.mjs — page a human when an open issue is past its SLA and nobody has touched it.
@@ -2225,7 +2254,7 @@ liveness.mjs — the sweep deadman: classifies every area's rollup freshness aga
 
 - Usage: `node monitor/liveness.mjs [path/to/rollup.json] (explicit path ⇒ single-area)`
 - Usage: `node monitor/liveness.mjs (fan out over all areas)`
-- Exit: 1 on expired/unknown/hung/tampered; degraded/stale/never-swept warn; unscheduled (undeclared area) never trips — an alarm nobody can satisfy gets muted.
+- Exit: 1 on expired/unknown/hung/tampered, on a gate journal whose band ranks there, or on host isolation MEASURED and failed; degraded/stale/never-swept warn, as do an unavailable service and isolation nobody has measured; unscheduled (undeclared area) never trips — an alarm nobody can satisfy gets muted.
 
 ### `monitor/lookalike.mjs`
 
@@ -2723,8 +2752,8 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-931 `CW_*` names read by tracked non-test sources: 804 by name, and
-127 indirect (quoted in a file that reads the environment by a computed key, so the read
+939 `CW_*` names read by tracked non-test sources: 810 by name, and
+129 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
 
@@ -2976,6 +3005,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_DEPS_PROD_TYPES` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_DEP_PROVENANCE` | direct | `monitor/dep-provenance.mjs` | undocumented |
 | `CW_DETECTOR_BASIS` | direct | `monitor/detector-basis.mjs` | undocumented |
+| `CW_DFD_FILE` | direct | `admin/routes/dfd.mjs` | undocumented |
 | `CW_DF_ROOT` | direct | `bin/lib/docsite-figures.mjs` | repo root; tests point it at a fixture |
 | `CW_DIFF_MAX_BYTES` | direct | `chunk-diff/generate.mjs` | undocumented |
 | `CW_DIFF_MAX_WORDS` | direct | `chunk-diff/lib/diff-ops.mjs` | undocumented |
@@ -3074,8 +3104,10 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_FONTS_DIR` | direct | `lib/house-css.mjs` | faces for --fonts inline (`bin/house-css.mjs`) |
 | `CW_FORENSICS_OUT` | direct | `monitor/forensics.mjs`, `monitor/sweep.mjs` | artifact path (default reports/forensics.json) |
 | `CW_FORENSICS_SKIP` | direct | `monitor/forensics.mjs` | comma-separated lane names to skip |
+| `CW_GATE_DIR` | direct | `bin/lib/gate-pin.mjs`, `monitor/install-git-hook.mjs` | where exports and the ledger live |
 | `CW_GATE_EXEMPTIONS` | indirect | `monitor/store-paths.mjs` | undocumented |
 | `CW_GATE_HEAD_INPUTS` | direct | `bin/gate-tests.mjs` | undocumented |
+| `CW_GATE_REF` | direct | `bin/lib/gate-pin.mjs` | the revision to pin |
 | `CW_GATE_TESTS_BASELINE` | direct | `bin/gate-tests.mjs` | undocumented |
 | `CW_GATE_TESTS_CMD` | direct | `bin/gate-tests.mjs` | undocumented |
 | `CW_GATE_TESTS_FULL_EVERY_MS` | direct | `bin/gate-tests.mjs` | undocumented |
@@ -3101,7 +3133,9 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_GUARD_UNATTENDED` | direct | `bin/hooks/guard-destructive.mjs`, `lib/security-posture.mjs` | undocumented |
 | `CW_HANDOFF_CMD` | direct | `admin/routes/remediation.mjs` | undocumented |
 | `CW_HARNESS_MEMORY_DIR` | direct | `bin/memory-sync.mjs` | the memory directory, default the harness path for this repo |
-| `CW_HARNESS_STORE` | direct | `flow/store.mjs` | undocumented |
+| `CW_HARNESS_STORE` | direct | `flow/store.mjs` | the flow store directory, default reports/harness; --graph without a path reads flow.json there (`flow/dfd-cli.mjs`) |
+| `CW_HEADLESS_COMMIT_MESSAGES` | indirect | `monitor/settings.mjs` | undocumented |
+| `CW_HEADLESS_COMMIT_RECORDS` | direct | `bin/hooks/guard-destructive.mjs` | undocumented |
 | `CW_HEAD_SHA` | direct | `bin/head-sha.mjs` | undocumented |
 | `CW_HEALTH_RUNS_STORE` | direct | `admin/lib/jobs.mjs` | undocumented |
 | `CW_HERMETIC_TIMEOUT_SEC` | direct | `bin/hermetic-test.mjs` | default 5400 |
@@ -3131,6 +3165,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_INTEGRITY_SKIP_DIRS` | direct | `bin/tree-integrity.mjs` | comma list of directory names or a/b paths the RECORD walk skips; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is listed |
 | `CW_INTERNAL_C_CONTRACT` | direct | `admin/lib/memory-layer-sync.mjs` | undocumented |
 | `CW_IRONWORK_BIN` | direct | `monitor/daily-advice.mjs` | undocumented |
+| `CW_ISOLATION_RECORD` | direct | `monitor/isolation-freshness.mjs` | the record this writes and liveness reads |
 | `CW_ISSUES` | direct | `monitor/learning-refresh.mjs`, `monitor/store-paths.mjs` | store (`bin/issue-loop.mjs`) |
 | `CW_ISSUES_JSON` | direct | `monitor/store-paths.mjs` | undocumented |
 | `CW_ISSUE_AGENT_CMD` | direct | `bin/issue-loop.mjs` | agent argv (whitespace-split, handoff path appended last, no shell; unset ⇒ `claude -p` built by lib/claude-spawn.mjs PROFILES.issueLoop). |
@@ -3166,7 +3201,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_LANE_REUSE_MAX_FILES` | direct | `bin/lib/lane-reuse.mjs` | the largest tree that is fingerprinted, default 200000 |
 | `CW_LANE_TEST_FIXTURES` | direct | `monitor/lane-capability.mjs` | undocumented |
 | `CW_LANE_TIMING_TTL_MS` | direct | `admin/routes/jobs.mjs` | undocumented |
-| `CW_LANE_TRUST_OUT` | direct | `monitor/lane-trust.mjs` | undocumented |
+| `CW_LANE_TRUST_OUT` | direct | `admin/routes/lane-trust.mjs`, `monitor/lane-trust.mjs` | undocumented |
 | `CW_LATTICE_ATTRS` | direct | `bin/taxonomy-lattice.mjs` | undocumented |
 | `CW_LAUNCHLIST_BY` | direct | `bin/launchlist.mjs` | undocumented |
 | `CW_LAUNCHLIST_DIR` | direct | `lib/launchlist.mjs` | undocumented |
@@ -3244,10 +3279,10 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_MOBILE_ROOT` | direct | `bin/mobile-manifest.mjs` | undocumented |
 | `CW_MODELSCAN` | direct | `bin/model-artefacts.mjs` | path to modelscan, or 'off'; default probes PATH |
 | `CW_MODEL_API_KEY` | direct | `lib/model-provider.mjs` | key for a hosted provider, sent only to its host |
-| `CW_MODEL_BASE_URL` | direct | `lib/model-provider.mjs` | API root of a hosted provider |
+| `CW_MODEL_BASE_URL` | direct | `lib/model-provider.mjs` | API root of a hosted provider; nvidia-nim defaults to NVIDIA's hosted API, a self-hosted NIM is http://&lt;host&gt;:8000/v1 |
 | `CW_MODEL_MAX_BYTES` | direct | `bin/model-artefacts.mjs` | whole-file read cap, default 256 MiB |
-| `CW_MODEL_NAME` | direct | `lib/model-provider.mjs` | model id; required for openai-compatible, default claude-opus-5-5 for anthropic |
-| `CW_MODEL_PROVIDER` | direct | `lib/model-provider.mjs` | local, openai-compatible or anthropic; default local |
+| `CW_MODEL_NAME` | direct | `lib/model-provider.mjs` | model id; required for openai-compatible and nvidia-nim, default claude-opus-5-5 for anthropic |
+| `CW_MODEL_PROVIDER` | direct | `lib/model-provider.mjs` | local, openai-compatible, nvidia-nim or anthropic; default local |
 | `CW_MODEL_SKIP_PATHS` | direct | `bin/model-artefacts.mjs` | undocumented |
 | `CW_MODEL_TIMEOUT_MS` | direct | `lib/model-provider.mjs` | bound on one call; default 600 s local, 300 s hosted |
 | `CW_MODMAP` | direct | `monitor/verify-corrected.mjs`, `monitor/worklist-reconcile.mjs` | undocumented |
@@ -3261,7 +3296,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_NPM_BIN` | indirect | `monitor/package-inventory.mjs` | undocumented |
 | `CW_NPM_CACHE` | direct | `monitor/renovate-dryrun.mjs` | undocumented |
 | `CW_NPM_OUTDATED_JSON` | indirect | `monitor/package-inventory.mjs` | undocumented |
-| `CW_NPM_REGISTRY` | direct | `bin/vendor-verify.mjs` | undocumented |
+| `CW_NPM_REGISTRY` | direct | `bin/lib/scanner-env.mjs`, `bin/vendor-verify.mjs` | undocumented |
 | `CW_NUCLEI_TEMPLATES` | direct | `monitor/nuclei-solve.mjs` | undocumented |
 | `CW_NVD_API` | direct | `bin/advisory-index.mjs` | undocumented |
 | `CW_NVD_KEY` | direct | `bin/advisory-index.mjs` | undocumented |
@@ -3379,9 +3414,10 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_RELEASE_REVIEWS_SCHEMA` | direct | `bin/lib/release-reviews.mjs` | undocumented |
 | `CW_RELEASE_SCRATCH` | direct | `bin/release-candidate.mjs` | the directory the tests gate makes its scratch HOME in (default ~/.cache/commitwork/release-candidate), read at call time |
 | `CW_RELEASE_SOURCE` | direct | `bin/release-candidate.mjs`, `bin/web-roadmap.mjs` | the repository --work reads commits from; default this checkout |
-| `CW_RELEASE_SOURCES` | direct | `bin/release-report.mjs` | undocumented |
+| `CW_RELEASE_SOURCES` | indirect | `monitor/store-paths.mjs` | undocumented |
 | `CW_RELEASE_TAG_PREFIX` | direct | `bin/release-tag.mjs` | the release tag prefix, default v (`bin/changelog.mjs`) |
 | `CW_RELEASE_TERMS` | direct | `bin/lib/release-terms.mjs` | a list file; overrides the sidecar |
+| `CW_RELEASE_TERM_ACCEPTANCES` | direct | `bin/lib/release-terms.mjs` | an acceptance record; overrides the sidecar |
 | `CW_REMEDIATION_INPUT` | indirect | `monitor/remediation-pr.mjs` | undocumented |
 | `CW_REMEDIATION_OUT` | direct | `bin/remediation-web.mjs` | undocumented |
 | `CW_REMEDIATION_POLICY` | direct | `monitor/remediation-policy.mjs` | undocumented |
@@ -3554,6 +3590,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_TAXONOMY_EDITIONS` | direct | `bin/taxonomy-web.mjs` | undocumented |
 | `CW_TAXONOMY_JSON` | direct | `admin/routes/docsite.mjs`, `bin/pattern-scan.mjs`, `bin/remediation-web.mjs`, `bin/scanner-taxonomy-render.mjs`, `bin/taxonomy-db.mjs`, `bin/taxonomy-lattice.mjs` and 3 more | parent |
 | `CW_TAXONOMY_MITIGATIONS` | direct | `monitor/store-paths.mjs` | undocumented |
+| `CW_TAXONOMY_PROSE` | direct | `monitor/store-paths.mjs` | undocumented |
 | `CW_TENANT_A` | direct | `bin/authz-bola.mjs`, `bin/bola-tokens.sh` | undocumented |
 | `CW_TENANT_B` | direct | `bin/authz-bola.mjs`, `bin/bola-tokens.sh` | undocumented |
 | `CW_TEST_PORTS_OK` | direct | `admin/serve.mjs` | undocumented |
@@ -3676,9 +3713,9 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `act.enabled` | 0 | undocumented |
 | `act.job` | 0 | Optional specific job id to run (act -j). |
 | `aliasOf` | 2 | This check reports into another check's category. |
-| `appliesIfExists` | 53 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
+| `appliesIfExists` | 51 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
 | `appliesIfGit` | 5 | During `scan`, only run this check if the target is a git repo. |
-| `appliesIfSourceExt` | 21 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
+| `appliesIfSourceExt` | 23 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
 | `containment` | 3 | A lane's exclusion from a group, declared as DATA rather than argued in prose. |
 | `containment.excludedFrom` | 3 | Groups this check is deliberately held OUT of. |
 | `containment.reason` | 3 | Why the exclusion exists, in terms a reader can check. |
@@ -3693,7 +3730,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `id` | 109 | Stable check id, conventionally matching the workflow filename stem. |
 | `local` | 109 | Shell commands run in sequence (fail-fast) in repoPath. |
 | `notALane` | 16 | Why this check feeds no lane: it writes an inventory, a count or a status that no reader derives a finding from. |
-| `notes` | 66 | undocumented |
+| `notes` | 68 | undocumented |
 | `producesIfExists` | 1 | Artifact globs (e.g. *.jar) that must exist somewhere in the repo for an empty-clean result to be trustworthy; otherwise the check is recorded as a void ('no scannable artifact — build first'). |
 | `remediationPrompt` | 86 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
 | `report` | 109 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |

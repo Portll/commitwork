@@ -13,6 +13,7 @@ import { loadRegistry, areaOf } from './registry.mjs';
 import { expandHome } from './discover.mjs';
 import { msgHookText } from '../bin/lib/commit-msg-hook.mjs';
 import { mainCheckout, isOurs } from '../bin/install-commit-msg.mjs';
+import { forgetRepo, ledgerPath, pinFor, recordRepo } from '../bin/lib/gate-pin.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CW = resolve(HERE, '..');
@@ -100,11 +101,34 @@ exit 0
 // path, lands with `git commit-tree`, which runs NO hooks. The other half lives
 // there. Hooks live in the COMMON git dir, so one install covers every worktree. The hook text is
 // bin/install-commit-msg.mjs's, which installs the same gate in other repositories.
-// fact: a CW_HOOKS_DIR fixture runs this checkout's gate, the code under test; a real install runs the main checkout's
-const msgGateText = () => msgHookText({
-  node: process.execPath,
-  script: join(process.env.CW_HOOKS_DIR ? CW : mainCheckout(CW), 'bin', 'commit-msg.mjs'),
-});
+// The rule set this repository has declared, recorded as-is: an unset one IS commitwork's own, and
+// a value naming no rule set is the gate's own refusal to report, not ours to correct here.
+function gitRules(cw) {
+  const r = spawnSync('git', ['-C', cw, 'config', '--get', 'commitwork.rules'], { encoding: 'utf8' });
+  const name = r.status === 0 ? String(r.stdout).trim() : '';
+  return name || 'commitwork';
+}
+
+// A real install pins the gate to a committed revision and exports it (bin/lib/gate-pin.mjs): this
+// checkout is shared, and a gate reading its working tree obeys whichever session last saved a
+// file. A CW_HOOKS_DIR fixture that has nominated no gate dir of its own stays UNPINNED — it runs
+// this checkout's gate, the code under test, and must not write an export anywhere near the
+// operator's. A fixture that sets CW_GATE_DIR has said where its exports go and gets the real
+// pinned path, which is how that branch is under test at all.
+// fact: the npm `prepare` path must never fail an install, so an unavailable pin is reported there and tolerated
+const pinsGate = () => !process.env.CW_HOOKS_DIR || !!process.env.CW_GATE_DIR;
+
+function msgGateText() {
+  if (!pinsGate()) return { text: msgHookText({ node: process.execPath, script: join(CW, 'bin', 'commit-msg.mjs') }), pin: null };
+  const cw = mainCheckout(CW);
+  const pin = pinFor(cw, { write: WRITE });
+  if (!pin.ok) {
+    console.error(`install-git-hook: the commit message gate is NOT pinned to a committed revision — ${pin.why}.`);
+    console.error(`install-git-hook: it will run ${cw}'s working tree, so an uncommitted edit there decides commits.`);
+    return { text: msgHookText({ node: process.execPath, script: join(cw, 'bin', 'commit-msg.mjs') }), pin: null };
+  }
+  return { text: msgHookText({ node: process.execPath, script: pin.script, revision: pin.revision }), pin };
+}
 
 /** Install the message gate. Returns 'installed' | 'foreign' | 'dry'. Never throws, never exits. */
 function installTrailerGate(dir) {
@@ -116,10 +140,20 @@ function installTrailerGate(dir) {
     return 'foreign';
   }
   if (!WRITE) { console.log(`install-git-hook: DRY RUN — would ${existing ? 'replace' : 'install'} ${p} (commit message gate). Re-run with --write.`); return 'dry'; }
+  const { text, pin } = msgGateText();
   mkdirSync(dir, { recursive: true });
-  writeFileSync(p, msgGateText());
+  writeFileSync(p, text);
   chmodSync(p, 0o755);
-  console.log(`install-git-hook: installed ${p} (commit message gate; the commit-tree half lives in bin/commit-phase.mjs)`);
+  // Recorded under the same ledger bin/install-commit-msg.mjs keeps, so `--refresh` moves THIS
+  // repository's gate too; without the row, the one checkout that lands commits never refreshes.
+  if (pin) {
+    const cw = mainCheckout(CW);
+    const rules = gitRules(cw);
+    try { recordRepo(cw, { repo: cw, rules, revision: pin.revision }); } catch (e) {
+      console.error(`install-git-hook: the gate is pinned to ${pin.revision}, but ${ledgerPath(cw)} was not updated (${e.message}), so --refresh will not reach this repository.`);
+    }
+  }
+  console.log(`install-git-hook: installed ${p} (commit message gate${pin ? `, pinned to ${pin.revision}` : ''}; the commit-tree half lives in bin/commit-phase.mjs)`);
   return 'installed';
 }
 
@@ -143,6 +177,13 @@ if (UNINSTALL) {
   if (existsSync(msgPath)) {
     if (isOurs(readFileSync(msgPath, 'utf8'))) {
       unlinkSync(msgPath);
+      // The row goes with the hook: --refresh would otherwise reinstall the gate this just removed.
+      if (pinsGate()) {
+        const cw = mainCheckout(CW);
+        try { forgetRepo(cw, cw); } catch (e) {
+          console.error(`install-git-hook: ${ledgerPath(cw)} still records this repository as pinned (${e.message}); --refresh would reinstall the gate.`);
+        }
+      }
       console.log(`install-git-hook: removed ${msgPath}`);
     } else {
       console.error(`install-git-hook: ${msgPath} exists but was not written by this script — left in place.`);

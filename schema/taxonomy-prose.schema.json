@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portll/commitwork/taxonomy-prose.schema.json",
+  "title": "commitwork failure-taxonomy prose overlay",
+  "description": "Sentences of monitor/failure-taxonomy.json as they were written, each paired with the public text that names a capability instead of a product. Keyed by record (doc, class:<id>, remediation:<title> and the like). mergeProseOverlay() in bin/taxonomy-render.mjs applies it and checks the same shape by hand: a pair whose public text does not occur exactly once in its record refuses. The real overlay is private (monitor/private/taxonomy-prose.json or CW_TAXONOMY_PROSE); monitor/taxonomy-prose.example.json shows the shape.",
+  "type": "object",
+  "required": ["prose"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "prose": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["public", "private"],
+          "additionalProperties": false,
+          "properties": {
+            "public": { "type": "string", "minLength": 1 },
+            "private": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

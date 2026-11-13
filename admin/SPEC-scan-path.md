@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # SPEC: scan a path from the panel, operator port only
 
 > **Status: built, local only, with the seven decisions below applied** (see

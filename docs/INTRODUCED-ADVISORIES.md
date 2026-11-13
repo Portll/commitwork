@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-29 7b626a22 -->
+<!-- verified-against: 2026-10-29 -->
 # The introduced-advisories verdict
 
 commitwork's one answer to "does this dependency update introduce a vulnerability". It compares the

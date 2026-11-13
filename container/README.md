@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-24 2bc3c0ef -->
+<!-- verified-against: 2026-10-24 -->
 # Installing commitwork on Linux: the installer and the container
 
 Two ways to put commitwork on a Linux machine, and what each one does and does not give you.

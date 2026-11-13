@@ -75,6 +75,30 @@ describe('docsite build', () => {
     assert.equal(readFileSync(copy, 'utf8'), '<!doctype html><p>stale copy</p>');
   });
 
+  // The other direction, and it is the one that lies: an imported preview copy that was never
+  // built is build output nobody has produced, not a page that disagrees with its source. Nothing
+  // publishes from pages/ — bin/docsite-publish.mjs assembles the bundle from imported/ — so a
+  // pristine `git archive` export has no preview and must still pass the publish gate's first step.
+  // Asserted SEPARATELY from the stale-copy case above, which still has to be DRIFT.
+  test('--check: an unbuilt imported preview is reported and CLEAN, not drift', () => {
+    const root = freshRoot();
+    run(root);
+    rmSync(join(root, 'pages', 'legacy.html'));
+    const r = run(root, ['--check']);
+    assert.equal(r.code, 0);
+    assert.match(r.out, /1 imported preview\(s\) not built/);
+    assert.match(r.out, /legacy.*has not been built/);
+    assert.ok(!existsSync(join(root, 'pages', 'legacy.html')), '--check must not build what it is checking');
+  });
+
+  test('--check: an unbuilt preview is counted, never silently absent from the summary', () => {
+    const root = freshRoot();
+    run(root);
+    // Built: every preview verified, nothing reported unbuilt. The negative half of the test above,
+    // so "reported" cannot pass by the message being printed unconditionally.
+    assert.doesNotMatch(run(root, ['--check']).out, /not built/);
+  });
+
   test('missing source is a FAILURE naming the entry, never a skip', () => {
     const root = freshRoot();
     rmSync(join(root, 'content', 'alpha.md'));

@@ -11,6 +11,7 @@ import { linkPolicy } from '../bin/lib/walk-links.mjs';
 import { dirExcluder } from '../bin/scan-exclusions.mjs';
 import { HIDDEN_TEXT } from '../bin/minify-detect.mjs';
 import { isInstructionFile } from '../bin/agent-instructions.mjs';
+import { unifiedDiff as sharedUnifiedDiff } from '../lib/unified-diff.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 
 const HIDDEN_ALL = new RegExp(HIDDEN_TEXT.source, 'gu');
@@ -39,33 +40,7 @@ const splitLines = (t) => { const eol = t.endsWith('\n'); const a = t.split('\n'
 export function unifiedDiff(rel, before, after) {
   const a = splitLines(before), b = splitLines(after);
   if (a.lines.length !== b.lines.length) throw new Error(`${rel}: line count changed (${a.lines.length} -> ${b.lines.length}); this diff builder only handles in-line edits`);
-  const n = a.lines.length;
-  const changed = [];
-  for (let i = 0; i < n; i++) if (a.lines[i] !== b.lines[i]) changed.push(i);
-  if (!changed.length) return '';
-  const CTX = 3;
-  const hunks = [];
-  for (const i of changed) {
-    const last = hunks[hunks.length - 1];
-    if (last && i - last.end <= 2 * CTX) { last.end = i; last.changed.push(i); }
-    else hunks.push({ start: i, end: i, changed: [i] });
-  }
-  const out = [`diff --git a/${rel} b/${rel}`, `--- a/${rel}`, `+++ b/${rel}`];
-  const noEol = (idx) => (!a.eol && idx === n - 1 ? ['\\ No newline at end of file'] : []);
-  for (const h of hunks) {
-    const from = Math.max(0, h.start - CTX), to = Math.min(n - 1, h.end + CTX);
-    out.push(`@@ -${from + 1},${to - from + 1} +${from + 1},${to - from + 1} @@`);
-    const set = new Set(h.changed);
-    let i = from;
-    while (i <= to) {
-      if (!set.has(i)) { out.push(` ${a.lines[i]}`, ...noEol(i)); i++; continue; }
-      let j = i; while (j <= to && set.has(j)) j++;
-      for (let k = i; k < j; k++) out.push(`-${a.lines[k]}`, ...noEol(k));
-      for (let k = i; k < j; k++) out.push(`+${b.lines[k]}`, ...(!b.eol && k === n - 1 ? ['\\ No newline at end of file'] : []));
-      i = j;
-    }
-  }
-  return `${out.join('\n')}\n`;
+  return sharedUnifiedDiff(rel, before, after);
 }
 
 /** Declare-only: read every instruction file, strip, and return the diff. Never writes the tree. */

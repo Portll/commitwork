@@ -43,7 +43,7 @@ import {
   _toolProvenance, stampUnknown,
 } from './extractors.mjs'; // the per-artifact readers — importable, so their tests can import them
 import { scannerRemediationSection } from './remediation-scanner-section.mjs'; // code, secret and config rows the CVE tables omit
-import { tallyUnknown } from './unknown.mjs'; // ONE predicate for "this is not a result"
+import { tallyUnknown, unknownReasonOf } from './unknown.mjs'; // ONE predicate for "this is not a result"
 import { detailKeys, validateRows, identityFor } from './detail-schema.mjs';
 import { checkForScanner } from './scanner-checks.mjs'; // category -> check id, the ONE place lane names live
 import { diffScannerFindings } from './scanner-delta.mjs'; // scanner-lane new/fixed per category (scan-absent tier, never ledger-verified)
@@ -1116,7 +1116,32 @@ for (const r of repos) {
   if (!tr || !Array.isArray(tr.checks)) continue;
   for (const [key, checkId] of SCANNER_SPECS) {
     const c = r.scanners[key];
-    if (!c || (!c.unparseable && !c.norules && !c.neverran && !c.toolfailed)) continue;
+    if (!c) continue;
+    // THE OPPOSITE DIRECTION, and this is the only layer that can settle it: the provenance row and
+    // the artifact are both in hand for one repo and one checkId. A `noscan` says "ran, produced
+    // nothing trustworthy"; an artifact the rollup just counted N findings out of says the tool ran
+    // AND produced output trustworthy enough to publish. Both cannot be true, and the fleet shipped
+    // the pair — denoLint read ran 0 / noscan 2 beside 2,430 published rows, shellLint the same
+    // shape — because each counter was right about its own witness and nothing compared them. The
+    // panel can only report the disagreement: it sees the fleet SUM, so it cannot attribute the
+    // noscan to the repo holding the findings, and says so.
+    //
+    // ONE DIRECTION ONLY, and the asymmetry is the guard. A counted artifact FALSIFIES the void;
+    // a zero-finding artifact cannot confirm it, so every noscan beside one stands untouched —
+    // osv-scanner with egress severed writes valid SARIF with zero results, and that void is real.
+    // unknownReasonOf is the gate rather than a re-enumeration of the five void flags: a block any
+    // lane calls not-a-result is not evidence of anything, whatever its total says.
+    //
+    // The row's own claim is never erased — `status` stays `noscan` and `reason` keeps the runner's
+    // words — so the counters below read the resolution while a reader can still see what was
+    // overruled and check the arithmetic that overruled it.
+    if (!unknownReasonOf(c) && Number(c.total) > 0) {
+      for (const chk of tr.checks) {
+        if (!chk || chk.check !== checkId || chk.status !== 'noscan' || chk.contradicted) continue;
+        chk.contradicted = { by: 'artifact', findings: Number(c.total) };
+      }
+    }
+    if (!c.unparseable && !c.norules && !c.neverran && !c.toolfailed) continue;
     if (tr.checks.some((chk) => chk && chk.status === 'noscan' && chk.check === checkId)) continue;
     tr.checks.push({ check: checkId, status: 'noscan',
       reason: c.unparseable ? 'artifact present but unparseable'
@@ -1125,7 +1150,14 @@ for (const r of repos) {
             : 'artifact present but the tool reported failure',
       at: genISO });
   }
-  r.noscan = tr.checks.filter((chk) => chk && chk.status === 'noscan').length;
+  // A contradicted void is not a void: counting it here would keep the repo in exposure-verdict's
+  // not-scanned set on the strength of a claim the repo's own artifact disproves. The reason list
+  // loses the same rows, so the count and the causes beside it never describe different sets.
+  r.noscan = tr.checks.filter((chk) => chk && chk.status === 'noscan' && !chk.contradicted).length;
+  if (Array.isArray(r.noscanReasons)) {
+    const kept = r.noscanReasons.filter((x) => !tr.checks.some((chk) => chk && chk.check === x.check && chk.contradicted));
+    if (kept.length) r.noscanReasons = kept; else delete r.noscanReasons;
+  }
 }
 
 // Never aggregate a noscan into a zero. checks-status.json is honest per repo (pass | skip |
@@ -1182,8 +1214,8 @@ const scannerFleet = {};
 const fleetUnknown = { blocks: 0, total: 0, byReason: {} };
 for (const [key, checkId] of SCANNER_SPECS) {
   const withArtifact = repos.filter((r) => r.scanners && r.scanners[key]);
-  let ran = 0, skipped = 0, noscan = 0, naSkips = 0, blockedSkips = 0;
-  let lastRunAt = null, lastCheckedAt = null, blockedReason = null, naReason = null;
+  let ran = 0, skipped = 0, noscan = 0, naSkips = 0, blockedSkips = 0, contradicted = 0;
+  let lastRunAt = null, lastCheckedAt = null, blockedReason = null, naReason = null, contradictedReason = null;
   // Counted separately from status: a check can be `pass` with reduced coverage, or `fail` with it.
   // Rows written before the coverage field existed carry no key and are counted in none of these,
   // which is what keeps "not covered" distinguishable from "not recorded".
@@ -1224,11 +1256,24 @@ for (const [key, checkId] of SCANNER_SPECS) {
       else { blockedSkips++; if (!blockedReason) blockedReason = reason; }
     }
     else if (c.status === 'noscan') {
-      noscan++;
       // A COUNT of voids without their cause is the same shape as a finding with no evidence, so
       // the first reason travels beside `noscan` as it does beside `skipped`.
       const reason = typeof c.reason === 'string' ? c.reason.trim() : '';
-      if (!noscanReason && reason) noscanReason = reason;
+      // Resolved upstream, where both witnesses were in hand (see the contradiction pass above):
+      // this repo's artifact for this category carries counted findings, so the run happened and
+      // the void does not hold. It joins `ran` because that is what `ran` means — a check that
+      // reached a verdict — and `lastRunAt` advances with it, which is the one date a reader uses
+      // to decide whether the findings below are current. The overruled claim is published as its
+      // own count with the runner's own words, never folded silently into the pass.
+      if (c.contradicted) {
+        ran++;
+        contradicted++;
+        if (at && (!lastRunAt || at > lastRunAt)) lastRunAt = at;
+        if (!contradictedReason && reason) contradictedReason = reason;
+      } else {
+        noscan++;
+        if (!noscanReason && reason) noscanReason = reason;
+      }
     }
     // Tallied OUTSIDE the status branches on purpose: coverage is orthogonal to status, so gating it
     // on any one branch would drop the case the field exists for — a check that FOUND things while
@@ -1302,6 +1347,16 @@ for (const [key, checkId] of SCANNER_SPECS) {
   // category that reported "n/a — no go.mod" would send them away from the repo that needs a URL.
   // A void says why, or it is a number with no evidence behind it.
   if (noscan && noscanReason) agg.noscanReason = noscanReason.slice(0, 400);
+  // The overruled voids, kept as a published count rather than absorbed into `ran`. A silently
+  // corrected number is a number nobody can audit, and this one says a provenance writer was wrong
+  // about a whole lane — which is a defect report about the runner, not a fleet condition, and the
+  // only place it can be read. Omitted when zero, like `norules` above: absent means
+  // counted-and-none, and a key that appeared everywhere would churn the re-roll bytes of every
+  // category that never had one.
+  if (contradicted) {
+    agg.noscanContradicted = contradicted;
+    if (contradictedReason) agg.noscanContradictedReason = contradictedReason.slice(0, 400);
+  }
   if (skipped) {
     agg.naSkips = naSkips;
     agg.blockedSkips = blockedSkips;

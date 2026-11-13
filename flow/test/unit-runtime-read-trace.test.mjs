@@ -58,7 +58,7 @@ test('returns usable state with node and pid when installed row has selfWitness'
     const p = join(dir, 'trace.json');
     writeFileSync(p, JSON.stringify({ t: 'installed', selfWitness: true, node: 'v22.0.0', pid: 42 }) + '\n');
     const r = readTrace(p);
-    assert.deepEqual(r, { state: "usable", rows: [{ t: "installed", selfWitness: true, node: "v22.0.0", pid: 42 }], reason: null, malformed: 0, node: "v22.0.0", pid: 42 });
+    assert.deepEqual(r, { state: "usable", rows: [{ t: "installed", selfWitness: true, node: "v22.0.0", pid: 42 }], reason: null, malformed: 0, node: "v22.0.0", pid: 42, network: { state: "unusable", reason: "hook could not witness its own network probe \u2014 no installed row carries a network self-witness", pids: [] } });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -70,7 +70,7 @@ test('counts malformed lines when a line is not valid JSON', () => {
     const p = join(dir, 'trace.json');
     writeFileSync(p, JSON.stringify({ t: 'installed', selfWitness: true, node: 'v22', pid: 7 }) + '\nnot-json\n');
     const r = readTrace(p);
-    assert.deepEqual(r, { state: "usable", rows: [{ t: "installed", selfWitness: true, node: "v22", pid: 7 }], reason: null, malformed: 1, node: "v22", pid: 7 });
+    assert.deepEqual(r, { state: "usable", rows: [{ t: "installed", selfWitness: true, node: "v22", pid: 7 }], reason: null, malformed: 1, node: "v22", pid: 7, network: { state: "unusable", reason: "hook could not witness its own network probe \u2014 no installed row carries a network self-witness", pids: [] } });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -83,7 +83,7 @@ test('skips empty lines and parses valid JSON lines correctly', () => {
     const lines = [JSON.stringify({ t: 'installed', selfWitness: true, node: 'v22', pid: 99 }), '', JSON.stringify({ t: 'other' })];
     writeFileSync(p, lines.join('\n') + '\n');
     const r = readTrace(p);
-    assert.deepEqual(r, { state: "usable", rows: [{ t: "installed", selfWitness: true, node: "v22", pid: 99 }, { t: "other" }], reason: null, malformed: 0, node: "v22", pid: 99 });
+    assert.deepEqual(r, { state: "usable", rows: [{ t: "installed", selfWitness: true, node: "v22", pid: 99 }, { t: "other" }], reason: null, malformed: 0, node: "v22", pid: 99, network: { state: "unusable", reason: "hook could not witness its own network probe \u2014 no installed row carries a network self-witness", pids: [] } });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

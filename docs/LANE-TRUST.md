@@ -1,6 +1,6 @@
 # Lane trust — how far to trust each lane
 
-<!-- verified-against: 2026-10-18 fc0917d7 -->
+<!-- verified-against: 2026-10-18 -->
 
 `monitor/lane-trust.mjs` states six things about every lane in `LANE_ROSTER`
 (`monitor/lane-roster.mjs`), the same roster `monitor/lane-capability.mjs` probes. Each column says

@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path';
 import { _socketCounts, _sarifCounts, SCANNER_SPECS } from '../extractors.mjs';
 import { SCANNER_CHECKS, CHECK_ALIASES, canonicalCheck } from '../scanner-checks.mjs';
 import { extractorsSource } from './lib/extractors-source.mjs';
+import { packageFromOsvMessage } from '../../lib/osv-message.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = readFileSync(join(HERE, '..', 'rollup.mjs'), 'utf8');
@@ -156,38 +157,25 @@ describe('a SARIF with zero loaded rules is not evidence the scan found nothing'
 });
 
 describe('the scoped-package parse, and the bridge that keeps it from faking fixes', () => {
-  // lifted from source — a copy would keep passing after the real one changed. Sliced from
-  // /Package to the line's last slash: the pattern itself contains parentheses.
-  const literalOn = (needle) => {
-    const line = DEP_SRC.split('\n').find((l) => l.includes(needle));
-    assert.ok(line, `${needle} was not found in dep-findings.mjs — this test needs updating`);
-    const src = line.slice(line.indexOf("/Package"), line.lastIndexOf('/') + 1);
-    return { re: new RegExp(src.slice(1, -1)), src };
-  };
-  const messageRe = literalOn("const pm = m.match(/Package").re;
-
   test('a SCOPED package keeps its scope — the old class excluded the leading @ entirely', () => {
-    const hit = "Package '@ctrl/tinycolor@4.1.1'".match(messageRe);
-    assert.ok(hit, "'@ctrl/tinycolor@4.1.1' must match — it is the Shai-Hulud worm record this file cites");
-    assert.equal(hit[1], '@ctrl/tinycolor');
-    assert.equal(hit[2], '4.1.1');
+    assert.deepEqual(packageFromOsvMessage("Package '@ctrl/tinycolor@4.1.1'"),
+      { name: '@ctrl/tinycolor', version: '4.1.1' });
   });
 
   test('an unscoped package is unchanged — the fix must not re-key the other 99%', () => {
-    const hit = "Package 'lodash@4.17.20'".match(messageRe);
-    assert.equal(hit[1], 'lodash');
-    assert.equal(hit[2], '4.17.20');
+    assert.deepEqual(packageFromOsvMessage("Package 'lodash@4.17.20'"),
+      { name: 'lodash', version: '4.17.20' });
   });
 
-  test('both parsers of osv.sarif now agree — they disagreed about the same file', () => {
+  test('both parsers of osv.sarif use the one shared parser — they disagreed about the same file', () => {
     // parseOsv (dep-findings.mjs) and _malCounts (the extractors, via the source seam) parse the same message — both files
     // are read, a same-file check would miss the drift
     const EXTRACTORS = extractorsSource();   // the barrel AND its part modules — _malCounts moved out
-    const all = `${SRC}\n${DEP_SRC}\n${EXTRACTORS}`.split('\n').filter((l) => l.includes(".match(/Package '"))
-      .map((l) => l.slice(l.indexOf('/Package'), l.lastIndexOf('/') + 1));
-    assert.ok(all.length >= 2, `expected at least two Package-message parsers, found ${all.length}`);
-    assert.equal(new Set(all).size, 1,
-      `the parsers of osv.sarif's message must be identical, found: ${[...new Set(all)].join('  vs  ')}`);
+    for (const [label, src] of [['dep-findings.mjs', DEP_SRC], ['the extractors', EXTRACTORS]]) {
+      assert.match(src, /packageFromOsvMessage/, `${label} must call the shared parser`);
+      assert.doesNotMatch(src, /\.match\(\/Package '/, `${label} must not carry its own Package regex`);
+    }
+    assert.doesNotMatch(SRC, /\.match\(\/Package '/, 'rollup.mjs must not parse the message itself');
   });
 
   test('the bridge exists, is match-only, and covers BOTH the born and the resolve side', () => {

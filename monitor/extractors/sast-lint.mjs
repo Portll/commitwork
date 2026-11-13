@@ -619,7 +619,7 @@ function _cobolworkCoverage(s, inv) {
 export function _cobolworkCounts(dir, file) {
   const p = join(dir, file); if (!existsSync(p)) return null;
   let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
-  if (!raw.trim()) return { ..._zero(), ran: true, nosrc: true, emptyArtifact: true };
+  if (!raw.trim()) return { ..._emptyArtifact(p), emptyArtifact: true };
   let j;
   try { j = safeParseFile(p); } catch (e) {
     return { ..._zero(), ran: true, unparseable: true, unparseableWhy: String((e && e.message) || e).slice(0, 200) };

@@ -548,6 +548,18 @@ export const SETTING_KEYS = {
     consumers: ['bin/hooks/guard-destructive.mjs', 'lib/security-posture.mjs', 'admin/routes/security-posture.mjs'],
     validate: isBool,
   },
+  headlessCommitMessages: {
+    key: 'headlessCommitMessages',
+    label: 'Headless commit messages',
+    description: 'When on, and Human commit messages only is on, a session nobody can be asked in may commit with a message a model wrote. The commit runs only when a record in the headless record store names that exact message, was written in the last 30 minutes, and carries the writer model, a review reference and the hash of what it was written for; the message must also pass the commit-message lint. Anything else is refused, and an attended session is unaffected. Only this setting, saved here, turns the route on: the environment variable can only turn it off. A record is a claim, not a proof: any process running as this user can write the store, the tamper rules read command text, and the hash and review reference are logged, not checked.',
+    unit: 'on|off',
+    envVar: 'CW_HEADLESS_COMMIT_MESSAGES',
+    parseEnv: boolFromEnv('CW_HEADLESS_COMMIT_MESSAGES'),
+    default: false,
+    nullable: false,
+    consumers: ['bin/hooks/guard-destructive.mjs', 'lib/security-posture.mjs', 'admin/routes/security-posture.mjs'],
+    validate: isBool,
+  },
   runChecksRoots: {
     key: 'runChecksRoots',
     label: 'MCP run_checks roots',
@@ -704,8 +716,8 @@ export const SETTING_KEYS = {
   },
 
   // ── SELF-UPDATE (portll-update@1) ──────────────────────────────────────────────────────────
-  // Dotted names, unlike the keys above: they are the contract's names, shared with Megablast and
-  // Spine.app, so one word means one thing across the three updaters.
+  // Dotted names, unlike the keys above: they are the contract's names, shared with the other two
+  // updaters, so one word means one thing across all three.
   'update.auto': {
     key: 'update.auto',
     label: 'Updates: what the daily check does',

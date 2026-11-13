@@ -50,6 +50,16 @@
         "statuses": { "type": "object" }
       }
     },
+    "fleetVocabulary": {
+      "type": "object",
+      "required": ["note", "terms"],
+      "additionalProperties": false,
+      "$comment": "The names the register uses for tools that are not this product. validate() requires a test sentence on every term AND requires each term to occur in the register's prose, so a declared substitution with nothing substituted fails rather than implying a generalisation that never happened. The prose as written lives in the private overlay bin/taxonomy-render.mjs merges (CW_TAXONOMY_PROSE); an absent overlay is this public form.",
+      "properties": {
+        "note": { "type": "string", "minLength": 1 },
+        "terms": { "type": "object" }
+      }
+    },
     "mitigationProvenance": {
       "type": "object",
       "required": ["rater", "date", "method", "caveat"],

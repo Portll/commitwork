@@ -1,0 +1,36 @@
+{
+  "$comment": "The shape of the private prose overlay bin/taxonomy-render.mjs merges into monitor/failure-taxonomy.json — monitor/private/taxonomy-prose.json, or CW_TAXONOMY_PROSE. The tracked register names a tool that is not this product by the CAPABILITY it provides (declared in the register's fleetVocabulary); the overlay holds the sentences as they were written, each paired with the public text it replaced. Its ABSENCE is the public shape, not an error: a clone with no private store renders the capability form, which is the form the published page carries. Every pair below is synthetic; the real overlay names private tools. A pair is matched by its public text inside ONE named record and must match exactly once there — zero occurrences is a stale pair and refuses, more than one is ambiguous and refuses, and no key or match carries an array index or a line number.",
+  "version": 1,
+  "prose": {
+    "doc": [
+      {
+        "public": "instances from the oversight layer are already held",
+        "private": "instances from example-internal-tool are already held"
+      }
+    ],
+    "class:C1": [
+      {
+        "public": "The memory store returns the same body for an identity it never reads.",
+        "private": "example-sibling-service returns the same body for an identity it never reads."
+      }
+    ],
+    "remediation:Example remediation title": [
+      {
+        "public": "Pin the local model host's schema order",
+        "private": "Pin example-model-host's schema order"
+      }
+    ],
+    "cycle:example cycle 2026-01-01": [
+      {
+        "public": "folded on a recorded ruling",
+        "private": "folded on an example-ruling"
+      }
+    ],
+    "attribution:Example area": [
+      {
+        "public": "concurrent-session commit drift produced unknown",
+        "private": "example-cosession commit drift produced unknown"
+      }
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portll/commitwork/release-term-acceptances.schema.json",
+  "title": "commitwork per-term acceptances for release candidates",
+  "description": "monitor/release-term-acceptances.json in the private sidecar: the reviewed disposition of each denied-term occurrence. Applied by applyAcceptances() in bin/lib/release-terms.mjs, read from the sidecar's committed tree so an uncommitted row cannot clear the gate. A row is keyed by file, rule, term and where — never by a line number — and is bound to the `evidence` digest of the one measurement it was granted against, so a new occurrence of an accepted term lapses the acceptance instead of inheriting it. An absent record is the public shape: nothing accepted, so every occurrence stays open. monitor/release-term-acceptances.example.json shows the shape.",
+  "type": "object",
+  "required": ["note", "acceptances"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "note": { "type": "string", "minLength": 1 },
+    "acceptances": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["file", "rule", "term", "where", "count", "evidence", "disposition", "reason", "test", "reviewer", "reviewedAt"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string", "minLength": 1 },
+          "rule": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "term": { "type": "string", "pattern": "^[a-z][a-z0-9-]*#[a-z][a-z0-9-]*$" },
+          "where": { "enum": ["path", "content"] },
+          "count": { "type": "integer", "minimum": 1 },
+          "evidence": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[0-9a-f]{16}$" }] },
+          "disposition": { "enum": ["pending", "generic-capability", "public-by-design", "upstream-content", "detector-defect", "rename", "redact", "move-to-sidecar"] },
+          "reason": { "type": "string" },
+          "test": { "type": "string" },
+          "reviewer": { "type": "string" },
+          "reviewedAt": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}" }] },
+          "$comment": { "type": "string" }
+        }
+      }
+    }
+  }
+}

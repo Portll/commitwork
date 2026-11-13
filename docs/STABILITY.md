@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 ca240d91 -->
+<!-- verified-against: 2026-10-08 -->
 # Stability policy
 
 **This is a policy.** It states what commitwork treats as a public interface and when that

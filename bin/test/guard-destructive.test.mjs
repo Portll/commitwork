@@ -194,6 +194,60 @@ test('a heredoc body is data, not instructions', () => {
   assert.ok(!/force/.test(scrub(cmd)), 'scrub() left heredoc content behind');
 });
 
+// ── npm init aimed at another directory ──────────────────────────────────────
+
+const NPM_PREFIX_INIT = [
+  ['npm --prefix x init -y', 'the reported shape'],
+  ['npm --prefix=x init -y', 'joined --prefix'],
+  ['npm -C x init -y', 'the short flag'],
+  ['npm init --prefix x -y', 'option after the subcommand'],
+  ['npm init -y --prefix=x', 'joined option after the subcommand'],
+  ['npm -C x create foo', 'create, not init'],
+  ['npm --prefix x innit', 'the misspelling npm accepts as init'],
+  ['sudo npm --prefix x init -y', 'behind sudo'],
+  ['env CI=1 npm --prefix x init -y', 'behind env'],
+  ['$(npm --prefix x init -y)', 'inside a command substitution'],
+  ['true && npm --prefix x init -y', 'after &&'],
+  ['true; npm --prefix x init -y', 'after ;'],
+  ['true | npm --prefix x init -y', 'after |'],
+  ['npm --loglevel silent init --prefix x', 'a global option value is not the subcommand'],
+  ['npm --prefix x --registry https://r.invalid init -y', 'option value between the prefix and init'],
+  ['npm -w pkg --prefix x init', 'workspace value is not the subcommand'],
+];
+
+for (const [cmd, why] of NPM_PREFIX_INIT) {
+  test(`DENY: ${cmd}  (${why})`, () => {
+    const v = judge(cmd);
+    assert.equal(v?.decision, 'deny', `${cmd} was not denied`);
+    assert.match(v.reason, /ignores --prefix/);
+    assert.match(v.reason, /\(cd x && npm init -y\)/, 'the reason must name the fix, not just the trap');
+  });
+}
+
+const NPM_PREFIX_ALLOW = [
+  ['npm init -y', 'no prefix: the ordinary form, which does write the cwd'],
+  ['(cd x && npm init -y)', 'the fix itself, run inside the target'],
+  ['npm --prefix x install y', 'install honours --prefix; only init ignores it'],
+  ['npm run init', 'init is a script name, not the subcommand'],
+  ['npm --prefix x run create', 'create is a run argument, not the subcommand'],
+  ['echo "npm --prefix x init"', 'quoted prose'],
+  ["grep -rn 'npm --prefix x init' docs/", 'a quoted search term'],
+  ['npm --prefix x --loglevel silent install init', 'init as a package name after install'],
+  ['npm --loglevel init --prefix x install y', 'init as an option value'],
+];
+
+for (const [cmd, why] of NPM_PREFIX_ALLOW) {
+  test(`ALLOW: ${cmd}  (${why})`, () => {
+    const d = decisionOf(cmd);
+    assert.equal(d, null, `false positive — ${cmd} was gated as ${d}`);
+  });
+}
+
+test('an npm --prefix init in a heredoc body is data, not a command', () => {
+  const cmd = ["cat <<'EOF'", 'npm --prefix x init -y', 'EOF'].join('\n');
+  assert.equal(decisionOf(cmd), null, 'the heredoc body was read as shell');
+});
+
 // ── command substitution inside double quotes is live, not prose ─────────────
 // Dropping `"$(…)"` wholesale as quoted text would leave the inner command unjudged:
 // `cat "$(echo ~/.ssh/id_rsa)"` would read as `cat` and be allowed.

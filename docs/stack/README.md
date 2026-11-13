@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 5e582892 -->
+<!-- verified-against: 2026-10-13 -->
 # overwatch-layer — the four-part distribution
 
 > **Draft, unpublished.** This is the README the distribution will carry. It lives in commitwork's
