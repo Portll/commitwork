@@ -270,7 +270,37 @@ const mid = (s) => s.replace(/[^A-Za-z0-9_]/g, '_');
 const mdcell = (s) => String(s).replace(/\|/g, '\\|').replace(/\n/g, ' ').slice(0, 120);
 const mlabel = (s) => String(s).replace(/"/g, '#quot;').replace(/[<>]/g, (c) => (c === '<' ? '#lt;' : '#gt;')).slice(0, 80);
 
-export function mermaidProgram(g) {
+/**
+ * The drawn graph: processes collapsed to the deepest directory level with at most `max` groups.
+ * A repository of 231 modules (measured: audience-direct) is not a diagram anyone reads; the JSON
+ * keeps every module, and the drawing says what it collapsed.
+ */
+export function collapseProcesses(g, max = 40) {
+  const procs = g.nodes.filter((n) => n.kind === 'process');
+  if (procs.length <= max) return { graph: g, depth: null };
+  const segs = (id) => id.slice('proc:'.length).split('/').slice(0, -1);
+  const deepest = Math.max(1, ...procs.map((n) => segs(n.id).length));
+  let depth = 1;
+  for (let d = deepest; d >= 1; d--) {
+    if (new Set(procs.map((n) => segs(n.id).slice(0, d).join('/') || '.')).size <= max) { depth = d; break; }
+  }
+  const groupOf = (id) => (id.startsWith('proc:') ? `proc:${segs(id).slice(0, depth).join('/') || '.'}/` : id);
+  const nodes = new Map();
+  for (const n of g.nodes) {
+    const id = groupOf(n.id);
+    if (!nodes.has(id)) nodes.set(id, n.kind === 'process' ? { id, kind: 'process', label: `${id.slice(5)} (modules)`, sites: [] } : n);
+  }
+  const edges = new Map();
+  for (const e of g.edges) {
+    const from = groupOf(e.from); const to = groupOf(e.to); const k = `${from}>${to}>${e.label}`;
+    if (!edges.has(k)) edges.set(k, { from, to, label: e.label, count: 0 });
+    edges.get(k).count += e.count;
+  }
+  return { graph: { nodes: [...nodes.values()], edges: [...edges.values()] }, depth };
+}
+
+export function mermaidProgram(full) {
+  const { graph: g } = collapseProcesses(full);
   const out = ['flowchart LR'];
   const by = (k) => g.nodes.filter((n) => n.kind === k);
   const ext = by('external');
@@ -346,7 +376,10 @@ export function buildReport({ root, sarifDocs, inventory }) {
 export function markdownOf(report) {
   const L = ['# Deno data-flow diagram', '',
     `${report.summary.nodes} nodes, ${report.summary.edges} edges; ${report.summary.paths} taint path(s) evaluated sink-to-source.`, '',
-    '## Program', '', '```mermaid', mermaidProgram(report.program), '```', ''];
+    '## Program', '', ...(() => {
+      const c = collapseProcesses(report.program);
+      return c.depth === null ? [] : [`${report.program.nodes.filter((n) => n.kind === 'process').length} modules drawn as directories ${c.depth} level(s) deep; every module is in the JSON report.`, ''];
+    })(), '```mermaid', mermaidProgram(report.program), '```', ''];
   if (report.findings.length) {
     L.push('## Paths, most controlled first', '', '| Flow | Rule | Sink | Control at sink | Residual | Bounded at |', '|---|---|---|---|---|---|');
     const order = (f) => RANK.length - RANK.indexOf(f.evaluation.control);

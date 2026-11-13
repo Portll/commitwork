@@ -296,6 +296,29 @@ rules:
           return $F;
       - pattern-not-inside: |
           try { ... } finally { ... }
+      # A handle that ESCAPES the function — stored in a map, an array or a field, or passed on — is
+      # closed by whoever holds it; this rule cannot see that far. Measured on audience-direct
+      # d448414: writers kept in this.writers and closed in a later method were reported.
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          <... $M.set($K, $F) ...>;
+          ...
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          <... $A.push($F) ...>;
+          ...
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          this.$P = $F;
+          ...
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          $FN(..., $F, ...);
+          ...
 
   - id: cw-deno-exit-in-handler
     languages: [typescript, javascript]

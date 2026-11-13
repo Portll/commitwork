@@ -36,6 +36,8 @@ describe('fixture trees', () => {
     assert.equal(at('main.ts', 1), 'error', 'a -A shebang is the production entrypoint');
     assert.equal(at('.github/workflows/ci.yml', 7), 'warning');
     assert.equal(at('.github/workflows/ci.yml', 8), 'note', 'deno test -A is how most suites run');
+    assert.equal(at('deploy/site.service', 3), 'error', 'a systemd ExecStart is a production entrypoint');
+    assert.equal(at('deno.jsonc', 10), 'note', 'a watching dev server is development');
   });
 
   test('cw-hazards-ignore in the comment block above suppresses, and is counted rather than dropped', () => {

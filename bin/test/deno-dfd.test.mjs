@@ -2,7 +2,7 @@
 // graph from an inventory, and the annotation it leaves on SARIF results.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { hopsOf, sinkClassOf, evaluatePath, programGraph, mermaidProgram, buildReport, markdownOf } from '../deno-dfd.mjs';
+import { hopsOf, sinkClassOf, evaluatePath, programGraph, mermaidProgram, buildReport, markdownOf, collapseProcesses } from '../deno-dfd.mjs';
 
 const hop = (role, line, snippet) => ({ role, file: 'a.ts', line, col: 1, snippet });
 const reader = (src) => () => src.split('\n');
@@ -100,4 +100,20 @@ describe('reading SARIF and inventory', () => {
     assert.match(m, /subgraph TB_external/);
     assert.match(m, /subgraph DENO/);
   });
+});
+
+test('a large program is drawn by directory, and the edges survive the collapse', () => {
+  const results = [];
+  for (let i = 0; i < 60; i++) {
+    results.push({ check_id: 'x.http', path: `apps/a${i % 3}/mod${i}.ts`, start: { line: 1 }, extra: { metadata: { dfd: { role: 'entry', kind: 'http', trust: 'external', label: 'HTTP request' } } } });
+    results.push({ check_id: 'x.kv', path: `apps/a${i % 3}/mod${i}.ts`, start: { line: 2 }, extra: { metadata: { dfd: { role: 'store', kind: 'kv', label: 'Deno KV' } } } });
+  }
+  const g = programGraph({ results });
+  assert.equal(g.nodes.filter((n) => n.kind === 'process').length, 60);
+  const { graph, depth } = collapseProcesses(g, 40);
+  assert.equal(depth, 2);
+  assert.deepEqual(graph.nodes.filter((n) => n.kind === 'process').map((n) => n.id).sort(), ['proc:apps/a0/', 'proc:apps/a1/', 'proc:apps/a2/']);
+  assert.equal(graph.edges.filter((e) => e.from === 'ext:http').reduce((n, e) => n + e.count, 0), 60, 'counts are summed, not dropped');
+  const small = programGraph({ results: results.slice(0, 4) });
+  assert.equal(collapseProcesses(small).depth, null, 'a small program is drawn module by module');
 });

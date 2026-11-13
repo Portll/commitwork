@@ -1899,7 +1899,7 @@
         "fast"
       ],
       "notes": "REQUIRES OPENGREP, with no Semgrep CE fallback, deliberately: the rules are cross-function taint (a request read in one helper and executed in another), which Semgrep evaluates only with --pro-intrafile behind an account; opengrep's --taint-intrafile is the same analysis under LGPL-2.1. A fallback that silently lost every cross-function path would publish a thinner scan under the same name; an absent engine instead writes NO sarif (exit 127) and the lane reads not-scanned. TYPE-ARGUMENT ERASURE: opengrep 1.33.1 and Semgrep 1.185.0 parse a TypeScript call with explicit type arguments — kv.get<number>(key), db.queryObject<User>(sql) — as the bare member, dropping the call and its arguments from the AST, so neither pattern nor taint can see it (measured 2026-11-13: the untyped query reported, the identical typed one on the next line did not). The lane scans a mirror in which lib/ts-type-args.mjs blanks call-position type arguments to spaces of the same length, so every line and column is the original's; files the lexer cannot classify are scanned unerased and named in run.properties.cwMirror.unclassified. LOCALE: the engine child runs under LC_ALL=C.UTF-8 because opengrep decodes .semgrepignore as ASCII under a C locale and dies on the first non-ASCII byte with no output. The repository is never written.",
-      "formatNotes": "SARIF 2.1.0 from Opengrep OSS (driver name `Opengrep OSS`), --dataflow-traces so taint results carry codeFlows whose locations are labelled Source / Propagator / Sink. Rule ids are manifests.semgrep-deno-security.cw-deno-* after monitor/sarif-read.mjs localRuleId() strips the checkout path. Levels from the rule severity: ERROR → error, WARNING → warning. run.properties.cwEngine records engine, version and the cross-function mode; run.properties.cwMirror records files scanned, type-argument sites erased, unclassified and oversize files. Each taint result's properties.cwMutability = {flow, control, residual, boundingHop, sinkClass} from bin/deno-dfd.mjs. Fixture-proven both ways: fixtures/semgrep-deno/security/*.ts (31 ruleid / 21 ok), fixtures/semgrep-deno/dfd/bounded.ts (one path per control class)."
+      "formatNotes": "SARIF 2.1.0 from Opengrep OSS (driver name `Opengrep OSS`), --dataflow-traces so taint results carry codeFlows whose locations are labelled Source / Propagator / Sink. Rule ids are manifests.semgrep-deno-security.cw-deno-* after monitor/sarif-read.mjs localRuleId() strips the checkout path. Levels from the rule severity: ERROR → error, WARNING → warning. run.properties.cwEngine records engine, version and the cross-function mode; run.properties.cwMirror records files scanned, type-argument sites erased, unclassified and oversize files. Each taint result's properties.cwMutability = {flow, control, residual, boundingHop, sinkClass} from bin/deno-dfd.mjs. Fixture-proven both ways: fixtures/semgrep-deno/security/*.ts (39 ruleid / 41 ok, precision.ts holding every shape that was a false positive on audience-direct d448414), fixtures/semgrep-deno/dfd/bounded.ts (one path per control class)."
     },
     {
       "id": "deno-reliability",
@@ -1939,7 +1939,7 @@
         "fast"
       ],
       "notes": "Same engine, mirror, erasure and locale as sast-deno (see its notes); a different rule pack and a different artifact, so a reliability finding can never earn or spend a vulnerability count. Not in the severity headline: monitor/lane-kinds.mjs declares it hygiene, not-a-vulnerability, the same ruling denoLint carries.",
-      "formatNotes": "SARIF 2.1.0 from Opengrep OSS. Rule ids manifests.semgrep-deno-reliability.cw-deno-*; metadata.category is `performance` or `reliability`. Pattern rules only, so results carry no codeFlows. Fixture-proven both ways: fixtures/semgrep-deno/reliability/reliability.ts (12 ruleid / 12 ok)."
+      "formatNotes": "SARIF 2.1.0 from Opengrep OSS. Rule ids manifests.semgrep-deno-reliability.cw-deno-*; metadata.category is `performance` or `reliability`. Pattern rules only, so results carry no codeFlows. Fixture-proven both ways: fixtures/semgrep-deno/reliability/reliability.ts (12 ruleid / 14 ok)."
     },
     {
       "id": "deno-hazards",
@@ -1968,7 +1968,7 @@
         "fast"
       ],
       "notes": "SARIF deliberately, for node-hazards' reason: the artifact guard tests parseability, so stray stdout can never become a med `unparseable sarif` finding. With no Deno marker and no deno invocation the tool writes NO sarif and the lane reads not-scanned. Adjudicated findings (cw-hazards-ignore on the line or in the comment block above it) are excluded from results and counted in run.properties.suppressedCount.",
-      "formatNotes": "SARIF 2.1.0, driver `commitwork-deno-hazards`, rule ids deno/*, levels error|warning|note. Fixture-proven: fixtures/deno-hazards/dirty fires every rule, fixtures/deno-hazards/clean (each safe counterpart) yields ZERO."
+      "formatNotes": "SARIF 2.1.0, driver `commitwork-deno-hazards`, rule ids deno/*, levels error|warning|note. Fixture-proven: fixtures/deno-hazards/dirty fires every rule, fixtures/deno-hazards/clean (each safe counterpart) yields ZERO. Reads systemd units (.service, .socket, and .conf drop-ins under *.service.d/) as production entrypoints."
     },
     {
       "id": "lint-rust-clippy",

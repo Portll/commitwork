@@ -11,11 +11,14 @@
 # `global` is CodeQL's package for global variables (ApiGraphModelsSpecific.qll), so these rows
 # bind to the `Deno` global the runtime provides, with no import to resolve.
 #
-# THREAT MODELS. `remote` sources are on by default. `environment` and `commandargs` belong to the
-# `local` threat-model group, which the lane does not enable: those rows are declared so that a
-# run with --threat-model local sees them, and are inert otherwise. The opengrep lane
-# (sast-deno) covers the local-input shell and native-library cases unconditionally.
-#
+# NO ENVIRONMENT SOURCES, deliberately — and a correction. An earlier revision declared
+# Deno.env.get / Deno.env.toObject as `environment` sources and called them inert unless
+# --threat-model local was enabled. Measured on audience-direct d448414 (CodeQL 2.27.4), they were
+# not inert: js/clear-text-logging reads environment sources under the default threat model, and
+# they added 8 results of which 7 logged a path, a port, a bind address or a number. Deno.args stays
+# (`commandargs`), which no default query reads; the opengrep lane (sast-deno) covers environment-
+# and argument-controlled shells and native libraries unconditionally.
+
 # NOT MODELLED, deliberately: import() (not a member access; MaD cannot name it — sast-deno's
 # cw-deno-code-injection covers it), and Deno.Command's args array (CodeQL cannot tell a shell's
 # -c script from an ordinary argument through MaD, and a row flagging every argument would be noise
@@ -62,10 +65,8 @@ extensions:
       - ["global", "Member[Deno].Member[upgradeWebSocket].ReturnValue.Member[socket].Member[addEventListener].Argument[1].Parameter[0].Member[data]", "remote"]
       # A Deno KV queue message: at-least-once delivery of whatever was enqueued.
       - ["global", "Member[Deno].Member[openKv].ReturnValue.Awaited.Member[listenQueue].Argument[0].Parameter[0]", "remote"]
-      # Local inputs (inert unless --threat-model local).
+      # Command-line arguments: read by no default-suite query (see the header).
       - ["global", "Member[Deno].Member[args]", "commandargs"]
-      - ["global", "Member[Deno].Member[env].Member[get].ReturnValue", "environment"]
-      - ["global", "Member[Deno].Member[env].Member[toObject].ReturnValue", "environment"]
 
   - addsTo:
       pack: codeql/javascript-all

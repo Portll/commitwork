@@ -65,9 +65,10 @@ Deno.serve(async (req) => {
     return Response.redirect(next, 302);
   }
   if (url.pathname === "/home") {
-    // NOT safe, and the rule is right to say so: url.origin comes from req.url, which Deno.serve
-    // builds from the request's Host header — the sender chooses the host this redirects to.
-    // ruleid: cw-deno-open-redirect
+    // Safe: url.origin is the origin the victim's browser requested, so this cannot leave the site.
+    // (An earlier revision of this fixture called it a Host-header open redirect. That conflated
+    // cache poisoning, a different class, with redirection; corrected 2026-11-14.)
+    // ok: cw-deno-open-redirect
     return Response.redirect(new URL("/dashboard", url.origin), 302);
   }
   if (url.pathname === "/home2") {

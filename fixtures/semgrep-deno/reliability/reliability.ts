@@ -122,3 +122,12 @@ export function shutdown(code: number) {
   // ok: cw-deno-exit-in-handler
   Deno.exit(code);
 }
+
+export class Writers {
+  writers = new Map<string, Deno.FsFile>();
+  async open(path: string) {
+    // ok: cw-deno-file-not-closed
+    const w = await Deno.open(path, { write: true, create: true });
+    this.writers.set(path, w);
+  }
+}
