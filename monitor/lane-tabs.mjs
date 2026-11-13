@@ -36,6 +36,8 @@ export const LANE_SECTION = Object.freeze({
   sastCCppcheck: 'static', sastCFlawfinder: 'static', sastCodeqlRust: 'static', sastCodeqlGo: 'static',
   sastBrakeman: 'static', sastPhp: 'static', nodeHazards: 'static', weakRandom: 'static',
   sastCobol: 'static',
+  sastDeno: 'static', denoHazards: 'static',
+  denoReliability: 'lint',
   mobileManifest: 'static',
   // reads instruction files without running anything
   agentInstructions: 'static',

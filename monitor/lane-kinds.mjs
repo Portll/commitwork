@@ -51,6 +51,9 @@ export const SCANNER_LABELS = Object.freeze({
   lintJava: 'Lint · PMD (Java, not a security scan)',
   mobileManifest: 'Mobile manifest · Android/iOS exported surface',
   nodeHazards: 'Node hazards · unsafe-by-presence constructs (JS/TS + templates)',
+  sastDeno: 'SAST · Deno taint + races (opengrep cross-function)',
+  denoReliability: 'Deno reliability · ordering, resources, performance (not a security scan)',
+  denoHazards: 'Deno hazards · permission grants, inspector, module integrity',
   sastCobol: 'SAST · cobolwork (COBOL, JCL, CICS)',
   depsRustAudit: 'RustSec advisories · cargo-audit (second opinion)',
   lintHaskell: 'Lint · hlint (Haskell, not a security scan)',
@@ -135,6 +138,15 @@ export const LANE_KINDS = Object.freeze({
   dast: lane(V),
   denoLint: lane(H, 'not-a-vulnerability'),
   denoTypes: lane(H, 'not-a-vulnerability'),
+  // The only lane that names Deno APIs as sources and sinks; additive, because no other lane's
+  // counts cover a Deno.serve request reaching Deno.Command (CodeQL's shipped Deno models flag a
+  // subset of the same places, and sastCodeql is a different engine with its own count, exactly as
+  // sastSemgrep and sastCodeql already sit side by side).
+  sastDeno: lane(V),
+  // Ordering, resource and latency defects — real, and not a security claim (denoLint's ruling).
+  denoReliability: lane(H, 'not-a-vulnerability'),
+  // The state of the control Deno security IS: its permission grants. agentConfig's ruling.
+  denoHazards: lane(P),
   depsGo: lane(V),
   depsGradleDeclared: lane(V),
   depsJvm: lane(V),

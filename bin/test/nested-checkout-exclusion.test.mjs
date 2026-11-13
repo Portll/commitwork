@@ -93,6 +93,10 @@ const HELPER = {
   'dep-provenance': ['bin/dep-provenance.mjs', DOTDIRS],
   'deno-lint': ['bin/deno-scan.mjs', DOTDIRS],
   'deno-check': ['bin/deno-scan.mjs', DOTDIRS],
+  // The mirror walk and the hazards walk both take the shared directory list.
+  'sast-deno': ['bin/deno-sast.mjs', SHARED_LIST],
+  'deno-reliability': ['bin/deno-sast.mjs', SHARED_LIST],
+  'deno-hazards': ['bin/deno-hazards.mjs', SHARED_LIST],
   'format-rust-rustfmt': ['bin/rustfmt-lane-scan.mjs', DOTDIRS],
   // module discovery skips dot-directories; inside a module the go tool's `./...` ignores them too
   'sast-go-gosec': ['bin/lib/go-modules.mjs', DOTDIRS],

@@ -57,7 +57,7 @@ import { safeParseFile } from './safe-parse.mjs';
 // ── THE PART MODULES ─────────────────────────────────────────────────────────────────────────────
 // Imported for SCANNER_SPECS, the WCAG lane and the export block below.
 import { _zero, _emptyArtifact, _detailFor } from './extractors/core.mjs';
-import { _sarifCounts, _sarifDetail } from './extractors/sarif.mjs';
+import { _sarifCounts, _sarifDetail, _denoSastDetail } from './extractors/sarif.mjs';
 import { _clippyCounts, _hlintCounts, _joernScanCounts, _bearerCounts, _sobelowCounts, _banditCounts, _brakemanCounts, _phpcsCounts, _pmdCounts, _shellcheckCounts, _actionlintCounts, _denoLintCounts, _denoCheckCounts, _cobolworkCounts, _rustfmtCounts, _cobolInventoryCounts } from './extractors/sast-lint.mjs';
 import { _cargoAuditCounts, _bundlerAuditCounts, _trivyCounts, _malCounts, _govulnCounts, _gradleWrapperCounts, _depscanCounts, _guarddogCounts, _retireDetail, _depsContentCounts, _wpIntegrityCounts, _wpAdvisoriesCounts } from './extractors/supply-chain.mjs';
 import { _socketCounts, _socketAlertCount, _socketAlertRows } from './extractors/socket.mjs';
@@ -257,6 +257,13 @@ const SCANNER_SPECS = [
   // be; the void is declared in monitor/coverage-manifest.mjs where it can be read directly.
   ['denoLint', 'deno-lint', (d) => _denoLintCounts(d, 'deno-lint.json')],
   ['denoTypes', 'deno-check', (d) => _denoCheckCounts(d, 'deno-check.log')],
+  // The three lanes that make a Deno repo more than lint-and-types (bin/deno-sast.mjs,
+  // bin/deno-hazards.mjs). sastDeno's rows carry the sink-to-source mutability verdict that
+  // bin/deno-dfd.mjs attached to each taint result, so the drill-down says how much of the value
+  // the sender controls at the sink, not only that a path exists.
+  ['sastDeno', 'sast-deno', (d) => _denoSastDetail(d, 'deno-sast.sarif', 'sastDeno')],
+  ['denoReliability', 'deno-reliability', (d) => _sarifDetail(d, 'deno-reliability.sarif', 'denoReliability')],
+  ['denoHazards', 'deno-hazards', (d) => _sarifDetail(d, 'deno-hazards.sarif', 'denoHazards')],
   // Kept apart from actionsPosture (zizmor) for the reason denoLint is kept apart from denoTypes:
   // they measure different properties of the same file, and one row would let a green posture audit
   // stand in for a correctness lint that never ran.

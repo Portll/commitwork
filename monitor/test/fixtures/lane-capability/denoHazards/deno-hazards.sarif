@@ -1,0 +1,769 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "properties": {
+        "suppressedCount": 1
+      },
+      "tool": {
+        "driver": {
+          "name": "commitwork-deno-hazards",
+          "informationUri": "https://commitwork.portll.net",
+          "rules": [
+            {
+              "id": "deno/allow-all",
+              "shortDescription": {
+                "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program."
+              }
+            },
+            {
+              "id": "deno/allow-env-unscoped",
+              "shortDescription": {
+                "text": "--allow-env with no variable list: every environment variable, every secret in it, is readable."
+              }
+            },
+            {
+              "id": "deno/allow-ffi-unscoped",
+              "shortDescription": {
+                "text": "--allow-ffi with no path list: any native library can be loaded, and native code is outside the sandbox."
+              }
+            },
+            {
+              "id": "deno/allow-import-unscoped",
+              "shortDescription": {
+                "text": "--allow-import with no host list: code may be imported at run time from any host."
+              }
+            },
+            {
+              "id": "deno/allow-net-unscoped",
+              "shortDescription": {
+                "text": "--allow-net with no host list: the process may connect anywhere, including internal services and metadata endpoints."
+              }
+            },
+            {
+              "id": "deno/allow-read-unscoped",
+              "shortDescription": {
+                "text": "--allow-read with no path list: every file the user can read is readable, including keys and credentials."
+              }
+            },
+            {
+              "id": "deno/allow-run-shell",
+              "shortDescription": {
+                "text": "--allow-run names a shell or interpreter: running sh/bash/python/node with arguments is running any program."
+              }
+            },
+            {
+              "id": "deno/allow-run-unscoped",
+              "shortDescription": {
+                "text": "--allow-run with no program list: the process may execute any program, which escapes every other permission."
+              }
+            },
+            {
+              "id": "deno/allow-scripts-unscoped",
+              "shortDescription": {
+                "text": "--allow-scripts with no package list: every npm lifecycle script in the dependency tree runs on install."
+              }
+            },
+            {
+              "id": "deno/allow-write-unscoped",
+              "shortDescription": {
+                "text": "--allow-write with no path list: the process may overwrite any file the user can, including its own source."
+              }
+            },
+            {
+              "id": "deno/cleartext-import",
+              "shortDescription": {
+                "text": "A module is imported over http://: anyone on the network path can replace the code."
+              }
+            },
+            {
+              "id": "deno/ignore-certificate-errors",
+              "shortDescription": {
+                "text": "TLS certificate verification is disabled: every HTTPS connection, module downloads included, accepts a forged certificate."
+              }
+            },
+            {
+              "id": "deno/inspector-exposed",
+              "shortDescription": {
+                "text": "The V8 inspector listens on a non-loopback address: anyone who reaches the port can run arbitrary code in the process."
+              }
+            },
+            {
+              "id": "deno/lock-disabled",
+              "shortDescription": {
+                "text": "The lockfile is disabled: nothing verifies that remote modules are the ones that were reviewed."
+              }
+            },
+            {
+              "id": "deno/permission-set-unscoped",
+              "shortDescription": {
+                "text": "A permission set in deno.json grants an unscoped permission (true rather than a list)."
+              }
+            },
+            {
+              "id": "deno/remote-entrypoint",
+              "shortDescription": {
+                "text": "A remote URL is executed directly: whoever controls that URL decides what runs, with the permissions on the command line."
+              }
+            },
+            {
+              "id": "deno/unpinned-import",
+              "shortDescription": {
+                "text": "A remote module or registry specifier has no version: its publisher, or whoever takes over the name, can change the code that runs."
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "deno/allow-all",
+          "level": "warning",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (deno run scripts/release.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".github/workflows/ci.yml"
+                },
+                "region": {
+                  "startLine": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-all",
+          "level": "note",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (deno test)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".github/workflows/ci.yml"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-all",
+          "level": "error",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (deno run main.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/ignore-certificate-errors",
+          "level": "error",
+          "message": {
+            "text": "TLS certificate verification is disabled: every HTTPS connection, module downloads included, accepts a forged certificate. (deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-net-unscoped",
+          "level": "note",
+          "message": {
+            "text": "--allow-net with no host list: the process may connect anywhere, including internal services and metadata endpoints. (--allow-net on deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/inspector-exposed",
+          "level": "error",
+          "message": {
+            "text": "The V8 inspector listens on a non-loopback address: anyone who reaches the port can run arbitrary code in the process. (--inspect=0.0.0.0:9229)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-run-unscoped",
+          "level": "warning",
+          "message": {
+            "text": "--allow-run with no program list: the process may execute any program, which escapes every other permission. (--allow-run on deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-ffi-unscoped",
+          "level": "warning",
+          "message": {
+            "text": "--allow-ffi with no path list: any native library can be loaded, and native code is outside the sandbox. (--allow-ffi on deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-write-unscoped",
+          "level": "warning",
+          "message": {
+            "text": "--allow-write with no path list: the process may overwrite any file the user can, including its own source. (--allow-write on deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-env-unscoped",
+          "level": "note",
+          "message": {
+            "text": "--allow-env with no variable list: every environment variable, every secret in it, is readable. (--allow-env on deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-import-unscoped",
+          "level": "warning",
+          "message": {
+            "text": "--allow-import with no host list: code may be imported at run time from any host. (--allow-import on deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-scripts-unscoped",
+          "level": "warning",
+          "message": {
+            "text": "--allow-scripts with no package list: every npm lifecycle script in the dependency tree runs on install. (--allow-scripts on deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-run-shell",
+          "level": "warning",
+          "message": {
+            "text": "--allow-run names a shell or interpreter: running sh/bash/python/node with arguments is running any program. (--allow-run=git,bash includes bash)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-all",
+          "level": "note",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (deno test)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 9
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-all",
+          "level": "error",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (deno run https://deno.land/x/somecli/mod.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 10
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/remote-entrypoint",
+          "level": "error",
+          "message": {
+            "text": "A remote URL is executed directly: whoever controls that URL decides what runs, with the permissions on the command line. (deno run https://deno.land/x/somecli/mod.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 10
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/permission-set-unscoped",
+          "level": "note",
+          "message": {
+            "text": "A permission set in deno.json grants an unscoped permission (true rather than a list). (permissions.default.read: true)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/permission-set-unscoped",
+          "level": "warning",
+          "message": {
+            "text": "A permission set in deno.json grants an unscoped permission (true rather than a list). (permissions.default.run: true)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-all",
+          "level": "error",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (permissions.admin.all: true)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 14
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/lock-disabled",
+          "level": "warning",
+          "message": {
+            "text": "The lockfile is disabled: nothing verifies that remote modules are the ones that were reviewed. (\"lock\": false)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/unpinned-import",
+          "level": "warning",
+          "message": {
+            "text": "A remote module or registry specifier has no version: its publisher, or whoever takes over the name, can change the code that runs. (https://deno.land/x/oak/mod.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 17
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/unpinned-import",
+          "level": "warning",
+          "message": {
+            "text": "A remote module or registry specifier has no version: its publisher, or whoever takes over the name, can change the code that runs. (https://deno.land/std/path/mod.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 18
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/unpinned-import",
+          "level": "warning",
+          "message": {
+            "text": "A remote module or registry specifier has no version: its publisher, or whoever takes over the name, can change the code that runs. (https://esm.sh/react)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 19
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/cleartext-import",
+          "level": "error",
+          "message": {
+            "text": "A module is imported over http://: anyone on the network path can replace the code. (http://cdn.example.com/legacy.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 20
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/unpinned-import",
+          "level": "warning",
+          "message": {
+            "text": "A remote module or registry specifier has no version: its publisher, or whoever takes over the name, can change the code that runs. (jsr:@std/path)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 21
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/unpinned-import",
+          "level": "warning",
+          "message": {
+            "text": "A remote module or registry specifier has no version: its publisher, or whoever takes over the name, can change the code that runs. (npm:chalk)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deno.jsonc"
+                },
+                "region": {
+                  "startLine": 22
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-all",
+          "level": "error",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (deno run /app/main.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Dockerfile"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/lock-disabled",
+          "level": "warning",
+          "message": {
+            "text": "The lockfile is disabled: nothing verifies that remote modules are the ones that were reviewed. (deno run --no-lock)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Dockerfile"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-all",
+          "level": "error",
+          "message": {
+            "text": "All permissions granted (-A / --allow-all): the Deno sandbox is switched off for this program. (deno run)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.ts"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/cleartext-import",
+          "level": "error",
+          "message": {
+            "text": "A module is imported over http://: anyone on the network path can replace the code. (http://deno.land/std@0.140.0/http/server.ts)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.ts"
+                },
+                "region": {
+                  "startLine": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/unpinned-import",
+          "level": "warning",
+          "message": {
+            "text": "A remote module or registry specifier has no version: its publisher, or whoever takes over the name, can change the code that runs. (https://raw.githubusercontent.com/colinhacks/zod/main/deno/lib/mod.ts (a branch, not a commit))"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.ts"
+                },
+                "region": {
+                  "startLine": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-env-unscoped",
+          "level": "note",
+          "message": {
+            "text": "--allow-env with no variable list: every environment variable, every secret in it, is readable. (--allow-env on deno serve)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Procfile"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-net-unscoped",
+          "level": "note",
+          "message": {
+            "text": "--allow-net with no host list: the process may connect anywhere, including internal services and metadata endpoints. (--allow-net on deno serve)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Procfile"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "deno/allow-read-unscoped",
+          "level": "note",
+          "message": {
+            "text": "--allow-read with no path list: every file the user can read is readable, including keys and credentials. (--allow-read on deno serve)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Procfile"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

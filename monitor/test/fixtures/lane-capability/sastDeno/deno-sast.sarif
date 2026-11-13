@@ -1,0 +1,1999 @@
+{
+ "version": "2.1.0",
+ "runs": [
+  {
+   "invocations": [
+    {
+     "executionSuccessful": true,
+     "toolExecutionNotifications": []
+    }
+   ],
+   "results": [
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:14"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'tool' @ 'main.ts:12'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 13,
+              "endLine": 12,
+              "message": {
+               "text": "Propagator : 'tool' @ 'main.ts:12'"
+              },
+              "snippet": {
+               "text": "tool"
+              },
+              "startColumn": 9,
+              "startLine": 12
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'tool' @ 'main.ts:14'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 14,
+              "message": {
+               "text": "Sink: 'tool' @ 'main.ts:14'"
+              },
+              "snippet": {
+               "text": "tool"
+              },
+              "startColumn": 26,
+              "startLine": 14
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "8810097ac8a325429650cecd1ab19d8b7a67fef3d4edbc71fa0ba98cbfed8ca20747f0897eb122726b9f7fb673485a8c790fe88bea9bbb70ef4b183ee940d091_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 30,
+         "endLine": 14,
+         "snippet": {
+          "text": "  await new Deno.Command(tool).output();"
+         },
+         "startColumn": 26,
+         "startLine": 14
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input reaches the program name of a Deno.Command, or the script a shell runs with -c. Whoever sends the request chooses what executes, with every permission the process holds. Run a fixed program and pass the value as one element of `args`, never through a shell."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F1",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "command"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-command-injection"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:18"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'expr' @ 'main.ts:16'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 13,
+              "endLine": 16,
+              "message": {
+               "text": "Propagator : 'expr' @ 'main.ts:16'"
+              },
+              "snippet": {
+               "text": "expr"
+              },
+              "startColumn": 9,
+              "startLine": 16
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: '`grep ${expr} /var/log/app.log`' @ 'main.ts:18'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 78,
+              "endLine": 18,
+              "message": {
+               "text": "Sink: '`grep ${expr} /var/log/app.log`' @ 'main.ts:18'"
+              },
+              "snippet": {
+               "text": "`grep ${expr} /var/log/app.log`"
+              },
+              "startColumn": 47,
+              "startLine": 18
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "12991ef0dadc978da92ab6e2a0f6f0a15a04eca64b373f6de2fa0e8b5984b19916be58d2c9de80bd67822045701e1402bb344e66ef647cbc1897aa302d7b53d2_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 78,
+         "endLine": 18,
+         "snippet": {
+          "text": "  await new Deno.Command(\"sh\", { args: [\"-c\", `grep ${expr} /var/log/app.log`] }).output();"
+         },
+         "startColumn": 47,
+         "startLine": 18
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input reaches the program name of a Deno.Command, or the script a shell runs with -c. Whoever sends the request chooses what executes, with every permission the process holds. Run a fixed program and pass the value as one element of `args`, never through a shell."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F2",
+       "control": "substring",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "command"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-command-injection"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:22"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'branch' @ 'main.ts:20'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 15,
+              "endLine": 20,
+              "message": {
+               "text": "Propagator : 'branch' @ 'main.ts:20'"
+              },
+              "snippet": {
+               "text": "branch"
+              },
+              "startColumn": 9,
+              "startLine": 20
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: '[\"checkout\", branch]' @ 'main.ts:22'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 61,
+              "endLine": 22,
+              "message": {
+               "text": "Sink: '[\"checkout\", branch]' @ 'main.ts:22'"
+              },
+              "snippet": {
+               "text": "[\"checkout\", branch]"
+              },
+              "startColumn": 41,
+              "startLine": 22
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "d73585100e16d613b9a54145f9400368610f1affa2e0183b417a7e4871e0ffb7d5ddc1e284587f7523f89cfcfa2b40980e94513d0c52e4a876482fe34ffb4a75_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 61,
+         "endLine": 22,
+         "snippet": {
+          "text": "  await new Deno.Command(\"git\", { args: [\"checkout\", branch] }).output();"
+         },
+         "startColumn": 41,
+         "startLine": 22
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input becomes an argument of a fixed program run with Deno.Command. No shell parses it, but the program does: a value starting with `-` is read as an option (git's --upload-pack, ssh's -oProxyCommand, tar's --checkpoint-action run commands). Put `--` before positional values, or refuse values that begin with `-`."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F3",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "command-argument"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-argument-injection"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:28"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'plugin' @ 'main.ts:26'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 15,
+              "endLine": 26,
+              "message": {
+               "text": "Propagator : 'plugin' @ 'main.ts:26'"
+              },
+              "snippet": {
+               "text": "plugin"
+              },
+              "startColumn": 9,
+              "startLine": 26
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'plugin' @ 'main.ts:28'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 22,
+              "endLine": 28,
+              "message": {
+               "text": "Sink: 'plugin' @ 'main.ts:28'"
+              },
+              "snippet": {
+               "text": "plugin"
+              },
+              "startColumn": 16,
+              "startLine": 28
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "79f0c94d4b4c0877ac1c4fe477cc3f1cb98ef688fd727b4ed4763c6ee921f4bee3a63f47eb0a945d9e531332f68598edf069d29028687e4692aac03e3cd86181_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 22,
+         "endLine": 28,
+         "snippet": {
+          "text": "  await import(plugin);"
+         },
+         "startColumn": 16,
+         "startLine": 28
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input decides what code runs: an eval, a Function body, the specifier of a dynamic import(), or a Worker's module URL. Deno's import() accepts https: and data: specifiers, so a chosen specifier is remote code execution with every permission the process holds, not just a choice among local modules. Map the input to a fixed set of specifiers instead."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F4",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "code-load"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-code-injection"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:34"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'name' @ 'main.ts:32'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 13,
+              "endLine": 32,
+              "message": {
+               "text": "Propagator : 'name' @ 'main.ts:32'"
+              },
+              "snippet": {
+               "text": "name"
+              },
+              "startColumn": 9,
+              "startLine": 32
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'join(ROOT, name)' @ 'main.ts:34'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 56,
+              "endLine": 34,
+              "message": {
+               "text": "Sink: 'join(ROOT, name)' @ 'main.ts:34'"
+              },
+              "snippet": {
+               "text": "join(ROOT, name)"
+              },
+              "startColumn": 40,
+              "startLine": 34
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "4fa409eee6ad80cc5ae9da21feeea8d2add03a004e8573f78c6898e1880abcd132a9c17ccb8cec118827e55f975bdc7ee9aa471bcd380ef1074c1607a35c2b41_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 56,
+         "endLine": 34,
+         "snippet": {
+          "text": "  const body = await Deno.readTextFile(join(ROOT, name));"
+         },
+         "startColumn": 40,
+         "startLine": 34
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input reaches the path of a Deno file-system call. `../` segments, an absolute path or a symlink take it outside the directory the code meant, limited only by --allow-read and --allow-write, which are usually granted for a whole tree. Resolve the path, then refuse it unless it still starts with the root (relative(root, p) must not begin with `..`), or take only a basename."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F5",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "file-system"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-path-traversal"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:40"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'target' @ 'main.ts:38'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 15,
+              "endLine": 38,
+              "message": {
+               "text": "Propagator : 'target' @ 'main.ts:38'"
+              },
+              "snippet": {
+               "text": "target"
+              },
+              "startColumn": 9,
+              "startLine": 38
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'target' @ 'main.ts:40'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 38,
+              "endLine": 40,
+              "message": {
+               "text": "Sink: 'target' @ 'main.ts:40'"
+              },
+              "snippet": {
+               "text": "target"
+              },
+              "startColumn": 32,
+              "startLine": 40
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "9da8a0d4cb9dd265884defe30140c25aa65ea2c96cdf79abf310a4c798d038b1c4906730c01519515237f7f088e4c138c42e9e6570bbca9533be9fe3159f3522_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 38,
+         "endLine": 40,
+         "snippet": {
+          "text": "  const upstream = await fetch(target);"
+         },
+         "startColumn": 32,
+         "startLine": 40
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input chooses where the server connects: a fetch URL, a WebSocket URL, or the host of Deno.connect / Deno.connectTls / Deno.resolveDns. The request is made from inside the network with the server's identity, so it reaches internal services and cloud metadata endpoints --allow-net does not scope out. Pin the host: parse with new URL(), compare `hostname` against an allowlist, and grant --allow-net only for those hosts."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F6",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "network"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-ssrf"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:48"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'who' @ 'main.ts:45'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 45,
+              "message": {
+               "text": "Propagator : 'who' @ 'main.ts:45'"
+              },
+              "snippet": {
+               "text": "who"
+              },
+              "startColumn": 9,
+              "startLine": 45
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: '`<h1>Hello ${who}</h1>`' @ 'main.ts:48'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 48,
+              "endLine": 48,
+              "message": {
+               "text": "Sink: '`<h1>Hello ${who}</h1>`' @ 'main.ts:48'"
+              },
+              "snippet": {
+               "text": "`<h1>Hello ${who}</h1>`"
+              },
+              "startColumn": 25,
+              "startLine": 48
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "3ad384cac055eddde50ed04d38d3dad3256aaffd460de7d6681922e8d756c2c56099f3c50e1279983ccfaf2d83faa4750175388fb2c66e42bb763865d1a902be_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 48,
+         "endLine": 48,
+         "snippet": {
+          "text": "    return new Response(`<h1>Hello ${who}</h1>`, { headers: { \"content-type\": \"text/html; charset=utf-8\" } });"
+         },
+         "startColumn": 25,
+         "startLine": 48
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input is returned in a Response declared as text/html (or through Hono's c.html), with no escaping on the way. A script in the input runs in the site's origin. Escape with escape() from @std/html at the point of output, or render through a JSX/template engine that escapes by default."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F7",
+       "control": "substring",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "html"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-reflected-html"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:62"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'next' @ 'main.ts:59'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 13,
+              "endLine": 59,
+              "message": {
+               "text": "Propagator : 'next' @ 'main.ts:59'"
+              },
+              "snippet": {
+               "text": "next"
+              },
+              "startColumn": 9,
+              "startLine": 59
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'next' @ 'main.ts:62'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 34,
+              "endLine": 62,
+              "message": {
+               "text": "Sink: 'next' @ 'main.ts:62'"
+              },
+              "snippet": {
+               "text": "next"
+              },
+              "startColumn": 30,
+              "startLine": 62
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "c55e2987773107ea4323f063d6a5cad9e705f865ff06a0808d76a063d60866f54c6aaa15800ae1f6b0c4f646b4cdf14daa79fee61179d39ec40659cfb6069eb2_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 34,
+         "endLine": 62,
+         "snippet": {
+          "text": "    return Response.redirect(next, 302);"
+         },
+         "startColumn": 30,
+         "startLine": 62
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input becomes the target of a redirect. A link on the site's own domain then sends the user anywhere, which is how phishing borrows a trusted origin and how OAuth flows leak their codes. Redirect only to relative paths, or to hosts on an allowlist."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F8",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "redirect"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-open-redirect"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:65 to main.ts:67"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.headers.get(\"x-lang\")' @ 'main.ts:65'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 41,
+              "endLine": 65,
+              "message": {
+               "text": "Source: 'req.headers.get(\"x-lang\")' @ 'main.ts:65'"
+              },
+              "snippet": {
+               "text": "req.headers.get(\"x-lang\")"
+              },
+              "startColumn": 16,
+              "startLine": 65
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'lang' @ 'main.ts:65'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 13,
+              "endLine": 65,
+              "message": {
+               "text": "Propagator : 'lang' @ 'main.ts:65'"
+              },
+              "snippet": {
+               "text": "lang"
+              },
+              "startColumn": 9,
+              "startLine": 65
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'lang' @ 'main.ts:67'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 32,
+              "endLine": 67,
+              "message": {
+               "text": "Sink: 'lang' @ 'main.ts:67'"
+              },
+              "snippet": {
+               "text": "lang"
+              },
+              "startColumn": 28,
+              "startLine": 67
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "5868c086d91346983e6a98fef8017f6804e83019e5ec909465d531b8081b233c9b19c89369419bd3a2d13651176a50a7533b23bf7b8515bb5de947913d7705c5_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 32,
+         "endLine": 67,
+         "snippet": {
+          "text": "  Deno.env.set(\"APP_LANG\", lang);"
+         },
+         "startColumn": 28,
+         "startLine": 67
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input is written into the process environment with Deno.env.set. Every child the process spawns afterwards inherits it, so a chosen LD_PRELOAD, NODE_OPTIONS, PATH or DENO_DIR runs the attacker's code, and later Deno.env.get reads trust it as configuration. Pass per-request values to a child through Deno.Command's `env` option, never the process environment."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F9",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "environment"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-poisoning"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:11 to main.ts:73"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 30,
+              "endLine": 11,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 23,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'url' @ 'main.ts:11'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 12,
+              "endLine": 11,
+              "message": {
+               "text": "Propagator : 'url' @ 'main.ts:11'"
+              },
+              "snippet": {
+               "text": "url"
+              },
+              "startColumn": 9,
+              "startLine": 11
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'pattern' @ 'main.ts:71'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 16,
+              "endLine": 71,
+              "message": {
+               "text": "Propagator : 'pattern' @ 'main.ts:71'"
+              },
+              "snippet": {
+               "text": "pattern"
+              },
+              "startColumn": 9,
+              "startLine": 71
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'pattern' @ 'main.ts:73'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 32,
+              "endLine": 73,
+              "message": {
+               "text": "Sink: 'pattern' @ 'main.ts:73'"
+              },
+              "snippet": {
+               "text": "pattern"
+              },
+              "startColumn": 25,
+              "startLine": 73
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "c09042a1458addf4a348dbf1e77c6cbdd47d464d2febfb31615ceb1995b4230ef1008d645010284f04ee3d06a85678c7a89e0f77adaaafa6089e18be170337d1_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 32,
+         "endLine": 73,
+         "snippet": {
+          "text": "  const re = new RegExp(pattern);"
+         },
+         "startColumn": 25,
+         "startLine": 73
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input is compiled as a regular expression. V8's backtracking engine lets a crafted pattern take exponential time, and a Deno server runs every request on one thread, so one request stalls all of them. Escape the input with escape() from @std/regexp, or match it as a plain string."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F10",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "regex"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-regex-from-request"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:77 to main.ts:77"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'Deno.env.toObject()' @ 'main.ts:77'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 45,
+              "endLine": 77,
+              "message": {
+               "text": "Source: 'Deno.env.toObject()' @ 'main.ts:77'"
+              },
+              "snippet": {
+               "text": "Deno.env.toObject()"
+              },
+              "startColumn": 26,
+              "startLine": 77
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: 'Deno.env.toObject()' @ 'main.ts:77'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 45,
+              "endLine": 77,
+              "message": {
+               "text": "Sink: 'Deno.env.toObject()' @ 'main.ts:77'"
+              },
+              "snippet": {
+               "text": "Deno.env.toObject()"
+              },
+              "startColumn": 26,
+              "startLine": 77
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "fe75a0026892d184426cc3502cde6fe7db92c4accbce0b28e9ee9c57703e9563a07307cda3a6df017b82cc4553b3c0c4e71f1c6a759038b984c892ca4eb9f033_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 45,
+         "endLine": 77,
+         "snippet": {
+          "text": "    return Response.json(Deno.env.toObject());"
+         },
+         "startColumn": 26,
+         "startLine": 77
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "The whole process environment (Deno.env.toObject()) reaches a response body. The environment holds the deployment's secrets — database URLs, API keys, DENO_DEPLOY tokens — and this sends every one of them to the client. Return the specific non-secret values the client needs."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F11",
+       "control": "full",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "response"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-disclosure"
+    },
+    {
+     "codeFlows": [
+      {
+       "message": {
+        "text": "Untrusted dataflow from main.ts:85 to main.ts:87"
+       },
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "message": {
+             "text": "Source: 'req.url' @ 'main.ts:85'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 28,
+              "endLine": 85,
+              "message": {
+               "text": "Source: 'req.url' @ 'main.ts:85'"
+              },
+              "snippet": {
+               "text": "req.url"
+              },
+              "startColumn": 21,
+              "startLine": 85
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Propagator : 'p' @ 'main.ts:85'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 10,
+              "endLine": 85,
+              "message": {
+               "text": "Propagator : 'p' @ 'main.ts:85'"
+              },
+              "snippet": {
+               "text": "p"
+              },
+              "startColumn": 9,
+              "startLine": 85
+             }
+            }
+           },
+           "nestingLevel": 0
+          },
+          {
+           "location": {
+            "message": {
+             "text": "Sink: '`${ROOT}/${p}`' @ 'main.ts:87'"
+            },
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "main.ts"
+             },
+             "region": {
+              "endColumn": 45,
+              "endLine": 87,
+              "message": {
+               "text": "Sink: '`${ROOT}/${p}`' @ 'main.ts:87'"
+              },
+              "snippet": {
+               "text": "`${ROOT}/${p}`"
+              },
+              "startColumn": 31,
+              "startLine": 87
+             }
+            }
+           },
+           "nestingLevel": 0
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "fingerprints": {
+      "matchBasedId/v1": "d87360f2e55c9cd7fa0e7c0536b557b8e0f209ae166b64c93f4659eec4d7f529f53803321f7ed97428a2fb218e90886ac9a266815c2ebff55e9fe4fdd9e125a9_0"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "main.ts",
+         "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+         "endColumn": 45,
+         "endLine": 87,
+         "snippet": {
+          "text": "  return await serveFile(req, `${ROOT}/${p}`);"
+         },
+         "startColumn": 31,
+         "startLine": 87
+        }
+       }
+      }
+     ],
+     "message": {
+      "text": "Request input reaches the path of a Deno file-system call. `../` segments, an absolute path or a symlink take it outside the directory the code meant, limited only by --allow-read and --allow-write, which are usually granted for a whole tree. Resolve the path, then refuse it unless it still starts with the root (relative(root, p) must not begin with `..`), or take only a basename."
+     },
+     "properties": {
+      "cwMutability": {
+       "flow": "F12",
+       "control": "substring",
+       "residual": "high",
+       "boundingHop": null,
+       "sinkClass": "file-system"
+      }
+     },
+     "ruleId": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-path-traversal"
+    }
+   ],
+   "tool": {
+    "driver": {
+     "name": "Opengrep OSS",
+     "rules": [
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "Request input reaches the program name of a Deno.Command, or the script a shell runs with -c. Whoever sends the request chooses what executes, with every permission the process holds. Run a fixed program and pass the value as one element of `args`, never through a shell."
+       },
+       "help": {
+        "markdown": "Request input reaches the program name of a Deno.Command, or the script a shell runs with -c. Whoever sends the request chooses what executes, with every permission the process holds. Run a fixed program and pass the value as one element of `args`, never through a shell.",
+        "text": "Request input reaches the program name of a Deno.Command, or the script a shell runs with -c. Whoever sends the request chooses what executes, with every permission the process holds. Run a fixed program and pass the value as one element of `args`, never through a shell."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-command-injection",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-command-injection",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-78: Improper Neutralization of Special Elements used in an OS Command",
+         "HIGH CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-command-injection"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "fullDescription": {
+        "text": "Request input becomes an argument of a fixed program run with Deno.Command. No shell parses it, but the program does: a value starting with `-` is read as an option (git's --upload-pack, ssh's -oProxyCommand, tar's --checkpoint-action run commands). Put `--` before positional values, or refuse values that begin with `-`."
+       },
+       "help": {
+        "markdown": "Request input becomes an argument of a fixed program run with Deno.Command. No shell parses it, but the program does: a value starting with `-` is read as an option (git's --upload-pack, ssh's -oProxyCommand, tar's --checkpoint-action run commands). Put `--` before positional values, or refuse values that begin with `-`.",
+        "text": "Request input becomes an argument of a fixed program run with Deno.Command. No shell parses it, but the program does: a value starting with `-` is read as an option (git's --upload-pack, ssh's -oProxyCommand, tar's --checkpoint-action run commands). Put `--` before positional values, or refuse values that begin with `-`."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-argument-injection",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-argument-injection",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-88: Improper Neutralization of Argument Delimiters in a Command",
+         "MEDIUM CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-argument-injection"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "Request input decides what code runs: an eval, a Function body, the specifier of a dynamic import(), or a Worker's module URL. Deno's import() accepts https: and data: specifiers, so a chosen specifier is remote code execution with every permission the process holds, not just a choice among local modules. Map the input to a fixed set of specifiers instead."
+       },
+       "help": {
+        "markdown": "Request input decides what code runs: an eval, a Function body, the specifier of a dynamic import(), or a Worker's module URL. Deno's import() accepts https: and data: specifiers, so a chosen specifier is remote code execution with every permission the process holds, not just a choice among local modules. Map the input to a fixed set of specifiers instead.",
+        "text": "Request input decides what code runs: an eval, a Function body, the specifier of a dynamic import(), or a Worker's module URL. Deno's import() accepts https: and data: specifiers, so a chosen specifier is remote code execution with every permission the process holds, not just a choice among local modules. Map the input to a fixed set of specifiers instead."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-code-injection",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-code-injection",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
+         "CWE-94: Improper Control of Generation of Code ('Code Injection')",
+         "HIGH CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-code-injection"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "Request input reaches the path of a Deno file-system call. `../` segments, an absolute path or a symlink take it outside the directory the code meant, limited only by --allow-read and --allow-write, which are usually granted for a whole tree. Resolve the path, then refuse it unless it still starts with the root (relative(root, p) must not begin with `..`), or take only a basename."
+       },
+       "help": {
+        "markdown": "Request input reaches the path of a Deno file-system call. `../` segments, an absolute path or a symlink take it outside the directory the code meant, limited only by --allow-read and --allow-write, which are usually granted for a whole tree. Resolve the path, then refuse it unless it still starts with the root (relative(root, p) must not begin with `..`), or take only a basename.",
+        "text": "Request input reaches the path of a Deno file-system call. `../` segments, an absolute path or a symlink take it outside the directory the code meant, limited only by --allow-read and --allow-write, which are usually granted for a whole tree. Resolve the path, then refuse it unless it still starts with the root (relative(root, p) must not begin with `..`), or take only a basename."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-path-traversal",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-path-traversal",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')",
+         "HIGH CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-path-traversal"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "Request input chooses where the server connects: a fetch URL, a WebSocket URL, or the host of Deno.connect / Deno.connectTls / Deno.resolveDns. The request is made from inside the network with the server's identity, so it reaches internal services and cloud metadata endpoints --allow-net does not scope out. Pin the host: parse with new URL(), compare `hostname` against an allowlist, and grant --allow-net only for those hosts."
+       },
+       "help": {
+        "markdown": "Request input chooses where the server connects: a fetch URL, a WebSocket URL, or the host of Deno.connect / Deno.connectTls / Deno.resolveDns. The request is made from inside the network with the server's identity, so it reaches internal services and cloud metadata endpoints --allow-net does not scope out. Pin the host: parse with new URL(), compare `hostname` against an allowlist, and grant --allow-net only for those hosts.",
+        "text": "Request input chooses where the server connects: a fetch URL, a WebSocket URL, or the host of Deno.connect / Deno.connectTls / Deno.resolveDns. The request is made from inside the network with the server's identity, so it reaches internal services and cloud metadata endpoints --allow-net does not scope out. Pin the host: parse with new URL(), compare `hostname` against an allowlist, and grant --allow-net only for those hosts."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-ssrf",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-ssrf",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-918: Server-Side Request Forgery (SSRF)",
+         "MEDIUM CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-ssrf"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "Request input is returned in a Response declared as text/html (or through Hono's c.html), with no escaping on the way. A script in the input runs in the site's origin. Escape with escape() from @std/html at the point of output, or render through a JSX/template engine that escapes by default."
+       },
+       "help": {
+        "markdown": "Request input is returned in a Response declared as text/html (or through Hono's c.html), with no escaping on the way. A script in the input runs in the site's origin. Escape with escape() from @std/html at the point of output, or render through a JSX/template engine that escapes by default.",
+        "text": "Request input is returned in a Response declared as text/html (or through Hono's c.html), with no escaping on the way. A script in the input runs in the site's origin. Escape with escape() from @std/html at the point of output, or render through a JSX/template engine that escapes by default."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-reflected-html",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-reflected-html",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
+         "HIGH CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-reflected-html"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "fullDescription": {
+        "text": "Request input becomes the target of a redirect. A link on the site's own domain then sends the user anywhere, which is how phishing borrows a trusted origin and how OAuth flows leak their codes. Redirect only to relative paths, or to hosts on an allowlist."
+       },
+       "help": {
+        "markdown": "Request input becomes the target of a redirect. A link on the site's own domain then sends the user anywhere, which is how phishing borrows a trusted origin and how OAuth flows leak their codes. Redirect only to relative paths, or to hosts on an allowlist.",
+        "text": "Request input becomes the target of a redirect. A link on the site's own domain then sends the user anywhere, which is how phishing borrows a trusted origin and how OAuth flows leak their codes. Redirect only to relative paths, or to hosts on an allowlist."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-open-redirect",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-open-redirect",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')",
+         "MEDIUM CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-open-redirect"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "Request input is written into the process environment with Deno.env.set. Every child the process spawns afterwards inherits it, so a chosen LD_PRELOAD, NODE_OPTIONS, PATH or DENO_DIR runs the attacker's code, and later Deno.env.get reads trust it as configuration. Pass per-request values to a child through Deno.Command's `env` option, never the process environment."
+       },
+       "help": {
+        "markdown": "Request input is written into the process environment with Deno.env.set. Every child the process spawns afterwards inherits it, so a chosen LD_PRELOAD, NODE_OPTIONS, PATH or DENO_DIR runs the attacker's code, and later Deno.env.get reads trust it as configuration. Pass per-request values to a child through Deno.Command's `env` option, never the process environment.",
+        "text": "Request input is written into the process environment with Deno.env.set. Every child the process spawns afterwards inherits it, so a chosen LD_PRELOAD, NODE_OPTIONS, PATH or DENO_DIR runs the attacker's code, and later Deno.env.get reads trust it as configuration. Pass per-request values to a child through Deno.Command's `env` option, never the process environment."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-poisoning",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-poisoning",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-454: External Initialization of Trusted Variables or Data Stores",
+         "HIGH CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-poisoning"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "warning"
+       },
+       "fullDescription": {
+        "text": "Request input is compiled as a regular expression. V8's backtracking engine lets a crafted pattern take exponential time, and a Deno server runs every request on one thread, so one request stalls all of them. Escape the input with escape() from @std/regexp, or match it as a plain string."
+       },
+       "help": {
+        "markdown": "Request input is compiled as a regular expression. V8's backtracking engine lets a crafted pattern take exponential time, and a Deno server runs every request on one thread, so one request stalls all of them. Escape the input with escape() from @std/regexp, or match it as a plain string.",
+        "text": "Request input is compiled as a regular expression. V8's backtracking engine lets a crafted pattern take exponential time, and a Deno server runs every request on one thread, so one request stalls all of them. Escape the input with escape() from @std/regexp, or match it as a plain string."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-regex-from-request",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-regex-from-request",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-1333: Inefficient Regular Expression Complexity",
+         "MEDIUM CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-regex-from-request"
+       }
+      },
+      {
+       "defaultConfiguration": {
+        "level": "error"
+       },
+       "fullDescription": {
+        "text": "The whole process environment (Deno.env.toObject()) reaches a response body. The environment holds the deployment's secrets — database URLs, API keys, DENO_DEPLOY tokens — and this sends every one of them to the client. Return the specific non-secret values the client needs."
+       },
+       "help": {
+        "markdown": "The whole process environment (Deno.env.toObject()) reaches a response body. The environment holds the deployment's secrets — database URLs, API keys, DENO_DEPLOY tokens — and this sends every one of them to the client. Return the specific non-secret values the client needs.",
+        "text": "The whole process environment (Deno.env.toObject()) reaches a response body. The environment holds the deployment's secrets — database URLs, API keys, DENO_DEPLOY tokens — and this sends every one of them to the client. Return the specific non-secret values the client needs."
+       },
+       "id": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-disclosure",
+       "name": "home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-disclosure",
+       "properties": {
+        "precision": "very-high",
+        "tags": [
+         "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor",
+         "CWE-526: Cleartext Storage of Sensitive Information in an Environment Variable",
+         "HIGH CONFIDENCE",
+         "security"
+        ]
+       },
+       "shortDescription": {
+        "text": "Opengrep Finding: home.claude.commitwork.manifests.semgrep-deno-security.cw-deno-env-disclosure"
+       }
+      }
+     ],
+     "semanticVersion": "1.33.1"
+    }
+   },
+   "properties": {
+    "cwEngine": {
+     "name": "opengrep",
+     "version": "1.33.1",
+     "crossFunction": "intrafile",
+     "flags": [
+      "--taint-intrafile",
+      "--dataflow-traces"
+     ]
+    },
+    "cwPack": "security",
+    "cwMirror": {
+     "filesScanned": 1,
+     "typeArgsErased": {
+      "files": 0,
+      "sites": 0
+     },
+     "unclassified": [],
+     "unclassifiedCount": 0,
+     "oversize": [],
+     "oversizeCount": 0
+    }
+   }
+  }
+ ],
+ "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json"
+}

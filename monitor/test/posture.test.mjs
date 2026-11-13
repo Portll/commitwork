@@ -322,8 +322,14 @@ describe('the weakness-class axis is declared, cross-checked against the rule ma
     // with EVERY lane in scope, the two hard voids remain and authz does NOT (it is declared by the probes)
     const full = weaknessClassVoids(TAXONOMY, new Set(TAXONOMY.approaches.map((a) => a.check)));
     const fullSlugs = new Set(full.map((v) => v.class));
-    assert.ok(fullSlugs.has('cwe-840-business-logic') && fullSlugs.has('cwe-362-race'),
-      'business-logic and race are declared by NO lane and must show even with every approach in scope');
+    assert.ok(fullSlugs.has('cwe-840-business-logic'),
+      'business-logic is declared by NO lane and must show even with every approach in scope');
+    // RE-BASED 2026-11-14, deliberately: race was a NO-lane void until sast-deno, which reports the
+    // Deno KV read-modify-write, the ignored commit() result and file-system TOCTOU (fixture-proven
+    // in fixtures/semgrep-deno/security/races-constructs.ts). It is now a void only where no Deno
+    // lane is in scope — still true of every non-Deno roster.
+    assert.ok(!fullSlugs.has('cwe-362-race'), 'race is declared by sast-deno — with every lane in scope it is not a NO-lane void');
+    assert.ok(TAXONOMY.approaches.find((x) => x.check === 'sast-deno').weaknessClasses.includes('cwe-362-race'));
     assert.ok(!fullSlugs.has('cwe-284-authz'), 'authz IS declared — with every lane in scope it is not a NO-lane void');
     assert.ok(!fullSlugs.has('*-advisory-dep'), 'the agnostic dependency class is the ecosystem axis, not a first-party class void');
   });

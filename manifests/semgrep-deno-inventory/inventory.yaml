@@ -1,0 +1,175 @@
+# Deno data-flow inventory: where data ENTERS a program, where it is STORED, and where it LEAVES.
+#
+# These are not findings. bin/deno-sast.mjs runs this pack into its own JSON (never into a lane's
+# SARIF), and bin/deno-dfd.mjs builds the program's data-flow diagram from it: external entities
+# and trust boundaries from `entry`, data stores from `store`, external processes from `egress`
+# and `exec`. Taint findings from manifests/semgrep-deno-security/ are then drawn onto that diagram
+# as the paths that actually cross it.
+#
+# metadata.dfd: role (entry | store | egress | exec), kind (a short machine name), trust
+# (external | local | internal) for entries.
+
+rules:
+  - id: cw-deno-inv-http-server
+    languages: [typescript, javascript]
+    severity: INFO
+    message: HTTP server (Deno.serve)
+    metadata: {category: inventory, dfd: {role: entry, kind: http, trust: external, label: "HTTP request"}}
+    pattern-either:
+      - pattern: Deno.serve(...)
+      - pattern: '({..., fetch($REQ, ...) { ... }, ...})'
+      - pattern: '({..., async fetch($REQ, ...) { ... }, ...})'
+
+  - id: cw-deno-inv-tcp-listener
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Raw TCP/TLS/Unix listener
+    metadata: {category: inventory, dfd: {role: entry, kind: socket, trust: external, label: "Socket peer"}}
+    pattern-either:
+      - pattern: Deno.listen(...)
+      - pattern: Deno.listenTls(...)
+      - pattern: Deno.listenDatagram(...)
+
+  - id: cw-deno-inv-websocket
+    languages: [typescript, javascript]
+    severity: INFO
+    message: WebSocket upgrade
+    metadata: {category: inventory, dfd: {role: entry, kind: websocket, trust: external, label: "WebSocket peer"}}
+    pattern: Deno.upgradeWebSocket(...)
+
+  - id: cw-deno-inv-cron
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Scheduled job (Deno.cron)
+    metadata: {category: inventory, dfd: {role: entry, kind: cron, trust: internal, label: "Scheduler"}}
+    pattern: Deno.cron(...)
+
+  - id: cw-deno-inv-kv-queue
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Deno KV queue consumer
+    metadata: {category: inventory, dfd: {role: entry, kind: kv-queue, trust: internal, label: "KV queue message"}}
+    pattern: $KV.listenQueue(...)
+
+  - id: cw-deno-inv-cli-args
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Command-line arguments
+    metadata: {category: inventory, dfd: {role: entry, kind: argv, trust: local, label: "Command line"}}
+    pattern: Deno.args
+
+  - id: cw-deno-inv-env
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Environment read
+    metadata: {category: inventory, dfd: {role: entry, kind: env, trust: local, label: "Environment"}}
+    pattern-either:
+      - pattern: Deno.env.get(...)
+      - pattern: Deno.env.toObject()
+
+  - id: cw-deno-inv-stdin
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Standard input
+    metadata: {category: inventory, dfd: {role: entry, kind: stdin, trust: local, label: "Standard input"}}
+    pattern-either:
+      - pattern: Deno.stdin.readable
+      - pattern: Deno.stdin.read(...)
+      - pattern: prompt(...)
+
+  - id: cw-deno-inv-worker-message
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Worker message handler
+    metadata: {category: inventory, dfd: {role: entry, kind: worker-message, trust: internal, label: "Worker message"}}
+    pattern-either:
+      - pattern: self.onmessage = $H
+      - pattern: self.addEventListener("message", ...)
+
+  - id: cw-deno-inv-kv
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Deno KV store
+    metadata: {category: inventory, dfd: {role: store, kind: kv, label: "Deno KV"}}
+    pattern: Deno.openKv(...)
+
+  - id: cw-deno-inv-fs-write
+    languages: [typescript, javascript]
+    severity: INFO
+    message: File-system write
+    metadata: {category: inventory, dfd: {role: store, kind: fs, label: "File system"}}
+    patterns:
+      - pattern: Deno.$OP(...)
+      - metavariable-regex:
+          metavariable: $OP
+          regex: ^(writeFile|writeTextFile|create|remove|mkdir|rename|copyFile|truncate|symlink)(Sync)?$
+
+  - id: cw-deno-inv-fs-read
+    languages: [typescript, javascript]
+    severity: INFO
+    message: File-system read
+    metadata: {category: inventory, dfd: {role: store, kind: fs, label: "File system"}}
+    patterns:
+      - pattern: Deno.$OP(...)
+      - metavariable-regex:
+          metavariable: $OP
+          regex: ^(readFile|readTextFile|open|readDir|stat|lstat|realPath)(Sync)?$
+
+  - id: cw-deno-inv-sql
+    languages: [typescript, javascript]
+    severity: INFO
+    message: SQL database client
+    metadata: {category: inventory, dfd: {role: store, kind: sql, label: "SQL database"}}
+    patterns:
+      - pattern: $DB.$M(...)
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(queryArray|queryObject|queryEntries)$
+
+  - id: cw-deno-inv-fetch
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Outbound HTTP
+    metadata: {category: inventory, dfd: {role: egress, kind: http-out, label: "Remote HTTP service"}}
+    pattern-either:
+      - pattern: fetch(...)
+      - pattern: new WebSocket(...)
+
+  - id: cw-deno-inv-connect
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Outbound socket
+    metadata: {category: inventory, dfd: {role: egress, kind: socket-out, label: "Remote socket"}}
+    pattern-either:
+      - pattern: Deno.connect(...)
+      - pattern: Deno.connectTls(...)
+      - pattern: Deno.resolveDns(...)
+
+  - id: cw-deno-inv-subprocess
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Subprocess
+    metadata: {category: inventory, dfd: {role: exec, kind: subprocess, label: "Child process"}}
+    pattern-either:
+      - pattern: new Deno.Command(...)
+      - pattern: Deno.run(...)
+
+  - id: cw-deno-inv-ffi
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Native library (FFI)
+    metadata: {category: inventory, dfd: {role: exec, kind: ffi, label: "Native library"}}
+    pattern: Deno.dlopen(...)
+
+  - id: cw-deno-inv-dynamic-code
+    languages: [typescript, javascript]
+    severity: INFO
+    message: Dynamic code load
+    metadata: {category: inventory, dfd: {role: exec, kind: code-load, label: "Dynamically loaded code"}}
+    patterns:
+      - pattern-either:
+          - pattern: import($X)
+          - pattern: new Worker($X, ...)
+          - pattern: eval($X)
+          - pattern: new Function(...)
+      - pattern-not: import("...")

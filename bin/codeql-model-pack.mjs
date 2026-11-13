@@ -45,6 +45,34 @@ export function modelFiles(modelsDir, repo, language) {
     .filter((f) => new RegExp(`pack:\\s*["']?codeql/${lib}-all["']?\\s*$`, 'm').test(f.text));
 }
 
+// Models that ship with commitwork and apply to every repository of a language: the runtime APIs
+// CodeQL's own library does not model (manifests/codeql-models/<library>/, e.g. the Deno global).
+// They join the repository's own models in one pack; a name clash is resolved in the repository's
+// favour, so a fleet model can be overridden per repository but never silently replaced.
+// No env override: repo-code CodeQL lanes run under an allowlisted env (bin/lib/scanner-env.mjs),
+// and a path override nothing needs is one more name to hold there. Tests pass `dir` instead.
+export const SHIPPED_DIR = () => join(ROOT, 'manifests', 'codeql-models');
+
+/** Shipped model files for one language: [{name, text}] with names prefixed `shipped-`. */
+export function shippedModelFiles(language, dir = SHIPPED_DIR()) {
+  const lib = LIBRARY[language];
+  if (!lib) throw new Error(`unknown CodeQL language ${language}`);
+  let names;
+  try { names = readdirSync(join(dir, lib)).filter((n) => /\.ya?ml$/.test(n)).sort(); } catch (e) {
+    if (e.code === 'ENOENT') return [];
+    throw e;
+  }
+  return names.map((n) => ({ name: `shipped-${n}`, text: readFileSync(join(dir, lib, n), 'utf8') }))
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- lib is a value of the frozen LIBRARY map, checked at the top of this function
+    .filter((f) => new RegExp(`pack:\\s*["']?codeql/${lib}-all["']?\\s*$`, 'm').test(f.text));
+}
+
+/** Repository models and shipped models together; the repository's file wins a name clash. */
+export function mergedModelFiles(repoFiles, shipped) {
+  const names = new Set(repoFiles.map((f) => f.name));
+  return [...repoFiles, ...shipped.filter((f) => !names.has(f.name))].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** Writes the pack and returns {name, dir, files}, or null when there is nothing to load. */
 export function buildPack(files, repo, language, outRoot) {
   if (!files.length) return null;
@@ -64,11 +92,13 @@ if (isMainModule(import.meta.url)) {
   const language = process.argv[2];
   const repo = basename(resolve('.'));
   const reportDir = process.env.CW_REPORT_DIR || '.';
-  const record = { repo, language, modelsDir: null, files: [], pack: null, applied: false, error: null };
+  const record = { repo, language, modelsDir: null, files: [], shipped: [], pack: null, applied: false, error: null };
   try {
     const modelsDir = codeqlModelsDirFor(ROOT);
     record.modelsDir = existsSync(modelsDir) ? 'present' : 'absent';
-    const files = modelFiles(modelsDir, repo, language);
+    const shipped = shippedModelFiles(language);
+    record.shipped = shipped.map((f) => f.name);
+    const files = mergedModelFiles(modelFiles(modelsDir, repo, language), shipped);
     const pack = buildPack(files, repo, language, join(reportDir, 'codeql-models'));
     if (pack) {
       record.files = pack.files; record.pack = pack.name; record.applied = true;

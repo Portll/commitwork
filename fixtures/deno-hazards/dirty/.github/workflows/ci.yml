@@ -1,0 +1,10 @@
+name: ci
+on: [push]
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - run: deno run -A scripts/release.ts
+      - run: deno test -A
+      # cw-hazards-ignore: release smoke test needs the whole sandbox, reviewed 2026-11
+      - run: deno run -A scripts/smoke.ts

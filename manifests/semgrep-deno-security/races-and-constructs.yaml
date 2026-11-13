@@ -1,0 +1,323 @@
+# Deno races and defect-by-presence constructs for the sast-deno lane.
+#
+# The races here are SECURITY races, the ones whose interleaving changes who gets what: a balance
+# or quota read and rewritten across an await, a permission or ownership check made on a file that
+# can be swapped before it is opened. Ordering bugs that cost correctness but not authority live in
+# manifests/semgrep-deno-reliability/.
+#
+# Deno KV is the reason this file exists at all. Its consistency model is optimistic concurrency:
+# kv.get returns a versionstamp, and only kv.atomic().check({key, versionstamp}) makes a later
+# write conditional on nothing having changed. A get followed by a set is a lost update under any
+# concurrency at all — and Deno.serve runs handlers concurrently by default. And commit() does not
+# throw when a check fails: it RESOLVES to {ok: false}. Code that awaits commit() and moves on has
+# treated a refused write as a successful one.
+
+rules:
+  - id: cw-deno-kv-read-modify-write
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A Deno KV entry is read and then written back under the same key with no versionstamp check
+      between them. Two concurrent requests both read the old value and the second write discards
+      the first — a lost update, which on a balance, a quota, a counter or a one-time token is a
+      bypass, not a glitch. Write through kv.atomic().check(entry).set(...).commit() and retry
+      while the result's `ok` is false, or use .sum() for counters.
+    metadata:
+      category: security
+      class: deno-race
+      cwe: ["CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')", "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"]
+      confidence: HIGH
+    patterns:
+      # `kv.get<T>(key)` is a distinct node from `kv.get(key)`: both forms are listed, because
+      # the typed one is how most Deno KV code is written and the untyped pattern misses it.
+      - pattern-either:
+          - pattern-inside: |
+              $E = await $KV.get($K, ...);
+              ...
+          - pattern-inside: |
+              const $E = await $KV.get($K, ...);
+              ...
+          - pattern-inside: |
+              let $E = await $KV.get($K, ...);
+              ...
+          - pattern-inside: |
+              $E = await $KV.get<$T>($K, ...);
+              ...
+          - pattern-inside: |
+              const $E = await $KV.get<$T>($K, ...);
+              ...
+          - pattern-inside: |
+              let $E = await $KV.get<$T>($K, ...);
+              ...
+      - pattern-either:
+          - pattern: $KV.set($K, ...)
+          - pattern: $KV.delete($K)
+          - pattern: $KV.atomic(). ... .set($K, ...). ... .commit()
+          - pattern: $KV.atomic(). ... .delete($K). ... .commit()
+      - pattern-not: $KV.atomic(). ... .check(...). ... .commit()
+
+  - id: cw-deno-kv-commit-result-ignored
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      The result of a Deno KV atomic commit() is discarded. When a .check() fails, commit() does
+      not throw: it resolves to {ok: false} and writes nothing. This code continues as if the write
+      happened — the check that was meant to stop a race is silently ignored. Read the result and
+      retry (or refuse) while `ok` is false.
+    metadata:
+      category: security
+      class: deno-race
+      cwe: ["CWE-252: Unchecked Return Value", "CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')"]
+      confidence: HIGH
+    # Statement position only: a commit whose value is bound, returned, tested or passed on is
+    # read by something. Measured: without these exclusions the pattern also matched
+    # `const res = await ...commit()`, the corrected form.
+    patterns:
+      - pattern-either:
+          - pattern: await $KV.atomic(). ... .check(...). ... .commit()
+          # The un-awaited form, but not the call INSIDE an awaited one: measured, both branches
+          # matched one statement (columns 3 and 9) and reported it twice.
+          - patterns:
+              - pattern: $KV.atomic(). ... .check(...). ... .commit()
+              - pattern-not-inside: await $Y
+      - pattern-not-inside: $V = $X
+      - pattern-not-inside: const $V = $X
+      - pattern-not-inside: let $V = $X
+      - pattern-not-inside: var $V = $X
+      - pattern-not-inside: return $X
+      - pattern-not-inside: (await $X).ok
+      - pattern-not-inside: if (<... $X ...>) $S
+      - pattern-not-inside: '{..., $K: $X, ...}'
+      - pattern-not-inside: '[..., $X, ...]'
+      # NOT `$F(..., <... $X ...>, ...)`: the un-awaited branch is itself a call and would exclude
+      # itself. A commit passed straight into another call is therefore still reported.
+
+  - id: cw-deno-fs-toctou
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A path is checked (Deno.stat, Deno.lstat, exists) and then modified in a separate call. In
+      the gap another process can swap the path for a symlink or create it first, so the operation
+      lands somewhere the check never saw. Drop the pre-check and act atomically: Deno.open with
+      {createNew: true} fails with Deno.errors.AlreadyExists instead of following a planted file;
+      catch Deno.errors.NotFound instead of checking first.
+    metadata:
+      category: security
+      class: deno-race
+      cwe: ["CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"]
+      confidence: MEDIUM
+    # The stat branch carries its own metavariable-regex: a regex over a metavariable that the
+    # matching branch never bound FAILS, which silently disabled the exists() branches.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      await Deno.$CHK($P, ...);
+                      ...
+                  - pattern-inside: |
+                      $S = await Deno.$CHK($P, ...);
+                      ...
+                  - pattern-inside: |
+                      const $S = await Deno.$CHK($P, ...);
+                      ...
+                  - pattern-inside: |
+                      Deno.$CHK($P, ...);
+                      ...
+                  - pattern-inside: |
+                      const $S = Deno.$CHK($P, ...);
+                      ...
+              - metavariable-regex:
+                  metavariable: $CHK
+                  regex: ^(stat|lstat|statSync|lstatSync)$
+          - pattern-inside: |
+              if (<... exists($P, ...) ...>) { ... }
+              ...
+          - pattern-inside: |
+              if (<... exists($P, ...) ...>) { ... }
+          - pattern-inside: |
+              if (<... existsSync($P, ...) ...>) { ... }
+          - pattern-inside: |
+              if (<... existsSync($P, ...) ...>) { ... }
+              ...
+      - pattern: Deno.$OP($P, ...)
+      - metavariable-regex:
+          metavariable: $OP
+          regex: ^(open|create|writeFile|writeTextFile|remove|rename|chmod|chown|truncate|symlink|mkdir|copyFile)(Sync)?$
+
+  - id: cw-deno-websocket-no-origin-check
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A request is upgraded with Deno.upgradeWebSocket and the handler never reads its Origin
+      header. Browsers attach cookies to cross-site WebSocket handshakes and the same-origin policy
+      does not apply to them, so any page the user visits can open this socket as the user
+      (cross-site WebSocket hijacking). Compare req.headers.get("origin") against the expected
+      origins before upgrading.
+    metadata:
+      category: security
+      class: deno-websocket
+      cwe: ["CWE-1385: Missing Origin Validation in WebSockets"]
+      confidence: MEDIUM
+    # The origin may be read anywhere in the handler: Deno.upgradeWebSocket only completes when its
+    # `response` is RETURNED, so a check after the call that returns 403 instead still refuses the
+    # handshake. What is flagged is a handler that never reads Origin at all.
+    patterns:
+      - pattern: Deno.upgradeWebSocket($REQ, ...)
+      - pattern-not-inside: |
+          ($REQ, ...) => {
+            ...
+            <... $REQ.headers.get("origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          ($REQ, ...) => {
+            ...
+            <... $REQ.headers.get("Origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          async ($REQ, ...) => {
+            ...
+            <... $REQ.headers.get("origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          async ($REQ, ...) => {
+            ...
+            <... $REQ.headers.get("Origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          function $F(..., $REQ, ...) {
+            ...
+            <... $REQ.headers.get("origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          function $F(..., $REQ, ...) {
+            ...
+            <... $REQ.headers.get("Origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          async function $F(..., $REQ, ...) {
+            ...
+            <... $REQ.headers.get("origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          async function $F(..., $REQ, ...) {
+            ...
+            <... $REQ.headers.get("Origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          function $F(..., $REQ: Request, ...) {
+            ...
+            <... $REQ.headers.get("origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          function $F(..., $REQ: Request, ...) {
+            ...
+            <... $REQ.headers.get("Origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          async function $F(..., $REQ: Request, ...) {
+            ...
+            <... $REQ.headers.get("origin") ...>;
+            ...
+          }
+      - pattern-not-inside: |
+          async function $F(..., $REQ: Request, ...) {
+            ...
+            <... $REQ.headers.get("Origin") ...>;
+            ...
+          }
+
+  - id: cw-deno-timing-unsafe-secret-compare
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A secret from the environment, or an Authorization header, is compared with === / !==. String
+      comparison stops at the first differing character, so response timing leaks how much of a
+      guess is right. Compare with timingSafeEqual from @std/crypto/timing-safe-equal over
+      equal-length byte arrays.
+    metadata:
+      category: security
+      class: deno-auth
+      cwe: ["CWE-208: Observable Timing Discrepancy"]
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: $X === Deno.env.get(...)
+      - pattern: Deno.env.get(...) === $X
+      - pattern: $X !== Deno.env.get(...)
+      - pattern: Deno.env.get(...) !== $X
+      - pattern: $X == Deno.env.get(...)
+      - pattern: Deno.env.get(...) == $X
+      - pattern: $R.headers.get("authorization") === $X
+      - pattern: $R.headers.get("Authorization") === $X
+      - pattern: $R.headers.get("authorization") !== $X
+      - pattern: $R.headers.get("Authorization") !== $X
+      - pattern: $X === $R.headers.get("authorization")
+      - pattern: $X === $R.headers.get("Authorization")
+
+  - id: cw-deno-worker-inherits-permissions
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A Worker is created with deno.permissions "inherit" (or a grant of run/ffi/all). The worker
+      runs with the full permission set of its parent, so a worker meant to sandbox untrusted or
+      plugin code is no sandbox at all. Grant the worker only what it needs — permissions: "none",
+      or an explicit object of narrow grants.
+    metadata:
+      category: security
+      class: deno-permissions
+      cwe: ["CWE-250: Execution with Unnecessary Privileges"]
+      confidence: HIGH
+    pattern-either:
+      - pattern: 'new Worker($U, {..., deno: {..., permissions: "inherit", ...}, ...})'
+      - pattern: 'new Worker($U, {..., deno: {..., permissions: {..., run: true, ...}, ...}, ...})'
+      - pattern: 'new Worker($U, {..., deno: {..., permissions: {..., ffi: true, ...}, ...}, ...})'
+      - pattern: 'new Worker($U, {..., deno: {..., permissions: {..., all: true, ...}, ...}, ...})'
+
+  - id: cw-deno-cookie-missing-flags
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      setCookie from @std/http sets a cookie without both httpOnly and secure. Without httpOnly
+      any script on the page (one XSS) reads it; without secure it travels over plain HTTP. Set
+      httpOnly: true, secure: true and sameSite: "Lax" (or "Strict") on every session or auth
+      cookie.
+    metadata:
+      category: security
+      class: deno-cookie
+      cwe: ["CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag", "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"]
+      confidence: MEDIUM
+    patterns:
+      - pattern: 'setCookie($H, {...})'
+      - pattern-not: 'setCookie($H, {..., httpOnly: true, ..., secure: true, ...})'
+      - pattern-not: 'setCookie($H, {..., secure: true, ..., httpOnly: true, ...})'
+
+  - id: cw-deno-cleartext-remote-import
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Code is imported from an http:// URL. Deno fetches remote modules at run time (or at cache
+      time), so anyone on the network path — a café router, a compromised proxy — replaces the
+      module with their own and it runs with the program's permissions. Import over https: from a
+      pinned version, and keep a deno.lock with integrity hashes.
+    metadata:
+      category: security
+      class: deno-supply-chain
+      cwe: ["CWE-829: Inclusion of Functionality from Untrusted Control Sphere", "CWE-319: Cleartext Transmission of Sensitive Information"]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: import($URL)
+          - pattern: new Worker($URL, ...)
+      - metavariable-regex:
+          metavariable: $URL
+          regex: ^["'`]http://

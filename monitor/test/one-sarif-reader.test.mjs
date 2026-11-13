@@ -29,6 +29,8 @@ const ADOPTERS = [
   'monitor/dep-findings.mjs', 'monitor/codeql-fleet-data.mjs',
   'monitor/corrected-history.mjs', 'monitor/backfill-docs.mjs', 'monitor/backfill-dimensions.mjs',
   'bin/go-lane-scan.mjs', 'monitor/sarif-ingest.mjs',
+  // The Deno lanes: the engine's SARIF is classified before the rewrite, and the DFD pass reads its inputs through it.
+  'bin/deno-sast.mjs', 'bin/deno-dfd.mjs',
 ];
 
 // Sites deferred from migration, each with a reason — declared debt, never silent. A deferral

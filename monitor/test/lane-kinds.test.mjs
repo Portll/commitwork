@@ -7,7 +7,7 @@ import { LANE_KINDS, LANE_KIND_NAMES, TOTALS_EXCLUDE, METRIC_CATEGORIES, SCANNER
   sumTotals } from '../extractors.mjs';
 
 // The pinned lists. A member added since derivation carries its reason beside it.
-const WAS_TOTALS_EXCLUDE = ['maliciousPackages', 'stubs', 'denoLint', 'denoTypes',
+const WAS_TOTALS_EXCLUDE = ['maliciousPackages', 'stubs', 'denoLint', 'denoReliability', 'denoTypes',
   // depsRustAudit: lane(V,'duplicate') — same advisory universe as deps-osv
   // (OSV imports RustSec), wired as the second opinion, so summing it would double every Rust
   // advisory. A deliberate re-base, per this file's rule that the headline never moves silently.
@@ -44,7 +44,7 @@ const WAS_TOTALS_EXCLUDE = ['maliciousPackages', 'stubs', 'denoLint', 'denoTypes
   // yaraWitness joined 2026-10-08: lane(I,'duplicate'), YARA rules over the files webshell already
   // judged, wired as its second witness, so summing it would count one shell twice.
   'yaraWitness'];
-const WAS_METRIC_CATEGORIES = ['stubs', 'denoLint', 'denoTypes', 'lintRust', 'lintHaskell', 'lintGo', 'lintPython', 'lintJava', 'formatRust', 'cobolCoverage', 'actionsHealth', 'testHermetic'];
+const WAS_METRIC_CATEGORIES = ['stubs', 'denoLint', 'denoReliability', 'denoTypes', 'lintRust', 'lintHaskell', 'lintGo', 'lintPython', 'lintJava', 'formatRust', 'cobolCoverage', 'actionsHealth', 'testHermetic'];
 
 describe('derivation is inert', () => {
   test('TOTALS_EXCLUDE membership is unchanged', () => {

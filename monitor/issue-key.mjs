@@ -122,6 +122,10 @@ export const CLASS_FOR_CATEGORY = Object.freeze({
   // TLS verification off, a cipher with no IV, a template bypassing its own escaping: all
   // attack surface, so 'S'. The lint lanes above are 'F' because they ask whether code WORKS.
   nodeHazards: 'S',
+  // Deno: taint/races and permission posture are attack surface; reliability asks whether it WORKS.
+  sastDeno: 'S',
+  denoHazards: 'S',
+  denoReliability: 'F',
   sastCobol: 'S',
 
   // An install hook that fetches and executes, a registry package with no integrity hash, an

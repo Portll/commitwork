@@ -1,0 +1,113 @@
+# CodeQL models-as-data for the Deno runtime API, loaded into the sast-codeql lane for every
+# JavaScript/TypeScript repository by bin/codeql-model-pack.mjs (shipped models; per-repository
+# models from the private store are added beside them, never instead).
+#
+# WHY. CodeQL's JavaScript library models Node, browsers and npm frameworks. At github/codeql
+# 94cb719 (2026-11-13) javascript/ql/lib contained no reference to `Deno` at all, so in a Deno
+# server the request a Deno.serve handler receives is not a source and new Deno.Command,
+# Deno.writeFile and Deno.dlopen are not sinks. CodeQL ran on Deno repositories — its extension
+# gate is .ts/.js — and found nothing there for want of knowing where data enters and leaves.
+#
+# `global` is CodeQL's package for global variables (ApiGraphModelsSpecific.qll), so these rows
+# bind to the `Deno` global the runtime provides, with no import to resolve.
+#
+# THREAT MODELS. `remote` sources are on by default. `environment` and `commandargs` belong to the
+# `local` threat-model group, which the lane does not enable: those rows are declared so that a
+# run with --threat-model local sees them, and are inert otherwise. The opengrep lane
+# (sast-deno) covers the local-input shell and native-library cases unconditionally.
+#
+# NOT MODELLED, deliberately: import() (not a member access; MaD cannot name it — sast-deno's
+# cw-deno-code-injection covers it), and Deno.Command's args array (CodeQL cannot tell a shell's
+# -c script from an ordinary argument through MaD, and a row flagging every argument would be noise
+# — sast-deno distinguishes them).
+extensions:
+  - addsTo:
+      pack: codeql/javascript-all
+      extensible: sourceModel
+    data:
+      # The Request a Deno.serve handler receives — handler first, handler second (after options),
+      # or the `handler` of an options object. Sources are the MEMBERS a handler reads, not the
+      # Request object: CodeQL's JavaScript taint does not flow from an object to its properties,
+      # so a source on `req` alone tainted nothing (measured: 0 results on CodeQL 2.27.4 with the
+      # object-level row; the member rows below are what produced the paths).
+      - ["global", "Member[Deno].Member[serve].Argument[0,1].Parameter[0].Member[url,body]", "remote"]
+      - ["global", "Member[Deno].Member[serve].Argument[0,1].Parameter[0].Member[headers].Member[get].ReturnValue", "remote"]
+      - ["global", "Member[Deno].Member[serve].Argument[0,1].Parameter[0].Member[json,text,formData,arrayBuffer,blob].ReturnValue.Awaited", "remote"]
+      - ["global", "Member[Deno].Member[serve].Argument[0].Member[handler].Parameter[0].Member[url,body]", "remote"]
+      - ["global", "Member[Deno].Member[serve].Argument[0].Member[handler].Parameter[0].Member[headers].Member[get].ReturnValue", "remote"]
+      - ["global", "Member[Deno].Member[serve].Argument[0].Member[handler].Parameter[0].Member[json,text,formData,arrayBuffer,blob].ReturnValue.Awaited", "remote"]
+      # A URL's query parameters. Declared a SOURCE because no summary carried taint into
+      # searchParams.get() (above). TRADE-OFF, stated: a query string parsed from a constant URL is
+      # also treated as remote. In a Deno server the URL being parsed is the request's in nearly
+      # every case, and CodeQL's own Next.js model takes the same view of searchParams.
+      - ["global", "Member[URL].Instance.Member[searchParams].Member[get,getAll].ReturnValue", "remote"]
+      # Hono, the most used Deno web framework, which CodeQL does not model either: c.req.*.
+      # The type is the import specifier VERBATIM (CodeQL matches it against string literals), so
+      # `jsr:@hono/hono@4` — a version in the specifier — binds none of these rows; import maps
+      # (`"hono": "jsr:@hono/hono@^4"`, then `from "hono"`) are the form that does.
+      - ["jsr:@hono/hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[query,queries,param,header].ReturnValue", "remote"]
+      - ["jsr:@hono/hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[json,text,parseBody,formData].ReturnValue.Awaited", "remote"]
+      - ["jsr:@hono/hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[url]", "remote"]
+      - ["@hono/hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[query,queries,param,header].ReturnValue", "remote"]
+      - ["hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[query,queries,param,header].ReturnValue", "remote"]
+      - ["npm:hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[query,queries,param,header].ReturnValue", "remote"]
+      - ["@hono/hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[json,text,parseBody,formData].ReturnValue.Awaited", "remote"]
+      - ["hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[json,text,parseBody,formData].ReturnValue.Awaited", "remote"]
+      - ["npm:hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[json,text,parseBody,formData].ReturnValue.Awaited", "remote"]
+      - ["@hono/hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[url]", "remote"]
+      - ["hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[url]", "remote"]
+      - ["npm:hono", "Member[Hono].Instance.Member[get,post,put,patch,delete,all,on,use].Argument[1..].Parameter[0].Member[req].Member[url]", "remote"]
+      # A WebSocket peer's messages.
+      - ["global", "Member[Deno].Member[upgradeWebSocket].ReturnValue.Member[socket].Member[onmessage].Parameter[0].Member[data]", "remote"]
+      - ["global", "Member[Deno].Member[upgradeWebSocket].ReturnValue.Member[socket].Member[addEventListener].Argument[1].Parameter[0].Member[data]", "remote"]
+      # A Deno KV queue message: at-least-once delivery of whatever was enqueued.
+      - ["global", "Member[Deno].Member[openKv].ReturnValue.Awaited.Member[listenQueue].Argument[0].Parameter[0]", "remote"]
+      # Local inputs (inert unless --threat-model local).
+      - ["global", "Member[Deno].Member[args]", "commandargs"]
+      - ["global", "Member[Deno].Member[env].Member[get].ReturnValue", "environment"]
+      - ["global", "Member[Deno].Member[env].Member[toObject].ReturnValue", "environment"]
+
+  - addsTo:
+      pack: codeql/javascript-all
+      extensible: summaryModel
+    data:
+      # The WHATWG URL API, which every Deno handler uses to read its query string:
+      # new URL(req.url).searchParams.get("q"). CodeQL models neither, and its JavaScript taint does
+      # not flow from an object to its properties, so the string is STORED into the members a
+      # handler reads (value steps — the member is a substring of the input, which is what a taint
+      # step would claim) and URLSearchParams.get returns its receiver's taint. Measured on CodeQL
+      # 2.27.4: with only Argument[0] -> ReturnValue, every u.pathname / searchParams.get() read
+      # was clean.
+      - ["global", "Member[URL]", "Argument[0]", "ReturnValue.Member[href,pathname,search,hash,host,hostname,searchParams]", "value"]
+      # @std/path: CodeQL does not propagate taint through an unmodelled call, so a request value
+      # joined onto a root (join(ROOT, name)) reached no path sink at all. Same verbatim-specifier
+      # rule as Hono below: the import-map spellings bind, a versioned jsr: specifier does not.
+      - ["@std/path", "Member[join,resolve,normalize,relative,basename,dirname,extname,fromFileUrl,toFileUrl]", "Argument[0..]", "ReturnValue", "taint"]
+      - ["jsr:@std/path", "Member[join,resolve,normalize,relative,basename,dirname,extname,fromFileUrl,toFileUrl]", "Argument[0..]", "ReturnValue", "taint"]
+      # searchParams.get() could not be reached by any summary shape tried (Argument[this] on the
+      # method, an output path through its ReturnValue); see the source row below instead.
+
+  - addsTo:
+      pack: codeql/javascript-all
+      extensible: sinkModel
+    data:
+      # The program a child process runs.
+      - ["global", "Member[Deno].Member[Command].Argument[0]", "command-injection"]
+      # Native code: loading a library is running it, outside every Deno permission check.
+      - ["global", "Member[Deno].Member[dlopen].Argument[0]", "code-injection"]
+      # A worker's module URL.
+      - ["global", "Member[Worker].Argument[0]", "code-injection"]
+      # File-system paths (first argument; rename/copyFile/symlink/link take two paths).
+      - ["global", "Member[Deno].Member[readFile,readFileSync,readTextFile,readTextFileSync,writeFile,writeFileSync,writeTextFile,writeTextFileSync,open,openSync,create,createSync,remove,removeSync,mkdir,mkdirSync,readDir,readDirSync,chmod,chmodSync,chown,chownSync,truncate,truncateSync,readLink,readLinkSync,realPath,realPathSync,lstat,lstatSync,stat,statSync,utime,utimeSync].Argument[0]", "path-injection"]
+      - ["global", "Member[Deno].Member[rename,renameSync,copyFile,copyFileSync,symlink,symlinkSync,link,linkSync].Argument[0,1]", "path-injection"]
+      # Outbound connections whose host the caller chooses.
+      - ["global", "Member[Deno].Member[connect,connectTls].Argument[0].Member[hostname]", "request-forgery"]
+      - ["global", "Member[Deno].Member[resolveDns].Argument[0]", "request-forgery"]
+      # A redirect target.
+      - ["global", "Member[Response].Member[redirect].Argument[0]", "url-redirection"]
+      # deno-postgres and @db/sqlite, by the specifiers Deno code imports them with. The tagged
+      # template form (client.queryObject`...${v}`) is parameterised and is not Argument[0] text.
+      - ["jsr:@db/postgres", "Member[Client,Pool].Instance.Member[queryArray,queryObject].Argument[0]", "sql-injection"]
+      - ["@db/postgres", "Member[Client,Pool].Instance.Member[queryArray,queryObject].Argument[0]", "sql-injection"]
+      - ["jsr:@db/sqlite", "Member[Database].Instance.Member[exec,run,prepare,sql].Argument[0]", "sql-injection"]
+      - ["@db/sqlite", "Member[Database].Instance.Member[exec,run,prepare,sql].Argument[0]", "sql-injection"]

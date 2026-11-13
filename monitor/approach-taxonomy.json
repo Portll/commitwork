@@ -1238,6 +1238,50 @@
       "weaknessClasses": [],
       "escalates": "NOT a vulnerability scan, and named so deliberately: no advisory database covers Deno's URL/JSR import graph the way OSV covers Cargo and npm, and osv-scanner rejects Deno lockfiles. The escalation here is the GAP itself — a Deno repo is structurally uncovered on the dependency axis, and that belongs in a report as an unknown rather than as a pass."
     },
+{
+      "check": "sast-deno",
+      "name": "Deno taint and race analysis — opengrep cross-function over Deno APIs",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-78-command-injection",
+        "cwe-89-injection",
+        "cwe-79-xss",
+        "cwe-22-path",
+        "cwe-918-ssrf",
+        "cwe-362-race",
+        "cwe-668-exposure"
+      ],
+      "escalates": "The only lane that knows a Deno.serve request is untrusted and that Deno.Command, import(), Deno.dlopen and Deno's file API are sinks — before it, CodeQL ran on Deno code with no Deno model and every registry pack was Node-shaped, so a Deno repo's taint coverage was close to zero while its SAST rows read green. Escalate `control: full|substring|structured` first; `filtered`/`mismatched` mean a defence of the wrong kind is in place. The KV races are Deno-specific and invisible to a generic engine: commit() RESOLVES {ok:false} on a failed check, so code that awaits it and moves on has ignored the check.",
+      "note": "Every rule has a ruleid and an ok fixture (fixtures/semgrep-deno/); typed calls are read via length-preserving type-argument erasure, because both opengrep and Semgrep drop `f<T>(x)` from the AST."
+    },
+{
+      "check": "deno-reliability",
+      "name": "Deno ordering, resource and performance defects",
+      "type": "build-health",
+      "sourceKind": "source",
+      "oracleTier": 1,
+      "findsSourceVulns": false,
+      "weaknessClasses": [],
+      "escalates": "Not a security signal, and must not be read as one: a green row here says nothing about taint or permissions. It finds what takes a Deno service DOWN — an unawaited write whose rejection exits the process, a piped child that deadlocks once its output exceeds the pipe buffer, sync I/O stalling the single handler thread."
+    },
+{
+      "check": "deno-hazards",
+      "name": "Deno permission grants, inspector exposure and module integrity",
+      "type": "posture",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "platform-posture-control",
+        "cwe-319-transport",
+        "unmaintained-component"
+      ],
+      "escalates": "Deno's sandbox is configured on the command line, not in the code, so this is the only lane that can say whether the sandbox is on. `deno/allow-all` or an unscoped --allow-run on a production entrypoint means every other Deno finding runs with full user privileges; `deno/inspector-exposed` is remote code execution on its own. Escalate those two above everything else this lane reports.",
+      "note": "Context-sensitive levels (deno test -A is a note) are the precision guard; fixtures/deno-hazards/clean asserts ZERO."
+    },
     {
       "check": "shell-lint",
       "name": "shellcheck — shell correctness and injection lint",
