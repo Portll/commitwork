@@ -722,6 +722,23 @@
       "container": false,
       "minDepth": 1,
       "note": "Reads plugin and theme headers, then one advisory request per distinct plugin and theme slug and one for the core version, plus api.wordpress.org's release list when core is present (pool of 4, cached privately for CW_WPVULN_TTL_HOURS); no hashing, no container. Gated on .php sources. As of 2026-10-08: 3.1 s cold for 18 lookups over a wp-content backup, 1.3 s with most answers cached, 1.4 s over a complete WordPress release, 0.7 s over this repository."
+    },
+    "sast-deno": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2,
+      "note": "Measured 2026-11-13 on the fixtures: opengrep 1.33.1 --taint-intrafile over 3 files in ~6s wall, of which most is engine start-up. The mirror build (copy + type-argument erasure) is a single lexer pass per TS file. Re-measure on a large Deno monorepo before trusting the class: cross-function taint cost grows with functions per file, not file count."
+    },
+    "deno-reliability": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 2,
+      "note": "Same engine and mirror as sast-deno with pattern rules only; no taint fixpoint."
+    },
+    "deno-hazards": {
+      "cost": "light",
+      "container": false,
+      "note": "A text pass over config and command-bearing files; no parse of source beyond import specifiers, no network."
     }
   },
   "depthLevels": [

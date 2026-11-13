@@ -74,6 +74,12 @@ export const SCANNER_CHECKS = Object.freeze({
   // kept separate from `sast` so a linter cannot earn a green SAST row
   denoLint: 'deno-lint',
   denoTypes: 'deno-check',
+  // Deno's own security lanes. sastDeno is the only lane naming Deno APIs as taint sources and
+  // sinks; denoHazards reads the permission flags, which live in config and command lines rather
+  // than code; denoReliability is the ordering/resource/performance half, kept out of the headline.
+  sastDeno: 'sast-deno',
+  denoReliability: 'deno-reliability',
+  denoHazards: 'deno-hazards',
   // Separate from actionsPosture on purpose: zizmor audits SECURITY posture, actionlint audits
   // CORRECTNESS (+ shellchecks inline `run:` blocks) — one must not stand in for the other
   actionsLint: 'actions-actionlint',

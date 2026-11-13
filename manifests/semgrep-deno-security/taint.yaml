@@ -1,0 +1,493 @@
+# Deno taint rules for the sast-deno lane (manifests/security-baseline.json).
+#
+# WHY A SEPARATE PACK. Nothing else in this roster names a Deno API as a source or a sink:
+# p/default and p/security-audit carry one Deno rule (deno-dangerous-run, on the removed Deno.run),
+# CodeQL's JavaScript library had zero references to `Deno` at github/codeql 94cb719 (2026-11-13),
+# and manifests/semgrep-taint/ is Node-shaped. So a Deno repo's request reaching
+# `new Deno.Command`, `import()`, `Deno.dlopen` or `Deno.writeFile` was invisible to every lane.
+#
+# ENGINE. The lane runs these with `opengrep --taint-intrafile` (cross-function, within one file,
+# open source). Every rule is also valid for the free Semgrep engine, which finds the same flows
+# when they stay inside one function. Fixtures: fixtures/semgrep-deno/security/*.ts, asserted both
+# ways by monitor/test/semgrep-deno.test.mjs.
+#
+# SOURCES ARE NARROW ON PURPOSE. A request handler is recognised by what Deno hands it (the
+# Deno.serve callback, a parameter typed Request, a Hono/Oak/Fresh context), not by the name `req`.
+# A source list broad enough to taint every string produces findings that are true and useless —
+# class A4, alarm fatigue. Local inputs (Deno.args, Deno.env) feed only the rules where a local
+# attacker changing them is a real escalation: shell scripts, native libraries, code loading.
+#
+# NOT HERE, DELIBERATELY: header injection. Deno's Headers rejects CR/LF in names and values
+# (TypeError), so a tainted header value is not a response-splitting sink in this runtime.
+
+x-deno-remote-sources: &deno-remote-sources
+  # The Request a Deno.serve handler receives, in both handler positions.
+  - patterns:
+      - pattern-either:
+          - pattern-inside: Deno.serve(..., ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., async ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., function ($REQ, ...) { ... })
+          - pattern-inside: Deno.serve(..., async function ($REQ, ...) { ... })
+          - pattern-inside: 'Deno.serve({..., handler: ($REQ, ...) => { ... }, ...})'
+          - pattern-inside: 'Deno.serve({..., handler: async ($REQ, ...) => { ... }, ...})'
+          - pattern-inside: 'Deno.serve({..., fetch: async ($REQ, ...) => { ... }, ...})'
+          # `deno serve` modules: export default { fetch(req) { ... } }. The parentheses matter: the
+          # unparenthesised object form parses as a block that matches everything with $REQ unbound
+          # (measured on opengrep 1.33.1 — it tainted import.meta.url).
+          - pattern-inside: '({..., fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: '({..., async fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: 'function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: 'async function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: '(..., $REQ: Request, ...) => { ... }'
+          - pattern-inside: 'async (..., $REQ: Request, ...) => { ... }'
+      - pattern-either:
+          - pattern: $REQ.url
+          - pattern: $REQ.headers.get(...)
+          - pattern: $REQ.json()
+          - pattern: $REQ.text()
+          - pattern: $REQ.formData()
+          - pattern: $REQ.arrayBuffer()
+          - pattern: $REQ.blob()
+          - pattern: $REQ.body
+  # Hono (c.req.*), the most used framework on Deno, and Oak (ctx.request / ctx.params).
+  - pattern-either:
+      - pattern: $C.req.query(...)
+      - pattern: $C.req.queries(...)
+      - pattern: $C.req.param(...)
+      - pattern: $C.req.header(...)
+      - pattern: $C.req.json()
+      - pattern: $C.req.text()
+      - pattern: $C.req.parseBody(...)
+      - pattern: $C.req.formData()
+      - pattern: $C.req.url
+      - pattern: $CTX.request.url
+      - pattern: $CTX.request.body
+      - pattern: $CTX.request.headers.get(...)
+      - pattern: $CTX.params.$P
+  # A WebSocket message: the peer controls every byte of it.
+  - patterns:
+      - pattern-either:
+          - pattern-inside: '$S.onmessage = ($E) => { ... }'
+          - pattern-inside: '$S.onmessage = async ($E) => { ... }'
+          - pattern-inside: '$S.addEventListener("message", ($E) => { ... })'
+          - pattern-inside: '$S.addEventListener("message", async ($E) => { ... })'
+      - pattern: $E.data
+  # A Deno KV queue message. At-least-once delivery of whatever was enqueued — and what was
+  # enqueued is very often request data. Second-order, so the rules read it as remote.
+  - patterns:
+      - pattern-either:
+          - pattern-inside: '$KV.listenQueue(($M) => { ... })'
+          - pattern-inside: '$KV.listenQueue(async ($M) => { ... })'
+      - pattern: $M
+  # Raw TCP: Deno.listen hands out connections whose readable stream is the peer's bytes.
+  - patterns:
+      - pattern-inside: 'for await (const $CHUNK of $CONN.readable) { ... }'
+      - pattern: $CHUNK
+
+x-deno-local-sources: &deno-local-sources
+  - pattern: Deno.args
+  - pattern: Deno.env.get(...)
+  - pattern: Deno.env.toObject()
+  - pattern: prompt(...)
+
+rules:
+  - id: cw-deno-command-injection
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Request input reaches the program name of a Deno.Command, or the script a shell runs with -c.
+      Whoever sends the request chooses what executes, with every permission the process holds.
+      Run a fixed program and pass the value as one element of `args`, never through a shell.
+    metadata:
+      category: security
+      class: deno-command
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
+      confidence: HIGH
+      dfd: {sink: command}
+    pattern-sources: *deno-remote-sources
+    pattern-sinks:
+      - patterns:
+          - pattern: new Deno.Command($CMD, ...)
+          - focus-metavariable: $CMD
+      - patterns:
+          - pattern-either:
+              - pattern: 'new Deno.Command($SH, {..., args: [..., $FLAG, $SCRIPT, ...], ...})'
+              - pattern: 'Deno.run({..., cmd: [$SH, ..., $FLAG, $SCRIPT, ...], ...})'
+          - metavariable-regex:
+              metavariable: $SH
+              regex: ^["'`](/bin/|/usr/bin/)?(sh|bash|zsh|dash|ash|fish|cmd|cmd\.exe|powershell|pwsh)["'`]$
+          - metavariable-regex:
+              metavariable: $FLAG
+              regex: ^["'`](-c|/c|/C|-Command|-lc)["'`]$
+          - focus-metavariable: $SCRIPT
+      - patterns:
+          - pattern: 'Deno.run({..., cmd: [$CMD, ...], ...})'
+          - focus-metavariable: $CMD
+
+  - id: cw-deno-argument-injection
+    mode: taint
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      Request input becomes an argument of a fixed program run with Deno.Command. No shell parses
+      it, but the program does: a value starting with `-` is read as an option (git's
+      --upload-pack, ssh's -oProxyCommand, tar's --checkpoint-action run commands). Put `--` before
+      positional values, or refuse values that begin with `-`.
+    metadata:
+      category: security
+      class: deno-command
+      cwe: ["CWE-88: Improper Neutralization of Argument Delimiters in a Command"]
+      confidence: MEDIUM
+      dfd: {sink: command-argument}
+    pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      - patterns:
+          - pattern-inside: 'new Deno.Command($C, {..., args: [..., "--", ..., $V, ...], ...})'
+          - pattern: $V
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: 'new Deno.Command($C, {..., args: [..., $ARG, ...], ...})'
+              - pattern: 'new Deno.Command($C, {..., args: $ARG, ...})'
+          - metavariable-regex:
+              metavariable: $C
+              regex: ^["'`](?!(/bin/|/usr/bin/)?(sh|bash|zsh|dash|ash|fish|cmd|cmd\.exe|powershell|pwsh)["'`])
+          - focus-metavariable: $ARG
+
+  - id: cw-deno-local-command-injection
+    mode: taint
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      An environment variable or a command-line argument reaches a shell script run with -c, or
+      the program name of a Deno.Command. In a CLI that is the user's own choice; in a service,
+      anything able to set the environment of the process (a CI variable, a container env, a
+      deploy setting) can run commands with the process's permissions. Pass the value as an
+      argument to a fixed program instead.
+    metadata:
+      category: security
+      class: deno-command
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
+      confidence: MEDIUM
+      dfd: {sink: command}
+    pattern-sources: *deno-local-sources
+    pattern-sinks:
+      - patterns:
+          - pattern: 'new Deno.Command($SH, {..., args: [..., $FLAG, $SCRIPT, ...], ...})'
+          - metavariable-regex:
+              metavariable: $SH
+              regex: ^["'`](/bin/|/usr/bin/)?(sh|bash|zsh|dash|ash|fish|cmd|cmd\.exe|powershell|pwsh)["'`]$
+          - metavariable-regex:
+              metavariable: $FLAG
+              regex: ^["'`](-c|/c|/C|-Command|-lc)["'`]$
+          - focus-metavariable: $SCRIPT
+      - patterns:
+          - pattern: new Deno.Command($CMD, ...)
+          - focus-metavariable: $CMD
+
+  - id: cw-deno-code-injection
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Request input decides what code runs: an eval, a Function body, the specifier of a dynamic
+      import(), or a Worker's module URL. Deno's import() accepts https: and data: specifiers, so a
+      chosen specifier is remote code execution with every permission the process holds, not just
+      a choice among local modules. Map the input to a fixed set of specifiers instead.
+    metadata:
+      category: security
+      class: deno-code-load
+      cwe: ["CWE-94: Improper Control of Generation of Code ('Code Injection')", "CWE-829: Inclusion of Functionality from Untrusted Control Sphere"]
+      confidence: HIGH
+      dfd: {sink: code-load}
+    pattern-sources: *deno-remote-sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: eval($CODE)
+              - pattern: new Function(..., $CODE)
+              - pattern: Function(..., $CODE)
+              - pattern: import($CODE)
+              - pattern: new Worker($CODE, ...)
+              - pattern: setTimeout($CODE, ...)
+              - pattern: setInterval($CODE, ...)
+          - focus-metavariable: $CODE
+          # setTimeout/setInterval only evaluate a STRING; a function argument is not a sink.
+          - pattern-not: (...) => ...
+          - pattern-not: function (...) { ... }
+
+  - id: cw-deno-native-library-load
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      The path given to Deno.dlopen comes from the request, an environment variable or the command
+      line. A native library runs outside every Deno permission check the moment it is loaded, so
+      whoever chooses the path runs arbitrary native code. Load a fixed path shipped with the
+      program.
+    metadata:
+      category: security
+      class: deno-code-load
+      cwe: ["CWE-114: Process Control", "CWE-426: Untrusted Search Path"]
+      confidence: HIGH
+      dfd: {sink: native-load}
+    pattern-sources:
+      - pattern-either: *deno-remote-sources
+      - pattern-either: *deno-local-sources
+    pattern-sinks:
+      - patterns:
+          - pattern: Deno.dlopen($PATH, ...)
+          - focus-metavariable: $PATH
+
+  - id: cw-deno-path-traversal
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Request input reaches the path of a Deno file-system call. `../` segments, an absolute path
+      or a symlink take it outside the directory the code meant, limited only by --allow-read and
+      --allow-write, which are usually granted for a whole tree. Resolve the path, then refuse it
+      unless it still starts with the root (relative(root, p) must not begin with `..`), or take
+      only a basename.
+    metadata:
+      category: security
+      class: deno-path
+      cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"]
+      confidence: HIGH
+      dfd: {sink: file-system}
+    pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: basename(...)
+          - pattern: $P.basename(...)
+          - pattern: parseInt(...)
+          - pattern: Number(...)
+      - patterns:
+          - pattern: $X.startsWith(...)
+          - focus-metavariable: $X
+        by-side-effect: true
+    pattern-sinks:
+      - patterns:
+          - pattern: Deno.$OP($PATH, ...)
+          - metavariable-regex:
+              metavariable: $OP
+              regex: ^(readFile|readTextFile|writeFile|writeTextFile|open|create|remove|mkdir|readDir|rename|copyFile|chmod|chown|truncate|symlink|link|readLink|realPath|lstat|stat|utime|makeTempFile|makeTempDir)(Sync)?$
+          - focus-metavariable: $PATH
+      - patterns:
+          - pattern-either:
+              - pattern: serveFile($R, $PATH, ...)
+              - pattern: 'serveDir($R, {..., fsRoot: $PATH, ...})'
+          - focus-metavariable: $PATH
+
+  - id: cw-deno-ssrf
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Request input chooses where the server connects: a fetch URL, a WebSocket URL, or the host of
+      Deno.connect / Deno.connectTls / Deno.resolveDns. The request is made from inside the network
+      with the server's identity, so it reaches internal services and cloud metadata endpoints
+      --allow-net does not scope out. Pin the host: parse with new URL(), compare `hostname`
+      against an allowlist, and grant --allow-net only for those hosts.
+    metadata:
+      category: security
+      class: deno-egress
+      cwe: ["CWE-918: Server-Side Request Forgery (SSRF)"]
+      confidence: MEDIUM
+      dfd: {sink: network}
+    pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $ALLOW.includes($X)
+          - focus-metavariable: $X
+        by-side-effect: true
+      - patterns:
+          - pattern: $ALLOW.has($X)
+          - focus-metavariable: $X
+        by-side-effect: true
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($URL, ...)
+              - pattern: new WebSocket($URL, ...)
+              - pattern: new EventSource($URL, ...)
+              - pattern: 'Deno.connect({..., hostname: $URL, ...})'
+              - pattern: 'Deno.connectTls({..., hostname: $URL, ...})'
+              - pattern: Deno.resolveDns($URL, ...)
+          - focus-metavariable: $URL
+
+  - id: cw-deno-reflected-html
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Request input is returned in a Response declared as text/html (or through Hono's c.html),
+      with no escaping on the way. A script in the input runs in the site's origin. Escape with
+      escape() from @std/html at the point of output, or render through a JSX/template engine that
+      escapes by default.
+    metadata:
+      category: security
+      class: deno-html
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]
+      confidence: HIGH
+      dfd: {sink: html}
+    pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: escape(...)
+          - pattern: escapeHtml(...)
+          - pattern: $H.escape(...)
+          - pattern: encodeURIComponent(...)
+          - pattern: parseInt(...)
+          - pattern: Number(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: 'new Response($BODY, {..., headers: {..., "content-type": $CT, ...}, ...})'
+              - pattern: 'new Response($BODY, {..., headers: {..., "Content-Type": $CT, ...}, ...})'
+          - metavariable-regex:
+              metavariable: $CT
+              # metavariable-regex is anchored at the start (re.match), and $CT includes its quotes.
+              regex: (?i)^["'`][^"'`]*html
+          - focus-metavariable: $BODY
+      - patterns:
+          - pattern: $C.html($BODY, ...)
+          - focus-metavariable: $BODY
+
+  - id: cw-deno-open-redirect
+    mode: taint
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      Request input becomes the target of a redirect. A link on the site's own domain then sends
+      the user anywhere, which is how phishing borrows a trusted origin and how OAuth flows leak
+      their codes. Redirect only to relative paths, or to hosts on an allowlist.
+    metadata:
+      category: security
+      class: deno-redirect
+      cwe: ["CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"]
+      confidence: MEDIUM
+      dfd: {sink: redirect}
+    pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      - patterns:
+          - pattern: $ALLOW.includes($X)
+          - focus-metavariable: $X
+        by-side-effect: true
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: Response.redirect($URL, ...)
+              - pattern: $C.redirect($URL, ...)
+              - pattern: 'new Response($B, {..., headers: {..., location: $URL, ...}, ...})'
+              - pattern: 'new Response($B, {..., headers: {..., Location: $URL, ...}, ...})'
+          - focus-metavariable: $URL
+
+  - id: cw-deno-sql-injection
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Request input is part of the SQL text given to a Deno database client (deno-postgres
+      queryArray/queryObject, @db/sqlite and deno.land/x/sqlite query/exec/prepare). The text is
+      parsed as SQL, so the input can change the statement. Use the tagged-template form
+      (client.queryObject`... ${value}`) or pass the value in the parameter array.
+    metadata:
+      category: security
+      class: deno-sql
+      cwe: ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"]
+      confidence: HIGH
+      dfd: {sink: sql}
+    pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: parseInt(...)
+          - pattern: Number(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: $DB.$M($SQL, ...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(queryArray|queryObject|query|queryEntries|execute|exec|prepare|run|sql)$
+          # Hono's c.req.query() / c.req.queries() are request READS, the source itself.
+          - pattern-not: $C.req.$M(...)
+          - pattern-not: $U.searchParams.$M(...)
+          - focus-metavariable: $SQL
+
+  - id: cw-deno-env-poisoning
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Request input is written into the process environment with Deno.env.set. Every child the
+      process spawns afterwards inherits it, so a chosen LD_PRELOAD, NODE_OPTIONS, PATH or
+      DENO_DIR runs the attacker's code, and later Deno.env.get reads trust it as configuration.
+      Pass per-request values to a child through Deno.Command's `env` option, never the process
+      environment.
+    metadata:
+      category: security
+      class: deno-env
+      cwe: ["CWE-454: External Initialization of Trusted Variables or Data Stores"]
+      confidence: HIGH
+      dfd: {sink: environment}
+    pattern-sources: *deno-remote-sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: Deno.env.set($V, ...)
+              - pattern: Deno.env.set($K, $V)
+          - focus-metavariable: $V
+
+  - id: cw-deno-env-disclosure
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      The whole process environment (Deno.env.toObject()) reaches a response body. The environment
+      holds the deployment's secrets — database URLs, API keys, DENO_DEPLOY tokens — and this sends
+      every one of them to the client. Return the specific non-secret values the client needs.
+    metadata:
+      category: security
+      class: deno-disclosure
+      cwe: ["CWE-526: Cleartext Storage of Sensitive Information in an Environment Variable", "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor"]
+      confidence: HIGH
+      dfd: {sink: response}
+    pattern-sources:
+      - pattern: Deno.env.toObject()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: new Response($B, ...)
+              - pattern: Response.json($B, ...)
+              - pattern: $C.json($B, ...)
+              - pattern: $C.text($B, ...)
+              - pattern: $SOCK.send($B)
+          - focus-metavariable: $B
+
+  - id: cw-deno-regex-from-request
+    mode: taint
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      Request input is compiled as a regular expression. V8's backtracking engine lets a crafted
+      pattern take exponential time, and a Deno server runs every request on one thread, so one
+      request stalls all of them. Escape the input with escape() from @std/regexp, or match it as
+      a plain string.
+    metadata:
+      category: security
+      class: deno-dos
+      cwe: ["CWE-1333: Inefficient Regular Expression Complexity"]
+      confidence: MEDIUM
+      dfd: {sink: regex}
+    pattern-sources: *deno-remote-sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: escape(...)
+          - pattern: $R.escape(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: new RegExp($P, ...)
+              - pattern: RegExp($P, ...)
+          - focus-metavariable: $P

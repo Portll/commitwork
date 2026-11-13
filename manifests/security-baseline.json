@@ -1862,6 +1862,115 @@
       "formatNotes": "Deno type checker (deno check). Empty output is clean; non-zero exit without output indicates type errors or tool failure."
     },
     {
+      "id": "sast-deno",
+      "egress": "none",
+      "sandboxExtraReads": [
+        "~/.cache/opengrep"
+      ],
+      "sandboxExtraWrites": [
+        "~/.opengrep",
+        "~/.semgrep",
+        "~/.cache/opengrep",
+        "~/.cache/opengrep_version"
+      ],
+      "description": "Deno-specific taint and race analysis (bin/deno-sast.mjs over manifests/semgrep-deno-security/, opengrep --taint-intrafile). Before this lane nothing in the roster named a Deno API as a source or a sink: CodeQL's JavaScript library had no reference to `Deno` (github/codeql 94cb719, 2026-11-13), the registry packs carry one rule for the removed Deno.run, and manifests/semgrep-taint/ is Node-shaped — so a Deno.serve request reaching new Deno.Command, import(), Deno.dlopen, a Deno file-system call, fetch, an HTML Response, a redirect, a deno-postgres query, Deno.env.set or a RegExp was invisible to every lane. Sources are what Deno hands a handler (the Deno.serve Request, a Request-typed parameter, Hono/Oak contexts, WebSocket messages, KV queue messages, raw TCP chunks); local inputs (Deno.args, Deno.env) feed only the shell, program-name and native-library rules. Also the Deno races whose interleaving changes who gets what: KV get-then-set with no versionstamp check (lost update), an atomic commit() whose {ok:false} is ignored (commit does not throw on a failed check), and stat/exists-then-modify file TOCTOU. Each taint path is then walked sink-to-source by bin/deno-dfd.mjs, which grades how much of the value the sender still controls at the sink and names the hop that bounds it (properties.cwMutability on the result), and draws the program's data-flow diagram from manifests/semgrep-deno-inventory/ into deno-dfd.{json,md}.",
+      "remediationPrompt": "You are fixing Deno taint and race findings from deno-sast.sarif. Each taint result carries codeFlows (source → propagators → sink) AND properties.cwMutability: `control` says how much of the value the sender holds at the sink (full, substring, structured, filtered, mismatched, host-pinned, numeric, allowlisted, sanitized) and `boundingHop` names the step that bounds it. Work `full`/`substring`/`structured` first — those are exploitable as written. `filtered` and `mismatched` mean a defence exists but is the wrong kind (a replace() blocklist, encodeURIComponent before a shell or SQL): replace it, do not tighten it. `allowlisted`/`numeric`/`sanitized` mean the evaluator believes the value is already bounded — confirm the bound dominates EVERY route to the sink and, if so, record why in a nosemgrep comment rather than deleting the rule. Fix at the sink where one sink has several sources. Per class: Deno.Command — fixed program, value as one `args` element, never sh -c; argument injection — `--` before positional values; import()/Worker/eval — map input to a fixed table of specifiers; Deno.dlopen — fixed shipped path; file system — resolve then require relative(root, p) not to start with `..`, or basename(); fetch/connect — new URL() then compare hostname to an allowlist, and scope --allow-net; HTML — escape() from @std/html; SQL — tagged template or parameter array; Deno.env.set — pass per-request values via Deno.Command's env option. Races: KV read-modify-write — kv.atomic().check(entry).set(...).commit() in a retry loop on `ok`; ignored commit — read `.ok`; TOCTOU — drop the pre-check, Deno.open with {createNew:true} and catch Deno.errors.AlreadyExists/NotFound. deno-dfd.md beside the SARIF draws each path and the program's trust boundaries.",
+      "local": [
+        "node \"$CW_ROOT/bin/deno-sast.mjs\" . --pack security --sarif \"$CW_REPORT_DIR/deno-sast.sarif\" --dfd \"$CW_REPORT_DIR/deno-dfd\" 2>\"$CW_REPORT_DIR/deno-sast.log\"; rc=$?; echo $rc > \"$CW_REPORT_DIR/deno-sast.sarif.exit\"; node -e \"const f=process.argv[1],s=require('node:fs');try{const j=JSON.parse(s.readFileSync(f,'utf8'));if(!j||!Array.isArray(j.runs))throw 0;}catch{s.rmSync(f,{force:true});}\" \"$CW_REPORT_DIR/deno-sast.sarif\""
+      ],
+      "report": {
+        "file": "deno-sast.sarif",
+        "format": "sarif",
+        "log": "deno-sast.log"
+      },
+      "requires": {
+        "tools": [
+          "opengrep",
+          "node"
+        ]
+      },
+      "appliesIfExists": [
+        "deno.json",
+        "deno.jsonc",
+        "deno.lock"
+      ],
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "notes": "REQUIRES OPENGREP, with no Semgrep CE fallback, deliberately: the rules are cross-function taint (a request read in one helper and executed in another), which Semgrep evaluates only with --pro-intrafile behind an account; opengrep's --taint-intrafile is the same analysis under LGPL-2.1. A fallback that silently lost every cross-function path would publish a thinner scan under the same name; an absent engine instead writes NO sarif (exit 127) and the lane reads not-scanned. TYPE-ARGUMENT ERASURE: opengrep 1.33.1 and Semgrep 1.185.0 parse a TypeScript call with explicit type arguments — kv.get<number>(key), db.queryObject<User>(sql) — as the bare member, dropping the call and its arguments from the AST, so neither pattern nor taint can see it (measured 2026-11-13: the untyped query reported, the identical typed one on the next line did not). The lane scans a mirror in which lib/ts-type-args.mjs blanks call-position type arguments to spaces of the same length, so every line and column is the original's; files the lexer cannot classify are scanned unerased and named in run.properties.cwMirror.unclassified. LOCALE: the engine child runs under LC_ALL=C.UTF-8 because opengrep decodes .semgrepignore as ASCII under a C locale and dies on the first non-ASCII byte with no output. The repository is never written.",
+      "formatNotes": "SARIF 2.1.0 from Opengrep OSS (driver name `Opengrep OSS`), --dataflow-traces so taint results carry codeFlows whose locations are labelled Source / Propagator / Sink. Rule ids are manifests.semgrep-deno-security.cw-deno-* after monitor/sarif-read.mjs localRuleId() strips the checkout path. Levels from the rule severity: ERROR → error, WARNING → warning. run.properties.cwEngine records engine, version and the cross-function mode; run.properties.cwMirror records files scanned, type-argument sites erased, unclassified and oversize files. Each taint result's properties.cwMutability = {flow, control, residual, boundingHop, sinkClass} from bin/deno-dfd.mjs. Fixture-proven both ways: fixtures/semgrep-deno/security/*.ts (31 ruleid / 21 ok), fixtures/semgrep-deno/dfd/bounded.ts (one path per control class)."
+    },
+    {
+      "id": "deno-reliability",
+      "egress": "none",
+      "sandboxExtraReads": [
+        "~/.cache/opengrep"
+      ],
+      "sandboxExtraWrites": [
+        "~/.opengrep",
+        "~/.semgrep",
+        "~/.cache/opengrep",
+        "~/.cache/opengrep_version"
+      ],
+      "description": "Deno ordering, resource and performance defects (bin/deno-sast.mjs over manifests/semgrep-deno-reliability/). NOT a security lane and registered so: these cost correctness, availability or latency, not authority (the races that change who gets what are in sast-deno). What makes them Deno-specific: an unhandled rejection TERMINATES a Deno process, so a floating Deno.writeTextFile or kv.set that rejects takes the server down; Deno.serve runs every handler on one thread, so a *Sync call or outputSync() in a handler stalls every concurrent request; a child spawned with stdout/stderr \"piped\" that nobody reads blocks once the pipe buffer fills, so `await child.status` never resolves; a fetch Response whose body is never read or cancelled holds its connection; kv.list() with no limit pages the whole prefix per request; kv.get awaited per loop iteration instead of getMany; Deno.exit in a handler; fetch with no AbortSignal in a handler; a module-level variable read, awaited across, and written back (an in-memory lost update under concurrent handlers); Deno.Command output used without checking `success`; a Deno.open never closed.",
+      "remediationPrompt": "You are fixing Deno reliability findings from deno-reliability.sarif. These are not vulnerabilities; fix them because they take a service down or make it slow. Unawaited write: await it, or attach a .catch() that handles the failure — a Deno process exits on an unhandled rejection. Sync I/O in a handler: switch to the async form. Piped output not read: read the stream (child.stdout.pipeTo(...)) or use output(), or spawn with \"null\"/\"inherit\". Response body leaked: read the body or `await res.body?.cancel()`. kv.list without limit: pass {limit} and paginate with the cursor. kv.get in a loop: kv.getMany (up to 10 keys). Deno.exit in a handler: return an error Response. fetch without timeout: `signal: AbortSignal.timeout(ms)`. Shared state across await: do the read and write with no await between them. Command status unchecked: check `success`/`code` and use stderr. File not closed: `using f = await Deno.open(...)` or close in finally. If a finding is deliberate, annotate it with nosemgrep and the reason.",
+      "local": [
+        "node \"$CW_ROOT/bin/deno-sast.mjs\" . --pack reliability --sarif \"$CW_REPORT_DIR/deno-reliability.sarif\" 2>\"$CW_REPORT_DIR/deno-reliability.log\"; rc=$?; echo $rc > \"$CW_REPORT_DIR/deno-reliability.sarif.exit\"; node -e \"const f=process.argv[1],s=require('node:fs');try{const j=JSON.parse(s.readFileSync(f,'utf8'));if(!j||!Array.isArray(j.runs))throw 0;}catch{s.rmSync(f,{force:true});}\" \"$CW_REPORT_DIR/deno-reliability.sarif\""
+      ],
+      "report": {
+        "file": "deno-reliability.sarif",
+        "format": "sarif",
+        "log": "deno-reliability.log"
+      },
+      "requires": {
+        "tools": [
+          "opengrep",
+          "node"
+        ]
+      },
+      "appliesIfExists": [
+        "deno.json",
+        "deno.jsonc",
+        "deno.lock"
+      ],
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "notes": "Same engine, mirror, erasure and locale as sast-deno (see its notes); a different rule pack and a different artifact, so a reliability finding can never earn or spend a vulnerability count. Not in the severity headline: monitor/lane-kinds.mjs declares it hygiene, not-a-vulnerability, the same ruling denoLint carries.",
+      "formatNotes": "SARIF 2.1.0 from Opengrep OSS. Rule ids manifests.semgrep-deno-reliability.cw-deno-*; metadata.category is `performance` or `reliability`. Pattern rules only, so results carry no codeFlows. Fixture-proven both ways: fixtures/semgrep-deno/reliability/reliability.ts (12 ruleid / 12 ok)."
+    },
+    {
+      "id": "deno-hazards",
+      "egress": "none",
+      "description": "Deno permission, inspector and module-integrity posture read from config and command lines (bin/deno-hazards.mjs). Deno's security model is its permission flags, and those are not in the code: they are in deno.json tasks and permission sets, a Dockerfile CMD, a CI step, a shebang, a Procfile, package.json scripts. No code scanner reads them, so `deno run -A` (the sandbox switched off), an unscoped --allow-run/--allow-ffi (which escape every other permission), --allow-run naming a shell, --inspect=0.0.0.0 (a remote debugger: code execution for anyone who reaches the port) and --unsafely-ignore-certificate-errors were invisible. The module-integrity half: http:// imports, unpinned deno.land/x, deno.land/std, esm.sh/unpkg/jsdelivr URLs and jsr:/npm: specifiers with no version, raw.githubusercontent URLs on a branch, \"lock\": false / --no-lock, and remote imports with no deno.lock. Levels are context-sensitive: -A on deno test is a note, in CI a warning, on run/serve/compile in a Dockerfile, Procfile, shebang or start task an error.",
+      "remediationPrompt": "You are fixing Deno permission and module-integrity findings from deno-hazards.sarif. deno/allow-all: replace -A with the narrowest grants the program needs (--allow-net=host:port,api.example.com, --allow-read=./static, --allow-env=PORT,DATABASE_URL); run it once with --deny-* or without grants to see what it asks for. deno/allow-run-* and deno/allow-ffi-unscoped: list the exact programs/libraries; never grant a shell or interpreter, which is every program. deno/inspector-exposed: bind the inspector to 127.0.0.1 and tunnel to it. deno/ignore-certificate-errors: remove it; install the CA with --cert or DENO_CERT instead. deno/cleartext-import: switch to https and a pinned version. deno/unpinned-import: pin an exact version (jsr:@std/path@1.0.8, https://deno.land/x/oak@v17.1.4/mod.ts, a commit hash for raw GitHub). deno/lock-disabled and deno/no-lockfile: commit deno.lock and run with --frozen in CI. If a grant is deliberate, annotate the line with `cw-hazards-ignore <reason>` (a // or # comment) and the lane counts it as adjudicated instead of reporting it.",
+      "local": [
+        "node \"$CW_ROOT/bin/deno-hazards.mjs\" . --sarif > \"$CW_REPORT_DIR/deno-hazards.sarif\" 2>\"$CW_REPORT_DIR/deno-hazards.log\"; rc=$?; echo $rc > \"$CW_REPORT_DIR/deno-hazards.sarif.exit\"; node -e \"const f=process.argv[1],s=require('node:fs');try{const j=JSON.parse(s.readFileSync(f,'utf8'));if(!j||!Array.isArray(j.runs))throw 0;}catch{s.rmSync(f,{force:true});}\" \"$CW_REPORT_DIR/deno-hazards.sarif\""
+      ],
+      "report": {
+        "file": "deno-hazards.sarif",
+        "format": "sarif"
+      },
+      "requires": {
+        "tools": [
+          "node"
+        ]
+      },
+      "appliesIfExists": [
+        "deno.json",
+        "deno.jsonc",
+        "deno.lock"
+      ],
+      "groups": [
+        "all",
+        "fast"
+      ],
+      "notes": "SARIF deliberately, for node-hazards' reason: the artifact guard tests parseability, so stray stdout can never become a med `unparseable sarif` finding. With no Deno marker and no deno invocation the tool writes NO sarif and the lane reads not-scanned. Adjudicated findings (cw-hazards-ignore on the line or in the comment block above it) are excluded from results and counted in run.properties.suppressedCount.",
+      "formatNotes": "SARIF 2.1.0, driver `commitwork-deno-hazards`, rule ids deno/*, levels error|warning|note. Fixture-proven: fixtures/deno-hazards/dirty fires every rule, fixtures/deno-hazards/clean (each safe counterpart) yields ZERO."
+    },
+    {
       "id": "lint-rust-clippy",
       "egress": "none",
       "executesRepoCode": true,

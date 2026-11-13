@@ -221,6 +221,33 @@
    "accepted": "2026-09-30",
    "why": "the lane reads a live target (egress target), not the repository"
   },
+  "denoHazards": {
+   "source": "real",
+   "check": "deno-hazards",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "deno-hazards.sarif",
+    "deno-hazards.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-11-13",
+   "accepted": "2026-11-13"
+  },
+  "denoReliability": {
+   "source": "real",
+   "check": "deno-reliability",
+   "tools": [
+    "opengrep",
+    "node"
+   ],
+   "files": [
+    "deno-reliability.sarif",
+    "deno-reliability.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-11-13",
+   "accepted": "2026-11-13"
+  },
   "denoTypes": {
    "source": "real",
    "check": "deno-check",
@@ -755,6 +782,21 @@
    ],
    "draftedBy": "hand-written seed, 2026-10-04",
    "accepted": "2026-10-06"
+  },
+  "sastDeno": {
+   "source": "real",
+   "pruned": "11 unreferenced SARIF rule definitions removed",
+   "check": "sast-deno",
+   "tools": [
+    "opengrep",
+    "node"
+   ],
+   "files": [
+    "deno-sast.sarif",
+    "deno-sast.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-11-13",
+   "accepted": "2026-11-13"
   },
   "sastGo": {
    "source": "real",

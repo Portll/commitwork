@@ -4837,6 +4837,276 @@
         }
       }
     },
+    "sastDeno": {
+      "type": "array",
+      "description": "One row per Deno taint or race finding from opengrep --taint-intrafile over manifests/semgrep-deno-security/ — the only lane naming Deno APIs as sources and sinks. `control` is bin/deno-dfd.mjs's sink-to-source verdict for a taint row: how much of the value the sender still holds at the sink (full, substring, structured, filtered, mismatched, host-pinned, numeric, allowlisted, sanitized), read hop by hop backwards from the sink; `boundedAt` is the hop nearest the sink that bounds it, which is where the evidence for a weaker verdict sits. Both are blank on a race or construct row, which has no path to evaluate — blank never reads as bounded. Typed calls (kv.get<T>(), db.queryObject<User>()) are read: the lane scans a mirror with call-position type arguments blanked to spaces, so line and column are the original's. The per-path diagrams are in deno-dfd.md beside the artifact.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule",
+          "file",
+          "line",
+          "sev",
+          "message",
+          "cwe",
+          "control",
+          "boundedAt"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "prepended by the rollup fleet flatten"
+          },
+          "annotation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "at",
+              "reason",
+              "who",
+              "whoKind"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "accept",
+                  "false-positive",
+                  "wont-fix"
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "whoKind": {
+                "type": "string"
+              }
+            }
+          },
+          "rule": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Rule"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "File"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "sev": {
+            "type": "string",
+            "enum": [
+              "",
+              "crit",
+              "high",
+              "med",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4080,
+            "title": "Message"
+          },
+          "cwe": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Weakness"
+          },
+          "control": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Sender control"
+          },
+          "boundedAt": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Bounded at"
+          }
+        }
+      }
+    },
+    "denoReliability": {
+      "type": "array",
+      "description": "One row per Deno ordering, resource or performance defect (manifests/semgrep-deno-reliability/). NOT a vulnerability lane and excluded from the severity headline: an unawaited write, sync I/O in a handler, a piped child that nobody reads, a leaked Response body, an unbounded kv.list, Deno.exit in a handler. They take a service down or make it slow; the races that change who gets what are in sastDeno.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule",
+          "file",
+          "line",
+          "sev",
+          "message"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "prepended by the rollup fleet flatten"
+          },
+          "annotation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "at",
+              "reason",
+              "who",
+              "whoKind"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "accept",
+                  "false-positive",
+                  "wont-fix"
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "whoKind": {
+                "type": "string"
+              }
+            }
+          },
+          "rule": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Rule"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "File"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "sev": {
+            "type": "string",
+            "enum": [
+              "",
+              "crit",
+              "high",
+              "med",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4080,
+            "title": "Message"
+          }
+        }
+      }
+    },
+    "denoHazards": {
+      "type": "array",
+      "description": "One row per Deno permission grant, inspector exposure or module-integrity gap, read from deno.json tasks and permission sets, import maps, shebangs, Dockerfiles, CI workflows, Procfiles and package.json scripts — where Deno's sandbox is actually configured, and which no code scanner reads. `sev` is the SARIF level and is context-sensitive: -A on deno test is low, in CI med, on a production run/serve/compile high. Findings adjudicated in place (cw-hazards-ignore) are counted in run.properties.suppressedCount instead of published.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule",
+          "file",
+          "line",
+          "sev",
+          "message"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "prepended by the rollup fleet flatten"
+          },
+          "annotation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "at",
+              "reason",
+              "who",
+              "whoKind"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "accept",
+                  "false-positive",
+                  "wont-fix"
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "whoKind": {
+                "type": "string"
+              }
+            }
+          },
+          "rule": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Rule"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "File"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "sev": {
+            "type": "string",
+            "enum": [
+              "",
+              "crit",
+              "high",
+              "med",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4080,
+            "title": "Message"
+          }
+        }
+      }
+    },
     "dast": {
       "type": "array",
       "description": "One row per nuclei template match against a LIVE target. The hostname is stripped at the extractor — the PORT and PROTOCOL survive, because they say which service was hit, and the host says which machine.",

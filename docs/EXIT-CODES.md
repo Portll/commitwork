@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-354 commands: 156 declared, 12 prose, 186 undeclared. Of the declared, 124 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 32 declare a code of 20 or above.
+357 commands: 159 declared, 12 prose, 186 undeclared. Of the declared, 126 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 33 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -279,6 +279,30 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | done or nothing new |
 | 1 | a run failed |
 | 2 | usage or configuration error. |
+
+### `bin/deno-dfd.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | written (an empty diagram is a diagram) |
+| 1 | an input could not be read |
+| 2 | usage |
+
+### `bin/deno-hazards.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | the scan ran. With no Deno marker and no `deno` invocation anywhere it writes NO document (stderr says so), so the lane reads not-scanned rather than a clean zero |
+| 2 | the path does not exist |
+
+### `bin/deno-sast.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | the SARIF was written (with or without findings) |
+| 1 | the engine ran and failed |
+| 2 | usage |
+| 127 | opengrep is not installed (NOTHING is written, so the lane reads not-scanned) |
 
 ### `bin/deno-scan.mjs`
 

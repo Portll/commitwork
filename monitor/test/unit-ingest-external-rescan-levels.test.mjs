@@ -43,7 +43,7 @@ test('includes every scanner check value', () => {
 test('size equals number of distinct identifiers', () => {
   const r = rescanLevels();
   const expectedSize = 5 + 6;
-  assert.equal(r.size, 88);
+  assert.equal(r.size, 91); // 88 + sast-deno, deno-reliability, deno-hazards (2026-11-14)
 });
 
 test('does not include arbitrary strings', () => {

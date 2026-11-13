@@ -1,0 +1,382 @@
+# Deno reliability, ordering and performance rules for the deno-reliability lane.
+#
+# NOT a security lane, and registered so (monitor/lane-kinds.mjs: hygiene, not-a-vulnerability):
+# these are defects that cost correctness, availability or latency rather than authority. The races
+# that change WHO gets WHAT — KV read-modify-write, an ignored commit() result, a file-system
+# TOCTOU — are in manifests/semgrep-deno-security/ and count as vulnerabilities there.
+#
+# WHAT MAKES THESE DENO-SPECIFIC rather than generic JavaScript advice:
+#   - An unhandled promise rejection TERMINATES a Deno process (it is not a warning, as it was in
+#     old Node). A floating Deno.writeTextFile or kv.set that rejects takes the server down.
+#   - Deno.serve runs every handler on one thread. A *Sync file call or a synchronous child
+#     process in a handler stalls every concurrent request, not just its own.
+#   - A spawned child with stdout/stderr "piped" that nobody reads blocks once the pipe buffer
+#     fills, so `await child.status` never resolves: a deadlock the test suite rarely triggers
+#     because test output is small.
+#   - A fetch Response whose body is neither read nor cancelled holds its connection; Deno's own
+#     test sanitizer reports it as a leaked resource, production just runs out of sockets.
+#   - kv.list() with no limit pages through the whole prefix; inside a request handler one request
+#     can read the entire database.
+
+rules:
+  - id: cw-deno-sync-io-in-handler
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A synchronous file or process call runs inside a request handler. Deno.serve handles every
+      request on one thread, so for the duration of this call no other request makes progress —
+      one slow disk or large file stalls the whole server. Use the async form (await
+      Deno.readTextFile, await new Deno.Command(...).output()).
+    metadata:
+      category: performance
+      class: deno-blocking
+      cwe: ["CWE-1050: Excessive Platform Resource Consumption within a Loop"]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern-inside: Deno.serve(..., ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., async ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., function ($REQ, ...) { ... })
+          - pattern-inside: Deno.serve(..., async function ($REQ, ...) { ... })
+          - pattern-inside: 'Deno.serve({..., handler: ($REQ, ...) => { ... }, ...})'
+          - pattern-inside: 'Deno.serve({..., handler: async ($REQ, ...) => { ... }, ...})'
+          - pattern-inside: '({..., fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: '({..., async fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: 'function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: 'async function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: '(..., $REQ: Request, ...) => { ... }'
+          - pattern-inside: 'async (..., $REQ: Request, ...) => { ... }'
+      - pattern-either:
+          - patterns:
+              - pattern: Deno.$OP(...)
+              - metavariable-regex:
+                  metavariable: $OP
+                  regex: ^(readFile|readTextFile|writeFile|writeTextFile|open|create|remove|mkdir|readDir|rename|copyFile|stat|lstat|realPath|readLink|truncate|makeTempFile|makeTempDir|chmod)Sync$
+          - pattern: new Deno.Command(...).outputSync()
+          - pattern: $CMD.outputSync()
+
+  - id: cw-deno-kv-unbounded-list
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      kv.list() is called inside a request handler without a `limit`. The iterator pages through
+      every key under the selector, so one request can read the whole prefix — latency that grows
+      with the data, and an easy way to exhaust the KV read quota. Pass {limit} and paginate with
+      the returned cursor.
+    metadata:
+      category: performance
+      class: deno-kv
+      cwe: ["CWE-770: Allocation of Resources Without Limits or Throttling"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern-inside: Deno.serve(..., ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., async ($REQ, ...) => { ... })
+          - pattern-inside: '({..., fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: '({..., async fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: 'function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: 'async function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: '(..., $REQ: Request, ...) => { ... }'
+          - pattern-inside: 'async (..., $REQ: Request, ...) => { ... }'
+          - pattern-inside: '$APP.$M($PATH, ($C, ...) => { ... })'
+          - pattern-inside: '$APP.$M($PATH, async ($C, ...) => { ... })'
+      - pattern-either:
+          - pattern: $KV.list($SEL)
+          - pattern: '$KV.list($SEL, {...})'
+      - pattern-not: '$KV.list($SEL, {..., limit: $L, ...})'
+      - metavariable-pattern:
+          metavariable: $SEL
+          pattern-either:
+            - pattern: '{..., prefix: $P, ...}'
+            - pattern: '{..., start: $P, ...}'
+            - pattern: '{..., end: $P, ...}'
+
+  - id: cw-deno-kv-get-in-loop
+    languages: [typescript, javascript]
+    severity: INFO
+    message: >-
+      kv.get() is awaited once per loop iteration. Each await is a round trip to the KV store
+      (a network hop on Deno Deploy), so the loop's latency is the sum of all of them. Batch the
+      keys with kv.getMany() (up to 10 keys per call).
+    metadata:
+      category: performance
+      class: deno-kv
+      cwe: ["CWE-1050: Excessive Platform Resource Consumption within a Loop"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern-inside: 'for (const $X of $XS) { ... }'
+          - pattern-inside: 'for (let $X of $XS) { ... }'
+          - pattern-inside: 'for await (const $X of $XS) { ... }'
+          - pattern-inside: 'for ($I; $C; $U) { ... }'
+          - pattern-inside: 'while ($C) { ... }'
+      - pattern: await $KV.get(...)
+      - pattern-not-inside: 'while (true) { ... }'
+
+  - id: cw-deno-unawaited-write
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      An asynchronous Deno file or KV write is started and its promise is dropped. Nothing orders
+      it against what follows — a later read can see the old state, a later write can land first —
+      and if it rejects, the rejection is unhandled, which terminates a Deno process. Await it, or
+      attach a .catch() that handles the failure.
+    metadata:
+      category: reliability
+      class: deno-ordering
+      cwe: ["CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')", "CWE-755: Improper Handling of Exceptional Conditions"]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: Deno.$OP(...)
+              - metavariable-regex:
+                  metavariable: $OP
+                  regex: ^(writeFile|writeTextFile|remove|mkdir|rename|copyFile|chmod|chown|truncate|symlink|link|utime)$
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      $KV = await Deno.openKv(...);
+                      ...
+                  - pattern-inside: |
+                      const $KV = await Deno.openKv(...);
+                      ...
+              - pattern-either:
+                  - pattern: $KV.set(...)
+                  - pattern: $KV.delete(...)
+                  - pattern: $KV.enqueue(...)
+          - pattern: $KV.atomic(). ... .commit()
+      - pattern-not-inside: await $X
+      - pattern-not-inside: $V = $X
+      - pattern-not-inside: const $V = $X
+      - pattern-not-inside: let $V = $X
+      - pattern-not-inside: return $X
+      - pattern-not-inside: $X.then(...)
+      - pattern-not-inside: $X.catch(...)
+      - pattern-not-inside: '[..., $X, ...]'
+      # NOT `$F(..., <... $X ...>, ...)`: the matched call is itself such a call and would exclude
+      # itself (measured: it suppressed every finding). A write passed straight into another call
+      # is therefore still reported; wrap it in an array (Promise.all) or await it.
+
+  - id: cw-deno-piped-output-not-read
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A child process is spawned with stdout or stderr "piped" and that stream is never read. Once
+      the child writes more than the pipe buffer holds (about 64 KiB on Linux) it blocks, so
+      `await child.status` never resolves — a deadlock that small test outputs never show. Read the
+      stream (or use child.output()), or spawn with "null" / "inherit" for output you do not need.
+    metadata:
+      category: reliability
+      class: deno-process
+      cwe: ["CWE-833: Deadlock"]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $P = new Deno.Command($C, {..., stdout: "piped", ...}).spawn();
+              ...
+          - pattern-inside: |
+              const $P = new Deno.Command($C, {..., stdout: "piped", ...}).spawn();
+              ...
+          - pattern-inside: |
+              $P = new Deno.Command($C, {..., stderr: "piped", ...}).spawn();
+              ...
+          - pattern-inside: |
+              const $P = new Deno.Command($C, {..., stderr: "piped", ...}).spawn();
+              ...
+      - pattern: await $P.status
+      - pattern-not-inside: |
+          $P = new Deno.Command(...).spawn();
+          ...
+          <... $P.stdout ...>;
+          ...
+      - pattern-not-inside: |
+          const $P = new Deno.Command(...).spawn();
+          ...
+          <... $P.stdout ...>;
+          ...
+      - pattern-not-inside: |
+          const $P = new Deno.Command(...).spawn();
+          ...
+          <... $P.stderr ...>;
+          ...
+      - pattern-not-inside: |
+          const $P = new Deno.Command(...).spawn();
+          ...
+          <... $P.output() ...>;
+          ...
+
+  - id: cw-deno-command-status-unchecked
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      The output of a Deno.Command is used without checking whether the program succeeded. A failed
+      command still resolves output() with whatever it printed, so the code proceeds on empty or
+      partial data as if the step had worked. Check `success` (or `code`) and handle the failure
+      using stderr.
+    metadata:
+      category: reliability
+      class: deno-process
+      cwe: ["CWE-252: Unchecked Return Value"]
+      confidence: MEDIUM
+    pattern-either:
+      # One pattern for the inline form: a wrapping `decoder.decode(...)` pattern reported the same
+      # line a second time with a wider range.
+      - pattern: (await new Deno.Command(...).output()).stdout
+      - patterns:
+          - pattern-either:
+              - pattern: 'const { stdout } = await new Deno.Command(...).output();'
+              - pattern: 'const { stdout, stderr } = await new Deno.Command(...).output();'
+
+  - id: cw-deno-response-body-leaked
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A fetch() response is awaited and dropped without reading or cancelling its body. The body
+      holds the connection open until it is consumed or garbage-collected; under load the server
+      runs out of sockets, and Deno's test sanitizer reports the leak. Read the body, or call
+      `await res.body?.cancel()`.
+    metadata:
+      category: reliability
+      class: deno-resource
+      cwe: ["CWE-772: Missing Release of Resource after Effective Lifetime"]
+      confidence: HIGH
+    # The awaited Response is the value of an expression statement: bound to nothing, so nothing
+    # can read or cancel its body. Same statement-position exclusions as cw-deno-unawaited-write.
+    patterns:
+      - pattern: await fetch(...)
+      - pattern-not-inside: $V = $X
+      - pattern-not-inside: const $V = $X
+      - pattern-not-inside: let $V = $X
+      - pattern-not-inside: return $X
+      - pattern-not-inside: ($X).$M
+      - pattern-not-inside: ($X).$M(...)
+      - pattern-not-inside: $F(..., <... $X ...>, ...)
+      - pattern-not-inside: '[..., $X, ...]'
+      - pattern-not-inside: '{..., $K: $X, ...}'
+      - pattern-not-inside: if (<... $X ...>) $S
+
+  - id: cw-deno-file-not-closed
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A file opened with Deno.open is never closed in this function, is not declared with `using`,
+      and its stream is not handed on (reading `file.readable` or `file.writable` to the end closes
+      it). Each call leaks a file descriptor until the process hits its limit. Declare it with
+      `using file = await Deno.open(...)`, or close it in a finally block.
+    metadata:
+      category: reliability
+      class: deno-resource
+      cwe: ["CWE-775: Missing Release of File Descriptor or Handle after Effective Lifetime"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: const $F = await Deno.open(...);
+          - pattern: let $F = await Deno.open(...);
+          - pattern: const $F = Deno.openSync(...);
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          <... $F.close() ...>;
+          ...
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          <... $F.readable ...>;
+          ...
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          <... $F.writable ...>;
+          ...
+      - pattern-not-inside: |
+          const $F = $X;
+          ...
+          return $F;
+      - pattern-not-inside: |
+          try { ... } finally { ... }
+
+  - id: cw-deno-exit-in-handler
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Deno.exit() is called inside a request handler. It terminates the whole process, so one
+      request — possibly one an attacker can trigger at will — ends the service for every other
+      client. Return an error Response and let the request fail on its own.
+    metadata:
+      category: reliability
+      class: deno-availability
+      cwe: ["CWE-382: J2EE Bad Practices: Use of System.exit()", "CWE-730: OWASP Top Ten 2004 Category A9 - Denial of Service"]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern-inside: Deno.serve(..., ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., async ($REQ, ...) => { ... })
+          - pattern-inside: '({..., fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: '({..., async fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: 'function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: 'async function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: '(..., $REQ: Request, ...) => { ... }'
+          - pattern-inside: 'async (..., $REQ: Request, ...) => { ... }'
+      - pattern: Deno.exit(...)
+
+  - id: cw-deno-fetch-without-timeout-in-handler
+    languages: [typescript, javascript]
+    severity: INFO
+    message: >-
+      A request handler awaits an outbound fetch() with no AbortSignal. fetch has no default
+      timeout, so a slow or hung upstream holds this request — and its memory and socket — open
+      indefinitely, and enough of them exhaust the server. Pass `signal: AbortSignal.timeout(ms)`.
+    metadata:
+      category: reliability
+      class: deno-availability
+      cwe: ["CWE-400: Uncontrolled Resource Consumption"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern-inside: Deno.serve(..., ($REQ, ...) => { ... })
+          - pattern-inside: Deno.serve(..., async ($REQ, ...) => { ... })
+          - pattern-inside: '({..., fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: '({..., async fetch($REQ, ...) { ... }, ...})'
+          - pattern-inside: 'function $F(..., $REQ: Request, ...) { ... }'
+          - pattern-inside: 'async function $F(..., $REQ: Request, ...) { ... }'
+      - pattern-either:
+          - pattern: fetch($U)
+          - pattern: 'fetch($U, {...})'
+      - pattern-not: 'fetch($U, {..., signal: $S, ...})'
+
+  - id: cw-deno-shared-state-across-await
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A module-level variable is read, an await yields, and the variable is then written from the
+      value read before the await. Deno.serve runs handlers concurrently, so another request can
+      change the variable during the await and this write discards its update — a lost update in
+      process memory. Do the read and the write with no await between them, or serialise the
+      section.
+    metadata:
+      category: reliability
+      class: deno-ordering
+      cwe: ["CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-inside: |
+          let $X = $INIT;
+          ...
+      - pattern-either:
+          - pattern-inside: 'async function $F(...) { ... }'
+          - pattern-inside: 'async (...) => { ... }'
+      - pattern-either:
+          - pattern: |
+              const $V = <... $X ...>;
+              ...
+              await $AW;
+              ...
+              $X = <... $V ...>;
+          - pattern: |
+              let $V = <... $X ...>;
+              ...
+              await $AW;
+              ...
+              $X = <... $V ...>;

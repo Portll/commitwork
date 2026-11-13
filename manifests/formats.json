@@ -419,6 +419,19 @@
       "version": "https://openvex.dev/ns/v0.2.0",
       "schema": "schema/upstream/openvex_json_schema.json",
       "writer": { "source": "cra/vex-formats.mjs", "match": "'@context': 'https://openvex.dev/ns/v0.2.0'" }
+    },
+    {
+      "id": "deno-dfd",
+      "status": "unschematized",
+      "summary": "deno-dfd.json: the Deno data-flow diagram and the sink-to-source mutability evaluation of every taint path the sast-deno lane found.",
+      "versionField": "schema",
+      "version": "commitwork.deno-dfd/1",
+      "schema": null,
+      "writer": {
+        "source": "bin/deno-dfd.mjs",
+        "match": "schema: 'commitwork.deno-dfd/1'"
+      },
+      "gap": "No schema file yet. The shape is pinned by bin/test/deno-dfd.test.mjs and monitor/test/semgrep-deno.test.mjs (program.nodes/edges, findings[].evaluation with control, residual, boundingHop and hops); it stays unschematized until a consumer other than the lane's own Markdown reads it."
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "tasks": {
+    "start": "deno run --allow-net=0.0.0.0:8000,api.example.com --allow-read=./static --allow-env=PORT,DATABASE_URL main.ts",
+    "debug": "deno run --inspect=127.0.0.1:9229 --allow-net=0.0.0.0:8000 main.ts",
+    "test": "deno test --allow-read=. --allow-net=localhost",
+    "build": "deno run --allow-run=git --allow-write=./dist build.ts"
+  },
+  "permissions": { "default": { "read": ["./static"], "net": ["api.example.com"] } },
+  "imports": {
+    "@std/path": "jsr:@std/path@^1.0.8",
+    "oak": "https://deno.land/x/oak@v17.1.4/mod.ts",
+    "react": "https://esm.sh/react@19.0.0",
+    "chalk": "npm:chalk@5.4.1"
+  }
+}

@@ -153,6 +153,7 @@ const CWE_ROW_KEYS = new Set([
   'sastCodeql', 'sastCodeqlJava', 'sastCodeqlPython', 'sastCodeqlRuby',
   'sastCodeqlCpp', 'sastCodeqlSwift', 'sastCodeqlCsharp', 'sastCodeqlRust', 'sastCodeqlGo',
   'sastCCppcheck', 'sastCFlawfinder',
+  'sastDeno',
 ]);
 // sastBrakeman is NOT in this set: it is a _brakemanCounts row (cwe already comes from Brakeman's
 // own cwe_id field, not from _sarifDetail's SARIF-tag extraction), and CWE_ROW_KEYS only governs
@@ -181,6 +182,35 @@ export function _sarifDetail(dir, file, key, coverageOf = null, sevOf = null) {
     });
   }, coverageOf, sevOf);
   if (!c || c.nosrc || c.unparseable || c.norules || c.neverran || c.toolfailed) return c; // absent, or a husk with nothing to detail
+  const ruleTitles = sortedTitles(titles);
+  return { ...c, ..._detailFor(key, rows), ...(ruleTitles ? { ruleTitles } : {}) };
+}
+
+// sastDeno: _sarifDetail's rows plus the sink-to-source verdict bin/deno-dfd.mjs stored on each taint
+// result (properties.cwMutability). `control` is blank on a pattern rule's row — it has no path to
+// evaluate — and blank never reads as "bounded".
+export function _denoSastDetail(dir, file, key) {
+  const rows = [];
+  const titles = new Map();
+  const c = _sarifCounts(dir, file, (res, rule, b) => {
+    const loc = res.locations && res.locations[0] && res.locations[0].physicalLocation;
+    const id = String(res.ruleId || (rule && rule.id) || '');
+    const title = ruleTitle(rule);
+    if (id && title) titles.set(id, title);
+    const m = (res.properties && res.properties.cwMutability) || null;
+    const bound = m && m.boundingHop ? `${m.boundingHop.file}:${m.boundingHop.line} ${m.boundingHop.op}` : '';
+    rows.push({
+      rule: id,
+      file: String((loc && loc.artifactLocation && loc.artifactLocation.uri) || '').replace(/^file:\/\/\/?/, ''),
+      line: Number(loc && loc.region && loc.region.startLine) || 0,
+      sev: b,
+      message: capMessage(String((res.message && res.message.text) || '')),
+      cwe: cweOf(rule).join(', '),
+      control: m ? String(m.control || '') : '',
+      boundedAt: bound,
+    });
+  });
+  if (!c || c.nosrc || c.unparseable || c.norules || c.neverran || c.toolfailed) return c;
   const ruleTitles = sortedTitles(titles);
   return { ...c, ..._detailFor(key, rows), ...(ruleTitles ? { ruleTitles } : {}) };
 }

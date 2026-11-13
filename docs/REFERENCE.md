@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 340 | 278 | 62 |
-| Exit codes (declared in the header) | 354 | 156 | 198 |
-| `CW_*` environment variables (described in an `env` header) | 931 | 222 | 709 |
+| Commands (a usage line in the header) | 343 | 281 | 62 |
+| Exit codes (declared in the header) | 357 | 159 | 198 |
+| `CW_*` environment variables (described in an `env` header) | 934 | 225 | 709 |
 | Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -497,6 +497,28 @@ bin/daily-run.mjs — the /daily report for a monitor area: build the digest for
 
 - Usage: `daily-run.mjs --area <slug> | --all scheduled run: one report per new complete batch`
 - Exit: 0 done or nothing new · 1 a run failed · 2 usage or configuration error.
+
+### `bin/deno-dfd.mjs`
+
+bin/deno-dfd.mjs — data-flow diagrams and sink-to-source mutability for Deno code.
+
+- Usage: `node bin/deno-dfd.mjs --root <repo> --sarif <lane.sarif> [--sarif <codeql.sarif> …]`
+- Option: `--annotate rewrites each --sarif in place, adding properties.cwMutability to every result`
+- Exit: 0 written (an empty diagram is a diagram) · 1 an input could not be read · 2 usage
+
+### `bin/deno-hazards.mjs`
+
+bin/deno-hazards.mjs — Deno permission, inspector and module-integrity posture, read from config and command lines rather than from code.
+
+- Usage: `node bin/deno-hazards.mjs <repo> [--sarif | --json]`
+- Exit: 0 the scan ran. With no Deno marker and no `deno` invocation anywhere it writes NO document (stderr says so), so the lane reads not-scanned rather than a clean zero · 2 the path does not exist
+
+### `bin/deno-sast.mjs`
+
+bin/deno-sast.mjs — the Deno lanes' scan: type-argument erasure, opengrep cross-function taint, the data-flow inventory, and the DFD/mutability pass.
+
+- Usage: `node bin/deno-sast.mjs <repo> --pack security|reliability --sarif <out.sarif>`
+- Exit: 0 the SARIF was written (with or without findings) · 1 the engine ran and failed · 2 usage · 127 opengrep is not installed (NOTHING is written, so the lane reads not-scanned)
 
 ### `bin/deno-scan.mjs`
 
@@ -2723,7 +2745,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-931 `CW_*` names read by tracked non-test sources: 804 by name, and
+934 `CW_*` names read by tracked non-test sources: 807 by name, and
 127 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -2888,6 +2910,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_CODEQL_MODELS` | direct | `bin/lib/lane-reuse.mjs` | a repository's CodeQL models, default in the private store |
 | `CW_CODEQL_OPUS_CONCURRENCY` | direct | `admin/routes/codeql-remediation.mjs` | undocumented |
 | `CW_CODEQL_PACKAGES` | direct | `bin/lib/lane-reuse.mjs` | local CodeQL packs, default ~/.codeql/packages |
+| `CW_CODEQL_SHIPPED_MODELS` | direct | `bin/codeql-model-pack.mjs` | undocumented |
 | `CW_COINCIDENCE_DAYS` | direct | `monitor/forensics.mjs` | undocumented |
 | `CW_COINCIDENCE_MAXGAP` | direct | `monitor/coincidence.mjs` | never report above this many seconds (default 900) |
 | `CW_COINCIDENCE_MIN` | direct | `monitor/coincidence.mjs` | min samples per pair (default 12) |
@@ -2954,6 +2977,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_DEFECT_SIGNATURES_OUT` | direct | `monitor/defect-signature.mjs` | fleet artifact path, default &lt;reportsRoot&gt;/defect-signatures.json |
 | `CW_DEFECT_SIGNATURE_MIN_REPOS` | indirect | `monitor/defect-signature.mjs` | undocumented |
 | `CW_DEFECT_SIGNATURE_RATE` | indirect | `monitor/defect-signature.mjs` | undocumented |
+| `CW_DENO_SAST_TIMEOUT_SEC` | direct | `bin/deno-sast.mjs` | whole-scan budget, default 1800 |
 | `CW_DEPSCAN_ALLOW_NET` | direct | `bin/depscan-scan.sh` | undocumented |
 | `CW_DEPSCAN_IMAGE` | direct | `bin/depscan-scan.sh` | undocumented |
 | `CW_DEPSCAN_MEM` | direct | `bin/depscan-scan.sh` | undocumented |
@@ -3289,6 +3313,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_OPEN` | direct | `admin/routes/remediation.mjs`, `monitor/images.mjs` | undocumented |
 | `CW_OPENAPI` | direct | `bin/commitwork.mjs` | undocumented |
 | `CW_OPENAPI_DRIFT_SCRIPTS` | direct | `bin/quality-gates.mjs` | undocumented |
+| `CW_OPENGREP` | direct | `bin/deno-sast.mjs` | engine binary, default `opengrep` |
 | `CW_OSASCRIPT` | direct | `admin/routes/remediation.mjs`, `monitor/images.mjs` | undocumented |
 | `CW_OSV_FIXED` | indirect | `monitor/remediation-source.mjs` | undocumented |
 | `CW_OSV_URL` | direct | `bin/lib/osv-advisories.mjs` | default https://api.osv.dev |
@@ -3430,7 +3455,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SCANNER_TAXONOMY_JSON` | direct | `bin/scanner-taxonomy-render.mjs` | undocumented |
 | `CW_SCAN_CONFIG` | direct | `bin/lib/scan-config.mjs` | undocumented |
 | `CW_SCAN_DEPTH` | direct | `bin/commitwork.mjs` | undocumented |
-| `CW_SCAN_EXCLUDE_DIRS` | direct | `bin/scan-exclusions.mjs` | undocumented |
+| `CW_SCAN_EXCLUDE_DIRS` | direct | `bin/scan-exclusions.mjs` | via bin/scan-exclusions.mjs (`bin/deno-sast.mjs`) |
 | `CW_SCAN_INTENSITY` | direct | `bin/commitwork.mjs` | undocumented |
 | `CW_SCAN_PATH_OUT` | direct | `bin/lib/scan-target.mjs` | undocumented |
 | `CW_SCHEMA_DIR` | direct | `bin/validate-artifact.mjs` | undocumented |
@@ -3664,7 +3689,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 
 ## Manifest keys
 
-Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (90); 109 checks in all.
+Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (93); 112 checks in all.
 A nested key is written `parent.child`. A key the schema declares and no check uses is listed with 0.
 
 ### Check keys
@@ -3676,7 +3701,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `act.enabled` | 0 | undocumented |
 | `act.job` | 0 | Optional specific job id to run (act -j). |
 | `aliasOf` | 2 | This check reports into another check's category. |
-| `appliesIfExists` | 53 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
+| `appliesIfExists` | 56 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
 | `appliesIfGit` | 5 | During `scan`, only run this check if the target is a git repo. |
 | `appliesIfSourceExt` | 21 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
 | `containment` | 3 | A lane's exclusion from a group, declared as DATA rather than argued in prose. |
@@ -3684,28 +3709,28 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `containment.reason` | 3 | Why the exclusion exists, in terms a reader can check. |
 | `containment.reviewBy` | 3 | When this exclusion must be revisited, as an ISO-8601 UTC instant. |
 | `coverageSignals` | 4 | Patterns in this check's log that mean a LANE OF THE CHECK DID NOT RUN, even though the tool exited 0. |
-| `description` | 109 | undocumented |
-| `egress` | 109 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
+| `description` | 112 | undocumented |
+| `egress` | 112 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
 | `envPassthrough` | 5 | Credential-shaped environment names (…_TOKEN, …_SECRET, …_API_KEY, …_BEARER_x) this analyser lane may inherit from the operator's environment. |
 | `executesRepoCode` | 12 | This lane runs the scanned repository's own build, test or install code. |
-| `formatNotes` | 88 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
-| `groups` | 109 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
-| `id` | 109 | Stable check id, conventionally matching the workflow filename stem. |
-| `local` | 109 | Shell commands run in sequence (fail-fast) in repoPath. |
+| `formatNotes` | 91 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
+| `groups` | 112 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
+| `id` | 112 | Stable check id, conventionally matching the workflow filename stem. |
+| `local` | 112 | Shell commands run in sequence (fail-fast) in repoPath. |
 | `notALane` | 16 | Why this check feeds no lane: it writes an inventory, a count or a status that no reader derives a finding from. |
-| `notes` | 66 | undocumented |
+| `notes` | 69 | undocumented |
 | `producesIfExists` | 1 | Artifact globs (e.g. *.jar) that must exist somewhere in the repo for an empty-clean result to be trustworthy; otherwise the check is recorded as a void ('no scannable artifact — build first'). |
-| `remediationPrompt` | 86 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
-| `report` | 109 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
-| `report.file` | 109 | Filename written under $CW_REPORT_DIR. |
+| `remediationPrompt` | 89 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
+| `report` | 112 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
+| `report.file` | 112 | Filename written under $CW_REPORT_DIR. |
 | `report.findingsExit` | 4 | Exit codes the tool documents as meaning it ran and reported findings. |
-| `report.format` | 109 | Report format. |
-| `report.log` | 19 | Filename (under $CW_REPORT_DIR) of the tool's own log. |
-| `requires` | 109 | Gating conditions. |
+| `report.format` | 112 | Report format. |
+| `report.log` | 21 | Filename (under $CW_REPORT_DIR) of the tool's own log. |
+| `requires` | 112 | Gating conditions. |
 | `requires.docker` | 4 | Requires a running Docker daemon. |
 | `requires.secrets` | 2 | Env vars that must be set (checked in process env and repoPath/.env). |
 | `requires.services` | 7 | Free-text service prerequisites surfaced to the user (e.g. 'docker daemon', 'live Supabase'). Informational. |
-| `requires.tools` | 109 | Executables that must be on PATH. |
+| `requires.tools` | 112 | Executables that must be on PATH. |
 | `requiresRepoTrust` | 1 | The lane's command runs a script the scanned repository supplies, not a bundled scanner. |
 | `requiresUrl` | 10 | Runtime scanner: needs a live base URL (--url/--urls/commitwork.url/$CW_TARGET_URL). |
 | `reuse` | 3 | Declares the lane's result a function of inputs bin/lib/lane-reuse.mjs can key: the scanned tree's files, this check, the files under the commitwork root listed in inputs (and their local imports), the tool versions, th… |
@@ -3713,8 +3738,8 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `reuse.inputs` | 2 | Paths under the commitwork root the lane reads or executes. |
 | `reuse.outputs` | 3 | Files the lane writes into CW_REPORT_DIR, as names or * patterns; must include report.file. |
 | `reuse.packs` | 2 | Query packs the tool loads locally: codeql keys the CodeQL package cache and the repository's CodeQL models, joern the query database installed beside the joern-scan launcher. |
-| `sandboxExtraReads` | 17 | Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). |
-| `sandboxExtraWrites` | 42 | Paths this lane must write beyond $CW_REPORT_DIR and TMPDIR: a tool's own cache (~/.semgrep, ~/Library/Caches/trivy, ~/.codeql). |
+| `sandboxExtraReads` | 19 | Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). |
+| `sandboxExtraWrites` | 44 | Paths this lane must write beyond $CW_REPORT_DIR and TMPDIR: a tool's own cache (~/.semgrep, ~/Library/Caches/trivy, ~/.codeql). |
 | `sandboxLoopback` | 1 | The lane's tool connects over TCP loopback to worker processes it starts itself. |
 | `scopeNotes` | 20 | Named limits on what this check can see (e.g. 'language', 'codeql-extractor-baseline'). |
 | `skipsOnGitHub` | 1 | Workflow steps deliberately NOT reproduced locally (SARIF upload, PR comments, artifact retention, cloud uploads). |

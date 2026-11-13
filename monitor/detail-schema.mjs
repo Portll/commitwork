@@ -445,6 +445,27 @@ export const ROW_SCHEMAS = Object.freeze({
     identity: ['rule'],
     note: 'One row per distinct TypeScript error code from `deno check`, with its occurrence count. NOT a vulnerability lane — it measures correctness, and is excluded from the severity headline (TOTALS_EXCLUDE) so lint volume cannot drown real security findings.',
   },
+  // ── Deno: security, posture and reliability ──────────────────────────────────────────────────
+  sastDeno: {
+    // APPENDED columns after the shared SARIF ones: field order is the panel's column order.
+    fields: [['rule', 'str', 'Rule'], ['file', 'path', 'File'], ['line', 'int', 'Line'], ['sev', 'sev', 'Severity'],
+      ['message', 'text', 'Message'], ['cwe', 'str', 'Weakness'], ['control', 'str', 'Sender control'], ['boundedAt', 'str', 'Bounded at']],
+    sort: ['file', 'line', 'rule', 'message'],
+    identity: ['rule', 'file'],
+    note: 'One row per Deno taint or race finding from opengrep --taint-intrafile over manifests/semgrep-deno-security/ — the only lane naming Deno APIs as sources and sinks. `control` is bin/deno-dfd.mjs\'s sink-to-source verdict for a taint row: how much of the value the sender still holds at the sink (full, substring, structured, filtered, mismatched, host-pinned, numeric, allowlisted, sanitized), read hop by hop backwards from the sink; `boundedAt` is the hop nearest the sink that bounds it, which is where the evidence for a weaker verdict sits. Both are blank on a race or construct row, which has no path to evaluate — blank never reads as bounded. Typed calls (kv.get<T>(), db.queryObject<User>()) are read: the lane scans a mirror with call-position type arguments blanked to spaces, so line and column are the original\'s. The per-path diagrams are in deno-dfd.md beside the artifact.',
+  },
+  denoReliability: {
+    fields: [['rule', 'str', 'Rule'], ['file', 'path', 'File'], ['line', 'int', 'Line'], ['sev', 'sev', 'Severity'], ['message', 'text', 'Message']],
+    sort: ['file', 'line', 'rule', 'message'],
+    identity: ['rule', 'file'],
+    note: 'One row per Deno ordering, resource or performance defect (manifests/semgrep-deno-reliability/). NOT a vulnerability lane and excluded from the severity headline: an unawaited write, sync I/O in a handler, a piped child that nobody reads, a leaked Response body, an unbounded kv.list, Deno.exit in a handler. They take a service down or make it slow; the races that change who gets what are in sastDeno.',
+  },
+  denoHazards: {
+    fields: [['rule', 'str', 'Rule'], ['file', 'path', 'File'], ['line', 'int', 'Line'], ['sev', 'sev', 'Severity'], ['message', 'text', 'Message']],
+    sort: ['file', 'line', 'rule', 'message'],
+    identity: ['rule', 'file'],
+    note: "One row per Deno permission grant, inspector exposure or module-integrity gap, read from deno.json tasks and permission sets, import maps, shebangs, Dockerfiles, CI workflows, Procfiles and package.json scripts — where Deno's sandbox is actually configured, and which no code scanner reads. `sev` is the SARIF level and is context-sensitive: -A on deno test is low, in CI med, on a production run/serve/compile high. Findings adjudicated in place (cw-hazards-ignore) are counted in run.properties.suppressedCount instead of published.",
+  },
 
   // ── evidence about a target rather than a file ────────────────────────────────────────────────
   dast: {

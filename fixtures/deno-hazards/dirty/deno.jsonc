@@ -1,0 +1,25 @@
+// Fixture: every deno-hazards rule fires somewhere in this tree.
+{
+  "lock": false,
+  "tasks": {
+    "start": "deno run -A --unsafely-ignore-certificate-errors main.ts",
+    "debug": "deno run --inspect=0.0.0.0:9229 --allow-net main.ts",
+    "worker": "deno run --allow-run --allow-ffi --allow-write --allow-env --allow-sys main.ts",
+    "tools": "deno run --allow-run=git,bash --allow-import --allow-scripts main.ts",
+    "test": "deno test -A",
+    "remote": "deno run -A https://deno.land/x/somecli/mod.ts"
+  },
+  "permissions": {
+    "default": { "read": true, "run": true },
+    "admin": { "all": true }
+  },
+  "imports": {
+    "oak": "https://deno.land/x/oak/mod.ts",
+    "std": "https://deno.land/std/path/mod.ts",
+    "react": "https://esm.sh/react",
+    "legacy": "http://cdn.example.com/legacy.ts",
+    "@std/path": "jsr:@std/path",
+    "chalk": "npm:chalk",
+    "pinned": "jsr:@std/assert@1.0.8"
+  }
+}
