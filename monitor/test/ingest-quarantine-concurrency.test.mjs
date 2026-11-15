@@ -15,7 +15,7 @@ import { loadQuarantine, ingestExternal, QUARANTINE_MAX } from '../ingest-extern
 import { acquireLock } from '../lockfile.mjs';
 
 const CW = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const MOD = pathToFileURL(join(CW, 'monitor', 'ingest-external.mjs')).href;
+const MOD = join(CW, 'monitor', 'ingest-external.mjs');
 
 // ~3.5MB of capped payloads, so load -> push -> write is a real window.
 const SEED = 900;
@@ -36,7 +36,7 @@ function seedDoc() {
 
 function childSource() {
   return `
-import { defaultQuarantineSink } from ${JSON.stringify(MOD)};
+import { defaultQuarantineSink } from ${JSON.stringify(pathToFileURL(MOD).href)};
 const [, , marker, startAt] = process.argv;
 while (Date.now() < Number(startAt)) { /* barrier */ }
 const t0 = Date.now();

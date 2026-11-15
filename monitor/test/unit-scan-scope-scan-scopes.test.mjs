@@ -33,7 +33,7 @@ test('parses allowlist blocks, sorts rule-scoped ones last and reads the size bo
     '[extend]', 'paths = ["z"]', '[[allowlists]]', 'paths = ["d"]', 'targetRules = []'].join('\n');
   const { b, g } = setup(dir, { checks: [{ id: 'secrets-gitleaks', local: ['gitleaks', '--max-target-megabytes=5'] }] }, toml);
   const result = scanScopes();
-  assert.deepEqual(result.secrets, { known: true, source: g, maxTargetMB: 5, blocks: [
+  assert.deepEqual(result.secrets, { known: true, source: g, notes: [], maxTargetMB: 5, blocks: [
     { description: 'global', paths: ['b', 'c'], targetRules: null },
     { description: '', paths: ['d'], targetRules: null },
     { description: 'scoped', paths: ['a'], targetRules: ['r1'] }] });
@@ -43,7 +43,7 @@ test('parses allowlist blocks, sorts rule-scoped ones last and reads the size bo
 test('marks the size bound unknown and every command scope absent when the baseline manifest is missing', () => inDir((dir) => {
   const { b, g } = setup(dir, undefined, TOML);
   const result = scanScopes();
-  assert.deepEqual(result.secrets, { known: true, source: g, maxTargetMB: null, maxTargetUnknown: 'absent', blocks: BLK });
+  assert.deepEqual(result.secrets, { known: true, source: g, notes: [], maxTargetMB: null, maxTargetUnknown: 'absent', blocks: BLK });
   assert.deepEqual(result.accessibility, { known: false, reason: 'absent', source: b, detail: 'ENOENT' });
   assert.deepEqual(result.actionsGaps, { known: false, reason: 'absent', source: b, detail: 'ENOENT' });
 }));
@@ -52,14 +52,14 @@ test('marks the size bound and command scopes unreadable when the baseline path 
   const { b, g } = setup(dir, undefined, TOML);
   mkdirSync(b);
   const result = scanScopes();
-  assert.deepEqual(result.secrets, { known: true, source: g, maxTargetMB: null, maxTargetUnknown: 'unreadable', blocks: BLK });
+  assert.deepEqual(result.secrets, { known: true, source: g, notes: [], maxTargetMB: null, maxTargetUnknown: 'unreadable', blocks: BLK });
   assert.deepEqual(result.accessibility, { known: false, reason: 'unreadable', source: b, detail: 'EISDIR' });
 }));
 
 test('marks the size bound and command scopes unparsed when the baseline is not valid JSON', () => inDir((dir) => {
   const { b, g } = setup(dir, '{ not json', TOML);
   const result = scanScopes();
-  assert.deepEqual(result.secrets, { known: true, source: g, maxTargetMB: null, maxTargetUnknown: 'unparsed', blocks: BLK });
+  assert.deepEqual(result.secrets, { known: true, source: g, notes: [], maxTargetMB: null, maxTargetUnknown: 'unparsed', blocks: BLK });
   assert.deepEqual(result.accessibility, { known: false, reason: 'unparsed', source: b, detail: 'bad json' });
 }));
 
@@ -71,7 +71,7 @@ test('derives de-duplicated excludes, skip dirs, size bound and signed-off notes
     { id: 'actions-actionlint', local: ['docker run img', 'scan $CW_TARGET_URL'] },
   ] }, TOML);
   const result = scanScopes();
-  assert.deepEqual(result.secrets, { known: true, source: g, maxTargetMB: null, maxTargetUnknown: 'undeclared', blocks: BLK });
+  assert.deepEqual(result.secrets, { known: true, source: g, notes: [], maxTargetMB: null, maxTargetUnknown: 'undeclared', blocks: BLK });
   assert.deepEqual(result.accessibility, { known: true, source: b, maxTargetMB: 7, notes: [], blocks: [
     { description: 'paths excluded by --exclude in the a11y-wcag command', paths: ['vendor', 'dist'], targetRules: null },
     { description: 'directories skipped by --skip-dirs in the a11y-wcag command', paths: ['a', 'b', 'c'], targetRules: null }] });
@@ -94,7 +94,7 @@ test('reports scope drift with derived blocks when notes and declared scopeNotes
     { id: 'actions-health', scopeNotes: ['clean-build-traced', 'engine-pro-interfile', 'extra'], local: ['semgrep --pro', 'codeql-swift-build.sh'] },
   ] }, TOML);
   const result = scanScopes();
-  assert.deepEqual(result.secrets, { known: true, source: g, maxTargetMB: null, blocks: BLK });
+  assert.deepEqual(result.secrets, { known: true, source: g, notes: [], maxTargetMB: null, blocks: BLK });
   assert.deepEqual(result.accessibility, { known: false, reason: 'scope-drift', source: b, blocks: [], maxTargetMB: 3,
     detail: head('a11y-wcag') + 'derived but not declared: build-mode-autobuild, docker, target-url, probe-host-excluded, ruleset-auto, '
       + 'engine-pro-intrafile, pro-delta-control, workflows-dir-and-root-action, clean-build-traced, metrics, package-lock' + TAIL });

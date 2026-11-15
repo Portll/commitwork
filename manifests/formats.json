@@ -301,6 +301,18 @@
       ]
     },
     {
+      "id": "headless-commit",
+      "status": "frozen",
+      "summary": "One headless commit record: a model-written message the commit gate accepts where nobody can be asked.",
+      "versionField": "schema",
+      "version": "commitwork.headless-commit/1",
+      "schema": "schema/headless-commit.schema.json",
+      "writer": { "module": "bin/hooks/guard-destructive.mjs", "export": "HEADLESS_RECORD_SCHEMA" },
+      "history": [
+        { "version": "commitwork.headless-commit/1", "fingerprint": "sha256:54159735619b24018fd0496ab506fc896c7e77264e165111ebf43da66061c8dd", "release": "0.6.243", "change": "initial", "note": "Pinned when headless sessions were allowed to commit." }
+      ]
+    },
+    {
       "id": "release-report",
       "status": "unschematized",
       "summary": "report.json: what a deploy box served, the findings it blocks, and its exposure history.",

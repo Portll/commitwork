@@ -5,13 +5,26 @@
 // Public WordPress stubs (php-stubs/wordpress-stubs) declare types and nothing else, so psalm sees
 // $wpdb->query() as an ordinary method and traces no SQL injection through it: measured 2026-10-08
 // on a synthetic plugin, the stubs found exactly what no stubs found. This file adds only what taint
-// analysis needs: the database sinks, the REST and shortcode sources, maybe_unserialize, the one
-// pass-through every request read goes through, and the escapes. It declares nothing else and is
-// never executed.
+// analysis needs: the sinks, the REST and shortcode sources, the pass-throughs and the escapes. It
+// declares nothing else and is never executed.
 //
-// Not expressible here, measured 2026-11-12: a sink of a kind psalm does not define (an option name,
-// a user meta key, a redirect target) never fires, because psalm's `input` source carries only its
-// own kinds. Those classes need an entry-point analysis, not a stub.
+// Two taint kinds are not psalm's own: wp_option_key (an option, user meta or post meta NAME chosen
+// by the request) and wp_redirect (a redirect target chosen by the request). WordPressTaintPlugin.php adds
+// them to $_GET/$_POST/$_COOKIE/$_REQUEST; the REST and shortcode sources below declare them here.
+//
+// Rules this file keeps, each measured on psalm 6.19.1 on 2026-11-13:
+// - Every function with a flow or a sink carries @psalm-taint-specialize. Without it the argument
+//   and return nodes are shared by every call site: taint entering wp_unslash() in one function
+//   came out of a wp_unslash('constant') in another and reached wp_redirect() (a false positive),
+//   and a second unslashed redirect was never reported once a shorter path to the same sink existed
+//   (a false negative), because psalm visits each sink node once per taint set.
+// - An escape needs @psalm-flow beside it. A body-less function with no flow returns nothing
+//   tainted, so an escape without a flow silently clears every kind, not the one it names.
+// - A function psalm cannot resolve ends the flow, which is why the pass-throughs are declared.
+//
+// What no stub can fix, measured the same day: taint returned by a global function declared in
+// ANOTHER file is lost (a static method across files and any function in the same file carry it),
+// and a value read back out of an array literal is not traced.
 
 class wpdb
 {
@@ -20,30 +33,35 @@ class wpdb
 
     /**
      * @psalm-taint-sink sql $query
+     * @psalm-taint-specialize
      * @return int|bool
      */
     public function query($query) {}
 
     /**
      * @psalm-taint-sink sql $query
+     * @psalm-taint-specialize
      * @return array|object|null
      */
     public function get_results($query = null, $output = 'OBJECT') {}
 
     /**
      * @psalm-taint-sink sql $query
+     * @psalm-taint-specialize
      * @return string|null
      */
     public function get_var($query = null, $x = 0, $y = 0) {}
 
     /**
      * @psalm-taint-sink sql $query
+     * @psalm-taint-specialize
      * @return array|object|null
      */
     public function get_row($query = null, $output = 'OBJECT', $y = 0) {}
 
     /**
      * @psalm-taint-sink sql $query
+     * @psalm-taint-specialize
      * @return array
      */
     public function get_col($query = null, $x = 0) {}
@@ -54,12 +72,15 @@ class wpdb
      * No flow is declared to the return, so a prepared query is clean at the query() sink.
      *
      * @psalm-taint-sink sql $query
+     * @psalm-taint-specialize
      * @return string
      */
     public function prepare($query, ...$args) {}
 
     /**
+     * @psalm-flow ($text) -> return
      * @psalm-taint-escape sql
+     * @psalm-taint-specialize
      * @return string
      */
     public function esc_like($text) {}
@@ -67,69 +88,182 @@ class wpdb
 
 /**
  * @psalm-flow ($value) -> return
+ * @psalm-taint-specialize
  * @return mixed
  */
 function wp_unslash($value) {}
 
 /**
+ * esc_url_raw() drops characters a URL cannot hold, CR and LF among them, and keeps the host.
+ *
+ * @psalm-flow ($url) -> return
+ * @psalm-taint-escape header
+ * @psalm-taint-specialize
+ * @return string
+ */
+function esc_url_raw($url, $protocols = null) {}
+
+/**
+ * @psalm-flow ($data) -> return
  * @psalm-taint-escape sql
+ * @psalm-taint-specialize
  * @return mixed
  */
 function esc_sql($data) {}
 
 /**
+ * @psalm-flow ($text) -> return
  * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-specialize
  * @return string
  */
 function esc_html($text) {}
 
 /**
+ * @psalm-flow ($text) -> return
  * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-specialize
  * @return string
  */
 function esc_attr($text) {}
 
 /**
+ * esc_url() entity-encodes for display and refuses unlisted protocols; it does not pin the host, so
+ * the result is still an attacker's redirect or fetch target.
+ *
+ * @psalm-flow ($url) -> return
  * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape header
+ * @psalm-taint-specialize
  * @return string
  */
 function esc_url($url, $protocols = null, $_context = 'display') {}
 
 /**
+ * @psalm-flow ($text) -> return
  * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-specialize
  * @return string
  */
 function esc_textarea($text) {}
 
 /**
+ * sanitize_text_field() strips tags and line breaks and keeps quotes, so its output is safe in
+ * element content and not inside an attribute.
+ *
+ * @psalm-flow ($str) -> return
  * @psalm-taint-escape html
+ * @psalm-taint-escape header
+ * @psalm-taint-specialize
  * @return string
  */
 function sanitize_text_field($str) {}
 
 /**
+ * @psalm-flow ($str) -> return
  * @psalm-taint-escape html
+ * @psalm-taint-specialize
+ * @return string
+ */
+function sanitize_textarea_field($str) {}
+
+/**
+ * @psalm-flow ($data) -> return
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-specialize
  * @return string
  */
 function wp_kses_post($data) {}
 
 /**
+ * @psalm-flow ($content) -> return
  * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-specialize
  * @return string
  */
 function wp_kses($content, $allowed_html, $allowed_protocols = array()) {}
 
 /**
- * @psalm-taint-escape sql
- * @psalm-taint-escape html
+ * No flow is declared: an integer carries no taint of any kind.
+ *
  * @return int
  */
 function absint($maybeint) {}
 
 /**
+ * sanitize_key() leaves lowercase letters, digits, '_' and '-', which still name any option or
+ * hook a caller likes and nothing else.
+ *
+ * @psalm-flow ($key) -> return
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape sql
+ * @psalm-taint-escape shell
+ * @psalm-taint-escape ssrf
+ * @psalm-taint-escape file
+ * @psalm-taint-escape include
+ * @psalm-taint-escape eval
+ * @psalm-taint-escape unserialize
+ * @psalm-taint-escape header
+ * @psalm-taint-escape cookie
+ * @psalm-taint-escape ldap
+ * @psalm-taint-escape xpath
+ * @psalm-taint-escape extract
+ * @psalm-taint-escape wp_redirect
+ * @psalm-taint-specialize
+ * @return string
+ */
+function sanitize_key($key) {}
+
+/**
+ * @psalm-flow ($location, $fallback_url) -> return
+ * @psalm-taint-escape wp_redirect
+ * @psalm-taint-escape ssrf
+ * @psalm-taint-specialize
+ * @return string
+ */
+function wp_validate_redirect($location, $fallback_url = '') {}
+
+/**
+ * The site's own scheme and host lead the result, so a request-chosen path cannot move it off-site.
+ *
+ * @psalm-flow ($path) -> return
+ * @psalm-taint-escape wp_redirect
+ * @psalm-taint-escape ssrf
+ * @psalm-taint-specialize
+ * @return string
+ */
+function admin_url($path = '', $scheme = 'admin') {}
+
+/**
+ * @psalm-flow ($path) -> return
+ * @psalm-taint-escape wp_redirect
+ * @psalm-taint-escape ssrf
+ * @psalm-taint-specialize
+ * @return string
+ */
+function home_url($path = '', $scheme = null) {}
+
+/**
+ * @psalm-flow ($path) -> return
+ * @psalm-taint-escape wp_redirect
+ * @psalm-taint-escape ssrf
+ * @psalm-taint-specialize
+ * @return string
+ */
+function site_url($path = '', $scheme = null) {}
+
+/**
  * Request input reached through the REST API. Psalm sees these only where the callback's parameter
  * is typed WP_REST_Request; an untyped $request is mixed and stays invisible to it. Array access
  * ($request['id']) is not traced: a source on offsetGet() produced nothing, measured 2026-11-12.
+ * The semgrep-classes php-wordpress rules cover both shapes inside one function.
  *
  * @template-implements ArrayAccess<string, mixed>
  */
@@ -137,36 +271,48 @@ class WP_REST_Request implements ArrayAccess
 {
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_option_key
+     * @psalm-taint-source wp_redirect
      * @return mixed
      */
     public function get_param($key) {}
 
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_option_key
+     * @psalm-taint-source wp_redirect
      * @return array
      */
     public function get_params() {}
 
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_option_key
+     * @psalm-taint-source wp_redirect
      * @return array|null
      */
     public function get_json_params() {}
 
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_option_key
+     * @psalm-taint-source wp_redirect
      * @return array
      */
     public function get_body_params() {}
 
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_option_key
+     * @psalm-taint-source wp_redirect
      * @return array
      */
     public function get_query_params() {}
 
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_option_key
+     * @psalm-taint-source wp_redirect
      * @return array
      */
     public function get_url_params() {}
@@ -179,12 +325,15 @@ class WP_REST_Request implements ArrayAccess
 
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_option_key
+     * @psalm-taint-source wp_redirect
      * @return string
      */
     public function get_body() {}
 
     /**
      * @psalm-taint-source input
+     * @psalm-taint-source wp_redirect
      * @return string|null
      */
     public function get_header($key) {}
@@ -208,19 +357,186 @@ class WP_REST_Request implements ArrayAccess
  * see it; this catches the conventional shortcode_atts() read and not a raw $atts read.
  *
  * @psalm-taint-source input
+ * @psalm-taint-source wp_option_key
+ * @psalm-taint-source wp_redirect
  * @return array
  */
 function shortcode_atts($pairs, $atts, $shortcode = '') {}
 
 /**
  * @psalm-taint-sink unserialize $data
+ * @psalm-taint-specialize
  * @return mixed
  */
 function maybe_unserialize($data) {}
 
 /**
- * @psalm-taint-escape html
- * @psalm-taint-escape sql
- * @return string
+ * @psalm-taint-sink wp_option_key $option
+ * @psalm-taint-specialize
+ * @return bool
  */
-function sanitize_key($key) {}
+function update_option($option, $value, $autoload = null) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $option
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function add_option($option, $value = '', $deprecated = '', $autoload = 'yes') {}
+
+/**
+ * @psalm-taint-sink wp_option_key $option
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function delete_option($option) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $option
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function update_site_option($option, $value) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $option
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function add_site_option($option, $value) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $option
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function delete_site_option($option) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $option
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function update_network_option($network_id, $option, $value) {}
+
+/**
+ * A request-chosen user meta key reaches wp_capabilities and every other per-user setting.
+ *
+ * @psalm-taint-sink wp_option_key $meta_key
+ * @psalm-taint-specialize
+ * @return int|bool
+ */
+function update_user_meta($user_id, $meta_key, $meta_value, $prev_value = '') {}
+
+/**
+ * @psalm-taint-sink wp_option_key $meta_key
+ * @psalm-taint-specialize
+ * @return int|false
+ */
+function add_user_meta($user_id, $meta_key, $meta_value, $unique = false) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $option_name
+ * @psalm-taint-specialize
+ * @return int|bool
+ */
+function update_user_option($user_id, $option_name, $newvalue, $is_global = false) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $meta_key
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function delete_user_meta($user_id, $meta_key, $meta_value = '') {}
+
+/**
+ * A request-chosen post meta key can write a protected `_`-prefixed key that core trusts.
+ *
+ * @psalm-taint-sink wp_option_key $meta_key
+ * @psalm-taint-specialize
+ * @return int|bool
+ */
+function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '') {}
+
+/**
+ * @psalm-taint-sink wp_option_key $meta_key
+ * @psalm-taint-specialize
+ * @return int|false
+ */
+function add_post_meta($post_id, $meta_key, $meta_value, $unique = false) {}
+
+/**
+ * @psalm-taint-sink wp_option_key $meta_key
+ * @psalm-taint-specialize
+ * @return int|bool
+ */
+function update_metadata($meta_type, $object_id, $meta_key, $meta_value, $prev_value = '') {}
+
+/**
+ * wp_safe_redirect() is deliberately not declared: it validates the host and is no sink.
+ *
+ * @psalm-taint-sink wp_redirect $location
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function wp_redirect($location, $status = 302, $x_redirect_by = 'WordPress') {}
+
+/**
+ * The wp_safe_remote_* family refuses private and loopback hosts and is deliberately not declared.
+ *
+ * @psalm-taint-sink ssrf $url
+ * @psalm-taint-specialize
+ * @return mixed
+ */
+function wp_remote_get($url, $args = array()) {}
+
+/**
+ * @psalm-taint-sink ssrf $url
+ * @psalm-taint-specialize
+ * @return mixed
+ */
+function wp_remote_post($url, $args = array()) {}
+
+/**
+ * @psalm-taint-sink ssrf $url
+ * @psalm-taint-specialize
+ * @return mixed
+ */
+function wp_remote_head($url, $args = array()) {}
+
+/**
+ * @psalm-taint-sink ssrf $url
+ * @psalm-taint-specialize
+ * @return mixed
+ */
+function wp_remote_request($url, $args = array()) {}
+
+/**
+ * @psalm-taint-sink ssrf $url
+ * @psalm-taint-specialize
+ * @return mixed
+ */
+function download_url($url, $timeout = 300, $signature_verification = false) {}
+
+/**
+ * A request-chosen hook name runs every callback registered on it, privileged ones included.
+ *
+ * @psalm-taint-sink callable $hook_name
+ * @psalm-taint-specialize
+ * @return void
+ */
+function do_action($hook_name, ...$arg) {}
+
+/**
+ * @psalm-taint-sink callable $hook_name
+ * @psalm-taint-specialize
+ * @return mixed
+ */
+function apply_filters($hook_name, $value, ...$args) {}
+
+/**
+ * @psalm-taint-sink file $file
+ * @psalm-taint-specialize
+ * @return bool
+ */
+function wp_delete_file($file) {}

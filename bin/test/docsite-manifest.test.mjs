@@ -15,6 +15,17 @@ import { loadManifest, ManifestError } from '../../lib/docsite-manifest.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
+
+let headTreeCache;
+const headTree = () => (headTreeCache ??= execFileSync('git', ['-C', REPO, 'ls-tree', '-r', '-z', '--name-only', 'HEAD'],
+  { encoding: 'utf8', maxBuffer: 1 << 26 }).split('\0').filter(Boolean));
+const exportIgnored = (paths) => {
+  const fields = execFileSync('git', ['-C', REPO, 'check-attr', '-z', '--stdin', 'export-ignore'],
+    { input: paths.join('\0'), encoding: 'utf8', maxBuffer: 1 << 26 }).split('\0');
+  const set = [];
+  for (let i = 0; i + 2 < fields.length; i += 3) if (fields[i + 2] === 'set') set.push(fields[i]);
+  return set;
+};
 const FIXTURE = join(HERE, 'fixtures', 'docsite');
 
 const withRoot = (root, fn) => {
@@ -89,7 +100,7 @@ describe('identity minting discipline', () => {
     assert.ok(!src.includes('randomUUID'), 'bin/docsite-build.mjs must not mint identity');
   });
 
-  test('manifest↔pages pairing in HEAD, both directions (uuid-rotation tripwire)', () => {
+  test('manifest↔pages pairing in HEAD, both directions (uuid-rotation tripwire)', (t) => {
     let headManifest;
     try {
       headManifest = execFileSync('git', ['-C', REPO, 'show', 'HEAD:docsite/manifest.json'], { encoding: 'utf8', stdio: 'pipe' });
@@ -118,9 +129,19 @@ describe('identity minting discipline', () => {
     }
     const headFiles = execFileSync('git', ['-C', REPO, 'ls-tree', '-r', '--name-only', 'HEAD', 'docsite/pages'], { encoding: 'utf8' })
       .split('\n').filter(Boolean);
-    for (const p of expected.keys()) {
-      assert.ok(headFiles.includes(p), `manifest names ${p} but HEAD lacks it — page and manifest must land together`);
+    // git archive drops every export-ignored path, so a HEAD holding none of them is the published snapshot.
+    const headIsExport = exportIgnored(headTree()).length === 0;
+    const absentByExport = [];
+    for (const [p, d] of expected) {
+      if (headFiles.includes(p)) continue;
+      if (headIsExport && exportIgnored([p]).length === 1) {
+        assert.ok(headTree().includes(`docsite/${d.source}`), `${p} is export-ignored and its shipped source docsite/${d.source} is absent too`);
+        absentByExport.push(p);
+        continue;
+      }
+      assert.fail(`manifest names ${p} but HEAD lacks it — page and manifest must land together`);
     }
+    if (absentByExport.length) t.diagnostic(`exported tree: ${absentByExport.join(', ')} absent by export-ignore`);
     for (const f of headFiles) {
       assert.ok(expected.has(f), `HEAD carries ${f} with no manifest entry — an orphaned (possibly rotated) urlPath`);
     }

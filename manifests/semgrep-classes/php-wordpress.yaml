@@ -1,0 +1,957 @@
+# Class rules: WordPress request input reaching a WordPress sink inside one function.
+#
+# The sast-php-psalm lane traces these flows through manifests/psalm/wordpress-taint.phpstub and
+# WordPressTaintPlugin.php, but only where psalm can type the call: an untyped
+# `$request->get_param()`, a `$_SERVER` read and an array literal all lose their taint there. These
+# rules give the same sources and sinks to semgrep's own taint engine, a second witness that fails
+# differently. Sanitizers follow WordPress practice: prepare() arguments, esc_* on output, a fixed
+# URL origin or option-name prefix, and an allowlist or numeric check.
+#
+# Limits, checked against fixtures/semgrep-classes/php-wordpress.php on 2026-11-14:
+# - Intraprocedural only. A value passed to another function or file is not followed, so a shortcode
+#   handler registered by name and an AJAX callback that delegates to a helper are only seen where
+#   the flow stays in one function body.
+# - `$wpdb` is recognised by name (`$wpdb`, `$this->wpdb`, `$GLOBALS['wpdb']`, `$db`, `$this->db`).
+# - A prefix held in a variable or property is not a pin; only a literal one is.
+# - `in_array`, `array_key_exists`, `isset($map[$x])`, `method_exists`, `is_numeric` and
+#   `ctype_digit` sanitize their argument for the rest of the function, whether or not the result
+#   is acted on. That holds for a variable only; an array element such as `$_REQUEST['order']` is
+#   clean only inside `if (in_array(...)) { ... }`, and not at all inside any if that has an else.
+# - Attributes are a source only under the parameter names WordPress uses (`$atts`, `$attributes`
+#   anywhere in the signature, `$attr` first) or through shortcode_atts(); a render callback that
+#   renames them is not seen.
+# - apply_filters() arguments after the value are not followed into its return, so a callback that
+#   returns its context argument is missed. Core lookups by ID (get_post, get_permalink,
+#   wp_get_attachment_*, get_pagenum_link escaped) return stored data, not the request.
+# - For unserialize only, stored reads (options, transients, meta, `$wpdb->get_*`, sessions) end
+#   the request's taint, so stored object injection is left to a lane that models the writer.
+# - sanitize_email() and sanitize_text_field() leave `'`, so a single-quoted attribute is missed.
+#   A value after `<!--` that the same literal closes with `-->` is not markup.
+# - `$_SERVER['HTTP_HOST']` is not a source. Core builds its own URLs from it, and a forged Host
+#   reaches only the client that sent it, so its SQL and file uses are not reported either.
+# - esc_sql() and sanitize_text_field() are sanitizers for the taint rules. cw-wp-esc-sql-unquoted
+#   reports esc_sql() concatenated into an unquoted SQL position; sanitize_text_field() inside an
+#   HTML attribute is not reported.
+# - The registry's php.lang rules already report a superglobal read straight into a SQL string,
+#   unserialize, include or a file function, and an echo of $_GET, $_POST or $_REQUEST, so those
+#   lines can carry a result from both. The HTML rules here report every source reaching echo,
+#   print, printf, _e(), wp_die(), exit or a debug dump, and markup built by concatenation,
+#   interpolation or sprintf wherever it goes.
+# - filter_input() is a source unless it validates a number. The filters in &markup-safe-source feed
+#   every rule but the HTML and unserialize ones, and FILTER_FLAG_NO_ENCODE_QUOTES makes them a full
+#   source. A filter in a variable, FILTER_CALLBACK and a filter_input_array() definition array count
+#   as unfiltered.
+# - add_query_arg() and remove_query_arg() without a URL build on REQUEST_URI, so they are sources.
+#   add_query_arg($key, $value) with the key in a variable is not, because it reads as a URL argument.
+# - wp_get_referer() is not a source: wp_validate_redirect() keeps only an http(s) URL on an allowed host.
+
+x-shared:
+  # INPUT_SERVER and INPUT_ENV carry request text only under the keys the client sets, as $_SERVER does.
+  - &request-input-name
+    pattern-either:
+      - patterns:
+          - pattern: filter_input($TYPE, ...)
+          - metavariable-regex:
+              metavariable: $TYPE
+              regex: '^(?!\\?INPUT_(?:SERVER|ENV)$)'
+      - patterns:
+          - pattern: filter_input($TYPE, $NAME, ...)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: &request-server-key '^[''"](?:HTTP_(?!HOST[''"])[A-Z0-9_]+|REQUEST_URI|QUERY_STRING|PHP_SELF|PATH_INFO|ORIG_PATH_INFO|PATH_TRANSLATED|REDIRECT_URL|REDIRECT_QUERY_STRING|SCRIPT_URI)[''"]$'
+  # exact: without it every sub-expression of a source is one too, so `'php://input'` reached
+  # file_get_contents() and `get_param` reached a dynamic-call sink (measured 2026-11-13).
+  - &request-source
+    exact: true
+    pattern-either:
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_REQUEST
+      - pattern: $_COOKIE
+      - patterns:
+          - pattern: $_SERVER[$K]
+          - metavariable-regex:
+              metavariable: $K
+              regex: *request-server-key
+      - pattern: $_FILES[$FIELD]['name']
+      - pattern: wp_get_raw_referer()
+      # WP_Query::parse_query() casts these to integers before get_query_var() reads them; 'page' is cast only later, in get_posts().
+      - patterns:
+          - pattern: get_query_var($VAR, ...)
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: '^(?![''"](?:p|page_id|year|monthnum|day|w|m|paged|hour|minute|second|menu_order|attachment_id)[''"]$)'
+      - pattern: file_get_contents('php://input')
+      - pattern: filter_input_array($TYPE)
+      - patterns:
+          - pattern: filter_input_array($TYPE, $FILTER, ...)
+          - metavariable-regex:
+              metavariable: $FILTER
+              regex: &unsafe-filter '^(?!\\?(?:FILTER_VALIDATE_(?:INT|FLOAT|BOOLEAN|BOOL)|FILTER_(?:VALIDATE_(?:IP|MAC)|SANITIZE_(?:FULL_SPECIAL_CHARS|SPECIAL_CHARS|STRING|STRIPPED|ENCODED|EMAIL|NUMBER_INT|NUMBER_FLOAT)))$)'
+      - patterns:
+          - pattern-either:
+              - pattern: filter_input($TYPE, $NAME)
+              - patterns:
+                  - pattern: filter_input($TYPE, $NAME, $FILTER, ...)
+                  - metavariable-regex:
+                      metavariable: $FILTER
+                      regex: *unsafe-filter
+              - patterns:
+                  - pattern: filter_input($TYPE, $NAME, $FILTER, $OPTIONS)
+                  - metavariable-regex:
+                      metavariable: $FILTER
+                      regex: &markup-safe-filter '^\\?FILTER_(?:VALIDATE_(?:IP|MAC)|SANITIZE_(?:FULL_SPECIAL_CHARS|SPECIAL_CHARS|STRING|STRIPPED|ENCODED|EMAIL|NUMBER_INT|NUMBER_FLOAT))$'
+                  - metavariable-regex:
+                      metavariable: $OPTIONS
+                      regex: '[\s\S]*NO_ENCODE_QUOTES'
+          - *request-input-name
+      # Without a URL argument these build on REQUEST_URI and return it unescaped.
+      - pattern: add_query_arg($ARGS)
+      - pattern: add_query_arg($ARGS, false)
+      - pattern: add_query_arg("...", $VALUE)
+      - pattern: add_query_arg($KEY, $VALUE, false)
+      - pattern: remove_query_arg($KEY)
+      - pattern: remove_query_arg($KEY, false)
+      - pattern: get_search_query(false)
+      - pattern: getallheaders()
+      - pattern: apache_request_headers()
+      - patterns:
+          - pattern: $R->$GETTER(...)
+          - pattern-not: $this->$GETTER(...)
+          - metavariable-regex:
+              metavariable: $GETTER
+              regex: '^get_(?:param|params|json_params|body_params|query_params|url_params|file_params)$'
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  function $FN(..., WP_REST_Request $R, ...) { ... }
+              - pattern-inside: |
+                  function (..., WP_REST_Request $R, ...) { ... }
+          - pattern-either:
+              - pattern: $R->get_body()
+              - pattern: $R->get_header(...)
+              - pattern: $R->get_headers()
+              - pattern: $R[$KEY]
+  # These filters encode or drop < > and ", so the value cannot open a tag, leave a double-quoted
+  # attribute or unserialize. A URL, path, option name, callable or unquoted SQL value passes.
+  # FILTER_SANITIZE_EMAIL keeps ', as sanitize_email() does, and FILTER_SANITIZE_NUMBER_INT keeps + and -,
+  # so `1-- ` comments out the rest of an unquoted SQL clause.
+  - &markup-safe-source
+    exact: true
+    pattern-either:
+      - patterns:
+          - pattern: filter_input_array($TYPE, $FILTER, ...)
+          - metavariable-regex:
+              metavariable: $FILTER
+              regex: *markup-safe-filter
+      - patterns:
+          - pattern: filter_input($TYPE, $NAME, $FILTER, ...)
+          - metavariable-regex:
+              metavariable: $FILTER
+              regex: *markup-safe-filter
+          - *request-input-name
+  - &attribute-source
+    exact: true
+    pattern-either:
+      - pattern: shortcode_atts(...)
+      - patterns:
+          - pattern-inside: |
+              function $FN(..., $atts, ...) { ... }
+          - pattern: $atts
+      # Render callbacks take `$attr` or `$attributes` first; later in a signature it is a helper's own option.
+      - patterns:
+          - pattern-inside: |
+              function $FN($attr, ...) { ... }
+          - pattern: $attr
+      - patterns:
+          - pattern-inside: |
+              function $FN($attributes, ...) { ... }
+          - pattern: $attributes
+  - &checked
+    by-side-effect: true
+    patterns:
+      - pattern-either:
+          - pattern: in_array($X, ...)
+          - pattern: array_key_exists($X, ...)
+          - pattern: isset($MAP[$X])
+          - pattern: method_exists($OBJ, $X)
+          - pattern: is_numeric($X)
+          - pattern: ctype_digit($X)
+      - focus-metavariable: $X
+  # by-side-effect sanitizes a variable, never `$_REQUEST['order']`, so an allowlist check on an
+  # array element covers only the block it guards. An if with an else is not seen.
+  - &guarded
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              if (in_array($X, ...)) { ... }
+          - pattern-inside: |
+              if (in_array($P . $X, ...)) { ... }
+      - pattern-not-inside: |
+          if ($C) { ... } else { ... }
+      - pattern: $X
+  - &numeric
+    pattern-either:
+      - pattern: absint(...)
+      - pattern: intval(...)
+      - pattern: floatval(...)
+      - pattern: boolval(...)
+      - pattern: (int) $V
+      - pattern: (float) $V
+      - pattern: (bool) $V
+      - pattern: count(...)
+      - pattern: wp_parse_id_list(...)
+      - pattern: array_map('absint', ...)
+      - pattern: array_map('intval', ...)
+      - patterns:
+          - pattern: filter_var($V, $F, ...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: '^\\?FILTER_VALIDATE_(?:INT|FLOAT|BOOLEAN|BOOL)$'
+  # A comparison or logical operator yields a bool or -1/0/1; `??` and `?:` return an operand.
+  # exact: only the result is safe, so `($v = $_GET['v']) !== ''` and `$v = $_GET['v'] or die()`
+  # still taint $v.
+  - &boolean-result
+    exact: true
+    pattern-either:
+      - pattern: $A == $B
+      - pattern: $A === $B
+      - pattern: $A != $B
+      - pattern: $A !== $B
+      - pattern: $A < $B
+      - pattern: $A > $B
+      - pattern: $A <= $B
+      - pattern: $A >= $B
+      - pattern: $A <=> $B
+      - pattern: '!$A'
+      - pattern: $A && $B
+      - pattern: $A || $B
+      - pattern: $A and $B
+      - pattern: $A or $B
+      - pattern: $A xor $B
+      - pattern: $A instanceof $B
+      - pattern: isset(...)
+      - pattern: empty(...)
+  - &path-sanitizer
+    pattern-either:
+      - pattern: basename(...)
+      - pattern: wp_basename(...)
+      - pattern: sanitize_file_name(...)
+      - pattern: sanitize_key(...)
+      - pattern: sanitize_title(...)
+      - pattern: wp_unique_filename(...)
+  - &validated-path
+    by-side-effect: true
+    patterns:
+      - pattern: validate_file($X, ...)
+      - focus-metavariable: $X
+  # A literal origin: scheme and host closed by / ? or #, a rooted path that is not protocol-relative,
+  # or a relative path that reaches / ? or # before any : that could open a scheme.
+  - &origin-pin
+    pattern-either:
+      - patterns:
+          - pattern: $E
+          - pattern-not: '$A ? $B : $C'
+          - metavariable-regex:
+              metavariable: $E
+              regex: '^[''"](?:[a-zA-Z][a-zA-Z0-9+.\-]*://[^/?#\\@''"${%]+[/?#]|/[^/\\''"${%]|[^/\\:?#''"${%]+/|[^/\\:?#''"${%]*[?#])'
+      - patterns:
+          - pattern: sprintf($FORMAT, ...)
+          - metavariable-regex:
+              metavariable: $FORMAT
+              regex: '^[''"](?:[a-zA-Z][a-zA-Z0-9+.\-]*://[^/?#\\@''"${%]+[/?#]|/[^/\\''"${%]|[^/\\:?#''"${%]+/|[^/\\:?#''"${%]*[?#])'
+  - &site-url
+    pattern-either:
+      - pattern: wp_validate_redirect(...)
+      - pattern: admin_url(...)
+      - pattern: home_url(...)
+      - pattern: site_url(...)
+      - pattern: network_admin_url(...)
+      - pattern: get_admin_url(...)
+      - pattern: rest_url(...)
+      - pattern: plugins_url(...)
+      - pattern: get_permalink(...)
+      - pattern: wp_login_url(...)
+  # add_query_arg() appends after the URL it is given, so its keys and values cannot move the
+  # origin. It does not encode them, so this holds for redirect and request targets only.
+  - &query-args
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: add_query_arg($ARG, $URL)
+              - focus-metavariable: $ARG
+          - patterns:
+              - pattern: add_query_arg($ARG, $VALUE, $URL)
+              - focus-metavariable: $ARG
+          - patterns:
+              - pattern: add_query_arg($KEY, $ARG, $URL)
+              - focus-metavariable: $ARG
+  # apply_filters() returns its second argument as filtered. Later arguments are context for the
+  # callbacks; one that returns its context is not followed.
+  - &filter-context
+    patterns:
+      - pattern: apply_filters($TAG, $VALUE, ..., $EXTRA, ...)
+      - focus-metavariable: $EXTRA
+  # A core lookup returns stored records, not the request text that chose them. new WP_Query is not
+  # one: its query_vars hold the arguments.
+  - &wp-lookup
+    pattern-either:
+      - patterns:
+          - pattern: $FN(...)
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(?:wp_get_attachment_(?:url|image_url|image_src)|get_post|get_posts|get_pages|get_children|get_permalink|get_the_permalink|get_terms|get_term|get_term_by|get_the_terms|get_users|get_user_by|get_comments)$'
+      - pattern: get_pagenum_link($N)
+      - pattern: get_pagenum_link($N, true)
+  - &name-prefix
+    pattern-either:
+      - patterns:
+          - pattern: $E
+          - pattern-not: '$A ? $B : $C'
+          - metavariable-regex:
+              metavariable: $E
+              regex: '^[''"][^''"${%]'
+      - patterns:
+          - pattern: sprintf($FORMAT, ...)
+          - metavariable-regex:
+              metavariable: $FORMAT
+              regex: '^[''"][^''"${%]'
+  # wp_nonce_url() returns esc_html() of its URL. urlencode() and http_build_query() percent-encode
+  # < > " and '.
+  - &html-escape
+    pattern-either:
+      - patterns:
+          - pattern: $ESC(...)
+          - metavariable-regex:
+              metavariable: $ESC
+              regex: '^(?:esc_(?:html|attr|url|url_raw|textarea|js|xml)|esc_html__|esc_attr__|wp_kses(?:_post|_data)?|wp_strip_all_tags|htmlspecialchars|htmlentities|absint|intval|floatval|count|number_format_i18n|number_format|sanitize_(?:key|html_class|hex_color|hex_color_no_hash|text_field|textarea_field|title|file_name|email)|tag_escape|wp_json_encode|wp_nonce_url|urlencode|rawurlencode|http_build_query)$'
+      # paginate_links() passes these through esc_url() or a cast; prev_text, next_text and
+      # before_page_number/after_page_number print raw.
+      - patterns:
+          - pattern-either:
+              - pattern: paginate_links([..., $K => $V, ...])
+              - pattern: paginate_links(array(..., $K => $V, ...))
+          - metavariable-regex:
+              metavariable: $K
+              regex: '^[''"](?:base|format|add_args|add_fragment|total|current|end_size|mid_size|aria_current|type|show_all|prev_next)[''"]$'
+          - focus-metavariable: $V
+      # Plugins wrap wp_json_encode in their own `*_json_encode`.
+      - patterns:
+          - pattern-either:
+              - pattern: $ENC(...)
+              - pattern: $CLASS::$ENC(...)
+          - metavariable-regex:
+              metavariable: $ENC
+              regex: '^[A-Za-z0-9_]+_json_encode$'
+      - patterns:
+          - pattern-either:
+              - pattern: filter_var($V, $F)
+              - patterns:
+                  - pattern: filter_var($V, $F, $O)
+                  - metavariable-regex:
+                      metavariable: $O
+                      regex: '^(?![\s\S]*NO_ENCODE_QUOTES)'
+          - metavariable-regex:
+              metavariable: $F
+              regex: *markup-safe-filter
+  # The remote server writes the response, not the requester; a request that picks the URL is
+  # reported by request-to-remote-url.
+  - &remote-response
+    patterns:
+      - pattern: $FN(...)
+      - metavariable-regex:
+          metavariable: $FN
+          regex: '^(?:wp_(?:safe_)?remote_(?:get|post|head|request)|wp_remote_retrieve_(?:body|header|headers|response_code|response_message|cookie|cookie_value|cookies))$'
+  # A regex is matched against, never printed, so markup inside a pattern argument is not output.
+  - &regex-pattern
+    patterns:
+      - pattern: $PREG($PAT, ...)
+      - metavariable-regex:
+          metavariable: $PREG
+          regex: '^preg_(?:match|match_all|replace|replace_callback|split)$'
+      - focus-metavariable: $PAT
+  - &html-markup
+    pattern-either:
+      # A `<!--` the literal closes again is not markup the value lands in; an open one is.
+      - patterns:
+          - pattern: $L . $X
+          - metavariable-regex:
+              metavariable: $L
+              regex: '(?s).*<(?:[a-zA-Z/]|!(?!--)|!--(?!.*-->))'
+          - focus-metavariable: $X
+      - patterns:
+          - pattern: $E
+          - metavariable-regex:
+              metavariable: $E
+              regex: '^"(?:[^"\\]|\\.)*<[a-zA-Z!/](?:[^"\\]|\\.)*"$'
+      - patterns:
+          - pattern-either:
+              - pattern: sprintf($FORMAT, ..., $X, ...)
+              - pattern: printf($FORMAT, ..., $X, ...)
+          - metavariable-regex:
+              metavariable: $FORMAT
+              regex: '^[''"](?s).*<[a-zA-Z!/]'
+          - focus-metavariable: $X
+  # _e() and _ex() print the translation unescaped, and wp_die() puts its message into the page.
+  - &html-output
+    patterns:
+      - pattern-either:
+          - pattern: echo ..., $X, ...;
+          - pattern: print $X;
+          - pattern: printf(..., $X, ...)
+          - pattern: vprintf(..., $X, ...)
+          - pattern: _e($X, ...)
+          - pattern: _ex($X, ...)
+          - pattern: wp_die($X, ...)
+          - pattern: exit($X);
+          - pattern: die($X);
+          - pattern: print_r($X)
+          - pattern: var_export($X)
+          - pattern: var_dump(..., $X, ...)
+      - focus-metavariable: $X
+  # Markup already inside an output call is reported once, by &html-output.
+  - &unprinted-markup
+    patterns:
+      - *html-markup
+      - pattern-not-inside: echo ...;
+      - pattern-not-inside: print $Y;
+      - pattern-not-inside: printf(...)
+      - pattern-not-inside: vprintf(...)
+      - pattern-not-inside: _e(...)
+      - pattern-not-inside: _ex(...)
+      - pattern-not-inside: wp_die(...)
+      - pattern-not-inside: exit(...);
+      - pattern-not-inside: die(...);
+
+rules:
+  - id: cw-wp-request-to-sql
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input reaches a `$wpdb` query string without `$wpdb->prepare()`, `esc_sql()` or a
+      numeric conversion. Pass the value as a prepare() argument with a `%d`/`%s`/`%i` placeholder.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+    pattern-sanitizers:
+      - pattern: $DB->prepare(...)
+      - pattern: esc_sql(...)
+      - pattern: sanitize_key(...)
+      - pattern: sanitize_title(...)
+      - pattern: sanitize_sql_orderby(...)
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+      - *filter-context
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB->query($X, ...)
+              - pattern: $DB->get_results($X, ...)
+              - pattern: $DB->get_row($X, ...)
+              - pattern: $DB->get_var($X, ...)
+              - pattern: $DB->get_col($X, ...)
+          - metavariable-regex:
+              metavariable: $DB
+              regex: '(?i).*wpdb|\$(?:this->)?db$'
+          - focus-metavariable: $X
+
+  - id: cw-wp-request-to-prepare-template
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input is part of the query template given to `$wpdb->prepare()`. prepare() escapes
+      its arguments, never its template, so the input reaches the SQL as written. Move it to an
+      argument, or for an ORDER BY column check it against an allowlist first.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+    pattern-sanitizers:
+      - pattern: esc_sql(...)
+      - pattern: sanitize_key(...)
+      - pattern: sanitize_title(...)
+      - pattern: sanitize_sql_orderby(...)
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+      - *filter-context
+    pattern-sinks:
+      - patterns:
+          - pattern: $DB->prepare($X, ...)
+          - metavariable-regex:
+              metavariable: $DB
+              regex: '(?i).*wpdb|\$(?:this->)?db$'
+          - focus-metavariable: $X
+
+  - id: cw-wp-esc-sql-unquoted
+    languages: [php]
+    severity: WARNING
+    message: >-
+      `esc_sql()` output is concatenated into an unquoted SQL position (after `=`, `IN (`, `ORDER
+      BY`, `LIMIT` and similar). esc_sql() only escapes quotes, so outside a quoted literal the
+      value is still SQL. Use a prepare() placeholder, or absint() for a number.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    patterns:
+      - pattern: $L . esc_sql($X)
+      - metavariable-regex:
+          metavariable: $L
+          regex: '(?is).*(?:[=<>(,]|\b(?:in|like|limit|offset|by|and|or|not|between|having|regexp|select|where))\s*[''"]$'
+      - metavariable-regex:
+          metavariable: $L
+          regex: '(?is).*\b(?:select|insert|update|delete|replace|where|set|values|from|join|order|group|having|limit)\b'
+
+  - id: cw-wp-request-to-option-key
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input chooses the NAME of an option or a meta key. Whoever sends the request can then
+      write any option or meta row (`users_can_register`, `default_role`, `wp_capabilities`), not
+      just the plugin's own. Fix the name with a literal prefix, or check it against an allowlist.
+      sanitize_key() does not help: every core option name is already a valid key.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-15: External Control of System or Configuration Setting"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+    pattern-sanitizers:
+      - *name-prefix
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+      - *filter-context
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: update_option($X, ...)
+              - pattern: add_option($X, ...)
+              - pattern: delete_option($X)
+              - pattern: update_site_option($X, ...)
+              - pattern: add_site_option($X, ...)
+              - pattern: delete_site_option($X)
+              - pattern: update_network_option($NET, $X, ...)
+              - pattern: update_user_meta($ID, $X, ...)
+              - pattern: add_user_meta($ID, $X, ...)
+              - pattern: delete_user_meta($ID, $X, ...)
+              - pattern: update_user_option($ID, $X, ...)
+              - pattern: update_post_meta($ID, $X, ...)
+              - pattern: add_post_meta($ID, $X, ...)
+              - pattern: update_metadata($TYPE, $ID, $X, ...)
+          - focus-metavariable: $X
+
+  - id: cw-wp-request-to-redirect
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input is the target of `wp_redirect()` or a `Location:` header with no fixed origin
+      in front of it, so the request can send the visitor to another site, including through
+      `//host` and `/\host`. Use wp_safe_redirect() or wp_validate_redirect(); esc_url() and
+      wp_sanitize_redirect() keep the host.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+    pattern-sanitizers:
+      - *origin-pin
+      - *site-url
+      - pattern: sanitize_key(...)
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+      - *filter-context
+      - *query-args
+      - *wp-lookup
+    pattern-sinks:
+      - patterns:
+          - pattern: wp_redirect($X, ...)
+          - focus-metavariable: $X
+      - patterns:
+          - pattern: header($X, ...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: '(?i)^[''"]\s*location\s*:(?!\s*(?:[a-zA-Z][a-zA-Z0-9+.\-]*://[^/?#\\@''"${%]+[/?#]|/[^/\\''"${%]|[^/\\:?#''"${%]+/|[^/\\:?#''"${%]*[?#]))'
+          - focus-metavariable: $X
+
+  - id: cw-wp-request-to-remote-url
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input chooses the URL or host of a server-side request, so the request can reach
+      addresses only the server can (loopback, the metadata service, the private network). Pin the
+      origin with a literal, or use wp_safe_remote_*(), which refuses those addresses.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-918: Server-Side Request Forgery (SSRF)"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+    pattern-sanitizers:
+      - *origin-pin
+      - *site-url
+      - by-side-effect: true
+        patterns:
+          - pattern: wp_http_validate_url($X)
+          - focus-metavariable: $X
+      - pattern: sanitize_key(...)
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+      - *filter-context
+      - *query-args
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: wp_remote_get($X, ...)
+              - pattern: wp_remote_post($X, ...)
+              - pattern: wp_remote_head($X, ...)
+              - pattern: wp_remote_request($X, ...)
+              - pattern: download_url($X, ...)
+              - pattern: fsockopen($X, ...)
+              - pattern: pfsockopen($X, ...)
+              - pattern: stream_socket_client($X, ...)
+              - pattern: curl_init($X)
+              - pattern: curl_setopt($CH, CURLOPT_URL, $X)
+          - focus-metavariable: $X
+
+  - id: cw-wp-request-to-unserialize
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input reaches `unserialize()` or `maybe_unserialize()`, which instantiates any class
+      the payload names and runs its magic methods. Store JSON and use json_decode(), or pass
+      `['allowed_classes' => false]` to unserialize().
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-502: Deserialization of Untrusted Data"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+    pattern-sanitizers:
+      - *numeric
+      - *boolean-result
+      - *filter-context
+      # A stored read returns what was stored, not the request text that chose the row. Scoped to
+      # this rule: the same key choosing an option name or a query is still a finding there.
+      - patterns:
+          - pattern: $GET(...)
+          - metavariable-regex:
+              metavariable: $GET
+              regex: '^(?:get_option|get_site_option|get_network_option|get_transient|get_site_transient|get_user_option|get_(?:[a-z]+_)?meta(?:data)?)$'
+      - patterns:
+          - pattern-either:
+              - pattern: $DB->get_var(...)
+              - pattern: $DB->get_row(...)
+              - pattern: $DB->get_results(...)
+              - pattern: $DB->get_col(...)
+          - metavariable-regex:
+              metavariable: $DB
+              regex: '(?i).*wpdb|\$(?:this->)?db$'
+      - patterns:
+          - pattern: $S->get_session(...)
+          - metavariable-regex:
+              metavariable: $S
+              regex: '(?i).*session'
+      # Request data sent as the body of a fixed-URL request does not choose the response.
+      - patterns:
+          - pattern: $F($URL, $ARGS)
+          - metavariable-regex:
+              metavariable: $F
+              regex: '^wp_(?:safe_)?remote_(?:get|post|head|request)$'
+          - focus-metavariable: $ARGS
+      # A digest can only name a stored row; it never carries a serialized payload.
+      - patterns:
+          - pattern: $HASH(...)
+          - metavariable-regex:
+              metavariable: $HASH
+              regex: '^(?:md5|sha1|hash|hash_hmac|crc32|wp_hash)$'
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: unserialize($X, ...)
+              - pattern: maybe_unserialize($X)
+          - pattern-not: unserialize($X, ['allowed_classes' => false])
+          - pattern-not: unserialize($X, array('allowed_classes' => false))
+          - focus-metavariable: $X
+
+  - id: cw-wp-shortcode-attribute-to-html
+    languages: [php]
+    severity: WARNING
+    message: >-
+      A shortcode attribute reaches the page unescaped. Any user who can write a post (a
+      contributor, by default) sets it, so this is stored XSS against everyone who views the post.
+      Escape it for its context: esc_html(), esc_attr() or esc_url().
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *attribute-source
+    pattern-sanitizers:
+      - *html-escape
+      - *checked
+      - *numeric
+      - *boolean-result
+      - *guarded
+      - *filter-context
+      - *wp-lookup
+      - *regex-pattern
+      - *remote-response
+    pattern-sinks:
+      - *html-output
+      - *unprinted-markup
+
+  - id: cw-wp-request-to-html
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input is printed, or built into HTML markup, without escaping. That is reflected XSS
+      wherever the page or the returned markup reaches a browser. Escape it for its context:
+      esc_html(), esc_attr() or esc_url().
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+    pattern-sanitizers:
+      - *html-escape
+      - *checked
+      - *numeric
+      - *boolean-result
+      - *guarded
+      - *filter-context
+      - *wp-lookup
+      - *regex-pattern
+      - *remote-response
+    pattern-sinks:
+      - *html-output
+      - *unprinted-markup
+
+  - id: cw-wp-input-to-include
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input or a shortcode attribute chooses a file to include or a template to load. A
+      literal directory in front does not confine it: `../` walks out. Reduce it to a file name
+      with sanitize_key() or basename(), or check it against an allowlist.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-98: Improper Control of Filename for Include/Require Statement in PHP Program ('PHP Remote File Inclusion')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+      - *attribute-source
+    pattern-sanitizers:
+      - *path-sanitizer
+      - *validated-path
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+      - *filter-context
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: include $X;
+              - pattern: include_once $X;
+              - pattern: require $X;
+              - pattern: require_once $X;
+              - pattern: load_template($X, ...)
+              - pattern: locate_template($X, ...)
+              - pattern: get_template_part($X, ...)
+          - focus-metavariable: $X
+
+  - id: cw-wp-request-to-file-path
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input, or an uploaded file's client-supplied name, chooses a path that is read,
+      written or deleted. `../` walks out of any literal directory in front of it. Reduce it to a
+      file name with sanitize_file_name() or basename(), or check it with validate_file().
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+    pattern-sanitizers:
+      - *path-sanitizer
+      - *validated-path
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+      - *filter-context
+      # A path is_uploaded_file() accepts is PHP's own upload temp file, never the client's text.
+      - by-side-effect: true
+        patterns:
+          - pattern: is_uploaded_file($X)
+          - focus-metavariable: $X
+      # PHP sets an upload's tmp_name; the client sets name, type and full_path.
+      - patterns:
+          - pattern: $UPLOAD['tmp_name']
+          - pattern-not: $_GET[...]['tmp_name']
+          - pattern-not: $_POST[...]['tmp_name']
+          - pattern-not: $_REQUEST[...]['tmp_name']
+          - pattern-not: $_COOKIE[...]['tmp_name']
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: unlink($X, ...)
+              - pattern: wp_delete_file($X)
+              - pattern: rmdir($X, ...)
+              - pattern: file_put_contents($X, ...)
+              - pattern: file_get_contents($X, ...)
+              - pattern: file($X, ...)
+              - pattern: fopen($X, ...)
+              - pattern: readfile($X, ...)
+              - pattern: copy($X, ...)
+              - pattern: copy($FROM, $X, ...)
+              - pattern: rename($X, ...)
+              - pattern: rename($FROM, $X, ...)
+              - pattern: move_uploaded_file($TMP, $X)
+          - focus-metavariable: $X
+      - patterns:
+          - pattern-either:
+              - pattern: $FS->delete($X, ...)
+              - pattern: $FS->put_contents($X, ...)
+              - pattern: $FS->get_contents($X)
+          - metavariable-regex:
+              metavariable: $FS
+              regex: '(?i).*wp_filesystem'
+          - focus-metavariable: $X
+
+  - id: cw-wp-request-to-hook-or-callable
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request input names the hook, function, method or class that runs. Whoever sends the request
+      can then fire any action (including another plugin's privileged one) or call any function
+      the code can reach. Fix the name with a literal prefix, or check it against an allowlist.
+      sanitize_key() does not help: hook names are already valid keys.
+    metadata:
+      category: security
+      subcategory: [audit]
+      cwe: ["CWE-470: Use of Externally-Controlled Input to Select Classes or Code ('Unsafe Reflection')"]
+      confidence: MEDIUM
+      class: php-wordpress
+    mode: taint
+    options:
+      taint_assume_safe_indexes: true
+    pattern-sources:
+      - *request-source
+      - *markup-safe-source
+    pattern-sanitizers:
+      - *name-prefix
+      - *numeric
+      - *boolean-result
+      - *checked
+      - *guarded
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: do_action($X, ...)
+              - pattern: do_action_ref_array($X, ...)
+              - pattern: apply_filters($X, ...)
+              - pattern: apply_filters_ref_array($X, ...)
+              - pattern: call_user_func($X, ...)
+              - pattern: call_user_func_array($X, ...)
+          - focus-metavariable: $X
+      # A metavariable in name position also binds a plain identifier or a whole callee such as
+      # `$obj->method`, so only a bare variable name is a sink. `$OBJ->$X(...)` also matches `::`.
+      - patterns:
+          - pattern-either:
+              - pattern: $X(...)
+              - pattern: $OBJ->$X(...)
+              - pattern: new $X(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: '^\$[A-Za-z_][A-Za-z0-9_]*$'
+          - focus-metavariable: $X
+      # Semgrep parses `->` and `::` alike, so `$X::$METHOD(...)` alone binds the object of every
+      # method call (245 of 401 fleet rows, 2026-11-13). The callee's own text tells a class apart.
+      - patterns:
+          - pattern: $CALLEE(...)
+          - metavariable-regex:
+              metavariable: $CALLEE
+              regex: '^\$[A-Za-z_][A-Za-z0-9_]*\s*::'
+          - pattern: $X::$METHOD(...)
+          - metavariable-regex:
+              metavariable: $X
+              regex: '^\$[A-Za-z_][A-Za-z0-9_]*$'
+          - focus-metavariable: $X

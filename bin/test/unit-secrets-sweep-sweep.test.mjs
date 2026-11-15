@@ -25,13 +25,14 @@ function inDir(fn, maxBytes) {
   }
 }
 
-function report(dir, mode, paths, { scanned = 0, unscanned = [], failures = [], skippedDirs = [] }) {
+function report(dir, mode, paths, { scanned = 0, unscanned = [], failures = [], skippedDirs = [], outOfScope = null }) {
   return {
     root: resolve(dir), mode, paths, scannedFiles: scanned, findings: [], unscanned, failures, skippedDirs,
-    fixtureFiles: [],
+    fixtureFiles: [], outOfScope,
     summary: {
       'REAL-SECRET': 0, 'SENSITIVE-CONTEXT': 0, 'FALSE-POSITIVE': 0, scannedFiles: scanned,
       unscannedFiles: unscanned.length, scanFailures: failures.length, declaredFixtures: 0,
+      outOfScopeFiles: outOfScope ? outOfScope.count : null,
     },
   };
 }
@@ -114,13 +115,16 @@ test('tracked mode with an empty index reports zero tracked files as a failure',
   });
 });
 
-test('tracked mode scans present files and lists a tracked file missing from the worktree as deleted', () => {
+test('tracked mode scans present files, lists a deleted tracked file and counts an untracked one out of scope', () => {
   inDir((dir) => {
     gitRepo(dir, ['a.txt', 'gone.txt']);
     writeFileSync(join(dir, 'a.txt'), 'hello\n');
+    mkdirSync(join(dir, 'notes'));
+    writeFileSync(join(dir, 'notes', 'extra.txt'), 'untracked\n');
     assert.deepEqual(sweep(), report(dir, 'tracked', ['<git ls-files>'], {
       scanned: 1,
       unscanned: [{ file: 'gone.txt', reason: 'deleted-from-worktree' }],
+      outOfScope: { count: 1, dirs: ['notes'], nestedRepos: [] },
     }));
   });
 });

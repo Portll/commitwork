@@ -82,6 +82,7 @@ test('a redacted build rewrites parseable JSON and records every file it could n
         { path: 'b1/notes.txt', why: 'not a JSON-shaped report', secretBearing: false },
         { path: 'b1/secret-bad.json', why, secretBearing: true },
       ],
+      unredactedSecretBearing: 1,
     });
   });
 });

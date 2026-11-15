@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 const ONE = ['[[allowlists]]', "description = 'd'", "paths = ['a']", ''].join('\n');
 const D = { description: 'd', paths: ['a'], targetRules: null };
-const known = (scope, extra, blocks) => ({ known: true, source: scope, ...extra, blocks });
+const known = (scope, extra, blocks) => ({ known: true, source: scope, notes: [], ...extra, blocks });
 
 function inDir(fn) {
   const dir = mkdtempSync(join(tmpdir(), 'scanScope-'));
@@ -114,5 +114,19 @@ test('a baseline without the gitleaks check leaves the size bound marked undecla
     writeFileSync(baseline, JSON.stringify({ checks: [{ id: 'other', local: ['--max-target-megabytes=3'] }] }));
     const result = scanScope();
     assert.deepEqual(result, known(scope, { maxTargetMB: null, maxTargetUnknown: 'undeclared' }, [D]));
+  });
+});
+
+test('a gitleaks command that runs the scope config notes that gitignored paths are excluded too', () => {
+  inDir((dir, scope, baseline) => {
+    writeFileSync(scope, ONE);
+    writeFileSync(baseline, JSON.stringify({ checks: [{ id: 'secrets-gitleaks', local: [
+      'CFG=$(node "$CW_ROOT/bin/gitleaks-scope-config.mjs" in.toml out); gitleaks detect --config "$CFG" --max-target-megabytes 50',
+    ] }] }));
+    const { notes, ...rest } = scanScope();
+    assert.deepEqual(rest, { known: true, source: scope, maxTargetMB: 50, blocks: [D] });
+    assert.equal(notes.length, 1);
+    assert.match(notes[0], /git ls-files --others --ignored --exclude-standard, computed per scan by bin\/gitleaks-scope-config\.mjs/);
+    assert.match(notes[0], /gitleaks\.log says so/);
   });
 });

@@ -18,7 +18,7 @@ import { createHash } from 'node:crypto';
 import { acquireLock } from '../../monitor/lockfile.mjs';
 
 const CW = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const ROUTE = pathToFileURL(join(CW, 'admin', 'routes', 'cra.mjs')).href;
+const ROUTE = join(CW, 'admin', 'routes', 'cra.mjs');
 
 // Big enough that read -> parse -> hash -> schema-validate -> write is a real window rather than a
 // theoretical one: validateProducts walks every entry and the JSON schema walks it again.
@@ -42,7 +42,7 @@ function fixtureDoc() {
 function childSource() {
   return `
 import { readFileSync } from 'node:fs';
-import { routes } from ${JSON.stringify(ROUTE)};
+import { routes } from ${JSON.stringify(pathToFileURL(ROUTE).href)};
 const [, , marker, startAt, baseHash] = process.argv;
 const r = routes.find((x) => x.method === 'POST' && x.path === '/api/cra/products');
 const doc = JSON.parse(readFileSync(process.env.PROBE_BODY, 'utf8'));

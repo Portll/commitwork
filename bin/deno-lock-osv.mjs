@@ -10,6 +10,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { nowISO } from '../lib/clock.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
+import { isMainModule } from '../lib/is-main.mjs';
 
 export const TOOL = 'deno-lock-osv';
 export const OSV_INPUT = 'deno-osv-scanner.json';
@@ -98,6 +99,6 @@ function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   process.exitCode = main(process.argv.slice(2));
 }
