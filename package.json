@@ -89,7 +89,7 @@
   "license": "AGPL-3.0-or-later OR LicenseRef-PolyForm-Internal-Use-1.0.0",
   "licenseNote": "AGPL-3.0-or-later, or PolyForm Internal Use 1.0.0 by written agreement, with Apache-2.0 over the files manifests/wire-layer.json lists. See LICENSING.md and docs/AGPL-SCOPE.md. The grants apply to commitwork as published at https://github.com/Portll/commitwork. No warranty implied or given.",
   "devDependencies": {
-    "renovate": "^44.173.0"
+    "renovate": "^44.239.1"
   },
   "allowScripts": {
     "protobufjs": false,
