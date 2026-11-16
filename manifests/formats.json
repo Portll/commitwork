@@ -324,6 +324,16 @@
       "gap": "No schema file. bin/release-report.mjs stamps the version and validates the evidence it reads, but the report it writes is described only by its own construction."
     },
     {
+      "id": "sbom-review",
+      "status": "unschematized",
+      "summary": "sbom-review.json: a reviewed reading of one project's or area's CycloneDX SBOM (scope, licences, vulnerabilities, identity, freshness, inventory).",
+      "versionField": "schema",
+      "version": "commitwork.sbom-review/1",
+      "schema": null,
+      "writer": { "source": "bin/sbom-review.mjs", "match": "schema: 'commitwork.sbom-review/1'" },
+      "gap": "No schema file. bin/sbom-review.mjs stamps the version and renders its Markdown and HTML from the same object, but the JSON is described only by its own construction and the sample under bin/test/fixtures/sbom-review/sample."
+    },
+    {
       "id": "inbox-state",
       "status": "unschematized",
       "summary": "The per-operator read and snooze state of the Inbox, written under a lock by monitor/inbox.mjs.",

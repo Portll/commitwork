@@ -100,8 +100,10 @@ describe('the ■ actually stops', () => {
 
   test('stop kills the whole process GROUP — a grandchild must not survive', async () => {
     assert.equal((await post('/api/sweep?project=fixarea')).json.started, true);
-    // wait for the fake sweep to have spawned its own child
-    for (let i = 0; i < 60 && !grandchildren().length; i++) await sleep(100);
+    // wait for the fake sweep to have spawned its own child. Until exactly one: each second the
+    // grandchild's loop forks to run `sleep`, and until that fork execs it carries the same argv,
+    // MARKER included — a pgrep landing in that window counts two, and a slow runner lands there.
+    for (let i = 0; i < 60 && grandchildren().length !== 1; i++) await sleep(100);
     assert.equal(grandchildren().length, 1, 'setup: the grandchild should be running before we stop');
 
     const st = await post('/api/sweep/stop?kind=sweep');

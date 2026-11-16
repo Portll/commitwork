@@ -2886,6 +2886,9 @@ ${helpInPlace('scan-images')}  commitwork brief [dir] [--pc]       scan a reposi
                                       or one file with --out (single-repository runs)
   commitwork reindex --out <dir>      regenerate index.md + summaries from the
                                       report files already in a scan dir (no re-run)
+  commitwork sbom-review --project <name> | --group <area> | --repo <path>
+                                      review the SBOM: scope, licences, vulns (--vulns),
+                                      identity, freshness (see bin/sbom-review.mjs --help)
   commitwork doctor                   report tool/service availability
   commitwork init [--root <dir>]... [--repo <path>]... [--private-dir <dir>] [--dry-run]
                                       create the private store dir, a fleet registry
@@ -3020,6 +3023,11 @@ async function main() {
   if (cmd === 'dfd') { process.exitCode = await runDfd(argv.slice(1)); return; }
   // ahead of the first-run setup prompt: a commit hook must never stop at an interactive question
   if (cmd === 'hook') { const { main: hookMain } = await import('./hook.mjs'); process.exitCode = hookMain(argv.slice(1)); return; }
+  // ahead of the first-run setup prompt, with its own flag set (--project/--group/--repo)
+  if (cmd === 'sbom-review') {
+    try { process.exitCode = await (await import('./sbom-review.mjs')).main(argv.slice(1)); } catch (e) { die(`sbom-review: ${e.message}`); }
+    return;
+  }
   // first interactive launch: check the scanner toolchain and offer to install (once, stamped)
   await ensureFirstRunSetup();
 
@@ -3045,7 +3053,7 @@ async function main() {
     case 'list': return cmdList(manifest, repoPath);
     case 'doctor': return cmdDoctor(manifest, repoPath);
     case 'run': return cmdRun(manifest, repoPath, positional[0], opts);
-    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, dfd, doctor, setup, init, hook, update, version, help)`);
+    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, sbom-review, dfd, doctor, setup, init, hook, update, version, help)`);
   }
 }
 

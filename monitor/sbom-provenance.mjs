@@ -126,7 +126,11 @@ export function enrich(cdx, native) {
       return { cdx, report };
     }
     report.unknownReason = 'no-reference';
-    report.note = 'no syft native document to read resolutions from, so the CycloneDX was NOT corrected — every git-sourced component still asserts a registry identity. This is unenriched, not verified.';
+    // Two different absences: no native document, or one whose lockfiles record no resolved source
+    // (deno.lock has none). Same outcome, but the note must say which.
+    report.note = (native?.artifacts || []).length
+      ? 'the syft native document was read, but no artifact in it records a resolved source (the lockfile format carries none), so git- or URL-sourced components could not be told apart from registry ones. This is unenriched, not verified.'
+      : 'no syft native document to read resolutions from, so the CycloneDX was NOT corrected — every git-sourced component still asserts a registry identity. This is unenriched, not verified.';
     return { cdx, report };
   }
 
