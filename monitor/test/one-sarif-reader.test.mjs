@@ -45,6 +45,10 @@ const EXCEPTIONS = {
     allow: /j\.results \|\| \[\]/,
     reason: 'reads races-summary.json (its own aggregate format, {results:[{lang,ran,executed}]}) — not a SARIF document; the races SARIF paths themselves go through the shared reader',
   },
+  'bin/sbom-review.mjs': {
+    allow: /for \(const r of doc\?\.results \|\| \[\]\) \{/,
+    reason: "indexOsv reads osv-scanner's native JSON (results[].packages[]), not SARIF, and only once the lookup's state is 'checked'; a lookup that did not run or failed is reported as undetermined before this line is reached",
+  },
   'bin/memory-layer-migrate-tenant.mjs': {
     allow: /r\.json\?\.memories \|\| r\.json\?\.results \|\| \[\]/,
     reason: 'memory-layer HTTP API response envelope, where results means memory records — no SARIF is anywhere near this tool',

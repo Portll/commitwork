@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-361 commands: 164 declared, 12 prose, 185 undeclared. Of the declared, 130 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
+365 commands: 165 declared, 13 prose, 187 undeclared. Of the declared, 131 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -57,7 +57,7 @@ Declared in `flow/dfd-cli.mjs` (`runDfd`).
 | 21 | an input is absent, unreadable or not a flow graph, --repo is not a git checkout, --codeql is neither SARIF nor dataflow records, or --coverage is unreadable or holds no lcov record |
 | 22 | the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw |
 
-Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`, `update`, `version`, `help`.
+Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `sbom-review`, `doctor`, `hook`, `update`, `version`, `help`.
 
 ## bin/
 
@@ -971,6 +971,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | stamped, nothing to stamp, or allowed |
 | 1 | refused |
 
+### `bin/watch-remote.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | every host as declared |
+| 1 | a host is not |
+| 2 | the watcher itself could not run or is offline. |
+
 ### `bin/web-roadmap.mjs`
 
 | Exit | Meaning |
@@ -1050,9 +1058,9 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 | 0 | ran, or wrote a void report saying why it could not |
 | 2 | the root is not a readable directory |
 
-Prose only: `agent-tag.mjs`, `docsite-build.mjs`, `docsite-og-image.mjs`, `format-phase.mjs`, `hook.mjs`, `manifest-map.mjs`, `scanner-preflight.mjs`, `scanner-taxonomy-render.mjs`, `secrets.mjs`, `spine-replay.mjs`, `taxonomy-db.mjs`, `vex-vocabulary-sync.mjs`.
+Prose only: `agent-tag.mjs`, `docsite-build.mjs`, `docsite-og-image.mjs`, `format-phase.mjs`, `hook.mjs`, `manifest-map.mjs`, `sbom-syft.mjs`, `scanner-preflight.mjs`, `scanner-taxonomy-render.mjs`, `secrets.mjs`, `spine-replay.mjs`, `taxonomy-db.mjs`, `vex-vocabulary-sync.mjs`.
 
-Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-gates.mjs`, `adjudication-import.mjs`, `adjudication-sampler.mjs`, `advisory-index.mjs`, `annotate.mjs`, `attack-graph.mjs`, `audit.mjs`, `authz-bola.mjs`, `build-admin-panel.mjs`, `build-health.mjs`, `build-security-data.mjs`, `capec-graph.mjs`, `cite-reach.mjs`, `cloudflare-purge.mjs`, `commit-msg.mjs`, `commit-phase.mjs`, `costing-html.mjs`, `cvd-palette.mjs`, `cwe-graph.mjs`, `dep-provenance.mjs`, `deploy.mjs`, `docker-config-path.mjs`, `docker-gc.mjs`, `docsite-new.mjs`, `docsite-publish.mjs`, `exempt.mjs`, `feature-census.mjs`, `feature-inventory.mjs`, `finding-analysis.mjs`, `focus-journal.mjs`, `focus-rekey.mjs`, `go-lane-scan.mjs`, `gradle-deps-scan.mjs`, `gradle-wrapper-verify.mjs`, `idor-run.mjs`, `install-commit-msg.mjs`, `issue-rekey-depsretire.mjs`, `issue-rekey.mjs`, `issue-retire-cobolsecurity.mjs`, `learning-rebuild.mjs`, `ledger-backfill-tree.mjs`, `mainline-data.mjs`, `mass-assign-run.mjs`, `memory-query.mjs`, `memory-upsert.mjs`, `minify-detect.mjs`, `mobile-manifest.mjs`, `node-hazards.mjs`, `osv-declared.mjs`, `parse-renovate.mjs`, `probe-public.mjs`, `projectstatus.mjs`, `python-lane-scan.mjs`, `quality-gates.mjs`, `races.mjs`, `ratchet-corroborate.mjs`, `rate-llm.mjs`, `release-names-reseed.mjs`, `remediation-web.mjs`, `render-report.mjs`, `resolve-sha.mjs`, `rustfmt-lane-scan.mjs`, `sandbox.mjs`, `scan-config-suffix.mjs`, `scan-exclusions.mjs`, `security-work-queue.mjs`, `semgrep-pro-delta.mjs`, `session-roster.mjs`, `session-start-roster.mjs`, `session-title.mjs`, `slices.mjs`, `smoke.mjs`, `spine-ledger.mjs`, `stage-mine.mjs`, `stub-detect.mjs`, `taxonomy-lattice.mjs`, `taxonomy-structure.mjs`, `taxonomy-web.mjs`, `test-run.mjs`, `tls-headers-scan.mjs`, `top100-html.mjs`, `touch-ledger.mjs`, `upstream-fetch.mjs`, `verdict-flow.mjs`, `verdict-journal.mjs`, `vuln-profile.mjs`, `weak-random-detect.mjs`, `yarn-audit.mjs`.
+Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-gates.mjs`, `adjudication-import.mjs`, `adjudication-sampler.mjs`, `advisory-index.mjs`, `annotate.mjs`, `attack-graph.mjs`, `audit.mjs`, `authz-bola.mjs`, `build-admin-panel.mjs`, `build-health.mjs`, `build-security-data.mjs`, `capec-graph.mjs`, `cite-reach.mjs`, `cloudflare-purge.mjs`, `commit-msg.mjs`, `commit-phase.mjs`, `costing-html.mjs`, `cvd-palette.mjs`, `cwe-graph.mjs`, `dep-provenance.mjs`, `deploy.mjs`, `docker-config-path.mjs`, `docker-gc.mjs`, `docsite-new.mjs`, `docsite-publish.mjs`, `exempt.mjs`, `feature-census.mjs`, `feature-inventory.mjs`, `finding-analysis.mjs`, `focus-journal.mjs`, `focus-rekey.mjs`, `go-lane-scan.mjs`, `gradle-deps-scan.mjs`, `gradle-wrapper-verify.mjs`, `idor-run.mjs`, `install-commit-msg.mjs`, `issue-rekey-depsretire.mjs`, `issue-rekey.mjs`, `issue-retire-cobolsecurity.mjs`, `learning-rebuild.mjs`, `ledger-backfill-tree.mjs`, `mainline-data.mjs`, `mass-assign-run.mjs`, `memory-query.mjs`, `memory-upsert.mjs`, `minify-detect.mjs`, `mobile-manifest.mjs`, `node-hazards.mjs`, `osv-declared.mjs`, `parse-renovate.mjs`, `probe-public.mjs`, `projectstatus.mjs`, `python-lane-scan.mjs`, `quality-gates.mjs`, `races.mjs`, `ratchet-corroborate.mjs`, `rate-llm.mjs`, `release-names-reseed.mjs`, `remediation-web.mjs`, `render-report.mjs`, `resolve-sha.mjs`, `rustfmt-lane-scan.mjs`, `sandbox.mjs`, `sbom-review.mjs`, `scan-config-suffix.mjs`, `scan-exclusions.mjs`, `security-work-queue.mjs`, `semgrep-pro-delta.mjs`, `session-roster.mjs`, `session-start-roster.mjs`, `session-title.mjs`, `slices.mjs`, `smoke.mjs`, `spine-ledger.mjs`, `stage-mine.mjs`, `stub-detect.mjs`, `taxonomy-lattice.mjs`, `taxonomy-structure.mjs`, `taxonomy-web.mjs`, `test-run.mjs`, `tls-headers-scan.mjs`, `top100-html.mjs`, `touch-ledger.mjs`, `upstream-fetch.mjs`, `verdict-flow.mjs`, `verdict-journal.mjs`, `vuln-profile.mjs`, `weak-random-detect.mjs`, `yarn-audit.mjs`.
 
 ## monitor/
 

@@ -52,7 +52,7 @@ const FILTERS = src('manifests/codeql-filters.txt').split(/\r?\n/).map((l) => l.
 const PINNED = {
   sast: 'semgrep', 'sast-opengrep': 'semgrep', 'sast-auto': 'semgrep',
   'iac-config': 'trivy', 'deps-jvm': 'trivy',
-  'sbom-syft': 'syft', 'deps-osv': 'osv', 'deps-retire': 'retire', 'dockerfile-lint': 'find',
+  'deps-osv': 'osv', 'deps-retire': 'retire', 'dockerfile-lint': 'find',
   'sast-c-cppcheck': 'cppcheck', 'lint-java-pmd': 'pmd', 'sast-php-phpcs': 'phpcs', 'sast-php-psalm': 'psalm',
   'sast-bearer': 'bearer', 'supply-chain-socket': 'socket',
   'sast-codeql': 'codeql', 'sast-codeql-java': 'codeql', 'sast-codeql-python': 'codeql', 'sast-codeql-ruby': 'codeql',
@@ -68,6 +68,8 @@ const DOTDIRS = [/startsWith\('\.'\)/];
 const SHARED_LIST = [/excludeDirs|dirExcluder/];
 const LITERAL = [/'\.claude\/worktrees'/, /'\.git'/];
 const HELPER = {
+  // bin/sbom-syft.mjs builds syft's --exclude list from SCAN_EXCLUDE_ROOTS, in syft's './<root>/**' spelling
+  'sbom-syft': ['bin/sbom-syft.mjs', [/SCAN_EXCLUDE_ROOTS\.map\(\(r\) => `\.\/\$\{r\}\/\*\*`\)/]],
   'sast-python-bandit': ['bin/python-lane-scan.mjs', [/SCAN_EXCLUDE_ROOTS\.map\(\(d\) => `\*\/\$\{d\}\/\*`\)/, /'-x', `[^`]*\$\{nested\}`/]],
   'lint-python-ruff': ['bin/python-lane-scan.mjs', [/SCAN_EXCLUDE_ROOTS\.flatMap\(\(d\) => \['--extend-exclude', d\]\)/]],
   'deps-ruby-bundler-audit': ['bin/bundler-audit-scan.mjs', CLASSIFIER],

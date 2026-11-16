@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 346 | 284 | 62 |
-| Exit codes (declared in the header) | 361 | 164 | 197 |
-| `CW_*` environment variables (described in an `env` header) | 958 | 233 | 725 |
+| Commands (a usage line in the header) | 349 | 285 | 64 |
+| Exit codes (declared in the header) | 365 | 165 | 200 |
+| `CW_*` environment variables (described in an `env` header) | 965 | 233 | 732 |
 | Lane manifest check keys in use (described in the schema) | 45 | 43 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -34,6 +34,7 @@ From `usage()` in `bin/commitwork.mjs`.
 | `commitwork deps [dir] [--update]` | npm package versions behind and their advisories; --update proposes the updates on a branch (commitwork deps --help) |
 | `commitwork sarif [--from <run dir>] [--out <file>]` | export a finished run's findings as SARIF 2.1.0: &lt;run dir&gt;/&lt;repo&gt;/commitwork.sarif per repository, or one file with --out (single-repository runs) |
 | `commitwork reindex --out <dir>` | regenerate index.md + summaries from the report files already in a scan dir (no re-run) |
+| `commitwork sbom-review --project <name> \| --group <area> \| --repo <path>` | review the SBOM: scope, licences, vulns (--vulns), identity, freshness (see bin/sbom-review.mjs --help) |
 | `commitwork doctor` | report tool/service availability |
 | `commitwork init [--root <dir>]... [--repo <path>]... [--private-dir <dir>] [--dry-run]` | create the private store dir, a fleet registry and ~/.commitwork; never overwrites |
 | `commitwork setup [--yes] [--only a,b]` | install missing scanners via the local package manager (brew/winget/scoop/pipx); also offered on the first interactive launch |
@@ -77,6 +78,7 @@ Exit codes:
 - `commitwork deps`: 0 done (audit printed, gate clear, proposal made or merged, nothing to do) · 2 usage error · 21 --audit-gate: a shipped advisory at the level has an available fix; --introduced: the update introduces an advisory at a blocking severity · 22 not measured (no npm lockfile, npm could not run, an advisory's fix is undetermined, or an --introduced graph or lookup was not measured) · 23 the update was refused or failed, or the history could not be read · 24 proposed, but --merge was refused (declared in `bin/deps.mjs`)
 - `commitwork sarif`: undeclared
 - `commitwork reindex`: undeclared
+- `commitwork sbom-review`: undeclared
 - `commitwork doctor`: undeclared
 - `commitwork init`: 0 ready · 1 refused (existing state init would not have created, or a state root that cannot be resolved) · 2 usage (declared in `bin/init.mjs`)
 - `commitwork setup`: 0 every requested tool was present or installed, or nothing was requested (report-only, declined) · 20 a requested install failed, or a tool --only named has no installer here · 21 nothing failed, but a requested tool needs an administrator; the closing block names the command (declared in `bin/setup.mjs`)
@@ -1416,6 +1418,29 @@ sbom-enrich.mjs — put back the provenance syft's CycloneDX writer dropped.
 - Usage: `node bin/sbom-enrich.mjs <cyclonedx.json> <native-syft.json> [--report <file>]`
 - Exit: 0 when the enricher READ its reference: enriched, nothing needed correcting, nothing to inventory, or `unstated` (syft recorded no resolution for these ecosystems). The last is not a clean state; the sidecar carries it as unknown and the lane's coverage signal matches its line. · 1 when there was no reference to read — a missing native document leaves every git-sourced component asserting a registry identity, and that must not pass silently.
 
+### `bin/sbom-review.mjs`
+
+sbom-review.mjs — a reviewed reading of the CycloneDX SBOM for one project or one group (area).
+
+- Usage: `node bin/sbom-review.mjs --project <name> one registry project (or discovered repo)`
+- Usage: `node bin/sbom-review.mjs --group <area> every repo resolving to a registry area`
+- Usage: `node bin/sbom-review.mjs --repo <path> [--repo …] any checkout; with --group <name>, an ad-hoc`
+- Option: `--sbom <file> review this CycloneDX document (one repo only)`
+- Option: `--generate run syft now rather than reading the newest scanned SBOM`
+- Option: `--vulns look components up with osv-scanner (sends name + version to osv.dev)`
+- Option: `--osv <file> read an existing osv-scanner JSON result instead (one repo only); without`
+- Option: `--reports <dir> where scanned SBOMs are looked for (default: the registry's reportsRoot)`
+- Option: `--out <dir> default reports/sbom-review/<target>`
+- Option: `--label <text> heading for the report`
+- Exit: undeclared
+
+### `bin/sbom-syft.mjs`
+
+sbom-syft.mjs — run syft over a checkout as the REPOSITORY, not the disk it sits on.
+
+- Usage: undocumented
+- Exit: stated in the header in a form not tabulated (prose)
+
 ### `bin/scan-config-suffix.mjs`
 
 Prints ".self" when the scan target (cwd) is commitwork itself, else nothing.
@@ -1800,6 +1825,13 @@ commitwork — render an area's rollup as a self-contained vulnerability profile
 
 - Usage: `vuln-profile.mjs <rollup.json> <out.html> [batchDir] [beforeRollup.json]`
 - Exit: undeclared
+
+### `bin/watch-remote.mjs`
+
+bin/watch-remote.mjs — the off-box watcher's loop body: probe the declared public hostnames (probe-public.mjs), compare with the last run, and notify on a CHANGE, never on every tick.
+
+- Usage: undocumented
+- Exit: 0 every host as declared · 1 a host is not · 2 the watcher itself could not run or is offline.
 
 ### `bin/weak-random-detect.mjs`
 
@@ -2766,7 +2798,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-958 `CW_*` names read by tracked non-test sources: 829 by name, and
+965 `CW_*` names read by tracked non-test sources: 836 by name, and
 129 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -3304,7 +3336,8 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_MONOREPO_CHILD_DIRS` | direct | `bin/races.mjs` | undocumented |
 | `CW_NONDET_HOT` | direct | `monitor/nondeterministic-store.mjs` | undocumented |
 | `CW_NONDET_STORE` | indirect | `bin/test-run.mjs`, `monitor/store-paths.mjs` | undocumented |
-| `CW_NOW` | direct | `admin/routes/comments.mjs`, `admin/routes/fleet-overview.mjs`, `admin/routes/posture.mjs`, `admin/routes/remediation.mjs`, `admin/routes/rollups.mjs`, `admin/routes/scan-config.mjs` and 82 more | authored-at override, tests |
+| `CW_NOW` | direct | `admin/routes/comments.mjs`, `admin/routes/fleet-overview.mjs`, `admin/routes/posture.mjs`, `admin/routes/remediation.mjs`, `admin/routes/rollups.mjs`, `admin/routes/scan-config.mjs` and 83 more | authored-at override, tests |
+| `CW_NOW_MS` | direct | `bin/watch-remote.mjs` | undocumented |
 | `CW_NO_COLOR` | direct | `bin/lib/theme.mjs` | undocumented |
 | `CW_NPM` | direct | `bin/lib/npm-update.mjs`, `bin/lib/npm-versions.mjs` | the npm binary |
 | `CW_NPM_BIN` | indirect | `monitor/package-inventory.mjs` | undocumented |
@@ -3416,7 +3449,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_REDACTION_MAP` | direct | `monitor/store-paths.mjs` | undocumented |
 | `CW_REFERENCE_ROOT` | direct | `bin/reference.mjs` | source root, default this checkout |
 | `CW_REFUTATIONS` | direct | `monitor/store-paths.mjs` | undocumented |
-| `CW_REGISTRY` | direct | `bin/hermetic-test.mjs`, `monitor/history-chain.mjs`, `monitor/registry.mjs`, `monitor/store-paths.mjs` | registry, and through it the reports root (`monitor/defect-signature.mjs`) |
+| `CW_REGISTRY` | direct | `bin/hermetic-test.mjs`, `bin/watch-remote.mjs`, `monitor/history-chain.mjs`, `monitor/registry.mjs`, `monitor/store-paths.mjs` | registry, and through it the reports root (`monitor/defect-signature.mjs`) |
 | `CW_REGISTRY_REQUIRE_REAL` | indirect | `monitor/registry.mjs` | undocumented |
 | `CW_RELEASES_DIR` | direct | `bin/release-report.mjs` | undocumented |
 | `CW_RELEASES_OUT` | direct | `bin/releases-atom.mjs` | undocumented |
@@ -3473,6 +3506,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SANDBOX_COVERAGE_MANIFESTS` | direct | `monitor/sandbox-coverage.mjs` | undocumented |
 | `CW_SANDBOX_COVERAGE_ROOT` | direct | `monitor/sandbox-coverage.mjs` | reports root |
 | `CW_SBOM_PROVENANCE` | direct | `monitor/sbom-provenance.mjs` | undocumented |
+| `CW_SBOM_REVIEW_REPORTS` | direct | `bin/sbom-review.mjs` | undocumented |
 | `CW_SCANNER_ACTIONS_DIR` | direct | `admin/routes/scanners.mjs` | undocumented |
 | `CW_SCANNER_BASELINE` | direct | `monitor/scanner-binary.mjs` | undocumented |
 | `CW_SCANNER_OVERRIDES` | indirect | `monitor/settings.mjs` | undocumented |
@@ -3684,6 +3718,11 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_VERSION_STAMP` | direct | `bin/version-stamp.mjs` | 0 skips the stamp and the restamp |
 | `CW_VULNCHECK_KEV_CACHE` | direct | `monitor/vulncheck-enrich.mjs` | undocumented |
 | `CW_VULNCHECK_KEY` | direct | `monitor/vulncheck-enrich.mjs` | undocumented |
+| `CW_WATCH_CONFIRM_MS` | direct | `bin/watch-remote.mjs` | undocumented |
+| `CW_WATCH_LOG` | direct | `bin/watch-remote.mjs` | undocumented |
+| `CW_WATCH_NOTIFY` | direct | `bin/watch-remote.mjs` | undocumented |
+| `CW_WATCH_REALERT_HOURS` | direct | `bin/watch-remote.mjs` | undocumented |
+| `CW_WATCH_STATE` | direct | `bin/watch-remote.mjs` | undocumented |
 | `CW_WEBSHELL_MAX_BYTES` | direct | `bin/webshell-detect.mjs` | whole-file read cap, default 4 MiB; larger files are examined in windows, never skipped |
 | `CW_WEBSHELL_SKIP_DIRS` | direct | `bin/webshell-detect.mjs` | comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty,fixtures/semgrep-classes — every skip is listed in summary.skippedPaths |
 | `CW_WEB_ROADMAP` | direct | `bin/web-roadmap.mjs` | undocumented |

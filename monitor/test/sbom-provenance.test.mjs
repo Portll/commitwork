@@ -193,3 +193,11 @@ describe('sbom-provenance — the schema has a slot for this, and it is evidence
     assert.equal(twice.components.find((x) => x.name === 'closure-net').evidence.identity.length, 1);
   });
 });
+
+test('a native document with no resolutions is named as such, not as a missing document', () => {
+  const cdx = { components: [{ name: 'a', version: '1.0.0', purl: 'pkg:npm/a@1.0.0' }] };
+  const { report } = enrich(cdx, { artifacts: [{ name: 'a', version: '1.0.0', purl: 'pkg:npm/a@1.0.0', metadata: { resolved: '' } }] });
+  assert.equal(report.ran, false);
+  assert.match(report.note, /native document was read, but no artifact/);
+  assert.match(enrich(structuredClone(cdx), null).report.note, /^no syft native document/);
+});

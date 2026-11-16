@@ -1,0 +1,1721 @@
+{
+  "schema": "commitwork.sbom-review/1",
+  "generatedAt": "2026-10-21T00:00:00.000Z",
+  "target": "sample",
+  "label": "Sample group (synthetic data)",
+  "kind": "group",
+  "notes": [
+    "An ad-hoc group: the repos named with --repo, not resolved from the registry."
+  ],
+  "summary": {
+    "repos": 3,
+    "reviewed": 2,
+    "notReviewed": 1,
+    "components": 22,
+    "product": 18,
+    "uniqueProduct": 14,
+    "vulnsChecked": 1,
+    "productVulns": {
+      "critical": 0,
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "unscored": 0
+    },
+    "findings": {
+      "high": 1,
+      "medium": 4,
+      "low": 6,
+      "unknown": 6,
+      "info": 2
+    }
+  },
+  "findings": [
+    {
+      "level": "high",
+      "area": "vulnerabilities",
+      "title": "3 known vulnerabilities in product dependencies",
+      "detail": "critical 0, high 1, medium 2, low 0, unscored 0. A version match against OSV, not a reachability proof.",
+      "repo": "storefront"
+    },
+    {
+      "level": "medium",
+      "area": "scope",
+      "title": "25% of catalogued components are not product dependencies",
+      "detail": "4 of 16 came from outside the repository's tracked manifests (local-only 3, installed 1). Published as-is, the SBOM states an inventory the product does not have; exclude these paths at scan time or publish the product scope only.",
+      "repo": "storefront"
+    },
+    {
+      "level": "medium",
+      "area": "licences",
+      "title": "1 product dependency under a strong copyleft licence",
+      "detail": "GPL/AGPL/SSPL-family terms can reach the product's own licence. Confirm how each is linked or distributed.",
+      "repo": "storefront"
+    },
+    {
+      "level": "medium",
+      "area": "supply chain",
+      "title": "1 GitHub Action pinned by tag, not commit SHA (1 use)",
+      "detail": "actions/checkout@v4. A tag can be moved to different code after review; pin to the full SHA.",
+      "repo": "storefront"
+    },
+    {
+      "level": "medium",
+      "area": "freshness",
+      "title": "SBOM predates changes to 1 lockfile",
+      "detail": "go.mod. Regenerate before relying on it.",
+      "repo": "billing-api"
+    },
+    {
+      "level": "low",
+      "area": "vulnerabilities",
+      "title": "1 known vulnerability outside the product scope",
+      "detail": "In local tool binaries, installed trees or vendored code: they bear on this machine and its tooling, not on what the product ships.",
+      "repo": "storefront"
+    },
+    {
+      "level": "low",
+      "area": "licences",
+      "title": "1 product dependency under a weak copyleft licence",
+      "detail": "LGPL/MPL/EPL-family: obligations attach to modifications of the component itself.",
+      "repo": "storefront"
+    },
+    {
+      "level": "low",
+      "area": "identity",
+      "title": "1 product dependency on a pre-release version",
+      "detail": "next@15.0.0-rc.1",
+      "repo": "storefront"
+    },
+    {
+      "level": "low",
+      "area": "hygiene",
+      "title": "1 package installed at more than one version",
+      "detail": "lodash (4.17.20, 4.17.21). Each extra version is another copy to patch; one version per package is the goal.",
+      "repo": "storefront"
+    },
+    {
+      "level": "low",
+      "area": "identity",
+      "title": "1 product dependency on an unreleased commit (pseudo-version)",
+      "detail": "golang.org/x/crypto@v0.0.0-20220314234659-1baeb1ce4c0b. No release tag names this code, so advisories and changelogs may not map to it.",
+      "repo": "billing-api"
+    },
+    {
+      "level": "low",
+      "area": "hygiene",
+      "repo": null,
+      "title": "3 packages at different versions across repos",
+      "detail": "actions/checkout (v4, v4.4.0); lodash (4.17.20, 4.17.21); react (18.2.0, 18.3.1)"
+    },
+    {
+      "level": "unknown",
+      "area": "licences",
+      "title": "Licence unknown for 1 of 10 declared dependencies",
+      "detail": "The SBOM records a licence for 8; 1 more from package.json files on this disk (installed trees, Deno's npm cache). Undetermined, not clear.",
+      "repo": "storefront"
+    },
+    {
+      "level": "unknown",
+      "area": "identity",
+      "title": "1 component without a purl or a version (0 in product scope)",
+      "detail": "protoc-gen-api@UNKNOWN. These cannot be looked up against any advisory database; they are unidentified, not safe.",
+      "repo": "storefront"
+    },
+    {
+      "level": "unknown",
+      "area": "vulnerabilities",
+      "title": "Vulnerabilities not checked",
+      "detail": "Run with --vulns (osv-scanner) or pass --osv <result.json>. Not checked is not clean.",
+      "repo": "billing-api"
+    },
+    {
+      "level": "unknown",
+      "area": "identity",
+      "title": "Provenance enrichment did not run on this SBOM",
+      "detail": "A git- or URL-sourced dependency may be asserting a registry identity it does not have (see monitor/sbom-provenance.mjs).",
+      "repo": "billing-api"
+    },
+    {
+      "level": "unknown",
+      "area": "coverage",
+      "title": "1 tracked lockfile not represented in the SBOM",
+      "detail": "scripts/requirements.txt. Either empty, or not catalogued — the scanner's silence is not a statement that they declare nothing.",
+      "repo": "billing-api"
+    },
+    {
+      "level": "unknown",
+      "area": "coverage",
+      "repo": "docs-site",
+      "title": "No SBOM — not reviewed",
+      "detail": "No SBOM was found for this repo, so nothing about it is known. Run with --generate, or sweep it with the sbom-syft check."
+    },
+    {
+      "level": "info",
+      "area": "graph",
+      "title": "Direct vs transitive is undetermined for most components",
+      "detail": "The dependency graph links 0 components through 0 entries; the rest carry no edges, so \"is this a direct dependency\" cannot be answered from this document.",
+      "repo": "storefront"
+    },
+    {
+      "level": "info",
+      "area": "graph",
+      "title": "Direct vs transitive is undetermined for most components",
+      "detail": "The dependency graph links 2 components through 1 entry; the rest carry no edges, so \"is this a direct dependency\" cannot be answered from this document.",
+      "repo": "billing-api"
+    }
+  ],
+  "drift": [
+    {
+      "ecosystem": "GitHub Actions",
+      "name": "actions/checkout",
+      "repos": {
+        "billing-api": [
+          "v4.4.0"
+        ],
+        "storefront": [
+          "v4"
+        ]
+      },
+      "versions": [
+        "v4",
+        "v4.4.0"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "lodash",
+      "repos": {
+        "billing-api": [
+          "4.17.21"
+        ],
+        "storefront": [
+          "4.17.20",
+          "4.17.21"
+        ]
+      },
+      "versions": [
+        "4.17.20",
+        "4.17.21"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react",
+      "repos": {
+        "billing-api": [
+          "18.3.1"
+        ],
+        "storefront": [
+          "18.2.0"
+        ]
+      },
+      "versions": [
+        "18.2.0",
+        "18.3.1"
+      ]
+    }
+  ],
+  "shared": [],
+  "repos": [
+    {
+      "name": "storefront",
+      "path": "<fixture>\\repos\\storefront",
+      "status": "reviewed",
+      "sbomPath": "<fixture>\\reports\\sweep-20261015000000\\storefront\\sbom-syft.json",
+      "sbom": {
+        "format": "CycloneDX 1.6",
+        "tool": "syft 1.49.0",
+        "timestamp": "2026-10-15T00:00:00Z",
+        "serialNumber": "urn:uuid:00000000-0000-4000-8000-000000000000",
+        "provenance": "nothing-to-correct",
+        "gitChecked": true
+      },
+      "totals": {
+        "components": 16,
+        "product": 12,
+        "byScope": {
+          "product": 10,
+          "local-only": 3,
+          "ci": 2,
+          "installed": 1
+        },
+        "byEcosystem": {
+          "npm": 10,
+          "GitHub Actions": 3,
+          "Go": 2,
+          "binary": 1
+        },
+        "productByEcosystem": {
+          "npm": 10,
+          "GitHub Actions": 2
+        }
+      },
+      "sources": [
+        {
+          "scope": "product",
+          "location": "package-lock.json",
+          "components": 10
+        },
+        {
+          "scope": "local-only",
+          "location": ".tools/protoc-gen-api.exe",
+          "components": 3
+        },
+        {
+          "scope": "ci",
+          "location": ".github/workflows/ci.yml",
+          "components": 2
+        },
+        {
+          "scope": "installed",
+          "location": "node_modules/fast-glob/.github/workflows/ci.yml",
+          "components": 1
+        }
+      ],
+      "licences": {
+        "total": 10,
+        "byClass": {
+          "permissive": 7,
+          "strong-copyleft": 1,
+          "unknown": 1,
+          "weak-copyleft": 1
+        },
+        "bySource": {
+          "sbom": 8,
+          "installed-package": 1,
+          "none": 1
+        },
+        "byLicence": {
+          "MIT": 5,
+          "(MPL-2.0 OR Apache-2.0)": 1,
+          "GPL-3.0-only": 1,
+          "LGPL-2.1-or-later": 1,
+          "WTFPL": 1
+        },
+        "flagged": [
+          {
+            "name": "chart-kit",
+            "version": "2.0.0",
+            "licence": "GPL-3.0-only",
+            "class": "strong-copyleft",
+            "location": "package-lock.json"
+          },
+          {
+            "name": "font-loader",
+            "version": "1.2.0",
+            "licence": "LGPL-2.1-or-later",
+            "class": "weak-copyleft",
+            "location": "package-lock.json"
+          }
+        ]
+      },
+      "vulns": {
+        "state": "checked",
+        "note": "earlier osv-scanner result beside the SBOM (<fixture>\\reports\\sweep-20261015000000\\storefront\\osv.json, written 2026-10-15T00:05:00.000Z); --vulns re-checks",
+        "rows": [
+          {
+            "id": "GHSA-35jh-r3h4-6jhm",
+            "cve": "CVE-2021-23337",
+            "aliases": [
+              "CVE-2021-23337",
+              "GHSA-35jh-r3h4-6jhm"
+            ],
+            "score": "7.2",
+            "severity": "high",
+            "summary": "Command injection in lodash template",
+            "fixed": [
+              "4.17.21"
+            ],
+            "name": "lodash",
+            "version": "4.17.20",
+            "ecosystem": "npm",
+            "scope": "product",
+            "location": "package-lock.json"
+          },
+          {
+            "id": "GHSA-rv95-896h-c2vc",
+            "cve": "CVE-2024-29041",
+            "aliases": [
+              "CVE-2024-29041",
+              "GHSA-rv95-896h-c2vc"
+            ],
+            "score": "6.1",
+            "severity": "medium",
+            "summary": "Open redirect in malformed URLs",
+            "fixed": [
+              "4.19.2"
+            ],
+            "name": "express",
+            "version": "4.17.1",
+            "ecosystem": "npm",
+            "scope": "product",
+            "location": "package-lock.json"
+          },
+          {
+            "id": "GHSA-qw6h-vgh9-j6wx",
+            "cve": "CVE-2024-43796",
+            "aliases": [
+              "CVE-2024-43796",
+              "GHSA-qw6h-vgh9-j6wx"
+            ],
+            "score": "5.0",
+            "severity": "medium",
+            "summary": "XSS via response.redirect()",
+            "fixed": [
+              "4.20.0"
+            ],
+            "name": "express",
+            "version": "4.17.1",
+            "ecosystem": "npm",
+            "scope": "product",
+            "location": "package-lock.json"
+          },
+          {
+            "id": "GO-2024-2687",
+            "cve": "CVE-2023-45288",
+            "aliases": [
+              "CVE-2023-45288",
+              "GO-2024-2687"
+            ],
+            "score": "",
+            "severity": "unscored",
+            "summary": "HTTP/2 CONTINUATION flood",
+            "fixed": [
+              "0.23.0"
+            ],
+            "name": "golang.org/x/net",
+            "version": "v0.17.0",
+            "ecosystem": "Go",
+            "scope": "local-only",
+            "location": ".tools/protoc-gen-api.exe"
+          }
+        ],
+        "bySeverity": {
+          "critical": 0,
+          "high": 1,
+          "medium": 2,
+          "low": 0,
+          "unscored": 1
+        },
+        "productBySeverity": {
+          "critical": 0,
+          "high": 1,
+          "medium": 2,
+          "low": 0,
+          "unscored": 0
+        }
+      },
+      "identity": {
+        "byFlag": {
+          "mutable-action-ref": 1,
+          "no-purl": 1,
+          "prerelease": 1,
+          "unknown-version": 1
+        },
+        "productFlagged": [
+          {
+            "name": "actions/checkout",
+            "version": "v4",
+            "flags": [
+              "mutable-action-ref"
+            ],
+            "location": ".github/workflows/ci.yml"
+          },
+          {
+            "name": "next",
+            "version": "15.0.0-rc.1",
+            "flags": [
+              "prerelease"
+            ],
+            "location": "package-lock.json"
+          }
+        ]
+      },
+      "lockfiles": [
+        {
+          "path": "package-lock.json",
+          "inSbom": true,
+          "lastCommit": "2026-10-01T00:00:00Z",
+          "changedAfterSbom": false,
+          "uncommitted": false,
+          "components": 10
+        }
+      ],
+      "sprawl": [
+        {
+          "ecosystem": "npm",
+          "name": "lodash",
+          "versions": [
+            "4.17.20",
+            "4.17.21"
+          ]
+        }
+      ],
+      "graph": {
+        "edges": 0,
+        "componentsInGraph": 0
+      },
+      "inventory": [
+        {
+          "provider": "binary",
+          "packages": [
+            {
+              "name": "protoc-gen-api",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "UNKNOWN",
+                  "instances": [
+                    {
+                      "location": ".tools/protoc-gen-api.exe",
+                      "scope": "local-only",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "GitHub Actions",
+          "packages": [
+            {
+              "name": "actions/checkout",
+              "installations": 2,
+              "instances": 2,
+              "entries": 2,
+              "licences": [],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "v2",
+                  "instances": [
+                    {
+                      "location": "node_modules/fast-glob/.github/workflows/ci.yml",
+                      "scope": "installed",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": 0
+                    }
+                  ]
+                },
+                {
+                  "version": "v4",
+                  "instances": [
+                    {
+                      "location": ".github/workflows/ci.yml",
+                      "scope": "ci",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "actions/setup-node",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a",
+                  "instances": [
+                    {
+                      "location": ".github/workflows/ci.yml",
+                      "scope": "ci",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "Go",
+          "packages": [
+            {
+              "name": "golang.org/x/net",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [],
+              "vulns": 1,
+              "versions": [
+                {
+                  "version": "v0.17.0",
+                  "instances": [
+                    {
+                      "location": ".tools/protoc-gen-api.exe",
+                      "scope": "local-only",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": 1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "google.golang.org/protobuf",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "v1.33.0",
+                  "instances": [
+                    {
+                      "location": ".tools/protoc-gen-api.exe",
+                      "scope": "local-only",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "npm",
+          "packages": [
+            {
+              "name": "chart-kit",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "GPL-3.0-only"
+              ],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "2.0.0",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "GPL-3.0-only",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "dompurify",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "(MPL-2.0 OR Apache-2.0)"
+              ],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "3.1.0",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "(MPL-2.0 OR Apache-2.0)",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "express",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": 2,
+              "versions": [
+                {
+                  "version": "4.17.1",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "font-loader",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "LGPL-2.1-or-later"
+              ],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "1.2.0",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "LGPL-2.1-or-later",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "left-pad",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "WTFPL"
+              ],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "1.3.0",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "WTFPL",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "lodash",
+              "installations": 2,
+              "instances": 2,
+              "entries": 2,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": 1,
+              "versions": [
+                {
+                  "version": "4.17.20",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": 1
+                    }
+                  ]
+                },
+                {
+                  "version": "4.17.21",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "mystery-lib",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "1.0.0",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "next",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "15.0.0-rc.1",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "react",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": 0,
+              "versions": [
+                {
+                  "version": "18.2.0",
+                  "instances": [
+                    {
+                      "location": "package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "identity": "binary:protoc-gen-api@UNKNOWN",
+          "ecosystem": "binary",
+          "name": "protoc-gen-api",
+          "version": "UNKNOWN",
+          "purl": "",
+          "location": ".tools/protoc-gen-api.exe",
+          "foundBy": "pe-binary-package-cataloger",
+          "kind": "binary",
+          "gitState": "ignored",
+          "scope": "local-only",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [
+            "no-purl",
+            "unknown-version"
+          ],
+          "vulns": [],
+          "provider": "binary",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:github/actions/checkout@v2",
+          "ecosystem": "GitHub Actions",
+          "name": "actions/checkout",
+          "version": "v2",
+          "purl": "pkg:github/actions/checkout@v2",
+          "location": "node_modules/fast-glob/.github/workflows/ci.yml",
+          "foundBy": "github-actions-usage-cataloger",
+          "kind": "workflow",
+          "gitState": "ignored",
+          "scope": "installed",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [],
+          "vulns": [],
+          "provider": "GitHub Actions",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:github/actions/checkout@v4",
+          "ecosystem": "GitHub Actions",
+          "name": "actions/checkout",
+          "version": "v4",
+          "purl": "pkg:github/actions/checkout@v4",
+          "location": ".github/workflows/ci.yml",
+          "foundBy": "github-actions-usage-cataloger",
+          "kind": "workflow",
+          "gitState": "tracked",
+          "scope": "ci",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [
+            "mutable-action-ref"
+          ],
+          "vulns": [],
+          "provider": "GitHub Actions",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:github/actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a",
+          "ecosystem": "GitHub Actions",
+          "name": "actions/setup-node",
+          "version": "1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a",
+          "purl": "pkg:github/actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a",
+          "location": ".github/workflows/ci.yml",
+          "foundBy": "github-actions-usage-cataloger",
+          "kind": "workflow",
+          "gitState": "tracked",
+          "scope": "ci",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [],
+          "vulns": [],
+          "provider": "GitHub Actions",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:golang/golang.org/x/net@v0.17.0",
+          "ecosystem": "Go",
+          "name": "golang.org/x/net",
+          "version": "v0.17.0",
+          "purl": "pkg:golang/golang.org/x/net@v0.17.0",
+          "location": ".tools/protoc-gen-api.exe",
+          "foundBy": "go-module-binary-cataloger",
+          "kind": "binary",
+          "gitState": "ignored",
+          "scope": "local-only",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [],
+          "vulns": [
+            {
+              "id": "GO-2024-2687",
+              "cve": "CVE-2023-45288",
+              "aliases": [
+                "CVE-2023-45288",
+                "GO-2024-2687"
+              ],
+              "score": "",
+              "severity": "unscored",
+              "summary": "HTTP/2 CONTINUATION flood",
+              "fixed": [
+                "0.23.0"
+              ]
+            }
+          ],
+          "provider": "Go",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:golang/google.golang.org/protobuf@v1.33.0",
+          "ecosystem": "Go",
+          "name": "google.golang.org/protobuf",
+          "version": "v1.33.0",
+          "purl": "pkg:golang/google.golang.org/protobuf@v1.33.0",
+          "location": ".tools/protoc-gen-api.exe",
+          "foundBy": "go-module-binary-cataloger",
+          "kind": "binary",
+          "gitState": "ignored",
+          "scope": "local-only",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [],
+          "vulns": [],
+          "provider": "Go",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/chart-kit@2.0.0",
+          "ecosystem": "npm",
+          "name": "chart-kit",
+          "version": "2.0.0",
+          "purl": "pkg:npm/chart-kit@2.0.0",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "GPL-3.0-only",
+          "licenceSource": "sbom",
+          "licenceClass": "strong-copyleft",
+          "flags": [],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/dompurify@3.1.0",
+          "ecosystem": "npm",
+          "name": "dompurify",
+          "version": "3.1.0",
+          "purl": "pkg:npm/dompurify@3.1.0",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "(MPL-2.0 OR Apache-2.0)",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/express@4.17.1",
+          "ecosystem": "npm",
+          "name": "express",
+          "version": "4.17.1",
+          "purl": "pkg:npm/express@4.17.1",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": [
+            {
+              "id": "GHSA-rv95-896h-c2vc",
+              "cve": "CVE-2024-29041",
+              "aliases": [
+                "CVE-2024-29041",
+                "GHSA-rv95-896h-c2vc"
+              ],
+              "score": "6.1",
+              "severity": "medium",
+              "summary": "Open redirect in malformed URLs",
+              "fixed": [
+                "4.19.2"
+              ]
+            },
+            {
+              "id": "GHSA-qw6h-vgh9-j6wx",
+              "cve": "CVE-2024-43796",
+              "aliases": [
+                "CVE-2024-43796",
+                "GHSA-qw6h-vgh9-j6wx"
+              ],
+              "score": "5.0",
+              "severity": "medium",
+              "summary": "XSS via response.redirect()",
+              "fixed": [
+                "4.20.0"
+              ]
+            }
+          ],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/font-loader@1.2.0",
+          "ecosystem": "npm",
+          "name": "font-loader",
+          "version": "1.2.0",
+          "purl": "pkg:npm/font-loader@1.2.0",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "LGPL-2.1-or-later",
+          "licenceSource": "sbom",
+          "licenceClass": "weak-copyleft",
+          "flags": [],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/left-pad@1.3.0",
+          "ecosystem": "npm",
+          "name": "left-pad",
+          "version": "1.3.0",
+          "purl": "pkg:npm/left-pad@1.3.0",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "WTFPL",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/lodash@4.17.20",
+          "ecosystem": "npm",
+          "name": "lodash",
+          "version": "4.17.20",
+          "purl": "pkg:npm/lodash@4.17.20",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": [
+            {
+              "id": "GHSA-35jh-r3h4-6jhm",
+              "cve": "CVE-2021-23337",
+              "aliases": [
+                "CVE-2021-23337",
+                "GHSA-35jh-r3h4-6jhm"
+              ],
+              "score": "7.2",
+              "severity": "high",
+              "summary": "Command injection in lodash template",
+              "fixed": [
+                "4.17.21"
+              ]
+            }
+          ],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/lodash@4.17.21",
+          "ecosystem": "npm",
+          "name": "lodash",
+          "version": "4.17.21",
+          "purl": "pkg:npm/lodash@4.17.21",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/mystery-lib@1.0.0",
+          "ecosystem": "npm",
+          "name": "mystery-lib",
+          "version": "1.0.0",
+          "purl": "pkg:npm/mystery-lib@1.0.0",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/next@15.0.0-rc.1",
+          "ecosystem": "npm",
+          "name": "next",
+          "version": "15.0.0-rc.1",
+          "purl": "pkg:npm/next@15.0.0-rc.1",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [
+            "prerelease"
+          ],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/react@18.2.0",
+          "ecosystem": "npm",
+          "name": "react",
+          "version": "18.2.0",
+          "purl": "pkg:npm/react@18.2.0",
+          "location": "package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "installed-package",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": [],
+          "provider": "npm",
+          "entries": 1
+        }
+      ],
+      "findings": [
+        {
+          "level": "medium",
+          "area": "scope",
+          "title": "25% of catalogued components are not product dependencies",
+          "detail": "4 of 16 came from outside the repository's tracked manifests (local-only 3, installed 1). Published as-is, the SBOM states an inventory the product does not have; exclude these paths at scan time or publish the product scope only."
+        },
+        {
+          "level": "high",
+          "area": "vulnerabilities",
+          "title": "3 known vulnerabilities in product dependencies",
+          "detail": "critical 0, high 1, medium 2, low 0, unscored 0. A version match against OSV, not a reachability proof."
+        },
+        {
+          "level": "low",
+          "area": "vulnerabilities",
+          "title": "1 known vulnerability outside the product scope",
+          "detail": "In local tool binaries, installed trees or vendored code: they bear on this machine and its tooling, not on what the product ships."
+        },
+        {
+          "level": "medium",
+          "area": "licences",
+          "title": "1 product dependency under a strong copyleft licence",
+          "detail": "GPL/AGPL/SSPL-family terms can reach the product's own licence. Confirm how each is linked or distributed."
+        },
+        {
+          "level": "low",
+          "area": "licences",
+          "title": "1 product dependency under a weak copyleft licence",
+          "detail": "LGPL/MPL/EPL-family: obligations attach to modifications of the component itself."
+        },
+        {
+          "level": "unknown",
+          "area": "licences",
+          "title": "Licence unknown for 1 of 10 declared dependencies",
+          "detail": "The SBOM records a licence for 8; 1 more from package.json files on this disk (installed trees, Deno's npm cache). Undetermined, not clear."
+        },
+        {
+          "level": "medium",
+          "area": "supply chain",
+          "title": "1 GitHub Action pinned by tag, not commit SHA (1 use)",
+          "detail": "actions/checkout@v4. A tag can be moved to different code after review; pin to the full SHA."
+        },
+        {
+          "level": "low",
+          "area": "identity",
+          "title": "1 product dependency on a pre-release version",
+          "detail": "next@15.0.0-rc.1"
+        },
+        {
+          "level": "unknown",
+          "area": "identity",
+          "title": "1 component without a purl or a version (0 in product scope)",
+          "detail": "protoc-gen-api@UNKNOWN. These cannot be looked up against any advisory database; they are unidentified, not safe."
+        },
+        {
+          "level": "low",
+          "area": "hygiene",
+          "title": "1 package installed at more than one version",
+          "detail": "lodash (4.17.20, 4.17.21). Each extra version is another copy to patch; one version per package is the goal."
+        },
+        {
+          "level": "info",
+          "area": "graph",
+          "title": "Direct vs transitive is undetermined for most components",
+          "detail": "The dependency graph links 0 components through 0 entries; the rest carry no edges, so \"is this a direct dependency\" cannot be answered from this document."
+        }
+      ]
+    },
+    {
+      "name": "billing-api",
+      "path": "<fixture>\\repos\\billing-api",
+      "status": "reviewed",
+      "sbomPath": "<fixture>\\reports\\sweep-20261015000000\\billing-api\\sbom-syft.json",
+      "sbom": {
+        "format": "CycloneDX 1.6",
+        "tool": "syft 1.49.0",
+        "timestamp": "2026-09-10T00:00:00Z",
+        "serialNumber": "urn:uuid:00000000-0000-4000-8000-000000000000",
+        "provenance": "unenriched",
+        "gitChecked": true
+      },
+      "totals": {
+        "components": 6,
+        "product": 6,
+        "byScope": {
+          "product": 5,
+          "ci": 1
+        },
+        "byEcosystem": {
+          "Go": 3,
+          "npm": 2,
+          "GitHub Actions": 1
+        },
+        "productByEcosystem": {
+          "Go": 3,
+          "npm": 2,
+          "GitHub Actions": 1
+        }
+      },
+      "sources": [
+        {
+          "scope": "product",
+          "location": "go.mod",
+          "components": 3
+        },
+        {
+          "scope": "product",
+          "location": "web/package-lock.json",
+          "components": 2
+        },
+        {
+          "scope": "ci",
+          "location": ".github/workflows/release.yml",
+          "components": 1
+        }
+      ],
+      "licences": {
+        "total": 5,
+        "byClass": {
+          "permissive": 5
+        },
+        "bySource": {
+          "sbom": 5
+        },
+        "byLicence": {
+          "MIT": 4,
+          "BSD-3-Clause": 1
+        },
+        "flagged": []
+      },
+      "vulns": {
+        "state": "not-checked",
+        "note": "Run with --vulns (osv-scanner) or pass --osv <result.json>. Not checked is not clean.",
+        "rows": [],
+        "bySeverity": {
+          "critical": 0,
+          "high": 0,
+          "medium": 0,
+          "low": 0,
+          "unscored": 0
+        },
+        "productBySeverity": {
+          "critical": 0,
+          "high": 0,
+          "medium": 0,
+          "low": 0,
+          "unscored": 0
+        }
+      },
+      "identity": {
+        "byFlag": {
+          "pseudo-version": 1
+        },
+        "productFlagged": [
+          {
+            "name": "golang.org/x/crypto",
+            "version": "v0.0.0-20220314234659-1baeb1ce4c0b",
+            "flags": [
+              "pseudo-version"
+            ],
+            "location": "go.mod"
+          }
+        ]
+      },
+      "lockfiles": [
+        {
+          "path": "go.mod",
+          "inSbom": true,
+          "lastCommit": "2026-09-20T00:00:00Z",
+          "changedAfterSbom": true,
+          "uncommitted": false,
+          "components": 3
+        },
+        {
+          "path": "scripts/requirements.txt",
+          "inSbom": false,
+          "lastCommit": "2026-09-01T00:00:00Z",
+          "changedAfterSbom": false,
+          "uncommitted": false,
+          "components": 0
+        },
+        {
+          "path": "web/package-lock.json",
+          "inSbom": true,
+          "lastCommit": "2026-09-01T00:00:00Z",
+          "changedAfterSbom": false,
+          "uncommitted": false,
+          "components": 2
+        }
+      ],
+      "sprawl": [],
+      "graph": {
+        "edges": 1,
+        "componentsInGraph": 2
+      },
+      "inventory": [
+        {
+          "provider": "GitHub Actions",
+          "packages": [
+            {
+              "name": "actions/checkout",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [],
+              "vulns": null,
+              "versions": [
+                {
+                  "version": "v4.4.0",
+                  "instances": [
+                    {
+                      "location": ".github/workflows/release.yml",
+                      "scope": "ci",
+                      "entries": 1,
+                      "licence": "",
+                      "vulns": null
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "Go",
+          "packages": [
+            {
+              "name": "github.com/gin-gonic/gin",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": null,
+              "versions": [
+                {
+                  "version": "v1.9.0",
+                  "instances": [
+                    {
+                      "location": "go.mod",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": null
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "github.com/lib/pq",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": null,
+              "versions": [
+                {
+                  "version": "v1.10.9",
+                  "instances": [
+                    {
+                      "location": "go.mod",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": null
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "golang.org/x/crypto",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "BSD-3-Clause"
+              ],
+              "vulns": null,
+              "versions": [
+                {
+                  "version": "v0.0.0-20220314234659-1baeb1ce4c0b",
+                  "instances": [
+                    {
+                      "location": "go.mod",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "BSD-3-Clause",
+                      "vulns": null
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "npm",
+          "packages": [
+            {
+              "name": "lodash",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": null,
+              "versions": [
+                {
+                  "version": "4.17.21",
+                  "instances": [
+                    {
+                      "location": "web/package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": null
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "react",
+              "installations": 1,
+              "instances": 1,
+              "entries": 1,
+              "licences": [
+                "MIT"
+              ],
+              "vulns": null,
+              "versions": [
+                {
+                  "version": "18.3.1",
+                  "instances": [
+                    {
+                      "location": "web/package-lock.json",
+                      "scope": "product",
+                      "entries": 1,
+                      "licence": "MIT",
+                      "vulns": null
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "identity": "pkg:github/actions/checkout@v4.4.0",
+          "ecosystem": "GitHub Actions",
+          "name": "actions/checkout",
+          "version": "v4.4.0",
+          "purl": "pkg:github/actions/checkout@v4.4.0",
+          "location": ".github/workflows/release.yml",
+          "foundBy": "github-actions-usage-cataloger",
+          "kind": "workflow",
+          "gitState": "tracked",
+          "scope": "ci",
+          "licence": "",
+          "licenceSource": "",
+          "licenceClass": "unknown",
+          "flags": [],
+          "vulns": null,
+          "provider": "GitHub Actions",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:golang/github.com/gin-gonic/gin@v1.9.0",
+          "ecosystem": "Go",
+          "name": "github.com/gin-gonic/gin",
+          "version": "v1.9.0",
+          "purl": "pkg:golang/github.com/gin-gonic/gin@v1.9.0",
+          "location": "go.mod",
+          "foundBy": "go-module-file-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": null,
+          "provider": "Go",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:golang/github.com/lib/pq@v1.10.9",
+          "ecosystem": "Go",
+          "name": "github.com/lib/pq",
+          "version": "v1.10.9",
+          "purl": "pkg:golang/github.com/lib/pq@v1.10.9",
+          "location": "go.mod",
+          "foundBy": "go-module-file-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": null,
+          "provider": "Go",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:golang/golang.org/x/crypto@v0.0.0-20220314234659-1baeb1ce4c0b",
+          "ecosystem": "Go",
+          "name": "golang.org/x/crypto",
+          "version": "v0.0.0-20220314234659-1baeb1ce4c0b",
+          "purl": "pkg:golang/golang.org/x/crypto@v0.0.0-20220314234659-1baeb1ce4c0b",
+          "location": "go.mod",
+          "foundBy": "go-module-file-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "BSD-3-Clause",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [
+            "pseudo-version"
+          ],
+          "vulns": null,
+          "provider": "Go",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/lodash@4.17.21",
+          "ecosystem": "npm",
+          "name": "lodash",
+          "version": "4.17.21",
+          "purl": "pkg:npm/lodash@4.17.21",
+          "location": "web/package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": null,
+          "provider": "npm",
+          "entries": 1
+        },
+        {
+          "identity": "pkg:npm/react@18.3.1",
+          "ecosystem": "npm",
+          "name": "react",
+          "version": "18.3.1",
+          "purl": "pkg:npm/react@18.3.1",
+          "location": "web/package-lock.json",
+          "foundBy": "javascript-lock-cataloger",
+          "kind": "manifest",
+          "gitState": "tracked",
+          "scope": "product",
+          "licence": "MIT",
+          "licenceSource": "sbom",
+          "licenceClass": "permissive",
+          "flags": [],
+          "vulns": null,
+          "provider": "npm",
+          "entries": 1
+        }
+      ],
+      "findings": [
+        {
+          "level": "unknown",
+          "area": "vulnerabilities",
+          "title": "Vulnerabilities not checked",
+          "detail": "Run with --vulns (osv-scanner) or pass --osv <result.json>. Not checked is not clean."
+        },
+        {
+          "level": "low",
+          "area": "identity",
+          "title": "1 product dependency on an unreleased commit (pseudo-version)",
+          "detail": "golang.org/x/crypto@v0.0.0-20220314234659-1baeb1ce4c0b. No release tag names this code, so advisories and changelogs may not map to it."
+        },
+        {
+          "level": "unknown",
+          "area": "identity",
+          "title": "Provenance enrichment did not run on this SBOM",
+          "detail": "A git- or URL-sourced dependency may be asserting a registry identity it does not have (see monitor/sbom-provenance.mjs)."
+        },
+        {
+          "level": "medium",
+          "area": "freshness",
+          "title": "SBOM predates changes to 1 lockfile",
+          "detail": "go.mod. Regenerate before relying on it."
+        },
+        {
+          "level": "unknown",
+          "area": "coverage",
+          "title": "1 tracked lockfile not represented in the SBOM",
+          "detail": "scripts/requirements.txt. Either empty, or not catalogued — the scanner's silence is not a statement that they declare nothing."
+        },
+        {
+          "level": "info",
+          "area": "graph",
+          "title": "Direct vs transitive is undetermined for most components",
+          "detail": "The dependency graph links 2 components through 1 entry; the rest carry no edges, so \"is this a direct dependency\" cannot be answered from this document."
+        }
+      ]
+    },
+    {
+      "name": "docs-site",
+      "path": "<fixture>\\repos\\docs-site",
+      "status": "no-sbom",
+      "sbomPath": null,
+      "note": "No SBOM was found for this repo, so nothing about it is known. Run with --generate, or sweep it with the sbom-syft check."
+    }
+  ]
+}
