@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 -->
+<!-- verified-against: 2026-11-15 -->
 # sitemap/ — SiteMap tab (S0–S4 live)
 
 **S4: Monolith mode** — the whole repo as ONE megalith in the Sprawl idiom: black-glass
@@ -54,7 +54,7 @@ regex backtracks catastrophically on large yaml. Never reintroduce one.
 Schema: `../schema/sitemap.schema.json` **v2** (`schemaVersion` const 2; + lifecycle/supersededBy).
 Two code comments still say v1 — `demo.html:39` and `../monitor/sitemap-data.mjs:7` — and the schema
 is the authority. Panel wiring: `../admin/serve.mjs`
-`/sitemap/` static route + 19th DIMENSIONS row (`Code structure / SiteMap`, universal-ctags,
+`/sitemap/` static route + 19th DIMENSIONS row in `../admin/lib/state-view.mjs` (`Code structure / SiteMap`, universal-ctags,
 `state:'live'`). Needs `brew install universal-ctags`; without it every file caps at `inventory`
 tier — honest, never silently empty. Open ideas: cc.json exporter for CodeCharta as a second
 viewer; per-node lazy symbol detail beyond the click panel.

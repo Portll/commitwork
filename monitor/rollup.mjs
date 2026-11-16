@@ -27,7 +27,7 @@ import { inheritUndetermined } from './advisory-reach.mjs'; // could the MAL- ad
 import { outDirFor, reportsRootDir, sweepBatches, batchesForArea, ambientArea, sourceKey } from './area.mjs'; // THE OUT resolver (one chain, no literals)
 import { loadRegistry, areaOut, areaOf } from './registry.mjs';
 import { annotationsPathFor, gateExemptionsPathFor, ownerMapPathFor, epssDetailPathFor } from './store-paths.mjs';
-import { epssRecordsFrom } from './epss.mjs'; // pure, so the parse is reachable from a test
+import { epssRecordsFrom, epssFreshnessFrom } from './epss.mjs'; // pure, so the parse and the freshness verdict are reachable from a test
 import { parseOsv, parseNpm, dedupe, loadKevCatalog } from './dep-findings.mjs'; // pure readers, shared with the remediation brief
 import { classifyWorktreePath } from './worktree-paths.mjs'; // a copy that leaves the scan was not fixed
 import { loadCatalogCache, enrichWithKev } from './vulncheck-enrich.mjs';
@@ -400,9 +400,9 @@ const qualityGates = {
 // Freshness is judged from each catalogue's OWN content, NEVER this file's mtime: kev.json and
 // epss.json are gitignored caches, and a fresh copy resets mtime to "now", which a mtime-based
 // check would misread as "just fetched" even when the content is weeks stale. kev.json carries
-// dateReleased/catalogVersion; epss.json's content is a flat {cveId: score} map with no
-// version/date field of its own to read — 'unknown' is reported honestly rather than inventing one
-// from mtime or anything else.
+// dateReleased/catalogVersion; epss.json's own values are scores, so its dates come from the
+// full-triple sidecar (epssDetailPath), judged per entry and by the oldest one — see
+// epssFreshnessFrom.
 const { set: kevSet, staleDays: KEV_STALE_DAYS, freshness: kevFreshness } = loadKevCatalog();
 if (kevFreshness.state === 'stale') console.error(`rollup: KEV catalogue is ${kevFreshness.ageDays}d stale (catalogVersion ${kevFreshness.catalogVersion}, released ${kevFreshness.dateReleased}, > ${KEV_STALE_DAYS}d) — refresh: CRA_FETCH=1 node cra/watch.mjs`);
 else if (kevFreshness.state === 'unknown') console.error(kevFreshness.reason
@@ -410,7 +410,6 @@ else if (kevFreshness.state === 'unknown') console.error(kevFreshness.reason
   : 'rollup: KEV catalogue freshness unknown (monitor/data/kev.json missing, unreadable, or missing dateReleased)');
 const epssPath = join(HERE, 'data/epss.json');
 let epss = {}; try { epss = JSON.parse(readFileSync(epssPath, 'utf8')); } catch {}
-const epssFreshness = { state: 'unknown', note: 'monitor/data/epss.json carries no version/date field of its own to measure freshness from' };
 const cveIds = [...new Set(repos.flatMap((r) => r.findings).map((f) => f.id).filter((id) => /^CVE-\d/.test(id)))];
 // The full-triple sidecar. Separate file, same atomic discipline; absent is legitimately absent
 // (this store began empty and backfills only as CVEs are fetched), never an empty object standing
@@ -453,6 +452,9 @@ if (missing.length && globalThis.fetch) {
   Object.assign(epssDetail, fetchedDetail);
   if (Object.keys(fetchedDetail).length) { mkdirSync(dirname(epssDetailPath), { recursive: true }); writeAtomic(epssDetailPath, JSON.stringify(epssDetail)); }
 }
+// AFTER the merge above: a score fetched in this run must count as dated. Judged per entry by the
+// oldest date — one merge-accumulating cache has no single stamp that would not flatter old scores.
+const epssFreshness = epssFreshnessFrom(Object.keys(epss), epssDetail, { now: Date.now(), staleDays: KEV_STALE_DAYS });
 // KEV IS TRI-STATE, BECAUSE THE CATALOGUE CAN BE ABSENT. `kevSet.has(id)` is false both for a CVE
 // that was checked and is not listed, AND for every CVE when kev.json failed to load — and those
 // are different facts. An unconsulted catalogue yielded a fleet of confident `kev: false`, which is

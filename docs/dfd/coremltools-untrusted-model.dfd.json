@@ -1,0 +1,1228 @@
+{
+  "v": 1,
+  "kind": "dfd",
+  "title": "Apple ML untrusted-model space: paths, patches and what is still unmeasured",
+  "source": {
+    "producer": "hand-authored from f8-poc/f8-set.patch, f8-poc/run.log, f8-poc/open-findings-VERIFIED.md and one screenshot of the 2026-11-10 diagram",
+    "note": "Baseline apple/coremltools a207b1a3. The F8 set and the open-findings set are read from the patch files and their verification notes. The topology, the OS-side elements and their labels are rebuilt from a screenshot; \"measured NO\" is read as \"evaluated, not exploitable\". OS-side flows are drawn from the artifact itself, not from the dev tool's parser, so a dev-tool patch cannot close them. 8 of the 23 findings and two elements cropped out of that frame are absent. The patches for F3, F4, F5 and F13 were not read and are recorded as asserted. No patch is committed, so none carries a commit. The one-sentence hazard titles on findings F8, F9, F10, F14, F18, F19, ORTH-LOW-1 and COREMLCOMPILER were drafted on 2026-11-13 from f8-poc/open-findings-VERIFIED.md and f8-poc/run.log and have not been reviewed by the auditor; the other findings are not described in those files. The plain names of elements, groups, change sets and patches (`plain`) are unreviewed drafts. P0 (\"two elements cropped from the source frame\") removed on 13 Nov 2026, 23:30 ACDT. In its place, P16 (ModelPackageImpl path join) and P17 (its Python callers) are read from the coremltools source, with candidate finding MP-1; whether these are the cropped elements is not established."
+  },
+  "findings": [
+    {
+      "id": "F3",
+      "title": "Undescribed in files read",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P11"
+      }
+    },
+    {
+      "id": "F4",
+      "title": "Undescribed in files read",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P10"
+      }
+    },
+    {
+      "id": "F5",
+      "title": "Undescribed in files read",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P9"
+      }
+    },
+    {
+      "id": "F13",
+      "title": "Undescribed in files read",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P7"
+      }
+    },
+    {
+      "id": "ORTH-LOW-1",
+      "title": "Raw BlobReader error escapes loader",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P7"
+      }
+    },
+    {
+      "id": "F8",
+      "title": "MILBlob OOB read: unchecked blob offset and size",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P8"
+      }
+    },
+    {
+      "id": "MP-1",
+      "at": {
+        "node": "P16"
+      },
+      "title": "Manifest item path escapes package: unconfined join",
+      "severity": "undetermined",
+      "status": "undetermined",
+      "note": "Candidate, read from source on 13 Nov 2026: ModelPackage.cpp lines 308, 466, 516; utils.py lines 269, 1402. Reached by loading an untrusted .mlpackage (read) and by replaceRootModel on it (delete). No PoC. May match an F-item absent from this document."
+    },
+    {
+      "id": "F10",
+      "title": "NeuralNetwork validator: unbounded control-flow nesting",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P13"
+      }
+    },
+    {
+      "id": "F18",
+      "title": "Weight-size integer overflow: undersized weight accepted",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P13"
+      }
+    },
+    {
+      "id": "F19",
+      "title": "Weight size truncated to 32 bits",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P13"
+      }
+    },
+    {
+      "id": "F9",
+      "title": "Pipeline validator stack overflow: unbounded nesting",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P12"
+      }
+    },
+    {
+      "id": "F14",
+      "title": "BayesianProbit helper UB: open-enum fall-through",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P14"
+      }
+    },
+    {
+      "id": "F6",
+      "title": "TreeEnsemble output-dimension amplification (~32 GB)",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P15"
+      }
+    },
+    {
+      "id": "COREMLCOMPILER",
+      "title": "TreeEnsemble allocation amplification (~32 GB)",
+      "severity": "medium",
+      "status": "mitigated",
+      "at": {
+        "node": "P15"
+      }
+    },
+    {
+      "id": "F8@E4",
+      "title": "MILBlob OOB read: unchecked blob offset and size",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "E4"
+      }
+    },
+    {
+      "id": "F8@E10",
+      "title": "MILBlob OOB read: unchecked blob offset and size",
+      "severity": "undetermined",
+      "status": "undetermined",
+      "at": {
+        "node": "E10"
+      }
+    },
+    {
+      "id": "F18@E8",
+      "title": "Weight-size integer overflow: undersized weight accepted",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "E8"
+      }
+    },
+    {
+      "id": "F19@E8",
+      "title": "Weight size truncated to 32 bits",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "E8"
+      }
+    },
+    {
+      "id": "F16@E11",
+      "title": "Undescribed in files read",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "E11"
+      }
+    },
+    {
+      "id": "F17@E12",
+      "title": "Undescribed in files read",
+      "severity": "undetermined",
+      "status": "undetermined",
+      "at": {
+        "node": "E12"
+      }
+    },
+    {
+      "id": "COREMLCOMPILER@E13",
+      "title": "TreeEnsemble allocation amplification (~32 GB)",
+      "severity": "medium",
+      "status": "undetermined",
+      "at": {
+        "node": "E13"
+      }
+    }
+  ],
+  "prs": [
+    {
+      "id": "hardening-in-source",
+      "title": "Hardening already in the open source (stated by the source diagram; not in the files read)",
+      "state": "merged",
+      "plain": "Upstream hardening (asserted)"
+    },
+    {
+      "id": "f8-set",
+      "title": "F8 set: MILBlob reader bounds (f8-poc/f8-set.patch, uncommitted on a207b1a3)",
+      "state": "proposed",
+      "files": [
+        "mlmodel/src/MILBlob/Blob/MMapFileReader.cpp",
+        "mlmodel/src/MILBlob/Blob/StorageReader.cpp",
+        "mlmodel/src/MILBlob/SubByteTypes.hpp",
+        "mlmodel/src/Validation/NeuralNetwork/NeuralNetworkValidatorUtils.hpp",
+        "mlmodel/src/Validation/QuantizationValidationUtils.cpp"
+      ],
+      "plain": "MILBlob reader bounds checks"
+    },
+    {
+      "id": "open-findings",
+      "title": "Open-findings set: nesting guards, size arithmetic, loader firewall (f8-poc/open-findings.patch, uncommitted on a207b1a3)",
+      "state": "proposed",
+      "files": [
+        "coremltools/converters/mil/frontend/milproto/load.py",
+        "mlmodel/src/TreeEnsembleCommon.cpp",
+        "mlmodel/src/Validation/BayesianProbitRegressionValidator.cpp",
+        "mlmodel/src/Validation/NeuralNetwork/NeuralNetworkLayerValidator.cpp",
+        "mlmodel/src/Validation/NeuralNetwork/NeuralNetworkValidator.cpp",
+        "mlmodel/src/Validation/NeuralNetwork/NeuralNetworkValidatorUtils.hpp",
+        "mlmodel/src/Validation/PipelineValidator.cpp",
+        "mlmodel/src/Validation/ValidatorUtils-inl.hpp"
+      ],
+      "plain": "Depth limits and size checks"
+    }
+  ],
+  "patches": [
+    {
+      "id": "K3",
+      "pr": "hardening-in-source",
+      "title": "F3 hardening",
+      "findings": [
+        "F3"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P11"
+      },
+      "closes": [
+        {
+          "from": "P11",
+          "to": "E3"
+        }
+      ],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Not in the files read. The source diagram states everything inside g_devtool was hardened.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K4",
+      "pr": "hardening-in-source",
+      "title": "F4 hardening",
+      "findings": [
+        "F4"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P10"
+      },
+      "closes": [
+        {
+          "from": "P10",
+          "to": "E3"
+        }
+      ],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Not in the files read. The source diagram states everything inside g_devtool was hardened.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K5",
+      "pr": "hardening-in-source",
+      "title": "F5 hardening",
+      "findings": [
+        "F5"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P9"
+      },
+      "closes": [
+        {
+          "from": "P9",
+          "to": "Q1"
+        }
+      ],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Not in the files read. The source diagram states everything inside g_devtool was hardened.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K13",
+      "pr": "hardening-in-source",
+      "title": "F13 hardening",
+      "findings": [
+        "F13"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P7"
+      },
+      "closes": [],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Not in the files read; which flow F13 sits on is unknown to this demo, so it closes no drawn path.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K8",
+      "pr": "f8-set",
+      "title": "F8 set",
+      "findings": [
+        "F8"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P8"
+      },
+      "closes": [
+        {
+          "from": "P8",
+          "to": "Q1"
+        },
+        {
+          "from": "P8",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P8",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "f8-poc/f8-set.patch"
+        ]
+      },
+      "note": "ReadData bounds offset and length in uint64 before narrowing; blob count bounded by file size; each blob's offset and size must lie inside the file; SizeInBytes is exact with no wrapping product; quantization parameters are validated before the weight is sized. PoC before the fix: Slice bound bypassed, span.Size() = 0xffffffffffffff80 over a 4096-byte file, SIGSEGV on macOS 27.3 arm64 (f8-poc/run.log). Regression tests are in the patch; their post-fix run log was not among the files read.",
+      "plain": "Offset and size bounds check"
+    },
+    {
+      "id": "K9",
+      "pr": "open-findings",
+      "title": "F9 depth guard",
+      "findings": [
+        "F9"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P12"
+      },
+      "closes": [
+        {
+          "from": "P12",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P12",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "f8-poc/open-findings.patch"
+        ],
+        "control": {
+          "kind": "test",
+          "failsWithout": true,
+          "passesWith": true,
+          "test": "50,000-deep pipeline: SIGSEGV unpatched, clean reject patched",
+          "ref": "f8-poc/open-findings-VERIFIED.md"
+        }
+      },
+      "note": "Thread-local nesting-depth guard, cap 100. Patched: 50,000-deep pipeline is rejected. Unpatched: the same input SIGSEGVs.",
+      "plain": "Pipeline nesting depth limit"
+    },
+    {
+      "id": "K10",
+      "pr": "open-findings",
+      "title": "F10 nesting guard",
+      "findings": [
+        "F10"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P13"
+      },
+      "closes": [
+        {
+          "from": "P13",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P13",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "f8-poc/open-findings.patch"
+        ]
+      },
+      "note": "Thread-local control-flow nesting guard, cap 100, covering branch and loop. Patched: 5,000-deep branch nest is rejected. No dedicated unpatched PoC was built; F9 demonstrates the recursion class.",
+      "plain": "Control-flow nesting depth limit"
+    },
+    {
+      "id": "K14",
+      "pr": "open-findings",
+      "title": "F14 default return",
+      "findings": [
+        "F14"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P14"
+      },
+      "closes": [
+        {
+          "from": "P14",
+          "to": "E2"
+        }
+      ],
+      "evidence": {
+        "level": "inspected",
+        "refs": [
+          "f8-poc/open-findings.patch"
+        ]
+      },
+      "note": "default/return added so the non-void helper cannot fall off its end on an open-enum value. Inspection and a clean build only. Reach is normally blocked upstream, hence low.",
+      "plain": "Default return on open enum"
+    },
+    {
+      "id": "K18",
+      "pr": "open-findings",
+      "title": "F18 safe shape product",
+      "findings": [
+        "F18"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P13"
+      },
+      "closes": [
+        {
+          "from": "P13",
+          "to": "Q1"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P13",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "f8-poc/open-findings.patch"
+        ]
+      },
+      "note": "uint64 overflow-checked weight-shape product on conv2D, conv3D and inner product; overflow returns INVALID_MODEL_PARAMETERS. Unit: overflow → false, 1e9 exact, 2^32·2^32 → false; links the real validator.",
+      "plain": "Checked weight-size arithmetic"
+    },
+    {
+      "id": "K19",
+      "pr": "open-findings",
+      "title": "F19 uint64 size",
+      "findings": [
+        "F19"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P13"
+      },
+      "closes": [
+        {
+          "from": "P13",
+          "to": "Q1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "f8-poc/open-findings.patch"
+        ],
+        "control": {
+          "kind": "static-assert",
+          "failsWithout": true,
+          "passesWith": true,
+          "test": "static_assert on the return type: the baseline fails to compile",
+          "ref": "f8-poc/open-findings-VERIFIED.md"
+        }
+      },
+      "note": "getWeightParamSizeInBytes returns uint64_t with no int32 truncation. The F8 set already guards the bitsPerUnit × units multiply. static_assert on the return type; predicate: undersized rejected, exact accepted, overflow count rejected.",
+      "plain": "Full-width weight size"
+    },
+    {
+      "id": "KL1",
+      "pr": "open-findings",
+      "title": "ORTH-LOW-1 firewall",
+      "findings": [
+        "ORTH-LOW-1"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P7"
+      },
+      "closes": [
+        {
+          "from": "P7",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P7",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "f8-poc/open-findings.patch"
+        ]
+      },
+      "note": "Exception firewall in milproto _load_file_value: low-level BlobReader and offset errors become a contextual ValueError. Patched function exercised with stubbed globals.",
+      "plain": "Typed error on blob read"
+    },
+    {
+      "id": "KCC",
+      "pr": "open-findings",
+      "title": "COREMLCOMPILER cap",
+      "findings": [
+        "COREMLCOMPILER",
+        "F6"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P15"
+      },
+      "closes": [
+        {
+          "from": "P15",
+          "to": "E2"
+        },
+        {
+          "from": "P15",
+          "to": "E13"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P15",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "f8-poc/open-findings.patch"
+        ],
+        "control": {
+          "kind": "test",
+          "failsWithout": true,
+          "passesWith": true,
+          "test": "numpredictiondimensions=4e9: std::bad_alloc unpatched, reject patched",
+          "ref": "f8-poc/open-findings-VERIFIED.md"
+        }
+      },
+      "note": "One file-scope constant kMaxTreeEnsembleOutputDimension bounds numpredictiondimensions in constructAndValidateTreeEnsembleFromSpec (the TreeEnsemble validator) before it sizes default_values and output_classes_integer, and the same count before it reaches the OS compiler. Reconciled 14 Nov 2026: F6 (validator allocation) and COREMLCOMPILER (compiler hand-off) share the one bound. Tested: 4e9 rejected; unpatched std::bad_alloc on a ~32 GB resize.",
+      "plain": "Output dimension cap (1,000,000)"
+    }
+  ],
+  "groups": [
+    {
+      "id": "g_devtool",
+      "label": "g_devtool: coremltools, open source, patchable",
+      "boundary": "system",
+      "plain": "coremltools (open source, patchable)"
+    },
+    {
+      "id": "g_run",
+      "label": "Model runner, remote device",
+      "boundary": "system",
+      "parent": "g_devtool",
+      "plain": "Remote model runner"
+    },
+    {
+      "id": "g_blob",
+      "label": "Blob parser",
+      "boundary": "system",
+      "parent": "g_devtool",
+      "plain": "Blob parser"
+    },
+    {
+      "id": "g_pkg",
+      "label": "Model package reader",
+      "plain": "Model package reader",
+      "boundary": "system",
+      "parent": "g_devtool"
+    },
+    {
+      "id": "g_validators",
+      "label": "Validators",
+      "boundary": "system",
+      "parent": "g_devtool",
+      "plain": "Spec validators"
+    },
+    {
+      "id": "g_os",
+      "label": "g_os: Apple's closed-source OS frameworks. Source patches stop here; verdicts need RE or a PoC.",
+      "boundary": "trust",
+      "plain": "Apple closed-source frameworks (unpatchable here)"
+    },
+    {
+      "id": "g_os_blob",
+      "label": "Framework blob path",
+      "boundary": "trust",
+      "parent": "g_os",
+      "plain": "Framework blob path"
+    },
+    {
+      "id": "g_os_validators",
+      "label": "Framework validators, loaders, compiler",
+      "boundary": "trust",
+      "parent": "g_os",
+      "plain": "Framework validators, loaders, compiler"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "E1",
+      "kind": "external",
+      "label": "Untrusted model artifact",
+      "subtype": "actor",
+      "plain": "Malformed model artifact as input"
+    },
+    {
+      "id": "P11",
+      "kind": "process",
+      "label": "remote_device shell",
+      "group": "g_run",
+      "plain": "Remote device shell"
+    },
+    {
+      "id": "P10",
+      "kind": "process",
+      "label": "modelrunner request",
+      "group": "g_run",
+      "plain": "Model runner request handler"
+    },
+    {
+      "id": "P9",
+      "kind": "process",
+      "label": "modelrunner descriptor",
+      "group": "g_run",
+      "plain": "Model runner descriptor reader"
+    },
+    {
+      "id": "P7",
+      "kind": "process",
+      "label": "milproto _load_file_value",
+      "group": "g_blob",
+      "plain": "MIL proto file-value loader"
+    },
+    {
+      "id": "P8",
+      "kind": "process",
+      "label": "MILBlob StorageReader / Span::Slice",
+      "group": "g_blob",
+      "plain": "MILBlob StorageReader / Span::Slice"
+    },
+    {
+      "id": "P16",
+      "kind": "process",
+      "label": "ModelPackageImpl (modelpackage/src/ModelPackage.cpp)",
+      "plain": "ModelPackage manifest path join",
+      "group": "g_pkg",
+      "note": "path = m_packageDataDirPath / itemInfoEntry[\"path\"] with no confinement (lines 308, 466, 516); an absolute path replaces the base, \"..\" walks out."
+    },
+    {
+      "id": "P17",
+      "kind": "process",
+      "label": "load_spec, weights-dir lookup (coremltools/models/utils.py)",
+      "plain": "Package path callers",
+      "group": "g_pkg",
+      "note": "load_spec opens getRootModel().path() (line 269); the weights directory comes from findItemByNameAuthor (line 1402)."
+    },
+    {
+      "id": "P13",
+      "kind": "process",
+      "label": "NeuralNetwork validator",
+      "group": "g_validators",
+      "plain": "NeuralNetwork validator"
+    },
+    {
+      "id": "P12",
+      "kind": "process",
+      "label": "PipelineValidator",
+      "group": "g_validators",
+      "plain": "Pipeline validator"
+    },
+    {
+      "id": "P14",
+      "kind": "process",
+      "label": "BayesianProbit validator",
+      "group": "g_validators",
+      "plain": "BayesianProbit validator"
+    },
+    {
+      "id": "P15",
+      "kind": "process",
+      "label": "TreeEnsembleCommon",
+      "group": "g_validators",
+      "plain": "TreeEnsemble validator"
+    },
+    {
+      "id": "E3",
+      "kind": "external",
+      "label": "Code / command execution",
+      "subtype": "system",
+      "impact": "critical",
+      "plain": "Command entry from attacker"
+    },
+    {
+      "id": "D3",
+      "kind": "store",
+      "label": "Host filesystem",
+      "subtype": "file",
+      "impact": "high",
+      "plain": "Host filesystem read/write"
+    },
+    {
+      "id": "Q1",
+      "kind": "store",
+      "label": "Process memory (OOB read)",
+      "subtype": "log",
+      "impact": "medium",
+      "plain": "Process memory disclosure (OOB read)"
+    },
+    {
+      "id": "E2",
+      "kind": "external",
+      "label": "Process abort / DoS",
+      "subtype": "system",
+      "impact": "low",
+      "plain": "Process abort (DoS)"
+    },
+    {
+      "id": "R1",
+      "kind": "external",
+      "label": "Typed reject: caller gets an error",
+      "subtype": "system",
+      "plain": "Input rejected, typed error"
+    },
+    {
+      "id": "E7",
+      "kind": "external",
+      "label": "GetView / GetFileDat…yteLength",
+      "subtype": "system",
+      "group": "g_os_blob",
+      "plain": "Framework blob file view"
+    },
+    {
+      "id": "E9",
+      "kind": "external",
+      "label": "LegacyStorageReader (v1 blob)",
+      "subtype": "system",
+      "group": "g_os_blob",
+      "plain": "Legacy storage reader (v1)"
+    },
+    {
+      "id": "E10",
+      "kind": "external",
+      "label": "Other Span ops",
+      "subtype": "system",
+      "group": "g_os_blob",
+      "unknown": true,
+      "plain": "Other Span operations (unexamined)"
+    },
+    {
+      "id": "E8",
+      "kind": "external",
+      "label": "Internal weight validators",
+      "subtype": "system",
+      "group": "g_os_validators",
+      "plain": "Framework weight validators"
+    },
+    {
+      "id": "E11",
+      "kind": "external",
+      "label": "linkedModel loader",
+      "subtype": "system",
+      "group": "g_os_validators",
+      "plain": "Linked-model loader"
+    },
+    {
+      "id": "E12",
+      "kind": "external",
+      "label": "Output marshalling",
+      "subtype": "system",
+      "group": "g_os_validators",
+      "plain": "Output marshalling"
+    },
+    {
+      "id": "E13",
+      "kind": "external",
+      "label": "coremlcompiler (closed source)",
+      "subtype": "system",
+      "group": "g_os_validators",
+      "plain": "coremlcompiler (closed source)"
+    },
+    {
+      "id": "E5",
+      "kind": "external",
+      "label": "MMapFileReader::ReadData (thunk)",
+      "subtype": "system",
+      "group": "g_os_blob",
+      "plain": "MMapFileReader::ReadData thunk"
+    },
+    {
+      "id": "E4",
+      "kind": "external",
+      "label": "MIL.framework Span::Slice (wraps)",
+      "subtype": "system",
+      "group": "g_os_blob",
+      "plain": "MIL.framework Span::Slice"
+    },
+    {
+      "id": "E6",
+      "kind": "external",
+      "label": "OS memory corruption",
+      "subtype": "system",
+      "group": "g_os",
+      "impact": "critical",
+      "plain": "OS Memory Corruption"
+    }
+  ],
+  "flows": [
+    {
+      "from": "E1",
+      "to": "P11",
+      "label": "device command",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P10",
+      "label": "request payload",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P9",
+      "label": "descriptor",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P7",
+      "label": "op → blob",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P8",
+      "label": "offset + size",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P16",
+      "label": "Manifest.json itemInfoEntries[].path",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P13",
+      "label": "layer weights, control flow",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P12",
+      "label": "nested pipeline spec",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P14",
+      "label": "enum value",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P15",
+      "label": "numpredictiondimensions",
+      "mode": "sync"
+    },
+    {
+      "from": "P7",
+      "to": "P8",
+      "label": "blob load",
+      "mode": "sync"
+    },
+    {
+      "from": "P11",
+      "to": "E3",
+      "label": "shell injection",
+      "mode": "sync"
+    },
+    {
+      "from": "P10",
+      "to": "E3",
+      "label": "pickle RCE",
+      "mode": "sync"
+    },
+    {
+      "from": "P9",
+      "to": "Q1",
+      "label": "OOB read",
+      "mode": "sync"
+    },
+    {
+      "from": "P8",
+      "to": "Q1",
+      "label": "huge OOB read",
+      "mode": "sync"
+    },
+    {
+      "from": "P8",
+      "to": "E2",
+      "label": "OOB → crash",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P7",
+      "to": "E2",
+      "label": "raw BlobReader error escapes",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P13",
+      "to": "Q1",
+      "label": "wrapped size: undersized weight passes",
+      "mode": "sync"
+    },
+    {
+      "from": "P13",
+      "to": "E2",
+      "label": "unbounded control-flow nesting",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P12",
+      "to": "E2",
+      "label": "50,000-deep pipeline: stack overflow",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P14",
+      "to": "E2",
+      "label": "falls off a non-void helper (UB)",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P15",
+      "to": "E2",
+      "label": "≈32 GB resize: bad_alloc",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P15",
+      "to": "E13",
+      "label": "count handed to the OS compiler",
+      "mode": "sync"
+    },
+    {
+      "from": "P8",
+      "to": "R1",
+      "label": "std::range_error",
+      "mode": "sync"
+    },
+    {
+      "from": "P7",
+      "to": "R1",
+      "label": "contextual ValueError",
+      "mode": "sync"
+    },
+    {
+      "from": "P13",
+      "to": "R1",
+      "label": "\"control-flow nesting is too deep\"",
+      "mode": "sync"
+    },
+    {
+      "from": "P13",
+      "to": "R1",
+      "label": "INVALID_MODEL_PARAMETERS",
+      "mode": "sync"
+    },
+    {
+      "from": "P12",
+      "to": "R1",
+      "label": "\"Pipeline nesting is too deep\"",
+      "mode": "sync"
+    },
+    {
+      "from": "P15",
+      "to": "R1",
+      "label": "\"exceeds the maximum\"",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E7",
+      "label": "blob read enters OS (modern, unchecked)",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E9",
+      "label": "v1 blob, same channel",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E10",
+      "label": "sibling Span ops",
+      "mode": "sync",
+      "existence": "unknown"
+    },
+    {
+      "from": "E1",
+      "to": "E8",
+      "label": "weights reach framework validators",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E11",
+      "label": "linked model",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E12",
+      "label": "output geometry",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E13",
+      "label": "model given straight to the compiler",
+      "mode": "sync"
+    },
+    {
+      "from": "E7",
+      "to": "E5",
+      "label": "offset, length file-derived, no check (measured)",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "confirmed"
+      }
+    },
+    {
+      "from": "E9",
+      "to": "E5",
+      "label": "GetDataView → ReadData (traced)",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "confirmed"
+      }
+    },
+    {
+      "from": "E5",
+      "to": "E4",
+      "label": "thunk tail-calls Slice (measured)",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "confirmed"
+      }
+    },
+    {
+      "from": "E4",
+      "to": "E6",
+      "label": "reach measured negative",
+      "mode": "sync",
+      "gate": {
+        "state": "safe",
+        "finding": "F8@E4",
+        "evidence": {
+          "level": "static",
+          "witness": "framework RE: F8 measured NO; no runtime PoC"
+        }
+      }
+    },
+    {
+      "from": "E10",
+      "to": "E6",
+      "label": "4 of 5 absent, 20 entries unread",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "F8@E10",
+        "reason": "4 of 5 Span operations absent from the frame; 20 entries unread in the RE"
+      }
+    },
+    {
+      "from": "E8",
+      "to": "E6",
+      "label": "F18 and F19 measured NO in CoreML.framework",
+      "mode": "sync",
+      "gate": {
+        "state": "safe",
+        "finding": "F18@E8",
+        "evidence": {
+          "level": "static",
+          "witness": "framework RE: F18 and F19 measured NO; no runtime PoC"
+        }
+      }
+    },
+    {
+      "from": "E11",
+      "to": "E6",
+      "label": "F16 measured NO (path traced)",
+      "mode": "sync",
+      "gate": {
+        "state": "safe",
+        "finding": "F16@E11",
+        "evidence": {
+          "level": "static",
+          "witness": "framework RE: F16 measured NO, path traced; no runtime PoC"
+        }
+      }
+    },
+    {
+      "from": "E12",
+      "to": "E6",
+      "label": "reach not evaluated",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "F17@E12",
+        "reason": "output marshalling not reached in the framework RE"
+      }
+    },
+    {
+      "from": "E13",
+      "to": "E2",
+      "label": "amplified allocation in the compiler",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "COREMLCOMPILER@E13",
+        "reason": "OS coremlcompiler is closed source; no RE or PoC"
+      }
+    },
+    {
+      "from": "P16",
+      "to": "P17",
+      "label": "item path, unconfined (absolute or ..)",
+      "mode": "sync"
+    },
+    {
+      "from": "P17",
+      "to": "D3",
+      "label": "read: root model spec, weights dir",
+      "mode": "sync",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "MP-1",
+        "reason": "read from coremltools source; no PoC built"
+      }
+    },
+    {
+      "from": "P16",
+      "to": "D3",
+      "label": "delete: removeItem std::remove (replaceRootModel)",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "MP-1",
+        "reason": "read from coremltools source; no PoC built"
+      }
+    }
+  ]
+}

@@ -25,7 +25,7 @@ import { sidecarLockDir } from '../monitor/preflight-build.mjs'; // sidecar lock
 import { shellPlan, posixShellHint, shellDiagnostics } from '../lib/posix-shell.mjs'; // `sh` is absent on stock Windows; resolve it, never assume it
 import { killTree, describeKill } from '../lib/proc-tree.mjs'; // kill(-pid) is POSIX-only and was silently a no-op on Windows
 import { findGitRepos } from '../lib/repo-walk.mjs'; // GNU `find` is not on Windows; walk in Node instead
-import { homedir, tmpdir, cpus, loadavg, totalmem } from 'node:os';
+import { homedir, tmpdir, cpus, loadavg, totalmem, constants as osConstants } from 'node:os';
 import { ensureFirstRunSetup, runSetup, parseSetupArgs, installHintFor, setupExitCode, loadCatalog } from './setup.mjs';
 import { runInit, parseInitArgs } from './init.mjs';
 import { withheldCredentials, scannerEnv, laneEnv, laneCredentialEnv, laneJavaEnv, laneWindowsEnv } from './lib/scanner-env.mjs';
@@ -90,7 +90,7 @@ import { SCANNER_SPECS } from '../monitor/extractors.mjs'; // the publishing rea
 import { parseSarif } from './lib/report-parsers/sarif.mjs';
 import { parseTrufflehog, parseGitleaks, parseBetterleaks, parseWeakRandom } from './lib/report-parsers/secrets.mjs';
 import { parseNpmAudit, parseTrivy, parseSbom, parseRetire, parseGradleWrapper, parseScorecard, parseDepscan } from './lib/report-parsers/supply-chain.mjs';
-import { parseNuclei, parseSchemathesis, parseTlsHeaders, parseA11y, parseAuthzBola, a11yUnchecked } from './lib/report-parsers/dast.mjs';
+import { parseNuclei, parseSchemathesis, parseTlsHeaders, parseA11y, parseAuthzBola, parseWpWitness, a11yUnchecked } from './lib/report-parsers/dast.mjs';
 import { parseHadolint, parseCspmGithub, parseJacksonGuard } from './lib/report-parsers/posture.mjs';
 import { parseRuleCounts, parseBearer, parseShellcheck, parseCobolInventory, parseActionlint } from './lib/report-parsers/sast-lint.mjs';
 import { parseMinify } from './lib/report-parsers/tree-contents.mjs';
@@ -207,17 +207,40 @@ const TOP_KEYS = new Set(['$schema', 'repo', 'repoPath', 'groups', 'checks', 'no
 const REPORT_FORMATS = new Set(['sarif', 'trufflehog', 'npm-audit', 'sbom', 'json', 'text',
   'trivy', 'gitleaks', 'betterleaks', 'retire', 'socket', 'hadolint', 'nuclei', 'generic', 'config',
   'schemathesis', 'tls-headers', 'cspm-github', 'scorecard', 'depscan', 'gradle-wrapper', 'authz-bola', 'a11y', 'actionlint', 'shellcheck', 'minify', 'bearer', 'weak-random', 'rule-counts',
-  'cobol-inventory', 'jackson-guard']);
+  'cobol-inventory', 'jackson-guard', 'wp-witness']);
 // Handler lint (F8): a declared format is PARSED (a parseReport branch derives severity),
 // PASSTHROUGH (presence is the only signal, by design), or silent-bug (neither: it hits the generic
 // branch and scores green regardless of contents). Keep PARSED_FORMATS in lockstep with the
 // `if (format === …)` branches below.
 export const PARSED_FORMATS = new Set(['sarif', 'trufflehog', 'npm-audit', 'trivy', 'sbom', 'gitleaks', 'betterleaks', 'retire', 'hadolint', 'socket', 'nuclei',
   'schemathesis', 'tls-headers', 'cspm-github', 'scorecard', 'depscan', 'gradle-wrapper', 'authz-bola', 'a11y', 'actionlint', 'shellcheck', 'minify', 'bearer', 'weak-random', 'rule-counts',
-  'cobol-inventory', 'jackson-guard']);
+  'cobol-inventory', 'jackson-guard', 'wp-witness']);
 export const PASSTHROUGH_FORMATS = new Set(['json', 'text', 'generic', 'config']);
 const isStr = (v) => typeof v === 'string';
 const isStrArr = (v) => Array.isArray(v) && v.every(isStr);
+const EXIT_OUTCOMES = new Set(['measured', 'unmeasured']);
+const EXIT_CODE_KEY = /^(0|[1-9][0-9]?|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$/;
+
+function exitCodesErrors(ec, findingsExit) {
+  if (!ec || typeof ec !== 'object' || Array.isArray(ec)) return ['must be an object keyed by exit code'];
+  const keys = Object.keys(ec);
+  if (!keys.length) return ['must declare at least one exit code'];
+  const errors = [];
+  for (const k of keys) {
+    const d = ec[k];
+    if (!EXIT_CODE_KEY.test(k)) { errors.push(`key '${k}' is not an exit code 0-255 in plain decimal`); continue; }
+    if (!d || typeof d !== 'object' || Array.isArray(d)) { errors.push(`${k} must be {outcome, meaning}`); continue; }
+    const extra = Object.keys(d).filter((f) => f !== 'outcome' && f !== 'meaning');
+    if (extra.length) errors.push(`${k} has fields nothing reads: ${extra.join(', ')}`);
+    if (!EXIT_OUTCOMES.has(d.outcome)) errors.push(`${k}.outcome must be one of ${[...EXIT_OUTCOMES].join('|')}`);
+    if (!isStr(d.meaning) || !d.meaning.trim()) errors.push(`${k}.meaning must be a non-empty string`);
+  }
+  if (!keys.some((k) => ec[k] && ec[k].outcome === 'measured')) errors.push('declares no measured code, so no run of it could ever be read');
+  if (Array.isArray(findingsExit)) {
+    for (const n of findingsExit) if (!ec[String(n)] || ec[String(n)].outcome !== 'measured') errors.push(`must declare findingsExit code ${n} as measured`);
+  }
+  return errors;
+}
 
 export function validateManifest(m, path) {
   const errors = [], warnings = [];
@@ -319,6 +342,9 @@ export function validateManifest(m, path) {
           } else if (PASSTHROUGH_FORMATS.has(c.report.format) && !SCANNER_SPECS.some((s) => s[1] === c.id)) {
             warnings.push(`${at} (${c.id || '?'}): report.findingsExit is declared on a pass-through format with no reader that counts its findings, so the declared codes can never be accepted`);
           }
+        }
+        if (c.report.exitCodes !== undefined) {
+          for (const e of exitCodesErrors(c.report.exitCodes, fe)) errors.push(`${at} (${c.id || '?'}): report.exitCodes ${e}`);
         }
       }
     }
@@ -1474,6 +1500,7 @@ function writeChecksStatus(results) {
       // read" from "the runner stopped the tool"
       ...(r.timedOut ? { timedOut: true } : {}),
       ...(r.noReport ? { noReport: true } : {}),
+      ...(r.exit ? { exit: r.exit } : {}),
       ...(r.depthLevel ? { depthLevel: r.depthLevel } : {}),
       // a restored result says when it was scanned and by which run; durationMs is the restore, not a scan
       ...(r.reused ? { reused: r.reused } : {}),
@@ -1637,6 +1664,7 @@ export function parseReport(format, path) {
   if (format === 'tls-headers') return parseTlsHeaders(path);
   if (format === 'a11y') return parseA11y(path);
   if (format === 'authz-bola') return parseAuthzBola(path);
+  if (format === 'wp-witness') return parseWpWitness(path);
   if (format === 'cspm-github') return parseCspmGithub(path);
   if (format === 'jackson-guard') return parseJacksonGuard(path);
   if (format === 'gradle-wrapper') return parseGradleWrapper(path);
@@ -1738,7 +1766,52 @@ function passthroughCounted(check, repoDir, rep) {
     summary: `${n('total')} finding${n('total') === 1 ? '' : 's'} — ${parts.join(', ')} (counted by the rollup reader)` };
 }
 
+const declaredExitCodes = (check) => {
+  const ec = check && check.report && check.report.exitCodes;
+  return ec && typeof ec === 'object' && !Array.isArray(ec) ? ec : null;
+};
+
+function shellExitMeaning(code) {
+  if (code === 126) return 'command not executable';
+  if (code === 127) return 'command not found';
+  if (code > 128 && code < 160) {
+    const name = Object.keys(osConstants.signals).find((k) => osConstants.signals[k] === code - 128);
+    return name ? `killed by ${name}` : `killed by signal ${code - 128}`;
+  }
+  return null;
+}
+
+function readExitSidecar(repoDir, file) {
+  let text;
+  try { text = readFileSync(join(repoDir, `${file}.exit`), 'utf8'); } catch (e) {
+    return { code: null, why: e && e.code === 'ENOENT' ? `${file}.exit was not written` : `${file}.exit could not be read (${(e && e.code) || 'error'})` };
+  }
+  const t = text.trim();
+  return /^\d+$/.test(t) ? { code: Number(t) } : { code: null, why: `${file}.exit holds ${JSON.stringify(t.slice(0, 40))}, not an exit code` };
+}
+
+// The row's `exit` field: what the tool's own exit code says about whether it measured anything.
+// Present only on a lane that declares report.exitCodes; an undeclared lane keeps the older rules.
+function exitRecord(check, repoDir) {
+  const declared = declaredExitCodes(check);
+  if (!declared) return null;
+  const { code, why } = readExitSidecar(repoDir, check.report.file);
+  if (code === null) return { code: null, outcome: 'unrecorded', meaning: why };
+  const d = declared[String(code)];
+  if (d) return { code, outcome: d.outcome, meaning: d.meaning };
+  return { code, outcome: 'undeclared', meaning: shellExitMeaning(code) ?? 'not a code this lane declares' };
+}
+
+function exitPhrase(check, exit) {
+  if (exit.outcome === 'unrecorded') return `no exit code was recorded (${exit.meaning}), so its declared exit codes cannot be checked`;
+  if (exit.outcome !== 'undeclared') return `exited ${exit.code}: ${exit.meaning}`;
+  const codes = Object.keys(declaredExitCodes(check)).map(Number).sort((a, b) => a - b).join(', ');
+  const shell = shellExitMeaning(exit.code);
+  return `exited ${exit.code}${shell ? ` (${shell})` : ''}, which is not one of its declared exit codes (${codes})`;
+}
+
 export function classifyReport(check, repoDir, repo) {
+  const exit = exitRecord(check, repoDir);
   const parsed = check.report ? parseReport(check.report.format, join(repoDir, check.report.file)) : { sev: 'ok', total: 0, summary: 'done' };
   const rep = passthroughCounted(check, repoDir, parsed);
   // `ok:false` is a parser saying it could not read what it was given. Defaulting that to 'ok'
@@ -1757,8 +1830,8 @@ export function classifyReport(check, repoDir, repo) {
   // and overwriting it with a generic void message would throw away the one line naming the cause.
   const unreasoned = !rep.sev;
   const emptyClean = (sev === 'ok' || (sev === 'noscan' && unreasoned)) && (rep.total === 0 || rep.total == null);
+  const reportMissing = !!check.report && !existsSync(join(repoDir, check.report.file));
   if (emptyClean) {
-    const reportMissing = !!check.report && !existsSync(join(repoDir, check.report.file));
     const needsArtifact = Array.isArray(check.producesIfExists) && check.producesIfExists.length > 0 &&
       !check.producesIfExists.some((g) => {
         const m = /^\*(\.[A-Za-z0-9]+)$/.exec(g);
@@ -1795,9 +1868,11 @@ export function classifyReport(check, repoDir, repo) {
     // The artifact's PRESENCE is still checked (reportMissing, above) and still fails closed. What
     // is dropped is only the inference from an exit code about content nothing at this layer read.
     const passthrough = check.report && PASSTHROUGH_FORMATS.has(check.report.format);
-    if (reportMissing) { sev = 'noscan'; summary = 'no output (tool absent/failed)'; }
-    else if (rep.nosrc) { sev = 'noscan'; summary = 'ran — no source matched'; }
-    else if (toolExit !== null && toolExit !== 0 && !passthrough && !(toolExit === 1 && rep.exitOneIsReport === true)) {
+    if (reportMissing) {
+      sev = 'noscan';
+      summary = `no output (tool absent/failed)${exit && exit.code !== null ? `; ${exitPhrase(check, exit)}` : ''}`;
+    } else if (rep.nosrc) { sev = 'noscan'; summary = 'ran — no source matched'; }
+    else if (!exit && toolExit !== null && toolExit !== 0 && !passthrough && !(toolExit === 1 && rep.exitOneIsReport === true)) {
       sev = 'noscan';
       summary = `nothing found, but the tool exited ${toolExit} — cannot tell clean from failed`;
     }
@@ -1807,7 +1882,7 @@ export function classifyReport(check, repoDir, repo) {
     // zero results, empty invocations[] — indistinguishable from a genuine clean scan by the file.
     // Reaches only artifacts that predate the lane writing its sidecar; every current scan carries
     // one, so this greys history rather than the fleet.
-    else if (toolExit === null && rep.unwitnessedZero) {
+    else if (!exit && toolExit === null && rep.unwitnessedZero) {
       sev = 'noscan';
       summary = 'nothing found, and nothing witnessed the run — no exit code, no invocation record';
     } else if (needsArtifact) { sev = 'noscan'; summary = 'no scannable artifact (build first)'; }
@@ -1816,13 +1891,23 @@ export function classifyReport(check, repoDir, repo) {
   // the status check in writeChecksStatus: this value reaches the rollup, the panel and index.md,
   // and a severity nobody declared is a word three surfaces must each guess the meaning of. It does
   // not throw — a scan that reached a verdict is worth recording — but it cannot pass unremarked.
+  // A declared measured code leaves the verdict alone. Any other code voids a verdict that found
+  // nothing, because "nothing" from a tool that says it did not measure is not a clean result;
+  // findings it did report stand, and laneCoverage marks the run reduced.
+  if (exit && exit.outcome === 'measured') {
+    if (sev === 'ok' && rep.total == null) summary = exitPhrase(check, exit);
+  } else if (exit && !reportMissing && sev !== 'med' && sev !== 'high') {
+    const detail = sev === 'noscan' || rep.total != null ? ` — ${summary}` : '';
+    sev = 'noscan';
+    summary = `${exitPhrase(check, exit)}${detail}`;
+  }
   if (!isSeverity(sev)) {
     console.error(yellow(`  (classifyReport: '${check.id}' produced severity '${sev}', not one of ${SEVERITY.join('|')})`));
   }
   // `blocked` survives the trip so the renderer can colour a clearable void differently. Passed
   // through explicitly, not spread: this return is the parser/runner boundary, and a spread here
   // would silently promote every future parser field into the run result.
-  return { sev, summary, blocked: rep.blocked === true, empty: sev === 'ok' && rep.empty === true };
+  return { sev, summary, blocked: rep.blocked === true, empty: sev === 'ok' && rep.empty === true, ...(exit ? { exit } : {}) };
 }
 
 // Moves a shell pass by its classified report: `noscan` to a void, `skip` to the n/a an appliesIf
@@ -1830,10 +1915,11 @@ export function classifyReport(check, repoDir, repo) {
 // blocked. A `skip` that fell through here would publish a parser's "no subject" as a pass.
 // `blocked` rides along with the void so the renderer can colour it. Destructured, never spread:
 // this is the one place a parser fact becomes a run result.
-export function applyReportVerdict(res, { sev, summary, blocked, empty }) {
+export function applyReportVerdict(res, { sev, summary, blocked, empty, exit }) {
   if (sev === 'noscan') { res.status = 'noscan'; res.reason = summary; if (blocked) res.blocked = true; }
   else if (sev === 'skip') { res.status = 'skipped'; res.reason = `n/a — ${summary}`; }
-  else if (empty) res.reason = summary;
+  else if (empty || exit) res.reason = summary;
+  if (exit) res.exit = exit;
   return res;
 }
 
@@ -1945,6 +2031,13 @@ function laneCoverageBase(check, repoDir) {
   if (!logDecides && leftNothing) {
     return { coverage: 'unknown', coverageReason: `${check.report.file} and its exit sidecar were never written — coverage could not be established`, coverageBasis: 'report-absent' };
   }
+  const exit = exitRecord(check, repoDir);
+  if (exit && exit.outcome === 'unrecorded') {
+    return { coverage: 'unknown', coverageReason: `${exitPhrase(check, exit)} — coverage could not be established`, coverageBasis: 'exit-code' };
+  }
+  if (exit && exit.outcome !== 'measured') {
+    return { coverage: 'reduced', coverageReason: `the tool ${exitPhrase(check, exit)}`, coverageBasis: 'exit-code' };
+  }
 
   // 1. THE EXIT CODE, read from the sidecar every lane now writes.
   //
@@ -1972,7 +2065,7 @@ function laneCoverageBase(check, repoDir) {
   const exitFile = join(repoDir, `${check.report.file}.exit`);
   if (existsSync(exitFile)) {
     const n = Number(String(readFileSync(exitFile, 'utf8')).trim());
-    if (Number.isInteger(n) && n > 1) {
+    if (Number.isInteger(n) && (exit ? declaredFindingsExit(check).includes(n) : n > 1)) {
       if (!declaredFindingsExit(check).includes(n)) {
         return { coverage: 'reduced', coverageReason: `the tool exited ${n}`, coverageBasis: 'exit-code' };
       }
@@ -2237,7 +2330,7 @@ function cmdScan(manifest, opts) {
         process.stdout.write(cyan('▚'));
         continue;
       }
-      const { sev, summary } = classifyReport(check, repoDir, repo); // F1: shared classifier
+      const { sev, summary, exit } = classifyReport(check, repoDir, repo); // F1: shared classifier
       // A parser's n/a is written as an appliesIf miss is: no coverage, the n/a glyph, never the green dot.
       if (sev === 'skip') { cells[check.id] = { sev, summary }; process.stdout.write(dim('·')); continue; }
       // The scan path needs coverage for the same reason the check path does, and the CLI has
@@ -2245,7 +2338,7 @@ function cmdScan(manifest, opts) {
       // so a coverage fact that never reaches index.md is one the reader was sent to find and
       // cannot. Computed here beside the classifier, on the same two axes.
       const { coverage, coverageReason } = laneCoverage(check, repoDir);
-      cells[check.id] = withIsolation({ sev, summary, coverage, coverageReason }, sb);
+      cells[check.id] = withIsolation({ sev, summary, coverage, coverageReason, ...(exit ? { exit } : {}) }, sb);
       process.stdout.write(sev === 'high' ? red('!') : sev === 'med' ? yellow('+') : sev === 'noscan' ? cyan('▚') : green('.'));
     }
     rows.push({ repo, slug, cells });
@@ -2506,8 +2599,8 @@ function runRows(manifest, runDir) {
     for (const check of manifest.checks) {
       if (!check.report) continue;
       if (existsSync(join(repoDir, check.report.file))) {
-        const { sev, summary } = classifyReport(check, repoDir, repo);
-        cells[check.id] = { sev, summary, ...laneCoverage(check, repoDir) };
+        const { sev, summary, exit } = classifyReport(check, repoDir, repo);
+        cells[check.id] = { sev, summary, ...laneCoverage(check, repoDir), ...(exit ? { exit } : {}) };
         continue;
       }
       // No report: the status is the only record. A pass without one is left out, as before.

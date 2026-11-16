@@ -145,3 +145,35 @@ export function parseAuthzBola(path) {
   return { ok: true, total: n, sev: n ? 'high' : 'ok',
     summary: n ? `${n} object-level authorization finding(s)` : '0 (endpoints probed, none exposed)' };
 }
+
+const WP_WITNESS_VOID = { noscan: 'not run', 'could-not-install': 'could not install', error: 'witness error' };
+
+function wpWitnessCounts(j) {
+  const s = j.summary || {};
+  const n = (k) => Number(s[k]) || 0;
+  const e = j.entryCounts;
+  const tried = e && Number.isInteger(e.exercised) ? ` (${e.exercised} of ${(Number(e.rest) || 0) + (Number(e.actions) || 0)} entry points tried)` : '';
+  return `${n('confirmed')} confirmed, ${n('unattributedChange')} unattributed, ${n('notMeasured')} not measured, `
+    + `${n('exercisedNoEffect')} exercised with no effect, ${n('notExercised')} not exercised${tried}`;
+}
+
+// wp-dynamic-witness: a confirmed privileged state change is a finding; unattributed or unmeasured
+// trials are undetermined, which is neither a finding nor a pass.
+export function parseWpWitness(path) {
+  const j = safeReadJSON(path);
+  if (!j || typeof j !== 'object' || Array.isArray(j)) return { ok: false, summary: 'no wp-witness data' };
+  if (WP_WITNESS_VOID[j.status]) {
+    const v = voidResult(j.reason, WP_WITNESS_VOID[j.status], 'no reason recorded');
+    return { ...v, summary: `${WP_WITNESS_VOID[j.status]} — ${String(j.reason || 'no reason recorded').slice(0, 300)}` };
+  }
+  const s = j.summary || {};
+  if (j.status === 'findings') {
+    const n = Array.isArray(j.findings) ? j.findings.length : 0;
+    return { ok: true, total: n, sev: n ? 'high' : 'noscan', summary: n ? `${n} finding(s) — ${wpWitnessCounts(j)}` : `status findings with no findings recorded — ${wpWitnessCounts(j)}` };
+  }
+  if (j.status === 'no-confirmed-change') return { ok: true, total: 0, sev: 'ok', summary: `no confirmed change — ${wpWitnessCounts(j)}` };
+  if (j.status === 'undetermined') {
+    return { ok: true, total: 0, sev: 'noscan', undetermined: (Number(s.unattributedChange) || 0) + (Number(s.notMeasured) || 0), summary: `undetermined — ${wpWitnessCounts(j)}` };
+  }
+  return { ok: false, summary: `wp-witness status ${JSON.stringify(j.status ?? null)} is not one the reader knows` };
+}

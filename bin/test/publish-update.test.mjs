@@ -1,7 +1,7 @@
 // release/publish-update.mjs: the spine publisher call it makes for each channel, and its refusals.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { main, parsePublishArgs, publisherArgv, spineDir, REPO } from '../../release/publish-update.mjs';
 
 describe('parsePublishArgs', () => {
@@ -54,14 +54,41 @@ describe('publisherArgv and main', () => {
     assert.deepEqual(argv.slice(1), ['/src/spine/updates/publish.mjs', '--product', 'commitwork', '--channel', 'stable', '--version', '1.2.0', '--file', '/d/commitwork-1.2.0.tgz', '--notes', '/d/n.md', '--github']);
   });
 
-  test('SPINE_DIR names the spine checkout; the default is ../spine', () => {
+  test('SPINE_DIR names the spine checkout; unset or empty is null', () => {
     // Arrange
     const env = { SPINE_DIR: '/x/spine' };
     // Act
-    const a = spineDir(env), b = spineDir({});
+    const a = spineDir(env), b = spineDir({}), c = spineDir({ SPINE_DIR: '' });
     // Assert
     assert.equal(a, '/x/spine');
-    assert.equal(b, resolve(REPO, '..', 'spine'));
+    assert.equal(b, null);
+    assert.equal(c, null);
+  });
+
+  test('an unset SPINE_DIR exits 2 without running the publisher', () => {
+    // Arrange
+    const runs = [], logs = [];
+    const deps = { env: {}, exists: () => true, run: (...a) => { runs.push(a); return { status: 0 }; }, log: (m) => logs.push(m), version: '1.2.0' };
+    // Act
+    const code = main(['--channel', 'beta'], deps);
+    // Assert
+    assert.equal(code, 2);
+    assert.equal(runs.length, 0);
+    assert.deepEqual(logs, ['publish-update: set SPINE_DIR to the spine checkout that holds updates/publish.mjs']);
+    assert.match(logs[0], /set SPINE_DIR/);
+  });
+
+  test('an unset SPINE_DIR exits 2 before --dry-run prints the publisher command', () => {
+    // Arrange
+    const runs = [], logs = [];
+    const deps = { env: {}, exists: () => true, run: (...a) => { runs.push(a); return { status: 0 }; }, log: (m) => logs.push(m), version: '1.2.0' };
+    // Act
+    const code = main(['--channel', 'beta', '--dry-run'], deps);
+    // Assert
+    assert.equal(code, 2);
+    assert.equal(runs.length, 0);
+    assert.deepEqual(logs, ['publish-update: set SPINE_DIR to the spine checkout that holds updates/publish.mjs']);
+    assert.match(logs[0], /set SPINE_DIR/);
   });
 
   test('runs the publisher and returns its exit code; --dry-run only prints', () => {
@@ -99,7 +126,7 @@ describe('publisherArgv and main', () => {
     // Arrange
     const logs = [];
     // Act
-    main(['--channel', 'beta', '--dry-run'], { env: {}, log: (m) => logs.push(m) });
+    main(['--channel', 'beta', '--dry-run'], { env: { SPINE_DIR: '/s' }, log: (m) => logs.push(m) });
     // Assert
     assert.match(logs[0], /--version \d+\.\d+\.\d+/);
   });

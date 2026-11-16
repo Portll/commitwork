@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-20 -->
+<!-- verified-against: 2026-11-15 -->
 # admin/ — the :7878 panel
 
 Zero-dependency local web panel over the monitor's evidence (`node:http` + siblings only).
@@ -49,8 +49,9 @@ section rail, view selector, account forms, navigation behavior and inline style
 source files. `lib/panel-document.mjs` composes the response from a fixed list of these files;
 inline stylesheet blocks receive matching CSP hashes.
 
-The client code lives in `static/panel-*.js`: eight classic scripts (`panel-core`, `panel-console`,
-`panel-posture`, `panel-views`, `panel-router`, `panel-features`, `panel-settings`, `panel-boot`),
+The client code lives in `static/panel-*.js`: fourteen classic scripts (`panel-core`, `panel-console`,
+`panel-posture`, `panel-views`, `panel-router`, `panel-features`, `panel-settings`, `panel-palette`,
+`panel-feed`, `panel-inbox`, `panel-journey`, `panel-correlations`, `panel-graph`, `panel-boot`),
 loaded in the order `panel.html` lists them, after the extracted view modules (`learning.js`,
 `comments.js`, `overwatch-layer.js`, `bola.js`, `perf-console.js`) and with `menus/navigation.js`
 and `menus/account-menu.js` inlined between them. They share one global scope, and a function
@@ -394,11 +395,12 @@ the CSRF and login gates, static assets, the `/auth/*` hand-off and the map, rep
 ## Experimental feature flags
 
 Each ring-outward group in `manifests/feature-charter.json` carries `"experimental": true` and a
-`flag` id declared in `experimentalFlags` (16 group flags today: `docsite`, `offbox`, `agents`, `launchlist`,
+`flag` id declared in `experimentalFlags` (21 group flags today: `docsite`, `offbox`, `agents`, `launchlist`,
 `memory-view`, `lanes-quality`, `lanes-lint`, `lanes-types`, `codegraph-mcp`, `turns-mcp`,
-`scan-images`, `sitemap`, `map`, `flow`, `chunk-diff`, `commitwork-web`). `experimentalFlags` also
-declares `feed`, `palette` and `journey`, which have no group and are gated in their routes with
-`gateFeature`. Every flag is **on** until switched off, so nothing changes until the operator acts.
+`scan-images`, `npm-updates`, `sitemap`, `map`, `flow`, `chunk-diff`, `commitwork-web`, `feed`,
+`inbox`, `journey`, `palette`). `experimentalFlags` also declares `pull-request`, which has no
+group and is gated in its route with `gateFeature`. Every flag is **on** until switched off, so
+nothing changes until the operator acts.
 
 - **Switch one:** Settings → Experimental features, or `POST /api/features {"flag":"docsite","on":false}`
   (operator port or a signed-in session; stamped with who, written atomically to the

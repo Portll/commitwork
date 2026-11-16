@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 -->
+<!-- verified-against: 2026-11-15 -->
 # cobolwork remediation
 
 commitwork's half of cobolwork's remediation pipeline. A local model drafts a fix for one cobolwork

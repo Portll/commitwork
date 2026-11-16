@@ -3,7 +3,7 @@
 // exit: 0 ran · 2 could not run
 // env, read at call time: CW_WEBSHELL_MAX_BYTES (whole-file read cap, default 4 MiB; larger files are
 //   examined in windows, never skipped), CW_WEBSHELL_SKIP_DIRS (comma list of directory names or
-//   a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is
+//   a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty,fixtures/semgrep-classes — every skip is
 //   listed in summary.skippedPaths)
 // output: {tool, summary:{findings, byRule, filesScanned, ...}, findings[]}
 //   rule ids, paths, decode chains and family names only — never file contents or credential values.
@@ -56,7 +56,7 @@ export const RULE_SEV = Object.freeze({
 });
 
 const DEFAULT_MAX_BYTES = 4 * 1024 * 1024;
-const DEFAULT_SKIP = ['.git', 'node_modules', '.claude/worktrees', 'fixtures/scan-canary/dirty'];
+const DEFAULT_SKIP = ['.git', 'node_modules', '.claude/worktrees', 'fixtures/scan-canary/dirty', 'fixtures/semgrep-classes'];
 const MAX_DEPTH = 4;
 const MAX_CHILDREN = 64;
 const STATE_FILE_MAX = 64 * 1024;

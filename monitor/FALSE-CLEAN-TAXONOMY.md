@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-07 -->
+<!-- verified-against: 2026-11-15 -->
 # The false-clean taxonomy — every way this system has said "fine" while wrong
 
 A **false clean** is any mechanism by which the absence of an alarm is mistaken for the presence
@@ -26,7 +26,7 @@ Living document: new incidents get a row, not a rewrite. Citations point at the 
 carries the full account. The issue store has since moved to `monitor/private/issues.json` in the
 private sidecar; rows that cite `monitor/issues.json` measured it at its earlier path.
 
-**Two catalogues, one set of classes.** `monitor/failure-taxonomy.json` (version 17, 207 classes in
+**Two catalogues, one set of classes.** `monitor/failure-taxonomy.json` (version 19, 208 classes in
 11 families) is the machine-readable registry; family I there holds C1 to C37, and this file
 records incidents for C1 to C17 under the same ids. It
 holds what this file does not — `closure`/`gain` scores, `scoreBasis`, STPA loop and UCA bindings,

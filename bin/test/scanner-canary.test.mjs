@@ -57,6 +57,8 @@ const CANARIES = {
   // the exit code decides this lane, so the plant carries one; without it the parser reads noscan
   // and the canary would pass for the wrong reason
   'jackson-guard': ['jackson-guard.txt', 'GUARD FAILED — ACCEPT_CASE_INSENSITIVE_PROPERTIES enabled (opens jackson CVE-2026-54515):\n  src/main/resources/application.yml:4: accept-case-insensitive-properties: true\n', 1],
+  // a confirmed privileged change; status alone decides, so the plant carries the finding row as well
+  'wp-witness': ['wp-witness.json', { tool: 'wp-dynamic-witness', status: 'findings', summary: { confirmed: 1, unattributedChange: 0, exercisedNoEffect: 1, notExercised: 0, notMeasured: 0 }, findings: [{ key: 'p|rest|/x/v1/y|anonymous', entryKind: 'rest', selector: '/x/v1/y', role: 'anonymous', severity: 'high' }] }],
 };
 
 // A format is exempt ONLY with a stated reason; the guard below rejects an empty one.
@@ -114,6 +116,8 @@ test('negative control: a genuinely clean report still reads clean', () => {
     'rule-counts': ['c-rule-counts.json', { tool: 'agent-config', summary: { findings: 0, byRule: {}, filesScanned: 2 }, findings: [] }],
     // clean means the OK line with a scanned count AND exit 0 beside it; OK alone is unwitnessed
     'jackson-guard': ['c-jackson-guard.txt', 'guard-jackson-caseinsensitive: OK — ACCEPT_CASE_INSENSITIVE_PROPERTIES not enabled in 3 scanned file(s) under . (CVE-2026-54515 unreachable here).\n', null, 0],
+    // clean means every trial was measured and none changed privileged state; undetermined is not this
+    'wp-witness': ['c-wp-witness.json', { tool: 'wp-dynamic-witness', status: 'no-confirmed-change', summary: { confirmed: 0, unattributedChange: 0, exercisedNoEffect: 2, notExercised: 0, notMeasured: 0 }, findings: [] }],
   };
   for (const [format, [file, body, sidecarLog, exit]] of Object.entries(clean)) {
     const p = write(file, body);

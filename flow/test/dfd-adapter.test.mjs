@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateDfd, analyse } from '../../lib/dfd.mjs';
 import { makeNode, makeEdge, nodeId } from '../graph.mjs';
-import { fromFlowGraph, fromCodeFlows, validateLayerMap, layerOf, globToRegExp, sinkKindOf } from '../dfd-adapter.mjs';
+import { fromFlowGraph, fromCodeFlows, validateLayerMap, layerOf, globToRegExp, sinkKindOf, fromFindings } from '../dfd-adapter.mjs';
 import { dataflowFromResult } from '../../cra/dataflow-evidence.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -502,7 +502,8 @@ test('a CodeQL trace becomes input -> source file -> sink file -> sink, typed by
     'code:shop:api/db.js > sink:shop:database query: query(sql) (js/sql-injection)',
     'code:shop:api/routes.js > sink:shop:browser that renders the response: res.send(id) (js/reflected-xss)',
   ]);
-  assert.deepEqual(d.flows[0].evidence, { witness: 'static', existence: 'unknown', refs: ['js/sql-injection api/routes.js:4 -> api/db.js:12', 'js/reflected-xss api/routes.js:4 -> api/routes.js:9'] });
+  // method taint (2026-11-13): a CodeQL flow is a traced value, which a path search must tell from a module-level call site
+  assert.deepEqual(d.flows[0].evidence, { witness: 'static', method: 'taint', existence: 'unknown', refs: ['js/sql-injection api/routes.js:4 -> api/db.js:12', 'js/reflected-xss api/routes.js:4 -> api/routes.js:9'] });
   assert.ok(d.flows.every((f) => f.existence === 'unknown'));
   assert.equal(analyse(d).paths.total, 2);
 });
@@ -611,4 +612,52 @@ test('the commitwork layer map is valid, names only paths the tree has, and laye
   assert.match(map.$comment, /monitor\/README\.md 'The sweep pipeline'/);
   assert.deepEqual(missing, []);
   assert.deepEqual(got, ['raw', 'raw', 'normalised', 'normalised', 'normalised', 'published', 'published', null]);
+});
+
+// ── fromFindings: merge a findings overlay onto a model ──────────────────────────────────────────
+
+const dfdBase = (findings) => ({
+  v: 1, kind: 'dfd',
+  nodes: [{ id: 'p', kind: 'process', label: 'parser' }, { id: 's', kind: 'store', subtype: 'file', label: 'sink' }],
+  flows: [{ from: 'p', to: 's', mode: 'sync' }],
+  ...(findings ? { findings } : {}),
+});
+
+test('fromFindings enriches an anchored overlay from a facts ledger by id', () => {
+  const model = dfdBase([
+    { id: 'F8', status: 'mitigated', at: { node: 'p' } },
+    { id: 'F5', status: 'live', at: { node: 's' } },
+  ]);
+  const ledger = { findings: [
+    { id: 'F8', cwe: 'CWE-190', severity: 'high', title: 'overflow' },
+    { id: 'F5', cwe: 'CWE-125', severity: 'HIGH', name: 'oob read' },
+    { id: 'FX', cwe: 'CWE-1', severity: 'low' },
+  ] };
+  const got = fromFindings(model, ledger);
+  // placement and status stay with the dfd; cwe/severity/title come from the ledger
+  assert.deepEqual(got.findings[0], { id: 'F8', status: 'mitigated', at: { node: 'p' }, cwe: 'CWE-190', title: 'overflow', severity: 'high' });
+  assert.equal(got.findings[1].severity, 'high'); // alias 'HIGH' normalised; `name` used as title
+  assert.equal(got.findings[1].title, 'oob read');
+  // the ledger-only FX is not introduced — the dfd owns which findings appear
+  assert.equal(got.findings.length, 2);
+  assert.equal(validateDfd(got).ok, true);
+});
+
+test('fromFindings does not overwrite facts the overlay already states', () => {
+  const model = dfdBase([{ id: 'F8', cwe: 'CWE-OWN', severity: 'low', status: 'live', at: { node: 'p' } }]);
+  const got = fromFindings(model, { findings: [{ id: 'F8', cwe: 'CWE-190', severity: 'high' }] });
+  assert.equal(got.findings[0].cwe, 'CWE-OWN');
+  assert.equal(got.findings[0].severity, 'low');
+});
+
+test('fromFindings takes an already-anchored source as the overlay itself', () => {
+  const model = dfdBase([{ id: 'OLD', at: { node: 'p' } }]);
+  const got = fromFindings(model, { findings: [{ id: 'NEW', cwe: 'CWE-22', severity: 'high', at: { node: 's' } }] });
+  assert.deepEqual(got.findings, [{ id: 'NEW', cwe: 'CWE-22', severity: 'high', at: { node: 's' } }]);
+});
+
+test('fromFindings accepts a bare array ledger and leaves unmatched findings untouched', () => {
+  const model = dfdBase([{ id: 'F8', status: 'live', at: { node: 'p' } }]);
+  const got = fromFindings(model, [{ id: 'OTHER', cwe: 'CWE-9', severity: 'low' }]);
+  assert.deepEqual(got.findings[0], { id: 'F8', status: 'live', at: { node: 'p' } });
 });

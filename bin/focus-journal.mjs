@@ -11,6 +11,7 @@
  * Usage:
  *   focus-journal.mjs --from-state <path> [--repo <name>] [--session <id>]
  *   focus-journal.mjs --fire --streak <n> [--prompts <n>] [--repo <name>] [--session <id>]
+ *       below CW_FOCUS_MIN_STREAK it records nothing, as --from-state does
  *   focus-journal.mjs --fire --state-unreadable   the hook could not parse its own state file
  *   focus-journal.mjs --tally [--json]
  *
@@ -223,6 +224,7 @@ if (isMain) {
     }
     const streak = Number(argOf(args, '--streak'));
     if (!Number.isFinite(streak)) { console.error('usage: --fire --streak <n> [--prompts <n>] [--repo <name>] [--session <id>]'); process.exit(2); }
+    if (streak < minStreak()) process.exit(3);                     // below threshold: no alarm, no record
     const promptsRaw = argOf(args, '--prompts');
     const prompts = promptsRaw !== null && Number.isFinite(Number(promptsRaw)) ? Number(promptsRaw) : null;
     // The hook relayed values; provenance is an `argv:` source, not a fabricated artifact read.

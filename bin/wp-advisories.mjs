@@ -82,8 +82,8 @@ const displayName = (s) => unentity(String(s || '').replace(/&#(\d+);/g, (_, n) 
   .replace(/[‒-―]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 
 /**
- * wordpress.org lists a plugin as its header name plus a tagline ("Code Block Pro – Beautiful Syntax
- * Highlighting"), so that prefix counts. A longer NAME does not: "Hermit X" is a fork of "Hermit".
+ * wordpress.org lists a plugin as its header name plus a tagline ("Acme Code Box – Beautiful Syntax
+ * Highlighting"), so that prefix counts. A longer NAME does not: "Acme Player X" is a fork of "Acme Player".
  */
 export function sameNamedPlugin(sourceName, headerName) {
   const a = displayName(sourceName); const h = displayName(headerName);

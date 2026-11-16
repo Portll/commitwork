@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 -->
+<!-- verified-against: 2026-11-15 -->
 # Stability policy
 
 **This is a policy.** It states what commitwork treats as a public interface and when that

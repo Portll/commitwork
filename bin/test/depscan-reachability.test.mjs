@@ -51,6 +51,26 @@ test('in_triage is UNADJUDICATED, never reachable — it is dep-scan\'s default,
     'this tool never asserts unreachable — it has no such finding');
 });
 
+test('an exploitable row names its prover and its proof kind — atom\'s static slice', () => {
+  const dir = plant(summary(), { vulnerabilities: [vuln('CVE-2026-5', 'high', 'exploitable')] });
+  const [row] = _depscanCounts(dir, 'depscan.json').findings;
+  assert.equal(row.reachability, 'exploitable');
+  assert.equal(row.prover, 'atom', 'the prover is dep-scan\'s analyser, never govulncheck');
+  assert.equal(row.proofKind, 'static-slice', 'a slice is not the Go compiler\'s call graph');
+});
+
+test('an unadjudicated row names the same prover but NO proof — no state and in_triage alike', () => {
+  const dir = plant(summary(), { vulnerabilities: [
+    vuln('CVE-2026-6', 'high', 'in_triage'),
+    vuln('CVE-2026-7', 'high'),
+  ] });
+  const byId = Object.fromEntries((_depscanCounts(dir, 'depscan.json').findings || []).map((f) => [f.id, f]));
+  assert.equal(byId['CVE-2026-6'].prover, 'atom');
+  assert.equal(byId['CVE-2026-6'].proofKind, 'none', 'in_triage adjudicates nothing, so there is no proof');
+  assert.equal(byId['CVE-2026-7'].prover, 'atom');
+  assert.equal(byId['CVE-2026-7'].proofKind, 'none', 'no analysis state is likewise no proof');
+});
+
 test('a run whose slicer produced NOTHING carries no reachability counts at all', () => {
   const dir = plant(summary({ reachability: { state: 'not-produced', sliceObjects: 0,
     reason: 'the slicer wrote no object slices' } }),

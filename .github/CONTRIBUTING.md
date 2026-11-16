@@ -1,6 +1,6 @@
 # Contributing
 
-<!-- verified-against: 2026-10-07 -->
+<!-- verified-against: 2026-11-15 -->
 
 commitwork is a repository security scanner, local CI runner and scheduled monitoring system with
 remediation and compliance-evidence tooling. This document covers the contributor licence agreement,
@@ -66,10 +66,9 @@ node bin/docs-doctor.mjs        # documentation freshness gate
 
 Two things to know before you read a failure:
 
-- **The suite has a known pre-existing failure baseline, and it is larger on Windows.** A red test
-  is not automatically yours. Establish that the way we do: stash nothing — re-run the same globs
-  against an unmodified checkout and compare. `CLAUDE.md` carries the current measured figures and
-  the warning that they age quickly.
+- **The suite has known pre-existing failures.** A red test is not automatically yours. Establish
+  that the way we do: stash nothing — re-run the same globs against an unmodified checkout and
+  compare. `CLAUDE.md` records the last measured figures and the warning that they age quickly.
 - **Every input path is overridable through a `CW_*` environment variable** so the suite runs
   entirely on fixtures in `fixtures/`. A test must never need the private records, a credential or
   a network call. If you cannot test your change without one, that is a finding about the change.

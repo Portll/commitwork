@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 -->
+<!-- verified-against: 2026-11-15 -->
 # commitwork brand
 
 The logo is the seal: a disc, a ring, and a key of two nodes joined by a line, on a 32-unit square.
@@ -52,7 +52,6 @@ The seal and the wordmark on one line:
   and the build-box landing page carry `MARK_ICON`, a data URI. `lib/test/brand-marks.test.mjs`
   holds the SVG files and every tracked page under a `public/` directory to the mark.
   Generated pages inline `MARK_ICON` too, and `lib/test/tab-icons.test.mjs` fails on a producer
-  that writes a page without it, apart from two exempted as pending (`bin/lib/brief.mjs`,
-  `bin/remediation-web.mjs`).
+  that writes a page without it, apart from one exempted as pending (`bin/remediation-web.mjs`).
 - **The smallest placement is the 1.25rem phone bar**, except the sitemap mainline header
   (`sitemap/mainline.html`), which sets the seal at .9375rem.

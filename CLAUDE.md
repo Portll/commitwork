@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-11 -->
+<!-- verified-against: 2026-11-15 -->
 # CLAUDE.md — working in this repository
 
 commitwork runs a repository's GitHub Actions CI locally and scans it for security defects with a

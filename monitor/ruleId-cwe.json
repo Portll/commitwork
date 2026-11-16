@@ -127,6 +127,16 @@
     "wp-plugin-vulnerable": ["CWE-1395"],
     "wp-theme-vulnerable": ["CWE-1395"],
     "wp-plugin-closed": ["CWE-1104"],
-    "wp-theme-closed": ["CWE-1104"]
+    "wp-theme-closed": ["CWE-1104"],
+    "wp-nopriv-unguarded-write": ["CWE-862"],
+    "wp-ajax-unguarded-write": ["CWE-862"],
+    "wp-rest-unguarded-write": ["CWE-862"],
+    "wp-check-discarded": ["CWE-862", "CWE-352"],
+    "wp-nonce-only-write": ["CWE-862"],
+    "wp-unproven-guard-write": ["CWE-862"],
+    "wp-rest-public-write": ["CWE-862"],
+    "wp-rest-no-permission-callback": ["CWE-862"],
+    "wp-hook-request-write": ["CWE-862"],
+    "wp-triggered-write": ["CWE-862"]
   }
 }

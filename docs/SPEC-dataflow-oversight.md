@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 -->
+<!-- verified-against: 2026-11-15 -->
 # SPEC — dataflow oversight (`flow/`)
 
 `flow/` answers two questions about this repository: **which artifacts does nothing read, and
@@ -18,11 +18,13 @@ that invariant, applied to itself.
 
 ```jsonc
 // node
-{ "v": 1, "id": "node:<kind>:<path-or-key>", "kind": "module|artifact|store|env|process",
+{ "v": 1, "id": "node:<kind>:<path-or-key>",
+  "kind": "module|artifact|store|env|process|endpoint|database|scheduler",
   "path": "bin/audit.mjs", "lastWriteAt": "..."|null }
 
 // edge
-{ "v": 1, "from": "node:...", "to": "node:...", "kind": "reads|writes|spawns|touches",
+{ "v": 1, "from": "node:...", "to": "node:...",
+  "kind": "reads|writes|spawns|touches|connects|listens|triggers",
   "witness": "static|runtime|both",              // PROVENANCE — who saw it
   "existence": "confirmed|contradicted|unknown", // VERDICT — how sure we are it is real
   "runtimeCoverage": "visited|unvisited",

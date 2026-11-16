@@ -4,38 +4,548 @@
   "title": "dfd@1 — a source-independent data flow diagram model (lib/dfd.mjs)",
   "description": "Three element kinds (process, store, external) and flows between them. A broker or queue is a store with subtype broker|queue|topic|stream|log. Referential integrity (unique ids, flow endpoints, declared layers and groups, which kind takes which subtype, v as the first field) is checked in code by validateDfd, not here. Every field added after the first release is optional, so a document written before it stays valid.",
   "type": "object",
-  "required": ["v", "kind", "nodes", "flows"],
+  "required": [
+    "v",
+    "kind",
+    "nodes",
+    "flows"
+  ],
   "additionalProperties": false,
   "properties": {
-    "$comment": { "type": "string" },
-    "v": { "const": 1 },
-    "kind": { "const": "dfd" },
-    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "$comment": {
+      "type": "string"
+    },
+    "v": {
+      "const": 1
+    },
+    "kind": {
+      "const": "dfd"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
     "source": {
       "type": "object",
-      "required": ["producer"],
+      "required": [
+        "producer"
+      ],
       "additionalProperties": false,
       "properties": {
-        "producer": { "type": "string", "minLength": 1 },
-        "note": { "type": "string" },
-        "graph": { "type": "object" },
-        "options": { "type": "object" },
-        "omitted": { "type": "object" },
-        "filter": { "type": "object" },
-        "unknown": { "type": "object", "description": "What the producer could not read, counted: files by state and by name, languages it does not read, call sites whose target it could not name. Unknown is never clean." }
+        "producer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string"
+        },
+        "graph": {
+          "type": "object"
+        },
+        "options": {
+          "type": "object"
+        },
+        "omitted": {
+          "type": "object"
+        },
+        "filter": {
+          "type": "object"
+        },
+        "unknown": {
+          "type": "object",
+          "description": "What the producer could not read, counted: files by state and by name, languages it does not read, call sites whose target it could not name. Unknown is never clean."
+        }
       }
     },
-    "layers": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "findings": {
+      "type": "array",
+      "description": "An optional overlay: security findings anchored to a node or a flow, drawn as a badge over the data flow. `status` is the live/mitigated/undetermined dimension — where a CWE is still live, where it has been remediated, where reach is unproven. Unique ids and that each anchor names an existing node or flow are checked in validateDfd, not here.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cwe": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low",
+              "undetermined"
+            ]
+          },
+          "status": {
+            "enum": [
+              "live",
+              "mitigated",
+              "dismissed",
+              "undetermined"
+            ]
+          },
+          "note": {
+            "type": "string"
+          },
+          "pr": {
+            "description": "The id of the pull request (prs[].id) whose change ruled on this issue: before that step of playback the issue is as the scanner left it.",
+            "type": "string",
+            "minLength": 1
+          },
+          "dataClass": {
+            "description": "The class of the value that flows to the place named: what a log line or a hash of it would expose.",
+            "enum": [
+              "secret",
+              "identifier",
+              "public",
+              "untrusted-input",
+              "configuration"
+            ]
+          },
+          "controls": {
+            "description": "The protections that stand between a source and this issue's sink, each on one axis: source (validation where the value enters), flow (the value is constant, typed or transformed so the dangerous form cannot arise), sink (encoding, escaping or parameterisation at the place of use), transport (the channel is authenticated), privilege (who is allowed to reach it), containment (a sandbox, no shell, or another limit on what the sink can do). `test` names the test that fails without the control; a control with no test is a claim.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "axis",
+                "what"
+              ],
+              "properties": {
+                "axis": {
+                  "enum": [
+                    "source",
+                    "flow",
+                    "sink",
+                    "transport",
+                    "privilege",
+                    "containment"
+                  ]
+                },
+                "what": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "where": {
+                  "type": "string"
+                },
+                "test": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "source": {
+            "description": "Where a scanner reported it, kept so the issue can be handed on whole: the tool, its rule, the place, its message and, for a traced result, the steps from source to sink. A scanner's claim as it made it, not a verdict.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "rule",
+              "file"
+            ],
+            "properties": {
+              "tool": {
+                "type": "string"
+              },
+              "rule": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "message": {
+                "type": "string"
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "file",
+                    "line"
+                  ],
+                  "properties": {
+                    "file": {
+                      "type": "string"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "expr": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "at": {
+            "type": "object",
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "required": [
+                  "node"
+                ]
+              },
+              {
+                "required": [
+                  "flow"
+                ]
+              }
+            ],
+            "properties": {
+              "node": {
+                "type": "string",
+                "minLength": 1
+              },
+              "flow": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "to": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "prs": {
+      "description": "The pull requests (or proposed changes not yet opened as one) that playback steps through, in order. An issue or a patch names the one that carries it by `pr`. `files` are the paths it changes, so a step can show what it touched even where it closed nothing.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plain": {
+            "description": "What a reader who does not know the code would call this, in a few words. The story view shows it in place of the label or title.",
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "proposed",
+              "draft",
+              "open",
+              "merged",
+              "closed"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "commits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "patches": {
+      "type": "array",
+      "description": "An optional overlay: each patch is a change to the graph. It may name the flow it guards (where the check was added; a rescan knows what closed, not where the check sits, so it names none), closes flows (they no longer carry the defect) and may add reject flows, which exist only once it is applied. A flow named by several patches is closed only when all of them are applied. Flows are named by their from/to pair, as finding anchors are. Unique ids and that every pair names a flow the document carries are checked in validateDfd, not here.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "closes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plain": {
+            "description": "What a reader who does not know the code would call this, in a few words. The story view shows it in place of the label or title.",
+            "type": "string",
+            "minLength": 1
+          },
+          "caveat": {
+            "description": "What this patch leaves unsettled, in plain words. The story view shows it beside the fix, so a fixed mark never hides it.",
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "pr": {
+            "description": "The id of the pull request (prs[].id) that carries this patch.",
+            "type": "string",
+            "minLength": 1
+          },
+          "guard": {
+            "type": "object",
+            "required": [
+              "from",
+              "to"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "closes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "from",
+                "to"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "rejects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "from",
+                "to"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "applied": {
+            "description": "Absent is applied.",
+            "type": "boolean"
+          },
+          "commits": {
+            "description": "The commits that make up this patch, as full or abbreviated shas. On a timeline the patch is in force from the last of them; a patch with none, or with one the timeline does not hold, is reported unplaced and never applied by guesswork.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 7
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "required": [
+              "level"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "level": {
+                "description": "tested proves the cut; inspected, rescanned (a scanner no longer reports the flow) and asserted do not.",
+                "enum": [
+                  "tested",
+                  "inspected",
+                  "rescanned",
+                  "asserted"
+                ]
+              },
+              "control": {
+                "description": "The negative control behind a tested patch: a test that fails without the patch and passes with it. Only both together show the test is about the patch; a test that passes either way proves nothing about the cut. Absent is not established.",
+                "type": "object",
+                "required": [
+                  "failsWithout",
+                  "passesWith"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "description": "When the failure shows. test (the default): a test the suite runs. static-assert: a compile-time assertion, so the baseline does not build. dynamic-assert: an assertion in the shipped code that trips at run time on the bad input. A compile-time control alone says nothing about run time and does not prove a cut.",
+                    "enum": [
+                      "test",
+                      "static-assert",
+                      "dynamic-assert"
+                    ]
+                  },
+                  "failsWithout": {
+                    "type": "boolean"
+                  },
+                  "passesWith": {
+                    "type": "boolean"
+                  },
+                  "test": {
+                    "type": "string"
+                  },
+                  "ref": {
+                    "type": "string"
+                  }
+                }
+              },
+              "controls": {
+                "description": "Further controls beside `control`, for belt and braces: a patch whose cut is shown by two kinds that both hold, one of them at run time (a test and a static assertion, a test and a run-time assertion), is proven twice over. Same shape as `control`.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "failsWithout",
+                    "passesWith"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "description": "When the failure shows. test (the default): a test the suite runs. static-assert: a compile-time assertion, so the baseline does not build. dynamic-assert: an assertion in the shipped code that trips at run time on the bad input. A compile-time control alone says nothing about run time and does not prove a cut.",
+                      "enum": [
+                        "test",
+                        "static-assert",
+                        "dynamic-assert"
+                      ]
+                    },
+                    "failsWithout": {
+                      "type": "boolean"
+                    },
+                    "passesWith": {
+                      "type": "boolean"
+                    },
+                    "test": {
+                      "type": "string"
+                    },
+                    "ref": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "groups": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "boundary"],
+        "required": [
+          "id",
+          "boundary"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "label": { "type": "string", "minLength": 1 },
-          "boundary": { "enum": ["trust", "system"] }
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plain": {
+            "description": "What a reader who does not know the code would call this, in a few words. The story view shows it in place of the label or title.",
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parent": {
+            "description": "The group this one sits inside. A group with no parent is a top-level boundary. That the parent is declared, and that no group is its own ancestor, are checked in validateDfd.",
+            "type": "string",
+            "minLength": 1
+          },
+          "boundary": {
+            "enum": [
+              "trust",
+              "system"
+            ]
+          }
         }
       }
     },
@@ -44,20 +554,124 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "kind", "label"],
+        "required": [
+          "id",
+          "kind",
+          "label"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "kind": { "enum": ["process", "store", "external"] },
-          "label": { "type": "string", "minLength": 1 },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plain": {
+            "description": "What a reader who does not know the code would call this, in a few words. The story view shows it in place of the label or title.",
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "process",
+              "store",
+              "external"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
           "subtype": {
             "description": "store: broker|queue|topic|stream|log (a broker: data waits in it between writer and reader) or database|file. external: endpoint (a network peer or a listening port), scheduler (launchd, a workflow schedule, cron, a timer, a watcher), actor (a person or an attacker), system (another program), env (configuration from outside), binary (an executable spawned by name). A process takes none. Which kind takes which is checked in validateDfd.",
-            "enum": ["broker", "queue", "topic", "stream", "log", "database", "file", "endpoint", "scheduler", "actor", "system", "env", "binary"]
+            "enum": [
+              "broker",
+              "queue",
+              "topic",
+              "stream",
+              "log",
+              "database",
+              "file",
+              "endpoint",
+              "scheduler",
+              "actor",
+              "system",
+              "env",
+              "binary"
+            ]
           },
-          "group": { "type": "string", "minLength": 1 },
-          "layer": { "type": "string", "minLength": 1 },
-          "unknown": { "type": "boolean" },
-          "note": { "type": "string" }
+          "group": {
+            "type": "string",
+            "minLength": 1
+          },
+          "layer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unknown": {
+            "type": "boolean"
+          },
+          "coverage": {
+            "description": "What a test run measured of this element's code. Absent is NOT MEASURED, which is not zero: an element nobody measured is unknown, and one measured at 0 of n lines is known to be untested. That covered does not exceed total is checked in validateDfd.",
+            "type": "object",
+            "required": [
+              "lines"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "lines": {
+                "type": "object",
+                "required": [
+                  "covered",
+                  "total"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "covered": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "branches": {
+                "type": "object",
+                "required": [
+                  "covered",
+                  "total"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "covered": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "source": {
+                "description": "Where the figures came from: a coverage report, a run id.",
+                "type": "string"
+              }
+            }
+          },
+          "impact": {
+            "description": "This element is where a path ends in harm (code execution, a corrupted store, an abort). threatPaths walks from every source to every element that carries one.",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
         }
       }
     },
@@ -65,34 +679,171 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["from", "to", "mode"],
+        "required": [
+          "from",
+          "to",
+          "mode"
+        ],
         "additionalProperties": false,
         "properties": {
-          "from": { "type": "string", "minLength": 1 },
-          "to": { "type": "string", "minLength": 1 },
-          "label": { "type": "string" },
-          "mode": { "enum": ["sync", "async", "event"] },
-          "directed": { "type": "boolean" },
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "sync",
+              "async",
+              "event"
+            ]
+          },
+          "directed": {
+            "type": "boolean"
+          },
           "role": {
             "description": "What the flow carries. Absent is data. feedback, error and retry are return paths: analysis classes them as feedback even when the opposite flow is adjacent, and only data flows collapse into a two-way pair.",
-            "enum": ["data", "feedback", "error", "retry"]
+            "enum": [
+              "data",
+              "feedback",
+              "error",
+              "retry"
+            ]
+          },
+          "coverage": {
+            "description": "Whether a test run exercised this flow. Absent is not measured; exercised false is measured and never exercised. An exercised flow says a test drove data along it, not that the test checked anything about it.",
+            "type": "object",
+            "required": [
+              "exercised"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "exercised": {
+                "type": "boolean"
+              },
+              "tests": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "witness": {
+                "type": "string"
+              }
+            }
+          },
+          "gate": {
+            "description": "A verdict on this step that no patch produced: safe (evaluated, not exploitable) or unevaluated (nobody has measured it). Absent is open. A step a patch closes is named in patches[].closes instead.",
+            "type": "object",
+            "required": [
+              "state"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "enum": [
+                  "safe",
+                  "unevaluated"
+                ]
+              },
+              "finding": {
+                "type": "string",
+                "minLength": 1
+              },
+              "commit": {
+                "description": "The revision this verdict was measured against. On a timeline the verdict counts from that commit; before it the step is unevaluated.",
+                "type": "string",
+                "minLength": 7
+              },
+              "evidence": {
+                "type": "object",
+                "required": [
+                  "level"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "level": {
+                    "description": "runtime proves it; static (reverse engineering, a trace) and asserted do not.",
+                    "enum": [
+                      "runtime",
+                      "static",
+                      "asserted"
+                    ]
+                  },
+                  "witness": {
+                    "type": "string"
+                  },
+                  "refs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
           },
           "existence": {
             "description": "The producer's verdict on whether the flow is real: confirmed only when a second witness (the runtime, for the flow-graph adapter) agreed. Distinct from evidence.existence, which is the source edge's own value carried unchanged.",
-            "enum": ["confirmed", "unknown"]
+            "enum": [
+              "confirmed",
+              "unknown"
+            ]
           },
           "direction": {
             "description": "On a flow made from an undirected touch, what the runtime saw the module do: reads (the flow runs into the module), writes (out of it) or both (two flows, one each way). Present only when the runtime resolved it; such a flow is directed.",
-            "enum": ["reads", "writes", "both"]
+            "enum": [
+              "reads",
+              "writes",
+              "both"
+            ]
           },
           "evidence": {
             "type": "object",
-            "required": ["existence"],
+            "required": [
+              "existence"
+            ],
             "additionalProperties": false,
             "properties": {
-              "witness": { "enum": ["static", "runtime", "both", "authored"] },
-              "existence": { "enum": ["confirmed", "contradicted", "unknown"] },
-              "refs": { "type": "array", "items": { "type": "string" } }
+              "witness": {
+                "enum": [
+                  "static",
+                  "runtime",
+                  "both",
+                  "authored"
+                ]
+              },
+              "method": {
+                "description": "How a static flow was found. taint: a value was traced from a source to a sink (CodeQL, Joern). site: a call site names what a module reads, writes or spawns, which says the module touches it and not that any particular input reaches it. pattern: a scanner rule matched the code at this place and traced no value (a regular expression, a TLS option, an escape); it says what is weak and where, and nothing about which input reaches it. A path search that asks what an attacker can reach runs over taint flows only.",
+                "enum": [
+                  "taint",
+                  "site",
+                  "pattern"
+                ]
+              },
+              "existence": {
+                "enum": [
+                  "confirmed",
+                  "contradicted",
+                  "unknown"
+                ]
+              },
+              "refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
             }
           }
         }

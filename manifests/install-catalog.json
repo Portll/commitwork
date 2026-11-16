@@ -498,6 +498,19 @@
       "postInstall": "lands at ~/.composer/vendor/pheromone/phpcs-security-audit/Security, which is the path the lane defaults to (override with CW_PHPCS_SECURITY_STANDARD).",
       "requiredBy": "phpcs"
     },
+    "php": {
+      "why": "PHP CLI that runs the wp-authz fact extractor (bin/lib/wp-authz-facts.php), which parses the scanned tree with nikic/php-parser 5 and never includes or executes it",
+      "brew": "php",
+      "winget": null,
+      "scoop": "php",
+      "apt": "php-cli",
+      "dnf": "php-cli",
+      "url": "https://www.php.net/downloads.php",
+      "postInstall": [
+        ["composer", "global", "require", "nikic/php-parser:^5"],
+        "wp-authz loads nikic/php-parser 5 from ~/.composer/vendor/nikic/php-parser, then ~/.config/composer/vendor/nikic/php-parser (override with CW_PHP_PARSER_DIR). Without it the lane exits 127 and the tree is unscanned. The require needs composer on PATH."
+      ]
+    },
     "overwatch-layer-spine": {
       "why": "The spine: the task ledger agent sessions file into, read by the panel Overwatch tab. NOT a scanner and NOT a binary on PATH — four hand-set pieces outside this repo, each checked read-only by admin/lib/spine-preconditions.mjs under the same ids as `steps`. DECLARATION ONLY: the panel shows which step is absent or misregistered and a human runs it; nothing in commitwork writes to ~/.claude.json or settings.json. The component is not published, so there is no url to fall back to and `steps` is the whole instruction. The registration MUST go in ~/.claude.json via `claude mcp add` — an mcpServers block in ~/.claude/settings.json is a key Claude Code never reads and was the first, silent, failure.",
       "manual": true,

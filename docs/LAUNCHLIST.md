@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 -->
+<!-- verified-against: 2026-11-15 -->
 # launchlist
 
 A launch checklist that runs against any repository in the fleet. It covers three situations:

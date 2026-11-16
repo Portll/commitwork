@@ -3,8 +3,8 @@
 // env, read at call time: CW_DEPS_LOCKFILE (lockfile path), CW_DEPS_INSTALL_SCRIPTS=1 (audit-list benign hooks)
 // exit: 0 ran (an absent lockfile is a declared void, filesScanned 0) · 2 could not run (unparseable or v1 lockfile)
 // output: {tool, summary:{findings, byRule, filesScanned, packagesChecked, lockfile, ...void flags}, findings:[{rule, path, sev, cwe, detail}]}
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { readFileSync, realpathSync } from 'node:fs';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { isMainModule } from '../lib/is-main.mjs';
 
 export const RULE_CWE = Object.freeze({
@@ -29,6 +29,15 @@ function readJSON(p) {
   let raw;
   try { raw = readFileSync(p, 'utf8'); } catch (e) { return { err: e }; }
   try { return { value: JSON.parse(raw) }; } catch (e) { return { err: e }; }
+}
+
+function hasParentSegment(key) {
+  return key.split(/[\\/]/).some((segment) => segment === '..');
+}
+
+function isInside(realRoot, realDir) {
+  const rel = relative(realRoot, realDir);
+  return rel !== '' && rel.split(/[\\/]/)[0] !== '..' && !isAbsolute(rel);
 }
 
 export function scan(rootDir, env = process.env) {
@@ -59,6 +68,9 @@ export function scan(rootDir, env = process.env) {
   const findings = [];
   const add = (rule, path, detail) => findings.push({ rule, path, sev: RULE_SEV[rule], cwe: RULE_CWE[rule], detail });
   let packagesChecked = 0;
+  const skipped = [];
+  let realRoot;
+  const getRealRoot = () => (realRoot ??= realpathSync(root));
   for (const [key, entry] of Object.entries(packages)) {
     if (!key.startsWith('node_modules/') || !entry || typeof entry !== 'object') continue;
     packagesChecked++;
@@ -69,8 +81,28 @@ export function scan(rootDir, env = process.env) {
 
     let pkg = null;
     if (locked || entry.hasInstallScript) {
-      const r = readJSON(join(root, key, 'package.json'));
-      pkg = r.value && typeof r.value === 'object' ? r.value : null;
+      // Lockfile keys are untrusted input, so confine the package.json read to the scanned root.
+      let file = null;
+      let why = null;
+      if (hasParentSegment(key)) {
+        why = 'key has a .. segment';
+      } else {
+        file = resolve(root, key, 'package.json');
+        let realDir;
+        try {
+          realDir = realpathSync(resolve(root, key));
+        } catch (e) {
+          file = null;
+          if (e.code !== 'ENOENT') why = `could not resolve (${e.code})`;
+        }
+        if (realDir && !isInside(getRealRoot(), realDir)) why = 'resolves outside the scanned root through a link';
+      }
+      if (why) {
+        skipped.push({ key, why });
+      } else if (file) {
+        const r = readJSON(file);
+        pkg = r.value && typeof r.value === 'object' ? r.value : null;
+      }
     }
     if (locked && pkg && pkg.version && pkg.version !== locked) add('dep-version-drift', key, `installed ${pkg.version} ≠ locked ${locked}`);
 
@@ -87,6 +119,7 @@ export function scan(rootDir, env = process.env) {
   const byRule = {};
   for (const f of findings) byRule[f.rule] = (byRule[f.rule] || 0) + 1;
   base.summary = { findings: findings.length, byRule, filesScanned: packagesChecked + 1, packagesChecked, lockfile: rel };
+  if (skipped.length) base.summary.skippedOutsideRoot = skipped.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
   base.findings = findings;
   return { report: base, exit: 0 };
 }

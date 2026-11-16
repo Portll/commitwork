@@ -16,6 +16,20 @@ use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 
+// The Homebrew psalm phar scopes php-parser under `PsalmPhar\`; composer's psalm does not.
+foreach ([
+    'PhpParser\Node\Expr',
+    'PhpParser\Node\Expr\BinaryOp\Concat',
+    'PhpParser\Node\Expr\Variable',
+    'PhpParser\Node\InterpolatedStringPart',
+    'PhpParser\Node\Scalar\InterpolatedString',
+    'PhpParser\Node\Scalar\String_',
+] as $phpParserClass) {
+    if (!class_exists($phpParserClass, false) && class_exists('PsalmPhar\\' . $phpParserClass)) {
+        class_alias('PsalmPhar\\' . $phpParserClass, $phpParserClass);
+    }
+}
+
 final class WordPressTaintPlugin implements AddTaintsInterface, RemoveTaintsInterface
 {
     public const KINDS = ['wp_option_key', 'wp_redirect'];

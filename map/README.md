@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-07 -->
+<!-- verified-against: 2026-11-15 -->
 # commitwork · modernization map engine
 
 A **generic, project-agnostic** renderer for the "trainline" modernization map, hosted inside

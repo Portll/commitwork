@@ -109,17 +109,20 @@ export const routes = [
       // back to the fleet is how the original defect reads to anyone who does not check.
       const scopeProject = new URL(req.url, 'http://127.0.0.1').searchParams.get('project') || '';
       const scopeArea = scopeProject ? (projectSlug(scopeProject) || String(scopeProject)) : null;
-      const inScope = (r) => !scopeArea || r.area === scopeArea;
+      // Unmapped rows (no area declares their hostname) stay in EVERY view: something routed through
+      // the tunnel that nothing declares is a security signal, and hiding it under a project scope
+      // would manufacture a clean result. Only other areas' rows are excluded.
+      const inScope = (r) => !scopeArea || !r.area || r.area === scopeArea;
       const scopedRows = rows.filter(inScope);
-      // What the scope is HIDING, so a narrowed view can never read as a complete one. Undeclared
-      // hostnames are called out separately: they belong to no project, so no project scope will
-      // ever show them, and they are exactly the rows most worth noticing.
+      // What the scope is HIDING, so a narrowed view can never read as a complete one. Unmapped
+      // hostnames are never hidden; they are reported as SHOWN instead. They are declared by no
+      // project, which is exactly why they appear in every project view and are worth noticing.
       const hidden = rows.filter((r) => !inScope(r));
       const scopeInfo = {
         project: scopeProject || null,
         area: scopeArea,
         hidden: hidden.length,
-        hiddenUndeclared: hidden.filter((r) => !r.area).length,
+        shownUndeclared: scopeArea ? scopedRows.filter((r) => !r.area).length : 0,
         hiddenDrifted: hidden.filter((r) => r.state !== 'ok' && r.state !== 'withheld (correct)').length,
       };
 

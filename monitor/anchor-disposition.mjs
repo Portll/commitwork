@@ -26,6 +26,45 @@ export const DISPOSITIONS = Object.freeze(['remediated', 'still-present', 'moot'
 // absent or wrong BEHAVIOUR, which no signal at the old line can decide.
 export const PROBEABLE_KINDS = Object.freeze(['hardcoded', 'dead', 'stub']);
 
+// ── the join ─────────────────────────────────────────────────────────────────────────────────
+// Staleness rows say what drifted; queue rows say what kind of finding sits at that anchor. Neither
+// carries both, so a probe tier needs this join on the anchor key before it can gate on kind.
+
+/**
+ * Staleness rows annotated with the queue's kind, matched on the exact `anchor` string.
+ *
+ * `kind: null` means the kind is UNKNOWN — the join found nothing or the queue disagreed — not that
+ * the finding is not probeable. `counts.unjoined === counts.total` is what tells the two apart.
+ */
+export function joinKinds(staleRows, queueRows) {
+  if (!Array.isArray(staleRows)) throw new TypeError(`joinKinds: staleRows must be an array, got ${typeof staleRows}`);
+  if (!Array.isArray(queueRows)) throw new TypeError(`joinKinds: queueRows must be an array, got ${typeof queueRows}`);
+
+  const kindsByAnchor = new Map();
+  for (const q of queueRows) {
+    if (typeof q?.anchor !== 'string') continue;
+    const kinds = kindsByAnchor.get(q.anchor) ?? new Set();
+    if (typeof q.kind === 'string') kinds.add(q.kind);
+    kindsByAnchor.set(q.anchor, kinds);
+  }
+
+  const rows = staleRows.map((row) => {
+    if (typeof row.kind === 'string') return { ...row, kindSource: 'row' };
+    const kinds = typeof row.anchor === 'string' ? kindsByAnchor.get(row.anchor) : undefined;
+    if (!kinds || kinds.size === 0) return { ...row, kind: null, kindSource: 'none' };
+    if (kinds.size === 1) return { ...row, kind: [...kinds][0], kindSource: 'queue' };
+    return { ...row, kind: null, kindSource: 'ambiguous' };
+  });
+
+  const counts = { total: rows.length, joined: 0, unjoined: 0, ambiguous: 0, probeable: 0 };
+  for (const row of rows) {
+    if (row.kind === null) counts.unjoined += 1; else counts.joined += 1;
+    if (row.kindSource === 'ambiguous') counts.ambiguous += 1;
+    if (PROBEABLE_KINDS.includes(row.kind)) counts.probeable += 1;
+  }
+  return { rows, counts };
+}
+
 export const dispositionsPath = () =>
   process.env.CW_ANCHOR_DISPOSITIONS || join(auditDirFor(CW), 'dispositions.json');
 

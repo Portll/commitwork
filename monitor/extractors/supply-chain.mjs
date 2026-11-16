@@ -342,6 +342,9 @@ export function _depscanCounts(dir, file) {
         // The word is chosen deliberately: `exploitable` is dep-scan's only adjudication, and
         // everything else — in_triage included — is `unadjudicated`, never `unreachable`.
         reachability: state === 'exploitable' ? 'exploitable' : 'unadjudicated',
+        // WHOSE proof and WHAT KIND, as on govulncheck rows: an atom static slice, not the Go call graph.
+        prover: 'atom',
+        proofKind: state === 'exploitable' ? 'static-slice' : 'none',
         insight: ((v.properties || []).find((x) => x.name === 'depscan:insights') || {}).value || '',
       });
     }

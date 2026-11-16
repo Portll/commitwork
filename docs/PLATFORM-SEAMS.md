@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-18 -->
+<!-- verified-against: 2026-11-15 -->
 # macOS-only seams
 
 Every place tracked source depends on macOS, grouped by seam class, with the portable path that
@@ -87,12 +87,12 @@ an amd64 runner when its inputs change; its three runs so far, all on 2026-10-08
 | `monitor/credential-scope.mjs` | Parses `security dump-keychain` to inventory stored items | Returns `null` off darwin (unknown, not empty); `CW_CRED_DUMP` supplies a fixture |
 | `monitor/images.mjs` | Names `docker-credential-osxkeychain` in a fix hint | Portable already: the hint is chosen per platform, with a Linux line for `secretservice`/`pass` |
 | `monitor/journey.mjs` | Names `keychain:<service>/<account>` as the example reference in the optional credentials step's CLI hint | Portable already: the step is optional and `lib/secrets.mjs` also resolves `file:` references; only the example text names the keychain |
-| `lib/update/token.mjs` | Stores, reads and deletes the update token as the Keychain item `PORTLL_UPDATE_TOKEN` (`security -i` on stdin, `find-generic-password`, `delete-generic-password`) | Portable already: off darwin the token is a 0600 `update-token` file in commitwork's config directory, and `PORTLL_UPDATE_TOKEN` in the environment or `gh auth token` are read first on every platform |
+| `lib/update/token.mjs` | Stores, reads and deletes the update token as the Keychain item `PORTLL_UPDATE_TOKEN` (`security -i` on stdin, `find-generic-password`, `delete-generic-password`) | Portable already: off darwin the token is a 0600 `update-token` file in commitwork's config directory, and `GITHUB_TOKEN` in the environment or `gh auth token` are read first on every platform |
 
 ## zsh
 
-No tracked script needs zsh. Of the 21 tracked `.sh` files, 20 start `#!/usr/bin/env bash` (13),
-`#!/bin/bash` (2) or `#!/bin/sh` (5), and `bin/lib/docker-config.sh` is sourced and declares
+No tracked script needs zsh. Of the 23 tracked `.sh` files, 22 start `#!/usr/bin/env bash` (14),
+`#!/bin/bash` (3) or `#!/bin/sh` (5), and `bin/lib/docker-config.sh` is sourced and declares
 `shell=bash`. Two files are counted. `monitor/persistence-diff.mjs` watches `.zshrc` and
 `.zprofile` as persistence surfaces beside `.bashrc` and `.profile`, and
 `bin/hooks/guard-destructive.mjs` names `.zshrc` in the pattern that refuses an attempt to switch the

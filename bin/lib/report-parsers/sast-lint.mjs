@@ -31,16 +31,24 @@ export function parseRuleCounts(path) {
   const top = Object.entries(byRule).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 3).map(([k, v]) => `${k}×${v}`);
   // fact: sev stays inside SEVERITY, crit folding into high and low or unrated into med as parseBearer folds them / an unfolded `low` row renders 🟢 in index.md and ranks 0 in the worst-of, and `crit` falls through the same two maps (expiry: never, prev: wrong)
   const enforcement = enforcementNote(j.summary);
-  const result = { ok: true, total, sev: !total ? 'ok' : worst >= 3 ? 'high' : 'med',
+  const und = undeterminedCount(j.summary);
+  // rows kept without a severity never move sev, and "0 findings" beside them is not the same claim as a bare 0
+  const undNote = und ? `; ${und} undetermined, no severity` : '';
+  const result = { ok: true, total, sev: !total ? 'ok' : worst >= 3 ? 'high' : 'med', ...(und ? { undetermined: und } : {}),
     summary: (total
       ? `${total} finding${total === 1 ? '' : 's'} across ${scanned} files, worst ${label[worst] || 'unrated'}${top.length ? ` — ${top.join(' ')}` : ''}`
-      : `0 (${scanned} files)`) + enforcement };
+      : `0 (${scanned} files)`) + undNote + enforcement };
   // a partial read states what it could not read; zero findings beside that is a void, not a clean result
   if (j.summary.partial !== true) return result;
   const reasons = Array.isArray(j.summary.partialReasons) ? j.summary.partialReasons.map(String).join(', ') : '';
   const why = `partial read${reasons ? ` (${reasons.slice(0, 120)})` : ''}`;
-  if (!total) return { ok: false, sev: 'noscan', partial: true, total: 0, summary: `${j.tool} found nothing in ${scanned} files, but read only part of its input: ${why}${enforcement}` };
+  if (!total) return { ok: false, sev: 'noscan', partial: true, total: 0, ...(und ? { undetermined: und } : {}), summary: `${j.tool} found nothing in ${scanned} files, but read only part of its input: ${why}${undNote}${enforcement}` };
   return { ...result, partial: true, summary: `${result.summary}; ${why}` };
+}
+
+function undeterminedCount(s) {
+  const v = s.undetermined && typeof s.undetermined === 'object' ? s.undetermined.count : s.undetermined;
+  return Number.isInteger(v) && v > 0 ? v : 0;
 }
 
 // agent-config's permission effects ride beside the result and never move ok or sev

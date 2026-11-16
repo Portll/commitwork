@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-359 commands: 162 declared, 12 prose, 185 undeclared. Of the declared, 129 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 33 declare a code of 20 or above.
+361 commands: 164 declared, 12 prose, 185 undeclared. Of the declared, 130 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -54,7 +54,7 @@ Declared in `flow/dfd-cli.mjs` (`runDfd`).
 | 0 | written |
 | 2 | usage |
 | 20 | the document is not a valid dfd@1 |
-| 21 | an input is absent, unreadable or not a flow graph, --repo is not a git checkout, or --codeql is neither SARIF nor dataflow records |
+| 21 | an input is absent, unreadable or not a flow graph, --repo is not a git checkout, --codeql is neither SARIF nor dataflow records, or --coverage is unreadable or holds no lcov record |
 | 22 | the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw |
 
 Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`, `update`, `version`, `help`.
@@ -1000,6 +1000,26 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `doctor`, `hook`
 |---:|---|
 | 0 | ran |
 | 2 | could not run |
+
+### `bin/wp-authz.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | ran, or wrote a void or not-applicable report saying why it measured nothing |
+| 127 | php or nikic/php-parser 5 is absent, so the tree is UNSCANNED (stderr says so; no report) |
+| 2 | the root is unreadable or the analyser failed (no report: a crash is never an empty result) |
+
+### `bin/wp-dynamic-witness.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | every trial measured (findings or no-confirmed-change) |
+| 1 | crashed (uncaught exception) |
+| 2 | usage |
+| 3 | noscan, no consent |
+| 4 | could-not-install |
+| 5 | error |
+| 6 | undetermined (unattributed changes or failed snapshots) |
 
 ### `bin/wp-integrity.mjs`
 

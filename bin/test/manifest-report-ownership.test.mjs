@@ -51,6 +51,18 @@ const writesOf = (check) => {
   return text;
 };
 
+// on a name boundary, so wp-authz.json is not a write of authz.json
+const namesFile = (text, file) => new RegExp(`(?<![\\w.-])${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(text);
+
+test('a filename is matched whole, never as the tail of a longer name', () => {
+  assert.equal(namesFile('> "$CW_REPORT_DIR/authz.json"', 'authz.json'), true);
+  assert.equal(namesFile("join(dir, 'authz.json')", 'authz.json'), true);
+  assert.equal(namesFile('authz.json', 'authz.json'), true);
+  assert.equal(namesFile('> "$CW_REPORT_DIR/wp-authz.json"', 'authz.json'), false);
+  assert.equal(namesFile('> "$CW_REPORT_DIR/my.authz.json"', 'authz.json'), false);
+  assert.equal(namesFile('> "$CW_REPORT_DIR/authzXjson"', 'authz.json'), false);
+});
+
 // Known deliberate shared writes, recorded so the pin catches the NEXT one.
 const ALLOWED_SHARED = {
   'security-baseline.json:semgrep.sarif': {
@@ -82,7 +94,7 @@ describe('manifest report files have exactly one writer', () => {
     test(`${name}: no check scores off another check's artifact`, () => {
       for (const target of doc.checks.filter((c) => c.report?.file)) {
         const file = target.report.file;
-        const others = doc.checks.filter((c) => c.id !== target.id && writesOf(c).includes(file));
+        const others = doc.checks.filter((c) => c.id !== target.id && namesFile(writesOf(c), file));
         if (!others.length) continue;
 
         const passthrough = PASSTHROUGH_FORMATS.has(target.report.format);

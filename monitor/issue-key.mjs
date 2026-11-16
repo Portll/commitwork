@@ -153,6 +153,7 @@ export const CLASS_FOR_CATEGORY = Object.freeze({
   wpIntegrity: 'S',
   // A published advisory against the installed component, the depsJvm/vendorAssets case for WordPress.
   wpAdvisories: 'S',
+  wpAuthz: 'S',
   // The CI configuration is the surface that runs holding repository credentials — the same
   // reason actionsPosture is 'S'.
   actionsGaps: 'S',

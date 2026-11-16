@@ -2,7 +2,7 @@
 
 import { spawn } from 'node:child_process';
 import { splitThinking } from '../../lib/llm-reply.mjs';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, isAbsolute, basename } from 'node:path';
 import { projectSlug } from '../../monitor/project-scope.mjs';
 import { SCANNER_CHECKS, canonicalCheck, checkForScanner } from '../../monitor/scanner-checks.mjs';
@@ -338,7 +338,7 @@ export async function llmTargets() {
 
 
 // what the prompt needs to act on: repo, artifact, counts — all resolved server-side
-function handoffContext(scope, entry) {
+export function handoffContext(scope, entry) {
   // The read state rides along, so a torn rollup never reaches the agent as "Live counts: none", the
   // same words as a check with no aggregate; an agent told "none" reasons from zero.
   const read = readJSONState(join(scope.dir, 'rollup.json'));
@@ -347,12 +347,17 @@ function handoffContext(scope, entry) {
   const live = (category && rollup.scanners && rollup.scanners[category]) || null;
   const batch = batchDirOf(rollup.source, reportsRootOf(registry()));
   const repos = (Array.isArray(rollup.repos) ? rollup.repos : []).filter((r) => r && typeof r.name === 'string');
-  let artifact = null, repoName = null;
+  let artifact = null, repoName = null, artifactMtime = null, artifactAgeError = null;
   if (batch && entry.report) {
     const withFindings = category ? repos.filter((r) => r.scanners && r.scanners[category] && r.scanners[category].total > 0) : [];
     for (const r of [...withFindings, ...repos]) {
       const p = join(batch, r.name, entry.report);
-      if (existsSync(p)) { artifact = p; repoName = r.name; break; }
+      if (existsSync(p)) {
+        artifact = p; repoName = r.name;
+        try { artifactMtime = statSync(p).mtimeMs; }
+        catch (e) { if (e.code !== 'ENOENT') artifactAgeError = e.code || 'UNKNOWN'; }
+        break;
+      }
     }
   }
   const known = resolvedRepos();
@@ -360,7 +365,7 @@ function handoffContext(scope, entry) {
   let repoPath = repoName ? pathOf(repoName) : null;
   // No artifact names a repo: open in THIS project's first resolvable repo, not in commitwork's checkout.
   if (!repoName) for (const r of repos) { const p = pathOf(r.name); if (p) { repoPath = p; break; } }
-  return { category, live, artifact, repoName, repoPath, generated: rollup.generated || null,
+  return { category, live, artifact, repoName, artifactMtime, artifactAgeError, repoPath, generated: rollup.generated || null,
     rollup: { state: read.state, why: read.state === 'ok' ? null : (read.why || null) } };
 }
 
@@ -396,12 +401,30 @@ function handoffIssuesSection(entry, project) {
   } catch { return ['<!-- issue store unavailable -->']; }
 }
 
-function composeHandoff(entry, ctx, project) {
+const DAY_MS = 86_400_000;
+const STALE_ARTIFACT_WARNING = 'STALE ARTIFACT: re-run the check before triaging; findings below may not describe the current tree.';
+
+function handoffArtifactLines(ctx, nowMs) {
+  if (!ctx.artifact) {
+    return ['Scanner artifact: NOT FOUND on disk for this check — say so in your triage rather than inventing findings.'];
+  }
+  const head = `Scanner artifact: ${ctx.artifact} (repo: ${ctx.repoName})`;
+  if (ctx.artifactMtime == null) {
+    return [`${head}, age UNKNOWN (${ctx.artifactAgeError || 'mtime unreadable'}) - read it before concluding anything.`,
+      STALE_ARTIFACT_WARNING];
+  }
+  const days = Math.max(0, Math.floor((nowMs - ctx.artifactMtime) / DAY_MS));
+  const line = `${head}, written ${new Date(ctx.artifactMtime).toISOString()}, `
+    + `${days} ${days === 1 ? 'day' : 'days'} before this handoff - read it before concluding anything.`;
+  return days >= 7 ? [line, STALE_ARTIFACT_WARNING] : [line];
+}
+
+export function composeHandoff(entry, ctx, project, now) {
+  const nowMs = now instanceof Date ? now.getTime() : Number(now);
   return [`# commitwork triage handoff — ${entry.check}${project ? ` · ${project}` : ''}`,
-    `Generated ${new Date().toISOString()} from the rollup of ${ctx.generated || 'an unknown time'}.`,
+    `Generated ${new Date(nowMs).toISOString()} from the rollup of ${ctx.generated || 'an unknown time'}.`,
     liveCountsLine(ctx),
-    ctx.artifact ? `Scanner artifact: ${ctx.artifact} (repo: ${ctx.repoName}) — read it before concluding anything.`
-      : 'Scanner artifact: NOT FOUND on disk for this check — say so in your triage rather than inventing findings.',
+    ...handoffArtifactLines(ctx, nowMs),
     ctx.repoPath ? `Repository: ${ctx.repoPath}` : 'Repository: NOT RESOLVED on this box — no repository in this project\'s rollup has a path here; locate the code before concluding anything.',
     '', entry.prompt, '',
     ...(entry.formatNotes ? [entry.formatNotes, ''] : []),
@@ -488,7 +511,7 @@ async function launchClaude(scope, entry, ctx) {
   const dir = join(scope.dir, 'handoff');
   mkdirSync(dir, { recursive: true });
   const file = join(dir, `${entry.check}-${Date.now()}.md`);
-  const prompt = composeHandoff(entry, ctx, scope.project);
+  const prompt = composeHandoff(entry, ctx, scope.project, Date.now());
   writeFileSync(file, prompt);
   return launchClaudeSession({ file, cwd: ctx.repoPath || CW, prompt });
 }
@@ -563,7 +586,7 @@ async function runLocalModel(engine, model, entry, ctx, scope) {
   const engineSlug = String(engine).replace(/[^a-z0-9]+/gi, '-');
   const file = join(dir, `${entry.check}-${engineSlug}-${stamp}.md`);
   writeFileSync(file, `# local triage — ${entry.check} · ${engine}:${model}\n\n`
-    + composeHandoff(entry, ctx, project)
+    + composeHandoff(entry, ctx, project, Date.now())
     + (thinking ? '\n---\n\n## Model thinking\n\n' + thinking + '\n' : '')
     + '\n---\n\n## Model reply\n\n' + reply + '\n'
     + (verdictSalvaged ? '\n---\n\n> **Verdict SALVAGED from the reasoning channel** — the model emitted no content; the JSON was recovered from its thinking tail.\n' : '')

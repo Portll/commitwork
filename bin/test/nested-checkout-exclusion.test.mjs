@@ -84,6 +84,7 @@ const HELPER = {
   'yara-witness': ['bin/yara-witness.mjs', LITERAL],
   'tree-integrity': ['bin/tree-integrity.mjs', LITERAL],
   'wp-integrity': ['bin/wp-integrity.mjs', LITERAL],
+  'wp-authz': ['bin/wp-authz.mjs', DOTDIRS],
   'wp-advisories': ['bin/wp-advisories.mjs', [/import \{ skipDirs[^}]*\} from '\.\/wp-integrity\.mjs'/]],
   'stub-detect': ['bin/stub-detect.mjs', [/name === 'worktrees' && /, /'\.git'/]],
   'vendor-scan': ['bin/vendor-scan.mjs', [/e\.name === '\.claude'/, /'\.git'/]],
@@ -101,7 +102,7 @@ const HELPER = {
 };
 
 // The tool skips dot-directories on its own: measured on the synthetic repo, neither copy was read.
-const NATIVE = { 'sast-c-flawfinder': 'flawfinder 2.0.20 skips dot-directories without --followdotdir', 'lint-haskell-hlint': 'hlint 3.10 skips dot-directories' };
+const NATIVE = { 'sast-c-flawfinder': 'flawfinder 2.0.20 skips dot-directories without --followdotdir', 'lint-haskell-hlint': 'hlint 3.10 skips dot-directories', 'wp-dynamic-witness': 'bin/wp-dynamic-witness.mjs walks and copies the plugin skipping every dot-directory' };
 
 // Reads named files at the root, a remote, a live URL or git history — there is no tree walk to bound.
 const NOT_TREE = [

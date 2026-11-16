@@ -1,0 +1,377 @@
+{
+  "v": 1,
+  "kind": "dfd",
+  "title": "Coverage fixture: an archive unpacker",
+  "source": {
+    "producer": "hand-authored fixture (lib/test/fixtures/dfd-coverage.dfd.json)",
+    "note": "A FIXTURE, not real data. It describes no real program, patch, commit or test run. It exists to exercise every coverage state the paths view draws: an element above the floor, below it and unmeasured; a flow exercised, never exercised and unmeasured; a patch that is controlled, tested and asserted."
+  },
+  "findings": [
+    {
+      "id": "T1",
+      "title": "path traversal on extract",
+      "severity": "high",
+      "status": "mitigated",
+      "at": {
+        "node": "P3"
+      }
+    },
+    {
+      "id": "T2",
+      "title": "shell metacharacters in an entry name",
+      "severity": "critical",
+      "status": "mitigated",
+      "at": {
+        "node": "P1"
+      }
+    },
+    {
+      "id": "T3",
+      "title": "header length overflow",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P2"
+      }
+    },
+    {
+      "id": "T4",
+      "title": "vendor decoder reach",
+      "severity": "undetermined",
+      "status": "undetermined",
+      "at": {
+        "node": "E5"
+      }
+    }
+  ],
+  "patches": [
+    {
+      "id": "K1",
+      "title": "Path containment",
+      "findings": [
+        "T1"
+      ],
+      "commits": [
+        "1a2b3c4d5e6f"
+      ],
+      "guard": {
+        "from": "P1",
+        "to": "P3"
+      },
+      "closes": [
+        {
+          "from": "P3",
+          "to": "D1"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P3",
+          "to": "E4"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "control": {
+          "failsWithout": true,
+          "passesWith": true,
+          "test": "test/resolve-path.test.mjs"
+        }
+      },
+      "note": "Resolves every entry against the extraction root and rejects one that leaves it."
+    },
+    {
+      "id": "K2",
+      "title": "Argument array, no shell",
+      "findings": [
+        "T2"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P1"
+      },
+      "closes": [
+        {
+          "from": "P1",
+          "to": "E2"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "control": {
+          "failsWithout": false,
+          "passesWith": true,
+          "test": "test/unpack.test.mjs"
+        }
+      },
+      "note": "Spawns with an argument array. Its test passes with and without the patch, so it proves nothing about the patch."
+    },
+    {
+      "id": "K3",
+      "title": "Header length bound",
+      "findings": [
+        "T3"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P2"
+      },
+      "closes": [
+        {
+          "from": "P2",
+          "to": "E3"
+        }
+      ],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Bounds the declared length by the file size. No test."
+    }
+  ],
+  "groups": [
+    {
+      "id": "g_tool",
+      "label": "g_tool: the unpacker, open source",
+      "boundary": "system"
+    },
+    {
+      "id": "g_parse",
+      "label": "Parsing",
+      "boundary": "system",
+      "parent": "g_tool"
+    },
+    {
+      "id": "g_fs",
+      "label": "Filesystem",
+      "boundary": "system",
+      "parent": "g_tool"
+    },
+    {
+      "id": "g_vendor",
+      "label": "g_vendor: closed-source decoder. No source patch reaches here.",
+      "boundary": "trust"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "E1",
+      "kind": "external",
+      "subtype": "actor",
+      "label": "Uploaded archive"
+    },
+    {
+      "id": "P2",
+      "kind": "process",
+      "label": "readHeader()",
+      "group": "g_parse",
+      "coverage": {
+        "lines": {
+          "covered": 12,
+          "total": 30
+        },
+        "branches": {
+          "covered": 2,
+          "total": 8
+        },
+        "source": "fixture figures, not a real test run"
+      }
+    },
+    {
+      "id": "P1",
+      "kind": "process",
+      "label": "unpack()",
+      "group": "g_parse",
+      "coverage": {
+        "lines": {
+          "covered": 46,
+          "total": 50
+        },
+        "branches": {
+          "covered": 10,
+          "total": 12
+        },
+        "source": "fixture figures, not a real test run"
+      }
+    },
+    {
+      "id": "P3",
+      "kind": "process",
+      "label": "resolvePath()",
+      "group": "g_fs"
+    },
+    {
+      "id": "P4",
+      "kind": "process",
+      "label": "render()",
+      "group": "g_fs",
+      "coverage": {
+        "lines": {
+          "covered": 40,
+          "total": 40
+        },
+        "source": "fixture figures, not a real test run"
+      }
+    },
+    {
+      "id": "E2",
+      "kind": "external",
+      "subtype": "system",
+      "label": "Command execution",
+      "impact": "critical"
+    },
+    {
+      "id": "D1",
+      "kind": "store",
+      "subtype": "file",
+      "label": "Host filesystem",
+      "impact": "high"
+    },
+    {
+      "id": "E3",
+      "kind": "external",
+      "subtype": "system",
+      "label": "Process abort",
+      "impact": "low"
+    },
+    {
+      "id": "E4",
+      "kind": "external",
+      "subtype": "system",
+      "label": "Typed reject"
+    },
+    {
+      "id": "E5",
+      "kind": "external",
+      "subtype": "system",
+      "label": "Vendor decoder",
+      "group": "g_vendor"
+    },
+    {
+      "id": "E6",
+      "kind": "external",
+      "subtype": "system",
+      "label": "Decoder memory corruption",
+      "group": "g_vendor",
+      "impact": "critical"
+    }
+  ],
+  "flows": [
+    {
+      "from": "E1",
+      "to": "P1",
+      "label": "archive bytes",
+      "mode": "sync",
+      "coverage": {
+        "exercised": true,
+        "tests": [
+          "test/unpack.test.mjs"
+        ]
+      }
+    },
+    {
+      "from": "E1",
+      "to": "P2",
+      "label": "header",
+      "mode": "sync",
+      "coverage": {
+        "exercised": true,
+        "tests": [
+          "test/header.test.mjs"
+        ]
+      }
+    },
+    {
+      "from": "P1",
+      "to": "P3",
+      "label": "entry name",
+      "mode": "sync",
+      "coverage": {
+        "exercised": false,
+        "witness": "runtime trace under the suite"
+      }
+    },
+    {
+      "from": "P3",
+      "to": "D1",
+      "label": "write outside the root",
+      "mode": "sync",
+      "coverage": {
+        "exercised": true,
+        "tests": [
+          "test/resolve-path.test.mjs"
+        ]
+      }
+    },
+    {
+      "from": "P3",
+      "to": "E4",
+      "label": "EPATH",
+      "mode": "sync"
+    },
+    {
+      "from": "P1",
+      "to": "E2",
+      "label": "shell metacharacters in a name",
+      "mode": "sync"
+    },
+    {
+      "from": "P2",
+      "to": "E3",
+      "label": "length overflow",
+      "mode": "sync",
+      "role": "error",
+      "coverage": {
+        "exercised": false
+      }
+    },
+    {
+      "from": "P3",
+      "to": "P4",
+      "label": "resolved path",
+      "mode": "sync",
+      "coverage": {
+        "exercised": true,
+        "tests": [
+          "test/unpack.test.mjs"
+        ]
+      }
+    },
+    {
+      "from": "P4",
+      "to": "D1",
+      "label": "write a file",
+      "mode": "sync",
+      "gate": {
+        "state": "safe",
+        "evidence": {
+          "level": "static",
+          "witness": "containment reviewed by hand"
+        }
+      }
+    },
+    {
+      "from": "P4",
+      "to": "E3",
+      "label": "bad UTF-8",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "E1",
+      "to": "E5",
+      "label": "same archive",
+      "mode": "sync"
+    },
+    {
+      "from": "E5",
+      "to": "E6",
+      "label": "reach not evaluated",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "T4"
+      }
+    }
+  ]
+}

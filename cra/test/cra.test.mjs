@@ -341,7 +341,7 @@ test('validateProducts: blocks structural errors, advises on placeholder/seeded 
 
   // fully configured → clean
   const ok = validateProducts({
-    manufacturer: { name: 'Real GmbH', contact: 'psirt@real.example' },
+    manufacturer: { name: 'Real GmbH', contact: 'psirt@real.example', namespace: 'https://real.example' },
     products: [{
       id: 'p', name: 'P', version: '1.0.0', repos: ['r'], market: { eu: true },
       supportEndsAt: '2099-01-01', cvdPolicyUrl: 'https://real.example/security',
@@ -350,6 +350,60 @@ test('validateProducts: blocks structural errors, advises on placeholder/seeded 
   });
   assert.deepEqual(ok.errors, []);
   assert.deepEqual(ok.advisories, []);
+});
+
+const registryWithNamespace = (namespace) => ({
+  manufacturer: { name: 'Real GmbH', contact: 'psirt@real.example', ...(namespace === undefined ? {} : { namespace }) },
+  products: [{ id: 'p', name: 'P', version: '1.0.0', repos: ['r'], market: { eu: true } }],
+});
+
+test('validateProducts: an absent manufacturer.namespace is an advisory, not an error', async () => {
+  const { validateProducts } = await import(pathToFileURL(join(REPO, 'cra', 'lib.mjs')).href);
+  const r = validateProducts(registryWithNamespace(undefined));
+  const advisories = r.advisories.filter((a) => a.startsWith('manufacturer.namespace is not set'));
+  assert.equal(advisories.length, 1);
+  assert.equal(r.errors.filter((e) => /namespace/.test(e)).length, 0);
+});
+
+test('validateProducts: an absolute https namespace clears the namespace advice', async () => {
+  const { validateProducts } = await import(pathToFileURL(join(REPO, 'cra', 'lib.mjs')).href);
+  const r = validateProducts(registryWithNamespace('https://real.example'));
+  assert.equal(r.errors.filter((e) => /namespace/.test(e)).length, 0);
+  assert.equal(r.advisories.filter((a) => /namespace/.test(a)).length, 0);
+});
+
+test('validateProducts: an http namespace with a path is accepted', async () => {
+  const { validateProducts } = await import(pathToFileURL(join(REPO, 'cra', 'lib.mjs')).href);
+  const r = validateProducts(registryWithNamespace('http://real.example/psirt'));
+  assert.equal(r.errors.filter((e) => /namespace/.test(e)).length, 0);
+  assert.equal(r.advisories.filter((a) => /namespace/.test(a)).length, 0);
+});
+
+test('validateProducts: a namespace that is not an absolute URI is an error', async () => {
+  const { validateProducts } = await import(pathToFileURL(join(REPO, 'cra', 'lib.mjs')).href);
+  const r = validateProducts(registryWithNamespace('real.example'));
+  const errors = r.errors.filter((e) => /must be an absolute http\(s\) URI/.test(e));
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /manufacturer\.namespace/);
+});
+
+test('validateProducts: a non-http(s) namespace is an error', async () => {
+  const { validateProducts } = await import(pathToFileURL(join(REPO, 'cra', 'lib.mjs')).href);
+  const r = validateProducts(registryWithNamespace('ftp://real.example'));
+  assert.ok(r.errors.some((e) => /manufacturer\.namespace must be an absolute http\(s\) URI/.test(e)));
+});
+
+test('validateProducts: a placeholder namespace is an advisory, not an error', async () => {
+  const { validateProducts } = await import(pathToFileURL(join(REPO, 'cra', 'lib.mjs')).href);
+  const r = validateProducts(registryWithNamespace('https://example.com'));
+  assert.ok(r.advisories.some((a) => a.startsWith('manufacturer.namespace is still a placeholder')));
+  assert.equal(r.errors.filter((e) => /namespace/.test(e)).length, 0);
+});
+
+test('product schema admits manufacturer.namespace', () => {
+  const { errors } = validateAgainstSchema(registryWithNamespace('https://real.example'),
+    { path: join(REPO, 'schema', 'product.schema.json') });
+  assert.deepEqual(errors.filter((e) => /namespace/.test(e)), []);
 });
 
 test('validateProducts: a lapsed support period and a misspelt locale are both caught', async () => {
@@ -632,7 +686,7 @@ test('dashboard: buildData + html produce a self-contained page with the coverag
   assert.ok(data.products[0].coverage.nist80053.total > 0);
   const page = html(data);
   assert.match(page, /^<!doctype html>/);
-  assert.ok(!/https?:\/\/[^"']*\.(css|js)/.test(page), 'must not reference external assets');
+  assert.ok(!/https?:\/\/[^"'\s<>]*\.(css|js)/.test(page), 'must not reference external assets');
   assert.match(page, /Advisory/);
   assert.match(page, /CRA Readiness/);
 });

@@ -96,6 +96,7 @@ export const SCANNER_LABELS = Object.freeze({
   yaraWitness: 'YARA witness · php-malware-finder and signature-base web-shell rules',
   wpIntegrity: 'WordPress integrity · core and plugins against wordpress.org checksums, files loose in plugins/',
   wpAdvisories: 'WordPress advisories · core, plugin and theme versions against published advisories',
+  wpAuthz: 'WordPress access control · request entry points to the state they write, and the guards on the way',
   logEvidence: 'Log evidence · injection, traversal and shell probes recorded in the tree\'s logs',
   treeIntegrity: 'Tree integrity · git drift on a web root, installed-package RECORD hashes',
   actionsGaps: 'CI gaps · self-hosted runners, triggering-head checkouts, absent permissions',
@@ -259,6 +260,8 @@ export const LANE_KINDS = Object.freeze({
   // version. No other lane reads WordPress component versions (the dependency lanes read lockfiles,
   // and a site installed from wp-admin has none), so nothing here is counted twice.
   wpAdvisories: lane(V),
+  // first-party PHP read for missing guards; no other lane reads WordPress entry points
+  wpAuthz: lane(V),
   // posture, additive: a runner choice, a trigger-plus-checkout shape and a missing permissions
   // block are states of the CI controls. zizmor reports the trigger and the absent block too, but
   // it is absent on hosted runners and never emits self-hosted-runner at the fleet's persona.

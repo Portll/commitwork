@@ -2,7 +2,7 @@
 # The failure taxonomy, v3 — the layer split, the shaded remainder, and false progress
 
 > **Edition note.** As of 2026-09-25, this is the v3 prose edition, the last in prose, kept as a record. The authoritative
-> classification is `monitor/failure-taxonomy.json` (version 17: 207 classes in eleven families, I to
+> classification is `monitor/failure-taxonomy.json` (version 19: 208 classes in eleven families, I to
 > XI). Class counts, ranges, mitigation status and line citations below are not maintained against
 > it; where they disagree, the registry is correct.
 
@@ -154,13 +154,14 @@ inter-rater independence exists here. `G10` measured rater *pathology*; nobody h
 *correlation*.
 
 **R10 — the specific live instance, verified, with no failure attached.**
-[`monitor/rollup.mjs:669`](rollup.mjs#L669) reads `process.env.CW_ANNOTATIONS` at module load, which
-the house invariant forbids ("read the env at CALL time, never at module load"). It is nonetheless
+[`monitor/rollup.mjs:819`](rollup.mjs#L819) resolves the annotations store at module load through
+`annotationsPathFor`, which reads `process.env.CW_ANNOTATIONS` there — the house invariant forbids
+that ("read the env at CALL time, never at module load"). It is nonetheless
 correct today: `rollup.mjs` has **zero importers** — every consumer, including
 `monitor/test/scanner-annotations.test.mjs`, spawns it as a child process and passes env at spawn, so
 the capture happens after the override is set. Verified this pass: no `from '…rollup.mjs'` anywhere in
-the tree. 29 module-load env captures exist across `bin/`, `monitor/`, `admin/`, `cra/`; the ones
-checked are all in spawn-only or CLI-entry position. The defect is that **nothing states or tests the
+the tree. Single-line top-level `const` captures of `process.env` number 64 across `bin/`, `monitor/`, `admin/` and `cra/`, outside the test directories; the ones
+checked are all in spawn-only or process-entry position. The defect is that **nothing states or tests the
 spawn-only property**. The day someone adds an `import` for a helper, every test that sets
 `CW_ANNOTATIONS` keeps passing and stops proving anything — v1's `M5` with the seam present and inert,
 which is a worse state than `M5`'s absent seam because the seam is visible in review.
@@ -271,11 +272,10 @@ past that commit before the scope error was seen. The tell that generalises: *un
 on a shared tree*; the guard is a full-contents diff of any untracked path before committing it whole,
 not a keyword grep for your own tokens.
 
-**A13 — the pointer to the taxonomy of claim drift carries claim drift.**
-[`README.md:228`](../README.md#L228) describes `FAILURE-TAXONOMY.md` as "**six families** by which
+**A13 — the pointer to the taxonomy of claim drift.**
+[`README.md:798`](../README.md#L798) describes `FAILURE-TAXONOMY.md` as "**seven families** by which
 proposition the oversight system got wrong". The document declares **seven** (I–VII); `grep -c` over
-its family table returns 7. Family VII (false durability) was added after the index entry was written
-and the entry was not re-read. Nobody checked, because the index entry is not what a reader of the
+its family table returns 7. The index entry is not what a reader of the
 taxonomy reads — and it is exactly what a reader who has *not* opened the taxonomy reads. Separation
 from `C10`: `C10` is documentation asserting a property the *system* lacks; `A13` is one document
 asserting a property of *another document*, which no test of the system can catch and which
@@ -342,8 +342,8 @@ The four questions this pass was asked, answered by id.
 | **(d) controller / implementation** | §2, and the `Layer` column on every table above |
 | **(e) conduct — avoidance, laziness, rumination** *(v3)* | `W1`–`W7`, §10. Covered by nothing in v1 or v2; the nearest four near-misses and why each fails are tabulated there |
 
-**New totals.** 51 → **84** classes outside Family I; 63 → **96** including it. Of the 33 new: **24
-controller**, 9 implementation — a sharper ratio than v1's 39:22, which is expected and is not evidence.
+**New totals.** 51 → **84** classes outside Family I; 63 → **96** including it. Of the 33 new: **26
+controller**, 7 implementation — a sharper ratio than v1's 39:22, which is expected and is not evidence.
 The new classes were sought *after* the layer axis existed, and an axis you are looking along finds
 things along it. Recorded as a bias in the pass, not as a finding about the system. Family VIII
 widens the gap further and for a reason worth stating: **all seven `W` classes are controller**, and
@@ -374,12 +374,12 @@ with no code to edit.
 ## 9. Provenance
 
 - **Verified this pass (tree, 2026-08-12)** — `D6` (`git status --porcelain` over
-  `evaluations/`), `A13` (`README.md:228` vs `grep -c` over v1's family table), `M7` (per-
-  family class counts), `R10` (`monitor/rollup.mjs:669`; zero importers of `rollup.mjs`; 29 module-load
-  env captures across six directories).
+  `evaluations/`), `A13` (`README.md:798` vs `grep -c` over v1's family table), `M7` (per-
+  family class counts), `R10` (`monitor/rollup.mjs:819`; zero importers of `rollup.mjs`; 64 single-line module-load
+  env captures across `bin/`, `monitor/`, `admin/` and `cra/`).
 - **Derived from v1's tree-verified rows** — `K1` (from `A10`), `K7` (from `R1`), `P11` (from `R1`),
   `M9` (from `C5` + `P5`), `K2`/`K6`/`G13` (from v1's measured table and open-marker count).
-- **Doc-cited** — `M8` rests on CLAUDE.md's catastrophic-backtracking trap and `sitemap/README`; the
+- **Doc-cited** — `M8` rests on the catastrophic-backtracking trap in `sitemap/README`; the
   14-minute figure was not re-measured here.
 - **Derived, unwitnessed** — everything in §4, and `E1`–`E5`. No instance exists in any artifact
   searched. They are recorded because a catalogue that admits only what has already happened is a
@@ -468,9 +468,9 @@ Wired 2026-08-12, verified end to end:
 | piece | what it does |
 |---|---|
 | [`bin/focus-journal.mjs`](../bin/focus-journal.mjs) | appends a `gate-focus` verdict record: `verdict`, `streak`, `prompts` (the denominator), `repo`, `family: 'W'`, `class: null` |
-| `GATE_ROSTER` += `gate-focus` ([`bin/lib/verdict-journal-core.mjs:311`](../bin/lib/verdict-journal-core.mjs#L311)) | a sensor that has never written renders `absent-not-running`, not absent-from-the-listing (`C3`) |
+| `GATE_ROSTER` += `gate-focus` ([`bin/lib/verdict-journal-core.mjs:310`](../bin/lib/verdict-journal-core.mjs#L310)) | a sensor that has never written renders `absent-not-running`, not absent-from-the-listing (`C3`) |
 | `get-focused.sh` | on a firing, backgrounds the writer; fail-open, output discarded, and it now carries a `prompts` counter so the alarm arrives with its denominator |
-| [`bin/test/focus-journal.test.mjs`](../bin/test/focus-journal.test.mjs) | 19 tests |
+| [`bin/test/focus-journal.test.mjs`](../bin/test/focus-journal.test.mjs) | 23 tests |
 
 Four properties were built in deliberately, each of them a class from this catalogue pointed at the
 new instrument:

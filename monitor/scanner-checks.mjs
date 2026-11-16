@@ -91,6 +91,7 @@ export const SCANNER_CHECKS = Object.freeze({
   treeIntegrity: 'tree-integrity',
   wpIntegrity: 'wp-integrity',
   wpAdvisories: 'wp-advisories',
+  wpAuthz: 'wp-authz',
   actionsGaps: 'actions-gaps',
   actionsHealth: 'actions-health',
   testHermetic: 'test-hermetic',

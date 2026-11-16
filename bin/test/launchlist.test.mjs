@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, rmSync, existsSync, chmodSync } from 'node:fs';
 import { tmpdir, userInfo } from 'node:os';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
@@ -527,6 +527,41 @@ describe('the HEAD export fails closed', () => {
     t.after(() => { if (prev === undefined) delete process.env.CW_GITLEAKS; else process.env.CW_GITLEAKS = prev; });
     const out = await C.runChecks(tinyCtx(repo), [{ id: 'head', check: 'secretsHead' }]);
     assert.equal(out.head.status, 'unmeasured', `${out.head.status}: ${out.head.summary}`);
+  });
+});
+
+describe('the HEAD export scan', () => {
+  test('gitleaks scans a relative target from inside the export, so anchored allowlists apply', async (t) => {
+    const repo = tinyRepo({ 'src/real.txt': 'token = a\n', 'fixtures/plant/key.txt': 'planted\n' });
+    const record = join(TMP, 'gitleaks-cwd.json');
+    const stub = join(TMP, 'gitleaks-cwd-stub.mjs');
+    writeFileSync(stub, `#!${process.execPath}
+import { writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+const a = process.argv;
+const i = a.indexOf('--report-path');
+if (i < 0) process.exit(0);
+writeFileSync(${JSON.stringify(record)}, JSON.stringify({
+  argv: a.slice(2), cwd: process.cwd(), isRepo: existsSync(join(process.cwd(), '.git')),
+}));
+writeFileSync(a[i + 1], JSON.stringify([
+  { File: 'fixtures/plant/key.txt', StartLine: 1, RuleID: 'private-key' },
+  { File: 'src/real.txt', StartLine: 2, RuleID: 'generic-api-key' },
+]));
+`);
+    chmodSync(stub, 0o755);
+    const prev = process.env.CW_GITLEAKS;
+    process.env.CW_GITLEAKS = stub;
+    t.after(() => { if (prev === undefined) delete process.env.CW_GITLEAKS; else process.env.CW_GITLEAKS = prev; });
+    const out = await C.runChecks(tinyCtx(repo, { secretsExpected: ['fixtures/'] }), [{ id: 'head', check: 'secretsHead' }]);
+    const w = JSON.parse(readFileSync(record, 'utf8'));
+    assert.equal(w.argv[w.argv.indexOf('dir') + 1], '.');
+    assert.ok(isAbsolute(w.cwd), `${w.cwd} is not absolute`);
+    assert.notEqual(w.cwd, process.cwd(), 'the export is not the directory the test runs in');
+    assert.equal(w.isRepo, false, `${w.cwd} is the repository, not the export`);
+    assert.equal(out.head.status, 'fail');
+    assert.equal(out.head.summary, '1 finding(s) outside declared fixture paths (+1 in fixtures)');
+    assert.ok(out.head.evidence.includes('src/real.txt:2 generic-api-key'), out.head.evidence.join('\n'));
   });
 });
 

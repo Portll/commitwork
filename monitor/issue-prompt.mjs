@@ -2,8 +2,8 @@
 // CLI and the panel so the two never drift. Carries REAL SOURCE (±CONTEXT_LINES), which is why the
 // panel may only serve it from the operator port. Zero dependencies; pure: same inputs ⇒ same bytes.
 
-import { readFileSync, existsSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { readFileSync, existsSync, realpathSync } from 'node:fs';
+import { resolve, dirname, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { readJournalFile, readAdjudications, adjudicationsPath } from '../bin/lib/verdict-journal-core.mjs';
@@ -14,18 +14,40 @@ export const CW_ROOT = resolve(HERE, '..');
 
 export const CONTEXT_LINES = 40; // around the anchor — enough for a taint path, small enough to read
 
+// Segments, not prefixes: "..foo" at the root is inside, and Windows separators count.
+function escapesRoot(root, target) {
+  const rel = relative(root, target);
+  if (rel === '' || isAbsolute(rel)) return true;
+  return rel.split(/[\\/]/)[0] === '..';
+}
+
 /**
  * Source window around the anchor, or null — an unresolvable location is a real state, and the
- * prompt says "(source unavailable)" rather than pretending it read something.
+ * prompt says "(source unavailable)" rather than pretending it read something. An anchor that
+ * resolves outside the root is refused, and the refusal is stated in the prompt.
  */
 export function codeContext(issue, { root = CW_ROOT } = {}) {
   const a = issue && issue.anchor;
   if (!a || typeof a.file !== 'string' || !a.file) return null;
   if (!Number.isInteger(a.line) || a.line < 1) return null;
-  const p = join(root, a.file);
+  const p = isAbsolute(a.file) ? resolve(a.file) : resolve(root, a.file);
+  if (escapesRoot(resolve(root), p)) {
+    return { file: a.file, excerpt: null, refused: 'path resolves outside the repository root' };
+  }
   if (!existsSync(p)) return null;
+  let realRoot, real;
+  try {
+    realRoot = realpathSync(root);
+    real = realpathSync(p);
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    return { file: a.file, excerpt: null, refused: `could not resolve the path (${e.code})` };
+  }
+  if (escapesRoot(realRoot, real)) {
+    return { file: a.file, excerpt: null, refused: 'path is a link that resolves outside the repository root' };
+  }
   let lines;
-  try { lines = readFileSync(p, 'utf8').split('\n'); }
+  try { lines = readFileSync(real, 'utf8').split('\n'); }
   catch { return null; }
   const from = Math.max(0, a.line - 1 - CONTEXT_LINES / 2);
   const to = Math.min(lines.length, a.line + CONTEXT_LINES / 2);
@@ -51,6 +73,11 @@ function exemplarsFor(issue) {
 /** The triage prompt. The answer format is FRONT-LOADED — a truncated reply must still carry VERDICT. */
 export function composeIssuePrompt(issue, { root = CW_ROOT } = {}) {
   const ctx = codeContext(issue, { root });
+  const sourceBlock = !ctx
+    ? '(source unavailable)'
+    : ctx.refused
+      ? `(source refused: ${ctx.refused})`
+      : `Source (the flagged line is marked >>):\n\`\`\`js\n${ctx.excerpt}\n\`\`\``;
   const src = issue.source || {};
   // After the check-context section, before the front-loaded answer block; absent-not-broken
   const exemplarBlock = exemplarsFor(issue);
@@ -61,7 +88,7 @@ export function composeIssuePrompt(issue, { root = CW_ROOT } = {}) {
     `Location: ${issue.anchor ? `${issue.anchor.file}:${issue.anchor.line}` : '(no location recorded)'}`,
     issue.body ? `Scanner message: ${issue.body}` : '',
     '',
-    ctx ? `Source (the flagged line is marked >>):\n\`\`\`js\n${ctx.excerpt}\n\`\`\`` : '(source unavailable)',
+    sourceBlock,
     '',
     ...(exemplarBlock ? [exemplarBlock, ''] : []),
     'Answer in this exact shape. Put VERDICT on the FIRST line, before any reasoning:',

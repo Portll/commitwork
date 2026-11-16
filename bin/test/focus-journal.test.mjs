@@ -109,6 +109,36 @@ test('CW_FOCUS_MIN_STREAK is read at call time, so the threshold is a fixture kn
   assert.equal(records(fx).length, 1);
 });
 
+test('--fire applies the --from-state threshold: a streak of 1 writes nothing', () => {
+  const fx = fixture();
+  const r = run(fx, ['--fire', '--streak', '1'], { CW_FOCUS_MIN_STREAK: '' });
+  assert.equal(r.code, 3);
+  assert.deepEqual(records(fx), []);
+});
+
+test('--fire with a streak of 0 is below threshold, not a firing', () => {
+  const fx = fixture();
+  const r = run(fx, ['--fire', '--streak', '0'], { CW_FOCUS_MIN_STREAK: '' });
+  assert.equal(r.code, 3);
+  assert.deepEqual(records(fx), []);
+});
+
+test('--fire at a lowered threshold fires, with the relayed streak on the record', () => {
+  const fx = fixture();
+  const r = run(fx, ['--fire', '--streak', '1'], { CW_FOCUS_MIN_STREAK: '1' });
+  assert.equal(r.code, 0);
+  const rec = records(fx);
+  assert.equal(rec.length, 1);
+  assert.equal(rec[0].streak, 1);
+});
+
+test('--fire above the default threshold but below a raised one writes nothing', () => {
+  const fx = fixture();
+  const r = run(fx, ['--fire', '--streak', '2'], { CW_FOCUS_MIN_STREAK: '3' });
+  assert.equal(r.code, 3);
+  assert.deepEqual(records(fx), []);
+});
+
 test('--tally on an absent journal says ABSENT and refuses to call it clean', () => {
   const fx = fixture();
   const r = run(fx, ['--tally']);

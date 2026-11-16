@@ -1,10 +1,10 @@
-<!-- verified-against: 2026-11-04 -->
+<!-- verified-against: 2026-11-15 -->
 # commitwork
 
 **Repository security scanner, local CI runner and scheduled monitor, with remediation and
 compliance-evidence tooling.**
 
-commitwork runs 88 checks over a repository: secrets, SAST, dependencies, supply chain, IaC and
+commitwork runs 92 checks over a repository: secrets, SAST, dependencies, supply chain, IaC and
 CI, runtime probes, posture and code quality. It runs the same checks on a schedule across a fleet
 of repositories. From the results it makes rollups, an issue tracker, remediation plans and EU CRA /
 SOC 2 evidence.
@@ -15,11 +15,12 @@ scheduled fleet monitor, a web panel, an MCP server and a set of viewers.
 
 commitwork has no runtime dependencies. It runs on macOS, Linux and Windows. `package.json`
 declares Node ≥ 22.18, and the CLI refuses an older runtime. (Node 22 is the oldest Node.js line
-still maintained.) CI runs Node 22 and 26. It runs the full suite on Linux and macOS (macOS is
-non-blocking), and the platform-contract subset on Windows ([docs/SCOPE.md](docs/SCOPE.md)).
+still maintained.) CI runs Node 22 and 26. It runs the full suite on Linux and macOS, and the
+platform-contract subset on Windows ([docs/SCOPE.md](docs/SCOPE.md)).
 
-Docker is optional. Without Docker, the four container lanes record `noscan` and name the missing
-tool. If the daemon is installed but stopped, they record n/a. They never record a pass.
+Docker is optional. Without Docker, the four checks that run in Docker record `noscan` and name the
+missing tool. If the daemon is installed but stopped, `deps-osv` and `supply-chain-guarddog` record
+n/a and `deps-reachability` records `noscan`. None of the three records a pass.
 
 > **Licence:** AGPL-3.0-or-later, or PolyForm Internal Use 1.0.0 by written agreement. The wire
 > layer is also under Apache-2.0. See [Licensing](#licensing). **No warranty is implied or given.**
@@ -60,7 +61,8 @@ invariants. [docs/INVARIANTS.md](docs/INVARIANTS.md) names the test that enforce
 
 ## Scope
 
-- **Lanes:** 88 checks, 82 in `all`. Four need a live URL. `authz-test` needs `--trust-repo-manifest`.
+- **Lanes:** 92 checks, 85 in `all`. Four need a live URL. `authz-test` and `wp-dynamic-witness`
+  need `--trust-repo-manifest`.
   On `scan` and `brief`, the three lanes that build the scanned repository need `--allow-build`
   (or `--trust-repo-manifest`). `brief --pc` never runs them.
 - **Platforms:** Node >= 22.18. macOS has the `sandbox-exec` sandbox and launchd scheduling. Linux
@@ -69,8 +71,9 @@ invariants. [docs/INVARIANTS.md](docs/INVARIANTS.md) names the test that enforce
   its CI does not run the full suite.
 - **Refuses:** repo-local manifests and repo-supplied scripts without consent, non-bundled
   manifests over MCP, unreadable stores.
-- **Not measured, not done:** 66 of 78 lanes have no scan-canary record. Four high residual risks
-  are open. commitwork changes a scanned repository only by opening a draft remediation pull
+- **Not measured, not done:** 75 of 87 lanes have no scan-canary record. Four residual risks are
+  high under an opt-in: R1–R3 with consent, R5 under `CW_SANDBOX=off`
+  ([docs/THREAT-MODEL.md](docs/THREAT-MODEL.md#residual-risks)). commitwork changes a scanned repository only by opening a draft remediation pull
   request, and only when the policy file enables it. It holds no deploy credentials.
 
 [docs/SCOPE.md](docs/SCOPE.md) gives the counts, their sources, and what is still unknown.
@@ -132,6 +135,20 @@ Both lanes send component names and versions to those services. They cache the a
 premium plugin, a theme, or a core missing from a `wp-content` backup as unverifiable or
 unmeasured, never as clean.
 
+`wp-authz` reads access control from the PHP source and sends nothing out. It follows each entry
+point (`wp_ajax_` and `admin_post_` actions, REST routes, and hooks that run on every request)
+through its handler to the site state it writes. On the way it reads the capability check, the
+nonce check and the route's `permission_callback`. It parses the tree with nikic/php-parser 5
+and never runs it. One rule carries a severity: `wp-triggered-write` (low, CWE-862). The other
+nine rules list undetermined rows with no severity.
+
+`wp-dynamic-witness` is opt-in and outside `all`. It installs the plugin in WordPress Playground
+(PHP in WASM, no Docker or MySQL) and calls each entry point as an anonymous visitor and as a
+subscriber. A change to site state that the caller's role should not be able to make is a
+confirmed finding. A request that changed nothing is not a pass. The witness runs the plugin's
+code, so it needs `--trust-repo-manifest`. Its results stay in `wp-witness.json`, which no rollup
+reads.
+
 Put `commitwork` on your PATH. This works the same on macOS, Linux and Windows, because npm
 generates the right shim for each platform:
 
@@ -147,7 +164,8 @@ npm link
 
 `bin/install.sh` installs a checkout's HEAD, or a release tarball checked against its SHA-256,
 into a prefix (default `~/.local`: the tree in `~/.local/lib/commitwork`, the launcher in
-`~/.local/bin/commitwork`). [container/README.md](container/README.md) describes every flag.
+`~/.local/bin/commitwork`). `--no-link` writes no launcher; [container/README.md](container/README.md)
+describes the other flags.
 
 ```sh
 sh bin/install.sh --from commitwork-X.Y.Z.tgz --sha256 <hex>   # the release lists the hash
@@ -160,7 +178,8 @@ then from the `portll-update.json` asset of the GitHub release. It refuses a man
 product or Ed25519 signature does not check, and one signed under a key commitwork does not ship
 (`lib/update/keys.mjs`). It installs only a version newer than `package.json`'s. It downloads the
 tarball, checks its size and SHA-256 against the manifest, and runs `bin/install.sh --from <tgz>
---sha256 <hex>` with the same `--prefix` and `--dest` as the installed tree. The installer keeps
+--sha256 <hex>` with the installed tree's `--prefix` and `--dest`, or with `--dest` and `--no-link`
+when the launcher in that prefix is not the installer's. The installer keeps
 the replaced tree at `<dest>.previous`. A git checkout is never installed over: `update` reports
 the release, and you update the checkout with git.
 
@@ -186,10 +205,10 @@ automatic update, the same one that loads any change on disk. The panel log and 
 the Settings page say what was installed and that the restart is pending. `CW_PANEL_AUTO_UPDATE=0`
 turns off both.
 
-Releases are published by `.github/workflows/publish-update.yml`, which calls spine's
-`publish-update.yml`: a beta manifest for every push to main, and a stable one after `release.yml`
-publishes a `v*` release. `npm run publish-update -- --channel <c>` runs spine's publisher by hand
-(`SPINE_DIR`, default `../spine`).
+Releases are published by `.github/workflows/publish-update.yml` when the repository variable
+`PORTLL_UPDATES` is `on`. It calls spine's `publish-update.yml`: a beta manifest for every push to main, and a stable one after `release.yml`
+publishes a `v*` release. `npm run publish-update -- --channel <c>` runs spine's publisher by hand,
+with `SPINE_DIR` naming the spine checkout.
 
 ### Windows
 
@@ -197,7 +216,7 @@ The commands above run from **Windows Terminal / PowerShell**. On Windows, CI ch
 contract described at the end of this section. It does not run the full test suite.
 
 **Prerequisite: Git for Windows.** commitwork requires `git` on every platform, so you probably
-have it. Every check in `security-baseline.json` is a POSIX shell one-liner. All 82 of them use
+have it. Every check in `security-baseline.json` runs as POSIX shell. All 92 of them use
 `$VAR`, redirection or `$?`, so they need a POSIX shell. commitwork finds the `bash.exe` **inside
 your Git installation**. It does not need `bash.exe` on PATH. A normal
 `winget install -e --id Git.Git` is sufficient:
@@ -215,7 +234,7 @@ commitwork would write reports inside the WSL namespace, where the caller cannot
 **GNU findutils, `lsof` and `ps` are not needed.** Repository discovery walks the tree in Node. The
 listening-port lens uses `netstat` and `tasklist`, which ship with Windows.
 
-Scanner coverage on Windows is thinner than on macOS. Some of the 56 tools in
+Scanner coverage on Windows is thinner than on macOS. Some of the 60 tools in
 [`manifests/install-catalog.json`](manifests/install-catalog.json) install only through `pipx`,
 `gem` or `composer`. `commitwork setup` reports two cases separately:
 
@@ -301,7 +320,7 @@ workflow schema and graded against GitHub's published parser in tests that never
 | `scan-images` | CVE-scans local container images via Trivy (OS packages + language deps). |
 | `reindex --out <dir>` | Regenerates `index.md` + summaries from existing report files — no re-run. |
 | `doctor` | Tool/service availability (node, npm, docker, act, semgrep, …) with a per-tool install hint. |
-| `setup [--yes] [--only a,b]` | Cross-platform scanner installer driven by [`manifests/install-catalog.json`](manifests/install-catalog.json): brew, winget or scoop per platform, then pipx, npm, cargo, go, gem or composer where a tool needs them. On Linux it uses Homebrew when `brew` is on PATH and otherwise the language managers; apt or dnf comes last and installs only those managers (pipx, go, cargo, Ruby's gem, composer) and bubblewrap, never a scanner, because distribution versions trail by years. gitleaks and trufflehog, which no Linux manager besides Homebrew carries, install from their upstream release tarball: the tag and each architecture's SHA-256 are pinned in the catalogue, a mismatch is refused, and only the tool's binary is copied, to `~/.local/bin`. apt and dnf run as root or through passwordless `sudo -n`; otherwise setup prints the one `sudo apt-get install …` line that would supply the missing managers, and a second `setup --yes` then installs the scanners they unlock. The CI `installer` job installs a scanner through pipx on Ubuntu on every push and pull request that changes more than prose. Offered once on first interactive launch (stamped in `~/.commitwork/setup.json`); never prompts in non-TTY runs (launchd/CI) or under `CW_SKIP_SETUP=1`. |
+| `setup [--yes] [--only a,b]` | Cross-platform scanner installer driven by [`manifests/install-catalog.json`](manifests/install-catalog.json): for each tool, the first manager present wins, in the order a pinned release tarball, brew, winget or scoop per platform, then pipx, npm, cargo, gem, composer or go. On Linux apt or dnf comes last and installs only those managers (pipx, go, cargo, Ruby's gem, composer), the Elixir runtime, the PHP CLI, bubblewrap and passt, never a scanner, because distribution versions trail by years. gitleaks and trufflehog install from their upstream release tarball on every platform, ahead of brew, winget or scoop: the tag and each platform and architecture's SHA-256 are pinned in the catalogue, a mismatch is refused, and only the tool's binary is copied, to `~/.local/bin`. apt and dnf run as root or through passwordless `sudo -n`; otherwise setup prints the one `sudo apt-get install …` line that would supply the missing managers, and a second `setup --yes` then installs the scanners they unlock. The CI `installer` job installs a scanner through pipx on Ubuntu on every pull request and on every push that changes more than prose. Offered once on first interactive launch (stamped in `~/.commitwork/setup.json`); never prompts in non-TTY runs (launchd/CI) or under `CW_SKIP_SETUP=1`. |
 | `help` | Usage. |
 
 <details>
@@ -314,13 +333,13 @@ workflow schema and graded against GitHub's published parser in tests that never
 | `--root <dir>` | (`scan`) Root to discover git repos under; repeatable. |
 | `--skip <name>` | (`scan`/`scan-images`) Name substring to exclude; repeatable. |
 | `--filter <substr>` | (`scan-images`) Only images whose ref contains the substring; repeatable. |
-| `--out <dir>` | (`scan`/`reindex`) Report output dir (default `reports/<timestamp>`). (`brief`) The run directory (default `<CW_SCAN_PATH_OUT or sidecar>/brief-<timestamp>`). |
+| `--out <dir>` | (`scan`) Report output dir (default `reports/<timestamp>`). (`reindex`) The report dir to rebuild (default: the current directory). (`brief`) The run directory (default `<CW_SCAN_PATH_OUT or <sidecar>/reports/scan-path>/brief-<timestamp>`). |
 | `--pc` | (`brief`) Every repository under the home directory, each scanned on its own; credential stores, the checkout and the output directory are excluded, and a directory holding 100 or more repositories is set aside unless `--include-collections`. Lanes that build a repository never run here, even with `--allow-build` or `--trust-repo-manifest`. |
 | `--url <baseURL>` / `--urls <file>` | (`scan`) Live base URL for runtime scanners — one target, or a JSON map slug\|basename → baseURL for a fleet. `$CW_TARGET_URL` is also honoured, and a per-repo `commitwork.url` file only with `--trust-repo-manifest`. |
 | `--act` | For checks that define an `act` block, run the real workflow via `act`. |
 | `--strict` | Treat unmet requirements as a failure instead of a skip. |
 | `--dry-run` | Print each check's commands without executing anything. |
-| `--trust-repo-manifest` | Execute commands from a repo-local `commitwork.json`, run lanes that execute a script the scanned repo supplies (`requiresRepoTrust`, e.g. `authz-test`; without the flag they record `noscan`), honour a repo's `commitwork.url`, and (`scan`/`brief`) run the lanes that build the scanned repository, as `--allow-build` does. **Untrusted by default** — running commitwork inside a hostile checkout must not be an RCE. (`COMMITWORK_TRUST_REPO_MANIFEST=1` also works.) |
+| `--trust-repo-manifest` | Execute commands from a repo-local `commitwork.json`, run lanes that execute a script the scanned repo supplies (`requiresRepoTrust`: `authz-test` and `wp-dynamic-witness`; without the flag they record `noscan`), honour a repo's `commitwork.url`, and (`scan`/`brief`) run the lanes that build the scanned repository, as `--allow-build` does. **Untrusted by default** — running commitwork inside a hostile checkout must not be an RCE. (`COMMITWORK_TRUST_REPO_MANIFEST=1` also works.) |
 | `--allow-build` | (`scan`/`brief`) Run the lanes that build the scanned repository (`sast-codeql-swift`, `sast-codeql-go`, `lint-rust-clippy`: the ones `run all` contains), in the host sandbox. It allows nothing else `--trust-repo-manifest` does. Without either flag those lanes record `noscan`; `brief --pc` never runs them. |
 | `--no-fail-fast` | Keep going after a failing check. |
 | `--verbose` | Print the GitHub-only steps each check deliberately drops. |
@@ -336,7 +355,8 @@ env-overridable (`CW_*`) so the test suite runs entirely on fixtures.
    and an `egress` class, tags `groups`, and documents `skipsOnGitHub`.
 2. `commitwork list --manifest <repo>` to verify readiness.
 
-Or drop a `commitwork.json` at the root of the target repo. Repo-local manifests are structurally
+Or drop a `commitwork.json` at the root of the target repo and run commitwork from that root: a
+repo-local manifest is read from the current directory, never from `--repo`. Repo-local manifests are structurally
 validated on every load and refuse to run until you inspect (`--dry-run`) and opt in
 (`--trust-repo-manifest`). For the **monitor**, repos usually don't need registering at all — see
 below.
@@ -359,12 +379,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Portll/commitwork@v0.6.0
+      - uses: Portll/commitwork@<commit-sha>
         with:
           install-tools: 'true'
 ```
 
-In a workflow that pins its actions to commit SHAs, pin `Portll/commitwork` to the release's SHA.
+The public repository has no release tags. Pin `Portll/commitwork` to a commit SHA on its `main`.
 
 | Input | Default | Meaning |
 |---|---|---|
@@ -382,13 +402,14 @@ Outputs: `sarif` (empty when none was written), `report-dir` (each lane's report
 
 **What a hosted runner has.** The action installs Node 26 with `actions/setup-node`, which stays on
 PATH for the rest of the job. A GitHub-hosted runner has none of the scanners most lanes wrap. With
-`install-tools` left `false`, `fast` runs its Node lanes and records the gitleaks, TruffleHog,
-Semgrep and zizmor lanes as not measured, naming the missing tool. Each of those lanes appears in
+`install-tools` left `false`, `fast` runs its Node lanes and records each lane whose scanner is
+missing as not measured, naming the tool: gitleaks, TruffleHog and Semgrep on every repository,
+zizmor where it has workflows, and the Deno, Rust and C lanes where it has their files. Each of those lanes appears in
 the SARIF's tool execution notifications, in the job summary and as a warning annotation, and none
 is reported as clean. `install-tools: 'true'` installs what `fast` needs that a Linux runner can
 install: Semgrep, zizmor and flawfinder through pipx, and gitleaks and TruffleHog from release
-binaries whose SHA-256 the install catalogue pins. cppcheck, which the catalogue installs only
-through Homebrew, stays missing. The install's time on a hosted runner has not been measured. With
+binaries whose SHA-256 the install catalogue pins. cppcheck, which the catalogue installs on Linux
+only through Homebrew, stays missing. The install's time on a hosted runner has not been measured. With
 `checks: all` it tries every catalogued scanner the group names, which takes far longer. Lanes run
 under bubblewrap where it works on the runner. Otherwise a lane that executes repository code
 records `noscan` and the rest run unconfined, and each lane's row in `checks-status.json` records
@@ -409,17 +430,17 @@ fails the step. Set `upload-sarif: 'false'` there and keep the SARIF from the `s
 [`.github/workflows/github-action.yml`](.github/workflows/github-action.yml) runs the action from this
 checkout over the dirty scan canary, once with no scanner installed and once with `install-tools`.
 
-## 2. The security baseline — 88 checks
+## 2. The security baseline — 92 checks
 
 [`manifests/security-baseline.json`](manifests/security-baseline.json) is the portable check set,
-organised into eleven groups (`all`, `fast`, `supply-chain`, `deep`, `runtime`, `compare`, `langs`,
-`rust`, `elixir`, `haskell`, `cobol`). Each check wraps a scanner, normalises its output into
+organised into twelve groups (`all`, `fast`, `supply-chain`, `deep`, `runtime`, `compare`, `langs`,
+`rust`, `elixir`, `haskell`, `cobol`, `wp-dynamic`). Each check wraps a scanner, normalises its output into
 commitwork's finding schema, and records `noscan` naming the missing tool when a check applies to
 the repository but its binary is absent. Group membership is the union of the top-level `groups`
-map and each check's own `groups` tags. **82 are in `all`**, the group the schedule runs; the six outside it are `sast-opengrep`,
+map and each check's own `groups` tags. **85 are in `all`**, the group the schedule runs. The seven outside it are `sast-opengrep`,
 `sast-auto` and `secrets-betterleaks` (the `compare` group: second engines whose counts stay out of
-the headline total), and `lint-rust-clippy`, `sast-codeql-swift` and `sast-codeql-go` (all three
-build the code).
+the headline total), `lint-rust-clippy`, `sast-codeql-swift` and `sast-codeql-go` (all three
+build the code), and `wp-dynamic-witness` (the `wp-dynamic` group: it runs the plugin).
 
 | Area | Checks |
 |---|---|
@@ -433,7 +454,7 @@ build the code).
 | **Runtime / DAST** | Nuclei · BOLA + authz probes · TLS & security headers · API fuzzing |
 | **Posture** | Prowler (GitHub cloud posture) · OpenSSF Scorecard · WCAG a11y |
 | **Mobile** | Android and iOS manifests (`mobile-manifest`) |
-| **WordPress** | core and plugins against wordpress.org checksums, files loose in `wp-content/plugins/` (`wp-integrity`) · core, plugin and theme versions against wordpress.org's release list and WPVulnerability (`wp-advisories`) |
+| **WordPress** | core and plugins against wordpress.org checksums, files loose in `wp-content/plugins/` (`wp-integrity`) · core, plugin and theme versions against wordpress.org's release list and WPVulnerability (`wp-advisories`) · access control and CSRF guards read from source (`wp-authz`) · an opt-in Playground witness of broken access control (`wp-dynamic-witness`) |
 | **Code-quality signals** | stub-detect · minify-detect · deno lint/check · ruff · golangci-lint · PMD · clippy · rustfmt · hlint |
 | **Mainframe** (optional) | [cobolwork](https://github.com/Portll/cobolwork): one security lane, `sast-cobol-cobolwork` (COBOL/CICS/JCL data flow, credentials and authority grants), plus `cobol-inventory` (what COBOL is present and which copybooks are missing) and `secrets-cobol-jcl` (gitleaks with cobolwork's RACF/JCL/TSO rule pack). A separate repository with no dependencies; when it is not installed these lanes record `noscan` naming it, never a clean zero |
 
@@ -478,12 +499,12 @@ overwrites an existing file and never copies an example into a live store.
 sweep.mjs [group] [project|--all] [--dry]
   │  batch-manifest.json anchors each repo's SHA/branch/dirty state   ← intent, before
   ├─ scanner-preflight --update                          (tool versions; trivy/grype databases)
-  ├─ per repo: bin/commitwork.mjs run <group>  ──▶ reports/sweep-<stamp>[-<area>]/
+  ├─ per repo: bin/commitwork.mjs run <group>  ──▶ reports/sweep-<stamp>-<area|all>/
   ├─ rollup.mjs   ──▶ {rollup.json, dashboard.html, REMEDIATION.md, lifecycle.json, history/}
   ├─ preflight-build · issue ingest · liveness · timeline · runtime-report · races  (non-blocking)
-  │  batch-verdict.json + sweep-journal.jsonl            ← what happened, after
   ├─ compact-reports.mjs --apply                         (retention; reports/ once hit 37G)
-  └─ export-overwatch.mjs                                (rollup → the overwatch-layer)
+  ├─ export-overwatch.mjs                                (rollup → the overwatch-layer)
+  └─ batch-verdict.json + sweep-journal.jsonl            ← what happened, after
 ```
 
 With no project named, a sweep covers the registry's primary area; `--all` fans out one child
@@ -505,7 +526,7 @@ none, on the advisory's issue. [docs/DRAFT-REMEDIATION-PRS.md](docs/DRAFT-REMEDI
 the rules and how to enable it.
 
 **Failure taxonomy.** The monitor ships a classification of every way an oversight system can say
-"this is fine" while being wrong — currently **edition 17, 207 classes**, held as
+"this is fine" while being wrong: **edition 19, 208 classes**, held as
 [`monitor/failure-taxonomy.json`](monitor/failure-taxonomy.json) with prose renderers, because
 editions past v3 never took prose and the registry is the source of truth. Its sibling
 [FALSE-CLEAN-TAXONOMY.md](monitor/FALSE-CLEAN-TAXONOMY.md) records every time *this* system did it,
@@ -525,8 +546,9 @@ The section rail has three parts:
 - **Project** — the project picker, then six workspaces for the selected project: **Summary**,
   **Findings** (all findings, security risks, code quality, accessibility, and every scanner page
   through a check selector), **Websites & services**, **Site map**, **Work** and **History**.
-- **Manage** — Check schedules · Check configuration · Credentials & connections · Configuration ·
-  Service operations.
+- **Manage** — Check schedules · Check configuration · Credentials & connections · Get set up
+  (hidden once complete or dismissed) · Configuration · Memory records · Actions runner · Service
+  operations.
 
 Two details carry the house rules into the UI. **Count badges are cleared, not zeroed**, when a
 source is missing or unparsed — a tab nobody has scanned must never read the same as a tab that was
@@ -535,7 +557,7 @@ a *ruling* (is the finding real) and a *fix type* (how it was addressed) — bec
 questions, and collapsing them is how a suppression gets filed as a fix.
 
 The page is assembled from `admin/panel.html` and the `admin/menus/` components, and its client
-code is eight classic scripts under `admin/static/panel-*.js`, loaded in a fixed order with
+code is fourteen classic scripts under `admin/static/panel-*.js`, loaded in a fixed order with
 `panel-boot.js` last. See [admin/README.md](admin/README.md).
 
 `/api/exposure` answers the operator's question directly: what is reachable from outside, and is it
@@ -586,7 +608,7 @@ and read `turn_efficiency` aggregates.
 
 **Deployment declaration — `bin/deploy.mjs`.** Areas declare their public hostnames; deploy renders a
 cloudflared ingress *fragment* (dry-run by default), and `--verify` compares declaration against
-reality on five axes (declared / routed / dns / origin / tls), exit 1 on drift. No credentials, no
+reality on five axes (declared / routed / dns / origin / authAt), exit 1 on drift. No credentials, no
 DNS mutation. `public` + `requiresAuth` with no named `authAt` layer is refused outright.
 
 **Secrets — `lib/secrets.mjs` + `bin/secrets.mjs`.** Credentials are *referenced*, never stored:
@@ -644,9 +666,9 @@ Planned work is on the [roadmap](https://www.commitwork.online/roadmap/).
 
 ### The sitemap viewer
 
-Keyboard access, a find-a-service box and text severity labels (`CRIT`/`HIGH`/`MED`/`LOW`) are in
-place. Orthogonal routing for roads and wiring, five of the six exterior views specified in
-[EXTERIOR-VIEWS.md](sitemap/EXTERIOR-VIEWS.md), colour-scheme themes and label de-cluttering at fleet
+Keyboard access, a find-a-service box, text severity labels (`CRIT`/`HIGH`/`MED`/`LOW`) and light
+and dark modes are in place. Orthogonal routing for roads and wiring, five of the six exterior
+views specified in [EXTERIOR-VIEWS.md](sitemap/EXTERIOR-VIEWS.md) and label de-cluttering at fleet
 scale are not.
 
 ### Not implemented
@@ -656,9 +678,13 @@ scale are not.
 
 ### CRA evidence is drafts only
 
-A triggered case runs the 24h / 72h / 14-day clocks either way, but it is on the filing
-(`article14`) track only when its product declares a reporting locale or `market.eu: true`;
-otherwise it runs on the `bestpractice` track and files nothing. The shipped example registry
+A case opened by a declared incident, a KEV listing or an EPSS score at its threshold or above runs
+the Art. 14 clocks: a 24h
+early warning, a 72h notification and a final report (14 days for a vulnerability, one month for an
+incident). It is on the filing (`article14`) track only when its product's reporting locale is an
+EU Member State or `EU`, or the product declares `market.eu: true`; otherwise it runs on the
+`bestpractice` track and files nothing. A `crit` or `near-miss` case runs on the `internal` track,
+a 72h triage and 30-day remediation policy that is not an Art. 14 obligation. The shipped example registry
 (`cra/products.example.json`) has `market.eu: false`. Preflight flags placeholder manufacturer
 fields, and a manufacturer with `establishedInEU: false` and no EU representative once any product
 declares `market.eu: true` (CRA Art. 18). Nothing is submitted automatically. The `TODO` strings
@@ -693,7 +719,7 @@ node bin/commit-phase.mjs -m <msg> -- <paths>   # commit on a shared tree
 ## Deliberately malicious test fixtures — read this before you scan this repo
 
 `fixtures/scan-canary/` holds two synthetic repositories, `clean/` and `dirty/`, that the canary
-tests point the scanners at: across the eleven lanes it plants, `dirty/` must produce the findings
+tests point the scanners at: across the sixteen lanes it plants, `dirty/` must produce the findings
 `fixtures/scan-canary/EXPECTED.json` names and `clean/` must produce none, so a detector that has gone
 silent cannot pass as a tidy tree.
 
@@ -704,8 +730,9 @@ files are model artifacts — nine in each tree — and the dirty ones carry rea
 `dirty/real/real_legacy.h5` are genuine Keras archives with a `Lambda` layer holding base64
 marshalled Python bytecode that runs when the model is deserialised; and
 `dirty/real/real_savedmodel/` is a TensorFlow graph containing `ReadFile` and `EagerPyFunc` ops.
-Alongside them are a fake GitHub-shaped token, fetch-and-execute pipelines in `.claude/`, a
-`Dockerfile` and two workflows, an npm install hook, and injection and hardcoded-credential
+Alongside them are a fake GitHub-shaped token, fetch-and-execute pipelines in `.claude/` and a
+`Dockerfile`, two unsafe workflows (`pull_request_target` with write-all permissions, and
+`workflow_run` on a self-hosted runner), an npm install hook, and injection and hardcoded-credential
 patterns under `dirty/src/`.
 
 Every payload is inert on purpose — the pickle's command is `true`, the embedded bytecode decodes to
@@ -771,7 +798,7 @@ versioned in a private sidecar, so this index does not list it.
 - [monitor/FAILURE-TAXONOMY.md](monitor/FAILURE-TAXONOMY.md) — the master classification: seven families by which proposition the oversight system got wrong, with incidents, measured rates, and ranked mitigations
 - [monitor/FAILURE-TAXONOMY-v2.md](monitor/FAILURE-TAXONOMY-v2.md) — successor pass: the controller/implementation layer split, warrant shading, and 26 further classes (v1 keeps the incident record); superseded by v3
 - [monitor/FAILURE-TAXONOMY-v3.md](monitor/FAILURE-TAXONOMY-v3.md) — v2 plus Family VIII (false progress): avoidance, rumination, gate theatre, and the `gate-focus` sensor that feeds them to the verdict ledger; the **last prose edition** (96 classes)
-- [monitor/failure-taxonomy.json](monitor/failure-taxonomy.json) — the taxonomy's current form: editions past v3 never took prose, so the registry, not the three documents above, is the source of truth (edition 17, 207 classes, STPA cross-cut). Lineage in [monitor/taxonomy-editions.json](monitor/taxonomy-editions.json); renderers are `bin/taxonomy-render.mjs` (class reference), `bin/taxonomy-web.mjs` (readable edition + version history), `bin/taxonomy-db.mjs` (sqlite projection)
+- [monitor/failure-taxonomy.json](monitor/failure-taxonomy.json) — the taxonomy's current form: editions past v3 never took prose, so the registry, not the three documents above, is the source of truth (edition 19, 208 classes, STPA cross-cut). Lineage in [monitor/taxonomy-editions.json](monitor/taxonomy-editions.json); renderers are `bin/taxonomy-render.mjs` (class reference), `bin/taxonomy-web.mjs` (readable edition + version history), `bin/taxonomy-db.mjs` (sqlite projection)
 - [monitor/FALSE-CLEAN-TAXONOMY.md](monitor/FALSE-CLEAN-TAXONOMY.md) — every way this system has said "fine" while wrong: classes, incidents, citations, and what closes each
 - [workflows/README.md](workflows/README.md) — agent workflow scripts (adversarial review)
 - [workflows/MULTI-AGENT-PROTOCOL.md](workflows/MULTI-AGENT-PROTOCOL.md) — running a multi-agent evaluation: probe manifest, evidence rules, who writes the artefact
