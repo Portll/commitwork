@@ -55,5 +55,6 @@ updates:
     # If a `dependencies` entry ever appears, that is a decision someone made and it must be
     # reviewed as one — the policy file declares zeroRuntimeDependencies, so no production update
     # merges itself, and the empty state is the expected state. The one devDependency today is `renovate`, carried as a headless CLI for local
-    # dry-runs, not as a hosted app; there is deliberately no renovate.json.
-    ignore: []
+    # dry-runs, not as a hosted app; there is deliberately no renovate.json. There is no `ignore:`
+    # list: Dependabot rejects an empty one ("did not contain a minimum number of items 1"), and an
+    # invalid file stops its scheduled updates.
