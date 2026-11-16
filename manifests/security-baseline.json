@@ -1064,9 +1064,9 @@
         "~/Library/Caches/syft",
         "~/.cache/syft"
       ],
-      "description": "All-ecosystem SBOM (Syft, CycloneDX) \u2014 covers JVM/Go/etc. the npm-only SBOM misses; feeds Cosign attestation Emits syft's NATIVE json alongside the CycloneDX from ONE scan, then runs bin/sbom-enrich.mjs over the pair. As of syft 1.51.0 (2026-08-26) the native document carries metadata.resolved for every artifact while the CycloneDX writer discards it, so a git-pinned dependency is published as a bare pkg:npm/<name>@0.0.0, an identity npm has never served. The enricher puts back what the conversion dropped: a vcs_url/download_url purl qualifier and an externalReferences entry. It never drops a component.",
+      "description": "All-ecosystem SBOM (Syft, CycloneDX) \u2014 covers JVM/Go/etc. the npm-only SBOM misses; feeds Cosign attestation Emits syft's NATIVE json alongside the CycloneDX from ONE scan, then runs bin/sbom-enrich.mjs over the pair. As of syft 1.51.0 (2026-08-26) the native document carries metadata.resolved for every artifact while the CycloneDX writer discards it, so a git-pinned dependency is published as a bare pkg:npm/<name>@0.0.0, an identity npm has never served. The enricher puts back what the conversion dropped: a vcs_url/download_url purl qualifier and an externalReferences entry. It never drops a component. bin/sbom-syft.mjs runs the scan and also excludes every path git ignores (local tool binaries, node_modules, env files), recording them in sbom-syft-scope.json: on one scanned repository 552 of 897 components had come from two ignored CLI binaries.",
       "local": [
-        "syft scan dir:. --exclude './reference/**' --exclude './reports/**' --exclude './.claude/worktrees/**' --exclude './.git/**' -o cyclonedx-json=\"$CW_REPORT_DIR/sbom-syft.json\" -o json=\"$CW_REPORT_DIR/sbom-syft-native.json\" >\"$CW_REPORT_DIR/sbom-syft.log\" 2>&1; echo $? > \"$CW_REPORT_DIR/sbom-syft.json.exit\"; node $CW_ROOT/bin/sbom-enrich.mjs \"$CW_REPORT_DIR/sbom-syft.json\" \"$CW_REPORT_DIR/sbom-syft-native.json\" --report \"$CW_REPORT_DIR/sbom-syft-provenance.json\" >>\"$CW_REPORT_DIR/sbom-syft.log\" 2>&1"
+        "node \"$CW_ROOT/bin/sbom-syft.mjs\" \"$CW_REPORT_DIR\" >\"$CW_REPORT_DIR/sbom-syft.log\" 2>&1"
       ],
       "report": {
         "file": "sbom-syft.json",
