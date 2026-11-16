@@ -20,7 +20,9 @@
 # Dependabot proposes; .github/dependency-updates.json decides what may merge without review (operator
 # ruling 2026-10-10). The CI job dependabot-merge merges a pull request only when every other CI job
 # passed and that policy's automerge permits every dependency it moves; anything else waits for review.
-# The cooldown below is the policy's cooldownDays, held equal by bin/test/dependency-policy.test.mjs.
+# There is no cooldown: the policy's cooldownDays is 0 (owner's choice 2026-11-17, latest releases; was 7
+# days), so neither ecosystem declares one. Dependabot's default-days cannot be 0, so "none" is the
+# block left out, and bin/test/dependency-policy.test.mjs holds the two in step either way.
 
 version: 2
 updates:
@@ -29,10 +31,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    # A release younger than a week is the window in which a compromised tag is still live and not
-    # yet yanked; the tj-actions repoint was caught inside it.
-    cooldown:
-      default-days: 7
     commit-message:
       # No `Co-Authored-By`. The house rule forbids that trailer and bin/commit-phase.mjs refuses a
       # commit carrying one. Dependabot does not add one, but the prefix is set explicitly so its
@@ -51,8 +49,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
-    cooldown:
-      default-days: 7
     commit-message:
       prefix: "deps"
     # ZERO runtime dependencies is a property this project asserts, not an accident of the moment.

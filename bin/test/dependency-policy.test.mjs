@@ -17,11 +17,16 @@ test('the committed policy is valid and declares zero runtime dependencies, as p
   assert.deepEqual(Object.keys(JSON.parse(read('package.json')).dependencies || {}), []);
 });
 
-test('the cooldown is declared once: dependabot.yml waits as long as the policy for every ecosystem', () => {
+test('the cooldown is declared once: dependabot.yml waits as long as the policy for every ecosystem, or not at all when it is 0', () => {
   const days = parseRepoPolicy(read('.github/dependency-updates.json')).policy.cooldownDays;
   const yml = read('.github/dependabot.yml');
   const declared = [...yml.matchAll(/^\s+default-days:\s*(\d+)/gm)].map((m) => Number(m[1]));
   const ecosystems = [...yml.matchAll(/^\s+- package-ecosystem:/gm)].length;
+  // Dependabot's default-days cannot be 0, so a policy of no cooldown is every cooldown block left out.
+  if (days === 0) {
+    assert.doesNotMatch(yml, /^[ \t]+cooldown:/m, 'the policy has no cooldown, so no ecosystem declares one');
+    return;
+  }
   assert.equal(declared.length, ecosystems, 'every ecosystem declares a cooldown');
   for (const d of declared) assert.equal(d, days);
 });
