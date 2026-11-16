@@ -176,6 +176,20 @@
                 },
                 "description": "Exit codes the tool documents as meaning it ran and reported findings. Coverage treats any exit above 1 as the tool in trouble unless the code is listed here, and a listed code is accepted only when the report holds findings counted by the reader that publishes them; a listed code beside an empty or unreadable report still reduces coverage. Cite the tool's own documentation or source for every code."
               },
+              "exitCodes": {
+                "type": "object",
+                "propertyNames": { "pattern": "^(0|[1-9][0-9]?|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$" },
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["outcome", "meaning"],
+                  "properties": {
+                    "outcome": { "enum": ["measured", "unmeasured"] },
+                    "meaning": { "type": "string", "minLength": 1 }
+                  }
+                },
+                "description": "Every exit code the tool can end with, each marked measured (the report is a result) or unmeasured (it is not). A declaring lane is read by these codes: an unmeasured code voids a report that found nothing and reduces coverage, a code not declared here is read as undeclared and does the same, and a missing exit sidecar leaves the lane noscan with coverage unknown. The row carries {code, outcome, meaning} as `exit`. At least one code must be measured, and every findingsExit code must be declared measured."
+              },
               "format": {
                 "type": "string",
                 "enum": [
@@ -209,7 +223,8 @@
                   "tls-headers",
                   "trivy",
                   "trufflehog",
-                  "weak-random"
+                  "weak-random",
+                  "wp-witness"
                 ],
                 "description": "Report format. THIS LIST IS THE CODE'S, not a hand-kept copy: it is PARSED_FORMATS union PASSTHROUGH_FORMATS from bin/commitwork.mjs, and bin/test/manifest-schema-drift.test.mjs fails if the two diverge. It had drifted 11 formats behind (a11y, actionlint, authz-bola, cspm-github, depscan, gradle-wrapper, minify, schemathesis, scorecard, shellcheck, tls-headers) because nothing validated any manifest against this schema — the drift was invisible, not tolerated."
               }

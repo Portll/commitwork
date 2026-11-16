@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-06 -->
+<!-- verified-against: 2026-11-15 -->
 
 Run one A/B build loop: dispatch prompt variant A and prompt variant B to the local LLM, blind-judge the pair on the 12-dim rubric, and persist every loop artefact locally (memory-layer degrades to a replayable backfill file). This is the invokable form of the A/B backbone.
 
@@ -12,8 +12,9 @@ Usage: `/review-ab <fileA> <fileB> [question]`
 Migrated from internal-d 2026-09-01 — `bin/ab-loop.mjs` now lives in this repo, resolves its LLM
 endpoint from `manifests/llm-hosts.json` (the same declaration `admin/` and `monitor/` use, not a
 hardcoded port), and persists through `lib/memory-layer-client.mjs`'s upsert/verifyReceipt (three-
-state receipts, redaction gate) instead of a raw POST. `@fn:` primitive resolution is unchanged —
-`$HOME/.claude/_functions/{p0,p1}` was always a user-scope convention, not a internal-d-repo one.
+state receipts, redaction gate) instead of a raw POST. `@fn:` primitives resolve from `p0/` then
+`p1/` under `CW_CLAUDE_FUNCTIONS`, which defaults to `$HOME/.claude/_functions` — a user-scope
+convention, not an internal-d-repo one.
 
 **What to do**:
 
@@ -25,7 +26,7 @@ state receipts, redaction gate) instead of a raw POST. `@fn:` primitive resoluti
      --question "<the comparison question>" \
      --label <short-slug> [--tool <template>] [--parent latest] [--double-judge]
    ```
-   - `--tool <name>` loads `$CW_AB_PROMPTS_DIR/<name>.md` as the template and injects each file at `{{context}}` (with recursive `@fn:` resolution from `~/.claude/_functions/p0` then `p1`).
+   - `--tool <name>` loads `$CW_AB_PROMPTS_DIR/<name>.md` as the template and injects each file at `{{context}}` (with recursive `@fn:` resolution from `p0` then `p1` under `CW_CLAUDE_FUNCTIONS`, default `~/.claude/_functions`).
    - Omit `--tool` for raw prompt-vs-prompt.
    - Omit `--b` for single-variant mode (baseline run, no judge).
    - `--parent latest` chains this loop to the previous run automatically (reads the runs dir `LATEST` pointer); pass an explicit runId to chain elsewhere.

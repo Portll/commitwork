@@ -412,3 +412,59 @@ test('prepare returns the filtered model and the groups to collapse, or the code
   assert.equal(ok.model.nodes.length, 22);
   assert.equal(missing.code, EXIT.INPUT);
 });
+
+// ── findings overlay: --findings merges a ledger, --only-live filters ─────────────────────────────
+
+function dfdFile(dir, findings) {
+  const doc = {
+    v: 1, kind: 'dfd',
+    nodes: [{ id: 'p', kind: 'process', label: 'parser' }, { id: 's', kind: 'store', subtype: 'file', label: 'sink' }],
+    flows: [{ from: 'p', to: 's', mode: 'sync' }],
+    ...(findings ? { findings } : {}),
+  };
+  const path = join(dir, 'm.dfd.json');
+  writeFileSync(path, JSON.stringify(doc));
+  return path;
+}
+
+test('dfd renders a badge and a findings table for an anchored overlay', () => {
+  const dir = tmp();
+  const file = dfdFile(dir, [{ id: 'F8', cwe: 'CWE-190', severity: 'high', status: 'mitigated', at: { node: 'p' } }]);
+  const r = run(['--from', file, '--fonts', 'inline']);
+  assert.equal(r.code, EXIT.OK);
+  assert.match(r.out, /class="fbadge sev-high st-mitigated"/);
+  assert.match(r.out, /Findings overlay/);
+  assert.match(r.out, /CWE-190/);
+});
+
+test('dfd --only-live keeps only the live findings', () => {
+  const dir = tmp();
+  const file = dfdFile(dir, [
+    { id: 'F1', severity: 'high', status: 'live', at: { node: 'p' } },
+    { id: 'F2', severity: 'high', status: 'mitigated', at: { node: 's' } },
+  ]);
+  const r = run(['--from', file, '--only-live', '--fonts', 'inline']);
+  assert.equal(r.code, EXIT.OK);
+  assert.equal((r.out.match(/class="fbadge/g) || []).length, 1);
+  assert.match(r.out, /live only/);
+});
+
+test('dfd --findings merges a ledger onto the model before validation and render', () => {
+  const dir = tmp();
+  const file = dfdFile(dir, [{ id: 'F8', status: 'live', at: { node: 'p' } }]);
+  const ledger = join(dir, 'findings.json');
+  writeFileSync(ledger, JSON.stringify({ findings: [{ id: 'F8', cwe: 'CWE-190', severity: 'high', title: 'overflow' }] }));
+  const r = run(['--from', file, '--findings', ledger, '--fonts', 'inline']);
+  assert.equal(r.code, EXIT.OK);
+  assert.match(r.out, /CWE-190/);
+  assert.match(r.out, /sev-high/);
+});
+
+test('dfd rejects an overlay anchored to an element that does not exist', () => {
+  const dir = tmp();
+  const file = dfdFile(dir, [{ id: 'F1', at: { node: 'ghost' } }]);
+  const r = run(['--from', file, '--fonts', 'inline']);
+  assert.equal(r.code, EXIT.INVALID);
+  assert.equal(r.out, '');
+  assert.match(r.err, /anchored to node "ghost"/);
+});

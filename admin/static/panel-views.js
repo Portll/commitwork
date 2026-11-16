@@ -255,12 +255,12 @@ async function loadPosture(){
   try{ const d=await (await fetch('/api/posture?project='+encodeURIComponent(curProj||''))).json(); renderPosture(d); renderDelivery(d); }
   catch(e){ if(box)box.innerHTML='<div class="pk-err">could not load the posture board: '+esc(e.message)+'</div>'; const n=$('po-n'); if(n)n.textContent='—'; }
 }
-// Which tab already renders per-finding rows for a category. DECLARED, not derived: only these
-// categories have a detail table to open, and guessing a tab name for the rest would produce a
-// button that lands on an empty page — worse than no button, because an empty table reads as clean.
+// Which tab renders per-finding rows for a category, read from SCANNER_TABS at render time:
+// addDerivedLaneTabs appends lanes after load. A category with no entry there gets no button,
+// because a button onto an empty table reads as clean.
 // Kept on ONE line: admin/test/remediation-prompts.test.mjs lifts it out of this source by
-// `startsWith('const RP_VIEW_TAB=')`, the same single-line technique the other render tests use.
-const RP_VIEW_TAB={secrets:'secrets',maliciousPackages:'malware',supplyChainHeuristic:'supplychain',sastSemgrep:'sast',sastCodeql:'sast',sastCodeqlJava:'sast',sastGo:'sast',iac:'iac',dast:'dast',actionsPosture:'actions',minifiedCode:'minify'};
+// `startsWith('const rpViewTab=')`, the same single-line technique the other render tests use.
+const rpViewTab=(cat)=>(SCANNER_TABS.find((t)=>t.key===cat)||{}).view||'';
 // ONE classifier for a prompt's live counts, carried or not, and the same covState the coverage
 // table uses: -1 no signal, 0 scanned clean, >0 findings (sev-ranked). A carried row that never ran
 // goes through covState too, never to total 0, which would render a green clean for a lane nothing
@@ -307,7 +307,7 @@ function renderRemediationPrompts(d){
     // scanner tabs use (closed-set category -> check id, never a caller-supplied string), and the
     // view link routes to the tab that already renders this category's per-finding detail.
     +(p.category?recBtn({scanner:p.category,label:p.category})+' ':'')
-    +(RP_VIEW_TAB[p.category]?'<button type="button" class="rp-view" data-view="'+esc(RP_VIEW_TAB[p.category])+'" title="open the tab holding this category’s per-finding rows — file, line and rule as the rollup captured them">view findings ▸</button>':'')
+    +(rpViewTab(p.category)?'<button type="button" class="rp-view" data-view="'+esc(rpViewTab(p.category))+'" title="open the tab holding this category’s per-finding rows — file, line and rule as the rollup captured them">view findings ▸</button>':'')
     +'<button type="button" class="rp-copy">copy prompt</button>'
     +'<button type="button" class="rp-claude" data-check="'+esc(p.check)+'" title="open VS Code at the target repo and start a Claude Code session in Terminal with this handoff (prompt + artifact path + counts) already submitted">Claude Code ↗</button>'
     +'<button type="button" class="rp-local" data-check="'+esc(p.check)+'" title="triage with a local model — any host declared in manifests/llm-hosts.json, fed this prompt plus the scanner artifact; the exchange is saved as evidence">local LLM ▸</button>'

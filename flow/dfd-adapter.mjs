@@ -273,20 +273,27 @@ export function fromFlowGraph(graph, { reconcile = null, layers = null, include 
 
 // ── the code-flow adapter ────────────────────────────────────────────────────────────────────────
 
-// What a sink IS, read from the CodeQL rule id. Ordered: the first match wins. A rule no pattern
+// What a sink IS, read from the CodeQL rule id, and how bad reaching it is (`impact`, which
+// lib/dfd.mjs pathStates walks to). Ordered: the first match wins. A rule no pattern
 // names gets an external `system` marked unknown — the rule id did not say what the sink is.
 const SINKS = [
-  [/sql|nosql/, { kind: 'store', subtype: 'database', label: 'database query' }],
-  [/log-injection/, { kind: 'store', subtype: 'log', label: 'log' }],
-  [/path-injection|tainted-path|zipslip|file-system|file-access|file-write/, { kind: 'store', subtype: 'file', label: 'file system' }],
-  [/command|shell|exec/, { kind: 'external', subtype: 'binary', label: 'operating-system command' }],
-  [/request-forgery|ssrf|redirect/, { kind: 'external', subtype: 'endpoint', label: 'outbound request' }],
-  [/xss|html|dom/, { kind: 'external', subtype: 'actor', label: 'browser that renders the response' }],
-  [/code-injection|eval|deserial|prototype/, { kind: 'external', subtype: 'system', label: 'interpreter' }],
+  [/sql|nosql/, { kind: 'store', subtype: 'database', label: 'database query', impact: 'high' }],
+  [/log-injection/, { kind: 'store', subtype: 'log', label: 'log', impact: 'low' }],
+  [/path-injection|tainted-path|zipslip|file-system|file-access|file-write/, { kind: 'store', subtype: 'file', label: 'file system', impact: 'high' }],
+  [/command|shell|exec/, { kind: 'external', subtype: 'binary', label: 'operating-system command', impact: 'critical' }],
+  [/request-forgery|ssrf|redirect/, { kind: 'external', subtype: 'endpoint', label: 'outbound request', impact: 'medium' }],
+  [/xss|html|(?:^|[/-])dom(?:-|$)/, { kind: 'external', subtype: 'actor', label: 'browser that renders the response', impact: 'medium' }],
+  [/code-injection|eval|deserial|prototype|bad-code-sanitization/, { kind: 'external', subtype: 'system', label: 'interpreter', impact: 'critical' }],
+  // Rules that match code and trace no value. What is at risk is read from the rule's name, as above.
+  [/redos|regex/, { kind: 'external', subtype: 'system', label: 'regular expression engine (availability)', impact: 'medium' }],
+  [/certificate|insecure-transport|tls/, { kind: 'external', subtype: 'endpoint', label: 'peer whose identity is not checked', impact: 'high' }],
+  [/clear-?text/, { kind: 'store', subtype: 'log', label: 'log or store holding a secret', impact: 'medium' }],
+  [/password-hash|weak-crypto|insufficient-key|insecure-randomness|hardcoded-credential/, { kind: 'store', subtype: 'database', label: 'stored secret or credential', impact: 'high' }],
+  [/sanitiz|escap|tag-filter/, { kind: 'external', subtype: 'system', label: 'reader of text meant to be escaped', impact: 'medium' }],
 ];
 export const sinkKindOf = (rule) => {
   const hit = SINKS.find(([re]) => re.test(String(rule || '').toLowerCase()));
-  return hit ? { ...hit[1], category: hit[1].label } : { kind: 'external', subtype: 'system', label: 'unclassified sink', category: 'unclassified sink', unknown: true };
+  return hit ? { ...hit[1], category: hit[1].label } : { kind: 'external', subtype: 'system', label: 'unclassified sink', category: 'unclassified sink', impact: 'medium', unknown: true };
 };
 const at = (end) => `${end.file}:${end.line}`;
 
@@ -303,41 +310,91 @@ const at = (end) => `${end.file}:${end.line}`;
  *                        the step count and the rule
  *
  * A record carries the trace's two ends and its length, not the steps between: those are dropped by
- * pathOf. A step in a third file is therefore not drawn. A record without a path (`reachability_
- * unknown`: the query never looked) draws nothing and is counted. Every flow is a static trace, so
- * its existence is unknown: CodeQL proves data CAN reach the sink, and no runtime saw it do so.
+ * pathOf. A step in a third file is therefore not drawn — unless the record carries `path.trace`
+ * (traceOf: every step) and the caller passes `functionOf(file, line)`: then each step is placed in
+ * its function ({ name, kind } , null for module level, undefined when the file could not be read),
+ * one process per function, grouped by file, and the trace is drawn hop by hop. A step whose file
+ * could not be read falls back to the file's own element and is counted in omitted.noFunction.
+ *
+ * A record without a path (`reachability_unknown`: the rule traces no value, so the query never
+ * looked) is drawn at its place: `input not traced` (an origin marked unknown) -> the element of
+ * the record's file, or of the function its line sits in -> the rule's sink. Both flows carry
+ * evidence.method `pattern`. Leaving these out drew only what a taint query can say, and a rule
+ * about a regular expression, a TLS option or an escape has no taint to report. Only a record with
+ * neither a path nor a file draws nothing, and is counted (noPath). Every flow is static, so its
+ * existence is unknown: CodeQL proves data CAN reach the sink, and no runtime saw it do so.
  */
-export function fromCodeFlows(records, { title } = {}) {
-  const omitted = { noPath: 0, unreadable: 0 };
+export function fromCodeFlows(records, { title, functionOf = null } = {}) {
+  const omitted = { noPath: 0, unreadable: 0, ...(functionOf ? { noFunction: 0 } : {}) };
   const nodes = new Map();
   const groups = new Map();
   const flows = new Map();
   const node = (n) => { if (!nodes.has(n.id)) nodes.set(n.id, n); return n.id; };
-  const flow = (from, to, label, ref) => {
+  const flow = (from, to, label, ref, method = 'taint') => {
     const key = JSON.stringify([from, to, label]);
-    if (!flows.has(key)) flows.set(key, { from, to, label, mode: 'sync', existence: 'unknown', evidence: { witness: 'static', existence: 'unknown', refs: [] } });
+    if (!flows.has(key)) flows.set(key, { from, to, label, mode: 'sync', existence: 'unknown', evidence: { witness: 'static', method, existence: 'unknown', refs: [] } });
     const refs = flows.get(key).evidence.refs;
     if (!refs.includes(ref)) refs.push(ref);
   };
   for (const r of records || []) {
     const p = r?.path;
     if (!r || typeof r.repo !== 'string' || !r.rule) { omitted.unreadable++; continue; }
-    if (r.reachability !== 'reachable' || !p?.source?.file || !p?.sink?.file) { omitted.noPath++; continue; }
+    const traced = r.reachability === 'reachable' && !!p?.source?.file && !!p?.sink?.file;
+    // a result with neither a traced path nor a place has nothing to draw
+    if (!traced && !r.file) { omitted.noPath++; continue; }
     const group = `repo:${r.repo}`;
     if (!groups.has(group)) groups.set(group, { id: group, label: r.repo, boundary: 'system' });
+    const code = (file) => node({ id: `code:${r.repo}:${file}`, kind: 'process', label: file, group });
+    // one process per function; a step whose file cannot be read falls back to the file's element
+    const place = (st, fallback) => {
+      const fn = st.file ? functionOf(st.file, st.line) : undefined;
+      if (fn === undefined) { omitted.noFunction++; return code(st.file || fallback); }
+      const fileGroup = `file:${r.repo}:${st.file}`;
+      if (!groups.has(fileGroup)) groups.set(fileGroup, { id: fileGroup, label: st.file, boundary: 'system' });
+      return node({ id: `fn:${r.repo}:${st.file}#${fn ? fn.name : ''}`, kind: 'process', label: fn ? `${fn.name}()` : `${st.file} (module level)`, group: fileGroup,
+        note: fn ? `${fn.kind} in ${st.file}` : `code outside any function in ${st.file}` });
+    };
+    const sinkOf = () => {
+      const s = sinkKindOf(r.rule);
+      return node({ id: `sink:${r.repo}:${s.category}`, kind: s.kind, subtype: s.subtype, label: s.label, impact: s.impact,
+        ...(s.unknown ? { unknown: true, note: `the rule id ${r.rule} does not say what its sink is` } : { note: `sink of ${r.repo}'s ${s.category} rules` }) });
+    };
+    if (!traced) {
+      // A rule that matches code and traces no value (a regular expression, a TLS option, an
+      // escape): it says what is weak and where, and nothing about which input arrives. Drawn at
+      // its place, entered from an origin marked unknown, so the result is on the diagram and the
+      // missing half of its evidence is too.
+      if (!groups.has('untraced')) groups.set('untraced', { id: 'untraced', label: 'Reach not traced', boundary: 'trust' });
+      const origin = node({ id: `input:${r.repo}:untraced`, kind: 'external', subtype: 'actor', label: 'input not traced', group: 'untraced', unknown: true,
+        note: 'a rule that traces no value reported what sits behind this; which input reaches it was not searched for, so it is unknown, not absent' });
+      const where = Number.isInteger(r.line) ? `${r.file}:${r.line}` : r.file;
+      const ref = `${r.rule} ${where}`;
+      const site = functionOf && Number.isInteger(r.line) ? place({ file: r.file, line: r.line }, r.file) : code(r.file);
+      flow(origin, site, 'not traced', ref, 'pattern');
+      flow(site, sinkOf(), r.rule, ref, 'pattern');
+      continue;
+    }
     if (!groups.has('untrusted')) groups.set('untrusted', { id: 'untrusted', label: 'Untrusted input', boundary: 'trust' });
     const input = node({ id: `input:${r.repo}:${at(p.source)}`, kind: 'external', subtype: 'actor', label: p.source.expr ? `${p.source.expr} (${at(p.source)})` : at(p.source), group: 'untrusted',
       note: `a source CodeQL treats as untrusted in ${r.repo}` });
-    const code = (file) => node({ id: `code:${r.repo}:${file}`, kind: 'process', label: file, group });
     const ref = `${r.rule} ${at(p.source)} -> ${at(p.sink)}`;
-    const first = code(p.source.file);
-    flow(input, first, p.source.expr || 'untrusted input', ref);
-    let last = first;
-    if (p.sink.file !== p.source.file) { last = code(p.sink.file); flow(first, last, `${p.steps} steps (${r.rule})`, ref); }
-    const s = sinkKindOf(r.rule);
-    const sink = node({ id: `sink:${r.repo}:${s.category}`, kind: s.kind, subtype: s.subtype, label: s.label,
-      ...(s.unknown ? { unknown: true, note: `the rule id ${r.rule} does not say what its sink is` } : { note: `sink of ${r.repo}'s ${s.category} rules` }) });
-    flow(last, sink, p.sink.expr ? `${p.sink.expr} (${r.rule})` : r.rule, ref);
+    const trace = functionOf && Array.isArray(p.trace) && p.trace.length ? p.trace : null;
+    let last;
+    if (trace) {
+      // consecutive steps in one function are one visit
+      last = place(trace[0], p.source.file);
+      flow(input, last, p.source.expr || 'untrusted input', ref);
+      for (const st of trace.slice(1)) {
+        const here = place(st, p.source.file);
+        if (here !== last) { flow(last, here, st.expr || r.rule, ref); last = here; }
+      }
+    } else {
+      const first = code(p.source.file);
+      flow(input, first, p.source.expr || 'untrusted input', ref);
+      last = first;
+      if (p.sink.file !== p.source.file) { last = code(p.sink.file); flow(first, last, `${p.steps} steps (${r.rule})`, ref); }
+    }
+    flow(last, sinkOf(), p.sink.expr ? `${p.sink.expr} (${r.rule})` : r.rule, ref);
   }
   return {
     v: DFD_VERSION,
@@ -345,10 +402,11 @@ export function fromCodeFlows(records, { title } = {}) {
     title: title || 'code flows',
     source: {
       producer: 'codeql-code-flows',
-      note: 'CodeQL taint traces (cra/dataflow-evidence.mjs): static proofs that data can reach a sink, not runtime observations. A record holds its two ends, so a step in a third file is not drawn.',
+      note: 'CodeQL results (cra/dataflow-evidence.mjs). A taint trace is a static proof that data can reach a sink, not a runtime observation; a record holds its two ends, so a step in a third file is not drawn. A result of a rule that traces nothing is drawn at its place (evidence.method pattern), entered from an origin marked unknown.',
       omitted,
     },
-    groups: [...groups.values()],
+    // with functions drawn every element sits in its file's group, and a repo group can be left empty
+    groups: [...groups.values()].filter((g) => [...nodes.values()].some((n) => n.group === g.id)),
     nodes: [...nodes.values()],
     flows: [...flows.values()],
   };
@@ -384,6 +442,31 @@ export function unknownOf(graph) {
     computedSites: s?.unanalysableSites ?? 0,
     computedSitesByKind: s?.unanalysableSitesByKind ?? {},
   };
+}
+
+// ── findings overlay ────────────────────────────────────────────────────────────────────────────
+
+const SEVERITY_ALIAS = { critical: 'critical', crit: 'critical', high: 'high', medium: 'medium', med: 'medium', low: 'low', undetermined: 'undetermined', undet: 'undetermined' };
+
+/**
+ * Merge a findings overlay onto a dfd model.
+ * - When `source` already carries anchored findings (items with an `at`), they ARE the overlay and
+ *   replace model.findings — the dfd author placed them.
+ * - Otherwise `source` is a facts ledger (a commitwork findings.json): the model's existing findings
+ *   (each an `id` + an `at` placement, optionally a `status`) are ENRICHED by id with the ledger's
+ *   cwe / severity / title. Placement and status stay with the dfd; the facts come from the ledger.
+ */
+export function fromFindings(model, source) {
+  const items = Array.isArray(source) ? source : (source && Array.isArray(source.findings) ? source.findings : []);
+  if (items.some((f) => f && f.at)) return { ...model, findings: items.filter((f) => f && f.at) };
+  const byId = new Map(items.filter((f) => f && f.id !== undefined).map((f) => [f.id, f]));
+  const findings = (model.findings || []).map((fd) => {
+    const src = byId.get(fd.id);
+    if (!src) return fd;
+    const sev = fd.severity ?? SEVERITY_ALIAS[String(src.severity ?? src.sev ?? '').toLowerCase()];
+    return { ...fd, cwe: fd.cwe ?? src.cwe, title: fd.title ?? src.title ?? src.name, ...(sev ? { severity: sev } : {}) };
+  });
+  return { ...model, findings };
 }
 
 // ── one drawing from two sources ────────────────────────────────────────────────────────────────
@@ -441,4 +524,97 @@ export function mergeModels(staticModel, codeModel, { root = null, title } = {})
     nodes,
     flows: [...staticModel.flows, ...codeModel.flows.map((f) => ({ ...f, from: to(f.from), to: to(f.to) }))],
   };
+}
+
+/** A rule's security-severity score in CVSS bands; no score is undetermined, never low. */
+export const severityOf = (score) => (!Number.isFinite(score) ? 'undetermined' : score >= 9 ? 'critical' : score >= 7 ? 'high' : score >= 4 ? 'medium' : 'low');
+
+/**
+ * Every scan result as an issue on the element of the file it sits in: -> { model, placed, added,
+ * skipped }. The element is the static pass's module, else the code-flow adapter's file element;
+ * a file with neither gets a module element of its own (`added`), marked as drawn for the result
+ * alone, in the group named after its top directory when the model has one. A record with no rule
+ * or no file is `skipped`. Status is undetermined: a result is a scanner's claim, not a verdict.
+ */
+export function issuesFromRecords(model, records, { prefix = 'CQ' } = {}) {
+  const ids = new Set(model.nodes.map((n) => n.id));
+  const groups = new Set((model.groups || []).map((g) => g.id));
+  const taken = new Set((model.findings || []).map((f) => f.id));
+  const nodes = [...model.nodes];
+  const findings = [...(model.findings || [])];
+  let added = 0;
+  let skipped = 0;
+  let n = 0;
+  for (const r of records || []) {
+    if (!r || !r.rule || !r.file) { skipped++; continue; }
+    let node = [`node:module:${r.file}`, `code:${r.repo}:${r.file}`].find((id) => ids.has(id));
+    if (!node) {
+      node = `node:module:${r.file}`;
+      const top = String(r.file).split('/')[0];
+      nodes.push({ id: node, kind: 'process', label: r.file, ...(groups.has(top) ? { group: top } : {}), note: 'no data flow was found for this module; it is drawn because a scan result sits in it' });
+      ids.add(node);
+      added++;
+    }
+    let id;
+    do { n++; id = `${prefix}-${String(n).padStart(2, '0')}`; } while (taken.has(id));
+    taken.add(id);
+    const steps = (r.path && Array.isArray(r.path.trace) ? r.path.trace : []).filter((st) => st.file && Number.isInteger(st.line)).map((st) => ({ file: st.file, line: st.line, ...(st.expr ? { expr: st.expr } : {}) }));
+    const source = { tool: 'codeql', rule: r.rule, file: r.file, ...(Number.isInteger(r.line) ? { line: r.line } : {}), ...(r.message ? { message: r.message } : {}), ...(steps.length ? { steps } : {}) };
+    findings.push({ id, at: { node }, title: `${r.rule} at ${r.file}${Number.isInteger(r.line) ? `:${r.line}` : ''}`, severity: severityOf(r.securitySeverity), status: 'undetermined', ...(r.cwe ? { cwe: r.cwe } : {}), source });
+  }
+  return { model: { ...model, nodes, findings }, placed: findings.length - (model.findings || []).length, added, skipped };
+}
+
+/** What a remediation verdict makes of an issue's status. Not resolved leaves it as it was. */
+const VERDICT_STATUS = { fixed: 'mitigated', hardened: 'dismissed', 'not-a-defect': 'dismissed', 'not a defect': 'dismissed', dismissed: 'dismissed' };
+const VERDICT_WORD = { fixed: 'Fixed', hardened: 'Hardened' };
+const AXES = ['source', 'flow', 'sink', 'transport', 'privilege', 'containment'];
+const CLASSES = ['secret', 'identifier', 'public', 'untrusted-input', 'configuration'];
+
+/**
+ * Remediation verdicts onto a model's issues: -> { model, applied, unmatched, ignored }.
+ * A verdict is { id | (rule, file[, line]), verdict: fixed | not-a-defect | not-resolved, reason? };
+ * one with a reason and no verdict is a dismissal (the shape of a dismissals file). It is matched by
+ * issue id, else by the scanner's rule, file and line. `fixed` becomes status mitigated and
+ * `not-a-defect` becomes dismissed, the reason kept in the issue's note with the verdict's own
+ * word in front; neither is a rescan, and the note says so. A verdict naming no issue is
+ * `unmatched`; one with a verdict this does not know, or not-resolved, is `ignored` and changes
+ * nothing. A verdict's `controls` ({ axis, what, where?, test? }) and `dataClass` are kept on the
+ * issue when they are well formed; a control on no known axis, or with nothing said, is dropped and
+ * counted in `ignored`. `hardened` is a dismissal that claims controls: whether they are enough is
+ * read from the controls, not from the word. `prs` are pull requests to add to the model (playback
+ * steps through them); a verdict's `pr` names the one that carries the ruling and is kept only when
+ * it is declared.
+ */
+export function applyVerdicts(model, verdicts, { prs = null } = {}) {
+  const findings = (model.findings || []).map((f) => ({ ...f }));
+  // the pull requests a verdict may name: the model's own, then the file's, first id wins
+  const prList = [...(model.prs || [])];
+  for (const p of Array.isArray(prs) ? prs : []) if (p && typeof p.id === 'string' && p.id && !prList.some((q) => q.id === p.id)) prList.push(p);
+  const prIds = new Set(prList.map((p) => p.id));
+  const byId = new Map(findings.map((f) => [f.id, f]));
+  const bySource = (v) => findings.find((f) => f.source && f.source.rule === v.rule && f.source.file === v.file && (!Number.isInteger(v.line) || f.source.line === v.line));
+  let applied = 0;
+  const unmatched = [];
+  const ignored = [];
+  for (const v of Array.isArray(verdicts) ? verdicts : []) {
+    if (!v || typeof v !== 'object') { ignored.push(v); continue; }
+    const word = v.verdict === undefined && v.reason ? 'not-a-defect' : String(v.verdict || '').toLowerCase();
+    const status = VERDICT_STATUS[word];
+    if (!status) { ignored.push(v.id || `${v.rule} ${v.file}`); continue; }
+    const f = (v.id !== undefined && byId.get(v.id)) || (v.rule && v.file ? bySource(v) : undefined);
+    if (!f) { unmatched.push(v.id || `${v.rule} ${v.file}`); continue; }
+    f.status = status;
+    f.note = `${VERDICT_WORD[word] || 'Not a defect'}${v.reason ? `: ${v.reason}` : '.'} (a remediation verdict, not a rescan)`;
+    if (typeof v.pr === 'string' && prIds.has(v.pr)) f.pr = v.pr;
+    else if (v.pr !== undefined) ignored.push(`${f.id}: names a pull request the file does not declare`);
+    if (CLASSES.includes(v.dataClass)) f.dataClass = v.dataClass;
+    if (Array.isArray(v.controls)) {
+      const good = v.controls.filter((c) => c && AXES.includes(c.axis) && typeof c.what === 'string' && c.what);
+      if (good.length < v.controls.length) ignored.push(`${f.id}: ${v.controls.length - good.length} control(s) not well formed`);
+      if (good.length) f.controls = good.map((c) => ({ axis: c.axis, what: c.what, ...(typeof c.where === 'string' && c.where ? { where: c.where } : {}), ...(typeof c.test === 'string' && c.test ? { test: c.test } : {}) }));
+    }
+    applied++;
+  }
+  return { model: { ...model, ...(prList.length ? { prs: prList } : {}), findings }, applied, unmatched, ignored };
 }

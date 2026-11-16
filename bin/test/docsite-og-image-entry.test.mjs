@@ -8,7 +8,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import { stripComments } from '../lib/tracked-imports.mjs';
 
@@ -102,8 +102,8 @@ test('--check fails on a drifted file and reports both sizes', (t) => {
 // Node 24 and 26 can deadlock inside process.exit() while a V8 background compile waits on a GC
 // (nodejs/node#64274). While the renderer called it, this file hung 5 of 6 Linux CI runs, and 17 of 48
 // --check runs hung under V8's concurrent-allocation stress, so 24 clean exits make a regression show.
-// The control is a script that only allocates and never exits explicitly. Node 22 hangs it 9 of 24
-// times under this stress, so on such a runtime a hung renderer says nothing about the renderer.
+// Node 22 also hangs processes that never call it under this stress, so a hung renderer alone says
+// nothing about the renderer.
 // The deadlock lives inside process.exit() and an uncaught throw, so the renderer must reach neither.
 // Reading the source holds on every run, including the rounds the stress run below misses.
 const EXIT_CALL = 'calls process.exit()';
@@ -123,28 +123,55 @@ test('the renderer never calls process.exit() and catches every throw from run()
     'a comment naming process.exit() is not a call');
 });
 
-// All 24 run at once because contention is what exposes the deadlock: with it reinstated, 24 at once
-// hung 15 of 96 children and one at a time hung none. A child killed by a signal never reached its
-// exit, so it is unmeasured: neither a pass nor the deadlock.
-const STRESS_RUNS = 24;
-const STRESS_MIN_MEASURED = 16;
-const stressExits = (args, env = process.env) => Promise.all(Array.from({ length: STRESS_RUNS }, () => new Promise((done) => {
-  const c = spawn(process.execPath, ['--stress-concurrent-allocation', ...args], { env, stdio: 'ignore' });
-  const timer = setTimeout(() => { c.kill('SIGKILL'); done('hung'); }, 30_000);
-  c.on('exit', (code, signal) => { clearTimeout(timer); done(code ?? signal); });
-})));
+// Node can hang ANY process at shutdown under this stress (nodejs/node#54918, #64274, both open), at a
+// rate that moves with the runner and the workload: on Linux Node 22 a hot-loop control living 5x longer
+// hung 11 of 72 while the renderer hung 29 of 72. So each renderer is paired with its twin: the same
+// file, arguments and work, with process.exit() made a natural exit by a preload. Only the exit path
+// differs, and the renderer must out-hang its twins beyond chance. A child killed by a signal never
+// reached its exit, so it is unmeasured: neither a pass nor the deadlock. 24 run at once because
+// contention exposes the deadlock: reinstated, 24 at once hung 15 of 96 and one at a time hung none.
+const STRESS_AT_ONCE = 24;
+const STRESS_LOOKS = 4;
+const STRESS_ALPHA = 0.01;
+// Futility stops never raise the false-failure rate; a 16% regression stops on this 1.3% of the time.
+const STRESS_FUTILE_P = 0.2;
+const HANG_MS = 30_000;
 
-// The control does as much work as one renderer run and exits the same way, naturally. Under this
-// stress Node itself can hang ANY process at shutdown once it has run for a while (nodejs/node#54918
-// "Deadlock at process shutdown", #64274 "Hang at shutdown", both open): on 2026-11-12, 4-core Linux,
-// Node 22.23, a bare setTimeout(2 s) hung 5/24 and a 2 s busy loop 4/24, while a millisecond
-// allocation loop hung none. A short control therefore says nothing about a renderer that runs longer.
-// This one spins hot integer work and deflate until its own CPU time reaches what one unstressed
-// renderer run took, so 24 at once stretch it the same way they stretch the renderer. If Node hangs
-// it, the renderer cannot exit more cleanly than it, and the run skips with the counts. A renderer
-// that reintroduces process.exit() is still caught by the static exitHazards test above.
-const workControl = (cpuMs) => "const z=require('node:zlib');const b=new Uint8Array(1200*630*3);"
-  + `for(let r=0;process.cpuUsage().user<${cpuMs}*1000;r++){for(let i=0;i<b.length;i++)b[i]=(b[i]*31+i*7+r)&255;z.deflateSync(b,{level:1});}`;
+const stressChild = (args, env) => new Promise((done) => {
+  const t0 = performance.now();
+  const c = spawn(process.execPath, ['--stress-concurrent-allocation', ...args], { env, stdio: 'ignore' });
+  const timer = setTimeout(() => { c.kill('SIGKILL'); done({ end: 'hung' }); }, HANG_MS);
+  c.on('exit', (code, signal) => { clearTimeout(timer); done({ end: code ?? signal, ms: performance.now() - t0 }); });
+});
+const tally = () => ({ codes: [], hung: 0, killed: [], ms: [] });
+const record = (side) => (r) => {
+  if (r.end === 'hung') side.hung++;
+  else if (typeof r.end === 'string') side.killed.push(r.end);
+  else { side.codes.push(r.end); side.ms.push(r.ms); }
+};
+const measured = (side) => side.codes.length + side.hung;
+const median = (xs) => [...xs].sort((a, b) => a - b)[xs.length >> 1] ?? NaN;
+
+const logChoose = (n, k) => { let s = 0; for (let i = 1; i <= k; i++) s += Math.log((n - k + i) / i); return s; };
+/** One-sided Fisher exact p: the chance renderers take at least rHung of all hangs if both sides share one hang rate. */
+function excessHangP(rHung, rN, cHung, cN) {
+  const hung = rHung + cHung, all = rN + cN;
+  let p = 0;
+  for (let x = rHung; x <= Math.min(hung, rN); x++) p += Math.exp(logChoose(hung, x) + logChoose(all - hung, rN - x) - logChoose(all, rN));
+  return Math.min(1, p);
+}
+
+test('the excess-hang p-value is the hypergeometric upper tail', () => {
+  const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
+  close(excessHangP(4, 24, 0, 24), 10626 / 194580);
+  close(excessHangP(6, 24, 0, 24), 134596 / 12271512);
+  close(excessHangP(7, 24, 0, 24), 346104 / 73629072);
+  close(excessHangP(2, 2, 0, 2), 1 / 6);
+  close(excessHangP(0, 24, 5, 24), 1);
+  assert.ok(excessHangP(3, 24, 3, 24) > 0.5);
+  assert.ok(excessHangP(4, 24, 0, 24) >= STRESS_ALPHA / STRESS_LOOKS, 'CI 2026-11-15: 4 of 24 renderers and 0 of 24 controls hung on Node 22, which is chance');
+  assert.ok(excessHangP(17, 48, 0, 48) < STRESS_ALPHA / STRESS_LOOKS, 'the process.exit() renderer hung 17 of 48');
+});
 
 test('the renderer exits under concurrent-allocation stress', async (t) => {
   // Arrange
@@ -153,26 +180,43 @@ test('the renderer exits under concurrent-allocation stress', async (t) => {
   writeFileSync(png, Buffer.from('not the card'));
   const env = { ...process.env, CW_DOCSITE_ROOT: root };
   delete env.CW_DOCSITE_PRIVATE;
-  const t0 = Date.now();
-  spawnSync(process.execPath, [OG, '--check'], { env, stdio: 'ignore' });
-  const work = Math.max(50, Date.now() - t0);
-  const control = await stressExits(['-e', workControl(work)]);
-  const controlHung = control.filter((c) => c === 'hung').length;
-  if (controlHung) {
-    t.skip(`Node ${process.version} hung ${controlHung}/${STRESS_RUNS} controls doing ${work} ms of CPU work and exiting naturally, under the same stress (nodejs/node#54918); the renderer's exit was NOT measured`);
-    return;
-  }
+  const asIs = join(root, 'as-is.mjs'), natural = join(root, 'natural-exit.mjs');
+  writeFileSync(asIs, '');
+  writeFileSync(natural, 'process.exit = (code) => { if (code !== undefined) process.exitCode = code; };\n');
+  const via = (preload) => ['--import', pathToFileURL(preload).href, OG, '--check'];
+  const renderer = tally(), twin = tally();
   // Act
-  const exits = await stressExits([OG, '--check'], env);
+  let looks = 0, p = 1;
+  // Bonferroni over the looks keeps the false-failure rate at STRESS_ALPHA however early it stops.
+  while (looks < STRESS_LOOKS) {
+    for (let batch = 0; batch < 2; batch++) {
+      await Promise.all(Array.from({ length: STRESS_AT_ONCE }, (_, i) => (i % 2
+        ? stressChild(via(natural), env).then(record(twin))
+        : stressChild(via(asIs), env).then(record(renderer)))));
+    }
+    looks++;
+    p = excessHangP(renderer.hung, measured(renderer), twin.hung, measured(twin));
+    if (!renderer.hung || twin.hung >= renderer.hung || p < STRESS_ALPHA / STRESS_LOOKS || (looks > 1 && p > STRESS_FUTILE_P)) break;
+  }
   // Assert
-  assert.ok(!exits.includes('hung'), `"hung" is the deadlock: ${exits.join(', ')}`);
-  const killed = exits.filter((e) => typeof e === 'string');
-  const killedBy = [...new Set(killed)].join(', ');
-  if (STRESS_RUNS - killed.length < STRESS_MIN_MEASURED) {
-    t.skip(`${killed.length}/${STRESS_RUNS} renderers were killed by ${killedBy} before exiting -- the exit path was NOT measured`);
+  assert.deepEqual(renderer.codes, Array(renderer.codes.length).fill(1), '1 is --check reporting the drift');
+  assert.deepEqual(twin.codes, Array(twin.codes.length).fill(1), 'the twin renders the same drift');
+  const renderersSpawned = looks * STRESS_AT_ONCE;
+  const counts = `Node ${process.version}: renderers hung ${renderer.hung}/${measured(renderer)}, twins ${twin.hung}/${measured(twin)}, `
+    + `p=${p.toPrecision(3)} after ${looks} of ${STRESS_LOOKS} looks; median exit ${Math.round(median(renderer.ms))} vs ${Math.round(median(twin.ms))} ms`;
+  t.diagnostic(counts);
+  if (renderer.killed.length) {
+    const killedBy = [...new Set(renderer.killed)].join(', ');
+    if (measured(renderer) * 3 < renderersSpawned * 2) {
+      t.skip(`${renderer.killed.length}/${renderersSpawned} renderers were killed by ${killedBy} before exiting -- the exit path was NOT measured`);
+      return;
+    }
+    t.diagnostic(`${renderer.killed.length}/${renderersSpawned} renderers were killed by ${killedBy}, unmeasured`);
+  }
+  if (!renderer.hung) return;
+  if (p >= STRESS_ALPHA / STRESS_LOOKS) {
+    t.skip(`${counts}: within chance of its twins (it fails below p=${STRESS_ALPHA / STRESS_LOOKS}), so the exit path is undetermined`);
     return;
   }
-  if (killed.length) t.diagnostic(`${killed.length}/${STRESS_RUNS} renderers were killed by ${killedBy}, unmeasured`);
-  assert.deepEqual(exits.filter((e) => typeof e === 'number'), Array(STRESS_RUNS - killed.length).fill(1),
-    '1 is --check reporting the drift');
+  assert.fail(`"hung" is the deadlock: the renderer hangs at exit more often than its twin with a natural exit. ${counts}`);
 });

@@ -741,6 +741,19 @@
       "escalates": "a failure here is a proven isolation breach in the repo's own test terms."
     },
     {
+      "check": "wp-dynamic-witness",
+      "weaknessClasses": [
+        "cwe-284-authz"
+      ],
+      "oracleTier": 1,
+      "name": "WordPress dynamic access-control witness",
+      "type": "dast",
+      "sourceKind": "runtime",
+      "findsSourceVulns": false,
+      "escalates": "a confirmed row is a measured, attributable state change by a role that may not cause it, with the request that reproduces it.",
+      "note": "State-change oracle only: SSRF, redirect, XSS and disclosure leave no persisted delta and are not claimed. CSRF is not declared because the subscriber is handed a real session nonce. exercised-no-effect is not a pass for the endpoint."
+    },
+    {
       "check": "sbom",
       "weaknessClasses": [],
       "oracleTier": 1,
@@ -1590,6 +1603,31 @@
       ],
       "escalates": "Escalate a row with kev or exploited set, and any core release api.wordpress.org lists as insecure, first: those are versions attackers already use. If the site ran one while exposed, treat it as possibly compromised and run wp-integrity, webshell-detect and log-evidence over the deployed tree before updating.",
       "note": "Core is checked against the release list (the only witness that a version string is a release; the advisory source answers an unknown version as it answers a clean one) and WPVulnerability, a free, keyless aggregate of CVE, EUVD, Wordfence, Patchstack and WPScan records; plugin and theme ranges are evaluated with a port of PHP version_compare. Records from different sources overlap, so a row counts records, not distinct flaws. A version the tree does not state is never guessed: core absent from a wp-content backup is unmeasured. A component the source has no record of is listed as unknownToSource, never as clean."
+    },
+    {
+      "check": "wp-authz",
+      "name": "WordPress access control — request entry points to the state they write, and the guards on the way",
+      "type": "sast",
+      "sourceKind": "source",
+      "oracleTier": 2,
+      "findsSourceVulns": true,
+      "weaknessClasses": [
+        "cwe-284-authz"
+      ],
+      "ruleIds": [
+        "wp-nopriv-unguarded-write",
+        "wp-ajax-unguarded-write",
+        "wp-rest-unguarded-write",
+        "wp-check-discarded",
+        "wp-nonce-only-write",
+        "wp-unproven-guard-write",
+        "wp-rest-public-write",
+        "wp-rest-no-permission-callback",
+        "wp-hook-request-write",
+        "wp-triggered-write"
+      ],
+      "escalates": "A wp-triggered-write row is a handler with no capability check and no nonce check that writes site state on every call. Confirm it with wp-dynamic-witness, which drives the same entry point as an unauthenticated visitor and a subscriber and reads the database delta; a confirmed row is the proof this lane cannot give. Undetermined rows are leads for that witness, not findings.",
+      "note": "Reads PHP with nikic/php-parser and follows each admin-ajax, admin-post, REST and per-request hook registration to its handler, then records the capability checks, nonce checks and state writes on the way. Only wp-triggered-write publishes, at low, because only it met the pre-registered precision rule on held-out adjudication; the other nine rules are kept as undetermined rows with no severity. A tree with no WordPress marker near its root is not applicable rather than void; entry points with a capability check on the path, or no write on it, are counted as set aside by reason rather than reported."
     },
     {
       "check": "log-evidence",

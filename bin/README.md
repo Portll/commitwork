@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-11-13 -->
+<!-- verified-against: 2026-11-15 -->
 # bin/ — the CLI and its scanners
 
 `commitwork.mjs` is the CLI itself (see the [root README](../README.md) for commands, options and

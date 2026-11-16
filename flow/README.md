@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-19 -->
+<!-- verified-against: 2026-11-15 -->
 # flow/ — mechanical dataflow oversight
 
 Answers a question nobody in this repository could answer before: **which artifacts does nothing
@@ -141,9 +141,9 @@ Every C4 finding was checked against the tree by hand. One holds; two are C1 lim
 |---|---|
 | `reports/top-100.html` written by `bin/top100-html.mjs`, read by nothing | holds: a page for people to read, no code reader |
 | `admin/.index-build.html` written by `bin/build-admin-panel.mjs:7` | C1 limit: a temporary file `renameSync`'d over `admin/index.html` at `:10`; C1 does not model a rename as a read |
-| `monitor/chain-compact.mjs` "written" at `:74` | C1 limit: the path literal C1 bound to that `renameSync` is the `by` label on `:72`, not a path |
+| `monitor/chain-compact.mjs` "written" at `:74` | C1 limit: the path literal C1 bound to that `renameSync` is the `by` label on `:74`, not a path |
 | `monitor/private/cra-cases.json` — reads, falls back — `bin/projectstatus.mjs:161` | absent; the fallback distinguishes `unreadable` from "no cases", i.e. correctly built |
-| `/config.html` — reads, falls back — `admin/serve.mjs:1195` | a served route path, not a repo file |
+| `/config.html` — reads, falls back — `admin/serve.mjs:1263` | a served route path, not a repo file |
 
 On 2026-09-02 the same component found `data/kev.json` read behind a swallowed `try/catch {}` in
 `monitor/rollup.mjs` while absent on disk: a read whose failure was swallowed, of a file that was
@@ -202,7 +202,8 @@ a `commitwork` subcommand"; it is now also `commitwork dfd`, dispatched ahead of
 `bin/commitwork.mjs`, with the same flags and exit codes (docs/EXIT-CODES.md reads them from this
 module's header). `flow/` is in `package.json` `files` (its tests are not), because the subcommand
 and `admin/routes/dfd.mjs` import it. The route reads the file `CW_DFD_FILE` names, else the flow
-store's graph; its query keys are the flags above, and `/api/dfd` takes the filter keys only.
+store's graph; its query keys are the filter and drawing flags above (plus `tests`, `imports` and
+`repo`), and `/api/dfd` takes the filter keys, `tests`, `imports` and `repo` only.
 
 ### A scanned repository (`--repo`, `--codeql`)
 
@@ -272,9 +273,10 @@ neither it nor an `unknown` one is ever drawn or tabulated as confirmed.
 ### What the analysis derives
 
 Every flow takes exactly one class, in this order: **undirected** (`directed: false`),
-**self-loop** (`from === to`, a retry), **bidirectional** (A→B and B→A both exist; one two-headed
-flow), **feedback** (an arc that returns inside a strongly connected component, found by walking the
-component from the node the outside flows into), **forward**. From the same pass: hop rank per node
+**self-loop** (`from === to`, a retry), **feedback** (a `role` of `feedback`, `error` or `retry`: a
+declared return path, even when its pair is adjacent), **bidirectional** (two `data` flows, A→B and
+B→A; one two-headed flow), **feedback** (an arc that returns inside a strongly connected component,
+found by walking the component from the node the outside flows into), **forward**. From the same pass: hop rank per node
 (longest path once the returning arcs are set aside) and the rank of its component, branch and merge
 points, source-to-sink paths (counted exactly, listed up to a cap, the cut declared), async hops (by
 mode, or by a broker at either end) and producer → broker → consumer triples.
@@ -382,13 +384,16 @@ first match wins, applied to the label of every process and store. `docs/dfd/com
 is commitwork's own (`raw`, `normalised`, `published`, from `monitor/README.md`'s sweep pipeline).
 Counts of what was merged, renamed, split and resolved are in `source.options.merged`.
 
-**`fromCodeFlows(records)`** draws a scanned repository from `cra/dataflow-evidence.mjs` records:
+**`fromCodeFlows(records, { functionOf })`** draws a scanned repository from `cra/dataflow-evidence.mjs` records:
 the untrusted source is an external actor, the source and sink files are processes, and the sink is
 a store or external by what the rule id says it sinks into (`sinkKindOf`: SQL → database, path →
 file, log injection → log, command → binary, request forgery → endpoint, XSS → actor, code
-injection → system; anything else an unknown system). A record holds only its trace's two ends and
-its step count, so a step in a third file is not drawn. Every flow is `existence: unknown`: a
-CodeQL trace proves data can reach the sink, not that a run did.
+injection → system, and a few more rule families; a rule none of these names is an unknown system).
+A taint record without `path.trace` holds only its trace's two ends and its step count, so a step in
+a third file is not drawn; with `path.trace` and a `functionOf`, every step is placed in its
+function and the trace is drawn hop by hop. A record of a rule that traces no value is drawn at its
+place, from an origin marked `input not traced`, with `evidence.method` `pattern`. Every flow is
+`existence: unknown`: a CodeQL trace proves data can reach the sink, not that a run did.
 
 `docs/dfd/threat-model.dfd.json` is `docs/THREAT-MODEL.md` drawn by hand: six boundaries, the
 attackers as actors, every element citing its section and every flow `authored` / `unknown`.

@@ -49,6 +49,17 @@
                 "isolation": { "type": "string" },
                 "isolationReason": { "type": "string" },
                 "timedOut": { "type": "boolean" },
+                "exit": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["code", "outcome", "meaning"],
+                  "properties": {
+                    "code": { "type": ["integer", "null"] },
+                    "outcome": { "enum": ["measured", "unmeasured", "undeclared", "unrecorded"] },
+                    "meaning": { "type": "string" }
+                  },
+                  "description": "Present only on a lane that declares report.exitCodes: the tool's exit code and what the declaration says it means. undeclared is a code the lane does not list; unrecorded is a missing or unreadable exit sidecar, with code null."
+                },
                 "boundary": {
                   "type": "object",
                   "additionalProperties": false,

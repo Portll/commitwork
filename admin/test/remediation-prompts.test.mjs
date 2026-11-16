@@ -140,9 +140,16 @@ describe('route — /api/remediation/prompts', () => {
     // no category ⇒ live null, never a borrowed or fabricated count
     for (const p of outside) assert.equal(p.live, null, `${p.check}: live must be null`);
     // Joern and Bearer have real extractor categories; an exception for them here would turn a
-    // measured lane back into a tolerated void.
-    assert.deepEqual(outside.map((p) => p.check).sort(), [],
+    // measured lane back into a tolerated void. Each exception must declare notALane, the manifest's
+    // own statement that no fleet rollup reads it.
+    const NO_ROLLUP = ['wp-dynamic-witness'];
+    assert.deepEqual(outside.map((p) => p.check).sort(), NO_ROLLUP,
       'a prompt-carrying check has no category — alias it in the prompts route, or update this pin');
+    const sb = JSON.parse(readFileSync(join(CW, 'manifests', 'security-baseline.json'), 'utf8'));
+    for (const id of NO_ROLLUP) {
+      const c = sb.checks.find((x) => x.id === id);
+      assert.ok(c && typeof c.notALane === 'string' && c.notALane.length >= 40, `${id}: an uncategorised prompt needs a notALane reason`);
+    }
   });
 });
 
@@ -155,9 +162,20 @@ const fnSrc = INDEX_SRC.slice(fnAt, INDEX_SRC.indexOf('\n}', fnAt) + 2);
 const wAt = INDEX_SRC.indexOf('function rpWeight(l){');
 assert.ok(wAt > -1, 'rpWeight not found in the panel source');
 const wSrc = INDEX_SRC.slice(wAt, INDEX_SRC.indexOf('\n}', wAt) + 2);
-// RP_VIEW_TAB is lifted from source, not restated — a copy would go stale silently.
-const tabLine = INDEX_SRC.split('\n').find((l) => l.startsWith('const RP_VIEW_TAB='));
-assert.ok(tabLine, 'RP_VIEW_TAB not found in admin/index.html');
+// rpViewTab is lifted from source, not restated — a copy would go stale silently.
+const tabLine = INDEX_SRC.split('\n').find((l) => l.startsWith('const rpViewTab='));
+assert.ok(tabLine, 'rpViewTab not found in admin/index.html');
+// The registry rpViewTab reads. SARIF_GROUP_ROW is its one free identifier, declared after it.
+const tabsAt = INDEX_SRC.indexOf('const SCANNER_TABS=[');
+assert.ok(tabsAt > -1, 'SCANNER_TABS not found in admin/index.html');
+const tabsSrc = INDEX_SRC.slice(tabsAt, INDEX_SRC.indexOf('\n];', tabsAt) + 3);
+const SCANNER_TABS = new Function('SARIF_GROUP_ROW', `${tabsSrc}\nreturn SCANNER_TABS;`)(() => '');
+assert.ok(SCANNER_TABS.length > 10, `SCANNER_TABS yielded ${SCANNER_TABS.length} entries; the extractor is broken`);
+// The click handler only moves to a view VALID_VIEWS accepts; lifted as tab-routes.test.mjs does.
+const nativeLine = INDEX_SRC.split('\n').find((l) => l.startsWith('const NATIVE='));
+const validLine = INDEX_SRC.split('\n').find((l) => l.startsWith('const VALID_VIEWS='));
+assert.ok(nativeLine && validLine, 'NATIVE / VALID_VIEWS not found in index.html');
+const VALID_VIEWS = new Function(`${nativeLine}\n${validLine}\nreturn VALID_VIEWS;`)();
 
 // covState/COV_COPY lifted from source for the same reason; multi-line, so slice to the `};`.
 const liftConst = (name) => {
@@ -185,15 +203,15 @@ const liftLine = (name) => {
 };
 const covSrc = `${liftConst('covState')}\n${liftConst('COV_COPY')}\n${liftLine('plainCheck')}\n${liftConst('SCANNER_LABEL')}\n${liftArrow('age')}`;
 
-function harness() {
+function harness(tabs = SCANNER_TABS) {
   const els = {};
   const $ = (id) => (els[id] ||= { id, innerHTML: '', textContent: '' });
   // nosemgrep: javascript.browser.security.eval-detected.eval-detected -- test harness evaluating an esc() helper extracted from panel source under test, no external input
   const esc = eval(`(${escLine.slice(escLine.indexOf('=') + 1).replace(/;$/, '')})`);
   // recBtn is shared with the scanner tabs and tested there; stubbed to a marker here.
   const recBtn = ({ scanner = null, label = '' }) => `<button class="rec" data-scan="${esc(scanner || '')}" data-label="${esc(label)}">⏺</button>`;
-  const render = new Function('$', 'esc', 'recBtn',
-    `${covSrc}\n${tabLine}\n${wSrc}\n${fnSrc}\nreturn renderRemediationPrompts;`)($, esc, recBtn);
+  const render = new Function('$', 'esc', 'recBtn', 'SCANNER_TABS',
+    `${covSrc}\n${tabLine}\n${wSrc}\n${fnSrc}\nreturn renderRemediationPrompts;`)($, esc, recBtn, tabs);
   return { render, el: $ };
 }
 const hoursAgo = (h) => new Date(Date.now() - h * 3600e3).toISOString();
@@ -310,6 +328,44 @@ describe('render — findings first, nothing hidden, nothing injected', () => {
     const h = harness();
     h.render({ prompts: [] });
     assert.match(h.el('rp-cards').innerHTML, /no remediation prompts declared/);
+  });
+});
+
+// ── the view button follows the registry, not a second hand-list ───────────────────────────────
+const viewButtons = (html) => [...html.matchAll(/class="rp-view" data-view="([^"]*)"/g)].map((m) => m[1]);
+
+describe('view findings — the button follows SCANNER_TABS', () => {
+  for (const t of SCANNER_TABS) {
+    test(`${t.key} gets a view findings button onto ${t.view}`, () => {
+      const h = harness();
+      h.render({ prompts: [P({ category: t.key, live: { total: 5, high: 5, ran: 1, skipped: 0, noscan: 0 } })] });
+      assert.deepEqual(viewButtons(h.el('rp-cards').innerHTML), [t.view],
+        `${t.key} renders its per-finding rows on ${t.view}, so its card must link there`);
+    });
+  }
+
+  test('a lane appended to SCANNER_TABS after load, as addDerivedLaneTabs does, gets its button', () => {
+    const tabs = [...SCANNER_TABS];
+    const h = harness(tabs);
+    tabs.push({ key: 'laneX', view: 'lanex', generic: true, derived: true });
+    h.render({ prompts: [P({ category: 'laneX', live: { total: 5, high: 5, ran: 1, skipped: 0, noscan: 0 } })] });
+    assert.deepEqual(viewButtons(h.el('rp-cards').innerHTML), ['lanex']);
+  });
+
+  test('a category SCANNER_TABS does not declare, and no category at all, render no button', () => {
+    const live = { total: 5, high: 5, ran: 1, skipped: 0, noscan: 0 };
+    const unknown = harness();
+    unknown.render({ prompts: [P({ category: 'notALane', live })] });
+    assert.deepEqual(viewButtons(unknown.el('rp-cards').innerHTML), [],
+      'a guessed tab lands on an empty table, which reads as clean');
+    const none = harness();
+    none.render({ prompts: [P({ category: null, live })] });
+    assert.deepEqual(viewButtons(none.el('rp-cards').innerHTML), []);
+  });
+
+  test('every view a button names is one the click handler accepts', () => {
+    const dropped = SCANNER_TABS.map((t) => t.view).filter((v) => !VALID_VIEWS.has(v));
+    assert.deepEqual(dropped, [], 'the click handler drops a view VALID_VIEWS does not hold, so the button does nothing');
   });
 });
 

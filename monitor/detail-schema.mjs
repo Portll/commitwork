@@ -499,10 +499,11 @@ export const ROW_SCHEMAS = Object.freeze({
   },
   depsReachability: {
     fields: [['id', 'str', 'Advisory'], ['package', 'path', 'Package'], ['sev', 'sev', 'Severity'],
-      ['reachability', 'str', 'Reachability'], ['insight', 'text', 'Insight']],
+      ['reachability', 'str', 'Reachability'], ['prover', 'str', 'Prover'], ['proofKind', 'str', 'Proof'],
+      ['insight', 'text', 'Insight']],
     sort: ['id', 'package'],
     identity: ['id', 'package'],
-    note: 'One row per dep-scan finding over the dependency graph. `reachability` is `exploitable` ONLY where dep-scan adjudicated a path to the vulnerable symbol; everything else is `unadjudicated` — which is NOT a finding of unreachable, and must never be rendered as one. When the analyser produced no slices at all the category carries reachabilityState:not-produced and no reachability counts whatsoever.',
+    note: 'One row per dep-scan finding over the dependency graph. `reachability` is `exploitable` ONLY where dep-scan adjudicated a path to the vulnerable symbol; everything else is `unadjudicated` — which is NOT a finding of unreachable, and must never be rendered as one. When the analyser produced no slices at all the category carries reachabilityState:not-produced and no reachability counts whatsoever. `prover` and `proofKind` say whose proof the claim is: `prover` is `atom` and `proofKind` is `static-slice` only on an `exploitable` row (`none` otherwise), so a consumer can tell this static slice from the Go compiler\'s call graph in depsGo.',
   },
   supplyChainPosture: {
     // `suggestion` + `note`: a control that measures a PRACTICE rather than a weakness
@@ -694,6 +695,14 @@ export const ROW_SCHEMAS = Object.freeze({
     // vulnerable version keeps the row; its version and records move with it.
     identity: ['rule', 'file'],
     note: 'One row per WordPress component from bin/wp-advisories.mjs: core read against api.wordpress.org\'s release list and WPVulnerability\'s records for its version (wp-core-vulnerable, also raised when wordpress.org lists the release as insecure), plugins and themes read against WPVulnerability with ranges evaluated by PHP\'s version_compare (wp-plugin-vulnerable, wp-theme-vulnerable), and components closed on wordpress.org (wp-plugin-closed, wp-theme-closed). A row carries the record count (sources overlap, so it counts records rather than distinct flaws), ids CVE-first, the worst CVSS, KEV and active-exploitation flags and the version that clears every record. Severity is undetermined when no record carries a score. A core version the tree does not state is never guessed, and components the source does not know are listed in the artifact, not here.',
+  },
+  wpAuthz: {
+    fields: [['rule', 'str', 'Rule'], ['file', 'path', 'File'], ['handler', 'str', 'Handler'], ['hook', 'str', 'Hook'],
+      ['entry', 'str', 'Entry'], ['line', 'int', 'Line'], ['sev', 'sev', 'Severity'], ['cwe', 'str', 'Weakness'], ['message', 'text', 'Detail']],
+    sort: ['file', 'rule', 'handler', 'hook', 'line', 'message'],
+    // one file registers many handlers, so the handler and the hook it answers are part of the place
+    identity: ['rule', 'file', 'handler', 'hook'],
+    note: 'One row per WordPress entry point and rule from bin/wp-authz.mjs, which follows each wp_ajax_, admin_post_, REST route and per-request hook registration to its handler and reads the capability checks, nonce checks and state writes on the way. entry says who can reach it: ajax-nopriv and admin-post-nopriv are anonymous, ajax and admin-post are any logged-in user, rest is whoever the permission_callback admits. Only wp-triggered-write carries a severity (low), because only it met the pre-registered held-out precision rule; every other rule is listed with an empty severity and counted as undetermined, a claim to check rather than a defect. line is where the handler is declared and is not part of the identity.',
   },
   logEvidence: {
     fields: [['rule', 'str', 'Rule'], ['file', 'path', 'Log'], ['lines', 'int', 'Lines'], ['first', 'str', 'First seen'],

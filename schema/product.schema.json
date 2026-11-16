@@ -32,6 +32,11 @@
           "type": "string",
           "description": "Monitored mailbox for vulnerability/authority correspondence."
         },
+        "namespace": {
+          "type": "string",
+          "pattern": "^https?://[^\\s/]+",
+          "description": "The CSAF 2.0 document.publisher.namespace: a URI the manufacturer controls, for example its own web origin."
+        },
         "address": {
           "type": "string"
         },

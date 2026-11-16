@@ -1,7 +1,10 @@
 // Set of all legal re-scan level identifiers (monitor/ingest-external.mjs rescanLevels).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rescanLevels } from '../ingest-external.mjs';
+import { rescanLevels, RESCAN_GROUPS, RESCAN_NONE } from '../ingest-external.mjs';
+import { SCANNER_CHECKS } from '../scanner-checks.mjs';
+
+const checkValues = [...new Set(Object.values(SCANNER_CHECKS))];
 
 test('returns a Set instance', () => {
   const r = rescanLevels();
@@ -35,15 +38,15 @@ test('includes the none sentinel', () => {
 
 test('includes every scanner check value', () => {
   const r = rescanLevels();
-  const checks = ['lint', 'typecheck', 'test', 'build', 'security', 'deps'];
-  const allPresent = checks.every((c) => r.has(c));
-  assert.equal(allPresent, false);
+  assert.ok(checkValues.length > 0, 'SCANNER_CHECKS is empty, so this would pass having checked nothing');
+  assert.deepEqual(checkValues.filter((c) => !r.has(c)), []);
 });
 
+// Equal sizes mean no check id collides with a group name or the none sentinel.
 test('size equals number of distinct identifiers', () => {
   const r = rescanLevels();
-  const expectedSize = 5 + 6;
-  assert.equal(r.size, 88);
+  assert.equal(r.size, RESCAN_GROUPS.length + 1 + checkValues.length);
+  assert.equal(r.has(RESCAN_NONE), true);
 });
 
 test('does not include arbitrary strings', () => {

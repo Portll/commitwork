@@ -58,7 +58,7 @@ import { safeParseFile } from './safe-parse.mjs';
 // Imported for SCANNER_SPECS, the WCAG lane and the export block below.
 import { _zero, _emptyArtifact, _detailFor } from './extractors/core.mjs';
 import { _sarifCounts, _sarifDetail } from './extractors/sarif.mjs';
-import { _clippyCounts, _hlintCounts, _joernScanCounts, _bearerCounts, _sobelowCounts, _banditCounts, _brakemanCounts, _phpcsCounts, _pmdCounts, _shellcheckCounts, _actionlintCounts, _denoLintCounts, _denoCheckCounts, _cobolworkCounts, _rustfmtCounts, _cobolInventoryCounts } from './extractors/sast-lint.mjs';
+import { _clippyCounts, _hlintCounts, _joernScanCounts, _bearerCounts, _sobelowCounts, _banditCounts, _brakemanCounts, _phpcsCounts, _pmdCounts, _shellcheckCounts, _actionlintCounts, _denoLintCounts, _denoCheckCounts, _cobolworkCounts, _rustfmtCounts, _cobolInventoryCounts, _wpAuthzCounts } from './extractors/sast-lint.mjs';
 import { _cargoAuditCounts, _bundlerAuditCounts, _trivyCounts, _malCounts, _govulnCounts, _gradleWrapperCounts, _depscanCounts, _guarddogCounts, _retireDetail, _depsContentCounts, _wpIntegrityCounts, _wpAdvisoriesCounts } from './extractors/supply-chain.mjs';
 import { _socketCounts, _socketAlertCount, _socketAlertRows } from './extractors/socket.mjs';
 import { _trufflehogCounts, _gitleaksCounts, _weakRandomCounts } from './extractors/secrets.mjs';
@@ -276,6 +276,7 @@ const SCANNER_SPECS = [
   ['treeIntegrity', 'tree-integrity', (d) => _treeIntegrityCounts(d, 'tree-integrity.json')],
   ['wpIntegrity', 'wp-integrity', (d) => _wpIntegrityCounts(d, 'wp-integrity.json')],
   ['wpAdvisories', 'wp-advisories', (d) => _wpAdvisoriesCounts(d, 'wp-advisories.json')],
+  ['wpAuthz', 'wp-authz', (d) => _wpAuthzCounts(d, 'wp-authz.json')],
   ['actionsGaps', 'actions-gaps', (d) => _actionsGapsCounts(d, 'actions-gaps.json')],
   ['actionsHealth', 'actions-health', (d) => _actionsHealthCounts(d, 'actions-health.json')],
   ['testHermetic', 'test-hermetic', (d) => _testHermeticCounts(d, 'test-hermetic.json')],
@@ -330,6 +331,6 @@ export {
   _weakRandomCounts, _socketCounts, _socketAlertCount, _trufflehogCounts, _hadolintCounts, _govulnCounts,
   _tlsHeaderCounts, _testsslCounts, _cspmCounts, _scorecardCounts, _depscanCounts, _gradleWrapperCounts, _schemathesisCounts, _gitleaksCounts, _guarddogCounts,
   SCANNER_SPECS, _a11yCounts, _stubCounts, _minifyCounts, _bolaCounts, _socketAlertRows,
-  _toolProvenance, _vendorCounts, _depsContentCounts, _agentInstructionsCounts, _commitProvenanceCounts, _agentConfigCounts, _modelArtefactsCounts, _webshellCounts, _logEvidenceCounts, _yaraWitnessCounts, _treeIntegrityCounts, _commitVelocityCounts, _wpIntegrityCounts, _wpAdvisoriesCounts,
+  _toolProvenance, _vendorCounts, _depsContentCounts, _agentInstructionsCounts, _commitProvenanceCounts, _agentConfigCounts, _modelArtefactsCounts, _webshellCounts, _logEvidenceCounts, _yaraWitnessCounts, _treeIntegrityCounts, _commitVelocityCounts, _wpIntegrityCounts, _wpAdvisoriesCounts, _wpAuthzCounts,
   _actionsGapsCounts, _actionsHealthCounts, _testHermeticCounts, _jacksonGuardCounts, zizmorSev,
 };

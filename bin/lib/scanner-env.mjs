@@ -29,7 +29,8 @@ const REPO_CODE_KEYS = new Set([
   'CW_TARGET_URL', 'CW_OPENAPI', 'CW_TLS_URL', 'CW_REGISTRY', 'CW_RUNNER_DISK_GB', 'CW_HERMETIC_TIMEOUT_SEC', 'CW_BH_PHASE_TIMEOUT',
   'CW_XCODEBUILD',
 ]);
-const REPO_CODE_PREFIXES = ['LC_', 'CW_DEPSCAN_', 'CW_DEPTH_', 'CW_INTENSITY_'];
+// CW_WP_: the WordPress dynamic witness's own knobs (versions, port, boot window, route list) — none a credential
+const REPO_CODE_PREFIXES = ['LC_', 'CW_DEPSCAN_', 'CW_DEPTH_', 'CW_INTENSITY_', 'CW_WP_'];
 // An analyser lane keeps the denylist, less the operator switches no lane may hold.
 const OPERATOR_SWITCHES = new Set(['CW_SANDBOX', 'COMMITWORK_TRUST_REPO_MANIFEST', 'CW_AGENT_PERMISSION_PROBE']);
 

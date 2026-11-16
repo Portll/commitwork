@@ -34,7 +34,7 @@ export const LANE_SECTION = Object.freeze({
   // Lanes that reached the roster after this map was last extended, so laneSection() answered
   // 'other' and they rendered under a literal Other heading. Sectioned by what each READS.
   sastCCppcheck: 'static', sastCFlawfinder: 'static', sastCodeqlRust: 'static', sastCodeqlGo: 'static',
-  sastBrakeman: 'static', sastPhp: 'static', nodeHazards: 'static', weakRandom: 'static',
+  sastBrakeman: 'static', sastPhp: 'static', wpAuthz: 'static', nodeHazards: 'static', weakRandom: 'static',
   sastCobol: 'static',
   mobileManifest: 'static',
   // reads instruction files without running anything

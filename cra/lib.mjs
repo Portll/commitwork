@@ -675,6 +675,16 @@ export function validateProducts(doc) {
     else if (PLACEHOLDER.test(m.name)) advisories.push('manufacturer.name is still a placeholder — Art. 14 notifications will carry a TODO');
     if (!isStr(m.contact)) errors.push('manufacturer.contact is required');
     else if (PLACEHOLDER.test(m.contact)) advisories.push('manufacturer.contact is still a placeholder — set a monitored mailbox');
+    if (!isStr(m.namespace)) advisories.push('manufacturer.namespace is not set — CSAF VEX documents fall back to https://commitwork.invalid/manufacturer-namespace-not-set and fail strict validation');
+    else {
+      let parsed = null;
+      try { parsed = new URL(m.namespace); } catch (e) { parsed = null; }
+      if (!parsed || (parsed.protocol !== 'https:' && parsed.protocol !== 'http:')) {
+        errors.push('manufacturer.namespace must be an absolute http(s) URI (CSAF 2.0 publisher.namespace)');
+      } else if (PLACEHOLDER.test(m.namespace)) {
+        advisories.push('manufacturer.namespace is still a placeholder — every CSAF document names it as the publisher');
+      }
+    }
     // fix: advise on address/euRepresentative/csirtMemberState too - only name and contact were
     // checked, so three placeholders reached Annex I and OSCAL output unremarked.
     if (isStr(m.address) && PLACEHOLDER.test(m.address)) advisories.push('manufacturer.address is still a placeholder — Annex I Part II documentation carries it');

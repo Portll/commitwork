@@ -2,7 +2,7 @@
 # The failure taxonomy — the master classification
 
 > **Edition note.** This is the edition-1 prose classification, kept as a record and last reconciled with the registry as of 2026-08-27. The authoritative
-> classification is `monitor/failure-taxonomy.json` (version 17: 207 classes in eleven families, I to
+> classification is `monitor/failure-taxonomy.json` (version 19: 208 classes in eleven families, I to
 > XI). Class counts, ranges, mitigation status and line citations below are not maintained against
 > it; where they disagree, the registry is correct.
 
@@ -14,7 +14,7 @@ reach it. None of those show up as misses, so a catalogue organised around misse
 
 This is the parent document. It classifies **every failure mode this project's development has
 produced**, and hands the false-clean family back to its own doc rather than duplicating its
-twenty-six rows.
+seventeen rows.
 
 ## The organising question
 
@@ -66,9 +66,9 @@ in for a query is the M-family defect this document catalogues.
 > The first published draft asserted that three guards were "written, tested, and called by no
 > production path". Every word of the evidence was wrong.
 > `monitor/artifact-anomaly.mjs` runs as a post-rollup pass at
-> [`monitor/sweep.mjs:756`](../monitor/sweep.mjs#L756);
+> [`monitor/sweep.mjs:984`](../monitor/sweep.mjs#L984);
 > `bin/canary-harness.mjs` runs in `npm test` via `bin/test/canary-harness.test.mjs`; and
-> `lib/reasoning-lint.mjs` **is** called, at [`bin/issue-llm.mjs:254`](../bin/issue-llm.mjs#L254).
+> `lib/reasoning-lint.mjs` **is** called, at [`bin/issue-llm.mjs:182`](../bin/issue-llm.mjs#L182).
 >
 > Two causes, both catalogued below. The first two claims came from a survey taken a day earlier and
 > carried forward without re-measurement (**M2**) — the tree moved underneath it, which is the
@@ -143,7 +143,7 @@ detections real**. Fixed with an explicit claim lattice, journaled as a scoreabl
 **A2 — the ratchet's advice launders a co-author's committed break. Closed as of 2026-08-13.** The most
 serious finding in this document. Verified closed here
 rather than accepted on report: the `claim === 'theirs' ? guard : ''` ternary is gone;
-`bin/gate-ratchet-core.mjs:79` exports `COAUTHOR_GUARD` and `:87` states it **unconditionally** on
+`bin/gate-ratchet-core.mjs:45` exports `COAUTHOR_GUARD` and `:65` states it **unconditionally** on
 every claim, with the accept-instruction offered only where `ownsIt(claim)`; the launder sentence
 survives only in a comment recording what the gate used to say. Regression is guarded rather than
 hoped for — canary `R-ADVICE-UNKNOWN` plants an unknown-claim world, scores the *advice*, and sits
@@ -160,8 +160,8 @@ another writer's *commit*, there are no dirty drifted files, the claim resolves 
 launder-advice ships with its guard suppressed.** The same defect class the A1 fix closed, one layer up.
 
 `gate-tests` is the model for the fix: its co-author guard is emitted **unconditionally**, with the
-accept-instruction subordinate ([`gate-tests.mjs:375`](../bin/gate-tests.mjs#L375),
-[`:418`](../bin/gate-tests.mjs#L418)).
+accept-instruction subordinate ([`gate-tests.mjs:579`](../bin/gate-tests.mjs#L579),
+[`:623`](../bin/gate-tests.mjs#L623)).
 
 **A3 — pristine-checkout baseline poisoning, and its stale-advice sibling.** A floor of `{fail:6}`
 written from a pristine-checkout count and compared against working-tree counts — a clean checkout
@@ -174,7 +174,7 @@ so accepting would have raised the floor **0 → 28**.
 **A4 — the gates got unwired.** Both fired every turn regardless of change, *while waiting for other
 agents' work to land, without being able to say what they were waiting on*. One regression repeated
 verbatim for 20+ turns. The operator removed the Stop-hook wiring from every readable settings scope
-— the gate had predicted its own death (`gate-ratchet.mjs:11`: *"a bypass everyone uses is worse than
+— the gate had predicted its own death (`gate-ratchet.mjs:7`: *"a bypass everyone uses is worse than
 no hook"*). Fixed by say-once suppression; **re-wired 2026-08-10**.
 
 **A5 — the corrupt baseline re-armed silently.** An unreadable baseline read as absent, so the gate
@@ -258,12 +258,11 @@ not reachability, and a review that greps for the call site cannot tell them apa
 `crossEntryDisagreements: 14`; measured, zero were severity disagreements. When the wording was
 corrected, `gate-ratchet`'s regex — which scraped that prose — matched nothing, and the metric went
 `UNKNOWN` *at the exact moment the number it watched reached zero*
-([`bin/gate-ratchet.mjs:88-99`](../bin/gate-ratchet.mjs#L88-L99) keeps the account in code; fixed at
-`:100-110` by reading `queue.json`). **The residual is live**: the third metric, `drifted`, still
-scrapes `anchor-staleness.mjs` stdout with `/(\d+)\s+OPEN entr(?:y|ies) no longer match/`
-([`:112-116`](../bin/gate-ratchet.mjs#L112-L116)) while that tool writes a structured
-`anchor-staleness.json` beside it the gate never opens. The sentence still matches today — the trap
-is armed, not sprung, one rewording from the identical silent `UNKNOWN`.
+([`bin/gate-ratchet.mjs:131-144`](../bin/gate-ratchet.mjs#L131-L144) keeps the account in code and
+reads `queue.json`). **The residual is fixed the same way**: the third metric, `drifted`, reads
+`anchor-staleness.mjs`'s structured report through `anchorReport()`
+([`:96-119`](../bin/gate-ratchet.mjs#L96-L119)) and `driftedSet()`
+([`:272-287`](../bin/gate-ratchet.mjs#L272-L287)), not its stdout. No metric is keyed to a sentence.
 
 **R3 — the canary harness runs, on a quarter of itself.** `bin/test/canary-harness.test.mjs` runs
 only the four hermetic `gate-tests` scenarios (`T-REG`, `T-CLEAN`, `T-VANISH`, `T-GARBAGE`) and
@@ -278,13 +277,13 @@ the ledger reaches `strong` confidence only via an npm lockfile diff, and commit
 dependencies. Not stuck — incapable.
 
 **R5 — `remediation: "available"`.** A literal string in 110 of 125 cases, in the field a reader
-consults to learn what to do — trivy emits the literal `FixedVersion`, `extractors.mjs:174` carries
-it, and `issue-store.mjs:780` formats it. Fifteen of the 125 are real. **Still open**, and the count
+consults to learn what to do — trivy emits the literal `FixedVersion`, `extractors/supply-chain.mjs:119` carries
+it, and `fix-range.mjs:23` formats it. Fifteen of the 125 are real. **Still open**, and the count
 grew by one since it was first recorded, which is its own small argument for never re-quoting a
 measurement.
 The class's other specimen is now closed and worth keeping for the shape: the EPSS advisory told the
 operator to run `CRA_FETCH=1` when that only refreshes KEV — correct-looking advice that could not
-work. Fixed; `cra/preflight.mjs:153` now states EPSS is populated by rollup enrichment *"not by the
+work. Fixed; `cra/preflight.mjs:161` states EPSS is populated by rollup enrichment *"not by the
 watch"*, and the `CRA_FETCH=1` line survives only where it is true. Related, and the reason stale
 prose is not cosmetic: a CSP comment explaining why stylesheets could not be locked cited 211 inline
 styles in one file and 33 in another. Re-measured: 4, 43, and the `<style>` block it named no longer
@@ -475,7 +474,7 @@ were fed house context the locals never saw (`claude -p` loads `CLAUDE.md` from 
 *"this repo's own declaration split from authority invariant"*, absent from the composed prompt).
 **Both still open** — no clean re-run on record.
 
-**M7 — undecidable is the majority, and omitting it silently shrinks every denominator.** Reported by the author of `bin/adjudicate-gates.mjs` (verified here: the tool exists and carries sixteen references to the discipline). Re-measuring past gate decisions at their recorded `headSha` produced **222 undecidable results out of 400 judgeable records** — not for want of evidence, but because roughly fifteen tests in this suite read the live fleet, so an old commit does not reproduce the run the gate actually made. The code is pinned; the world is not.
+**M7 — undecidable is the majority, and omitting it silently shrinks every denominator.** Reported by the author of `bin/adjudicate-gates.mjs` (verified here: the tool exists and carries `undecidable` as a first-class verdict). Re-measuring past gate decisions at their recorded `headSha` produced **222 undecidable results out of 400 judgeable records** — not for want of evidence, but because roughly fifteen tests in this suite read the live fleet, so an old commit does not reproduce the run the gate actually made. The code is pinned; the world is not.
 
 The consequence is the sharp part. Without a name-matching rule those 222 would nearly all have been labelled **false-clean**, because committed HEAD fails at those commits today — publishing ~232 false cleans where 10 are real. **Count agreement is not evidence; name agreement is**, so the tool now requires the failing test *names* to correspond before it emits any verdict. And `undecidable` must travel alongside the other outcomes: a three-valued result reported as two silently shrinks the denominator, which is `M4`'s self-dealing arrived at by omission rather than by intent.
 
@@ -504,12 +503,12 @@ The agent itself is the defective component.
 29-char filename constant, not a credential"* and it still filed 7× `needs-human`. The reasoning was
 right and the verdict was over-hedged, and nothing mechanical caught the mismatch.
 
-`lib/reasoning-lint.mjs` is the deterministic detector and it is wired at `bin/issue-llm.mjs:254`,
+`lib/reasoning-lint.mjs` is the deterministic detector and it is wired at `bin/issue-llm.mjs:182`,
 where `fuseChains` escalates on `lint-flagged` **even under unanimity**. It has still never run.
 `lintPair` sits on the escalated multi-chain branch, reached only when `chainsFor` returns `n > 1`,
 which requires a `(check, model)` calibration node with `denominator >= CALIBRATION_MIN_DENOMINATOR`
-(`bin/issue-llm.mjs:228-234`); no live calibration satisfies it, so every run takes the `n <= 1` path
-at `:336`. The ledger agrees: **0 machine verdicts across 623 adjudication records** (557 human).
+(`bin/issue-llm.mjs:159-163`); no live calibration satisfies it, so every run takes the `n <= 1` path
+at `:274`. The ledger agrees: **0 machine verdicts across 623 adjudication records** (557 human).
 
 That is a **closed loop**, and the sharpest `R1` in the repo: the lint cannot activate until the
 machine-verdict path accumulates calibration history, and that path produces nothing (`R6`). Neither
@@ -676,12 +675,12 @@ Ranked by return — impact descending, effort ascending within a band.
 | # | Mitigation | Closes | Impact | Effort |
 |---|---|---|---|---|
 | 1 | **REALISED LOSS — DO NOT RUN.** The branch is gone (as of 2026-08-30: no `worktree-*` ref, no `.claude/worktrees/`, zero objects naming `secrets-vault`). `git checkout worktree-secrets-vault-plan -- evaluations/secrets-vault-2026-08-04/` now exits non-zero. 847 lines of plan and evaluation live only on a branch sharing no ancestor with `main`, so they can never merge and are invisible to anyone working from it. Audit the other three orphaned branches for the same before any of the four is deleted. Not `gc`-urgent (the refs protect the objects) — urgent because nobody is tracking those refs. | D1 | **High** — real work, permanently invisible | **Low** |
-| 2 | **Invert `gate-ratchet`'s launder-advice.** Make the co-author guard unconditional and the accept-instruction subordinate — the shape `gate-tests.mjs:375/:418` already uses. Advice to accept must key on *positive* ownership (`mine`/`standing`), never on absence of evidence, because `unknown` is what commit drift from another writer produces. | A2 | **High** — an open laundering channel in the primary ratchet, demonstrated live | **Low** — one conditional |
+| 2 | **Invert `gate-ratchet`'s launder-advice.** Make the co-author guard unconditional and the accept-instruction subordinate — the shape `gate-tests.mjs:579/:623` already uses. Advice to accept must key on *positive* ownership (`mine`/`standing`), never on absence of evidence, because `unknown` is what commit drift from another writer produces. | A2 | **High** — an open laundering channel in the primary ratchet, demonstrated live | **Low** — one conditional |
 | 3 | **Automate the `R-*` canary scenarios.** The four `gate-tests` scenarios run in `npm test`; `R-CORRUPT` and the four claim worlds do not. Give them a scheduled lane (nightly sweep) so an `A2`-class regression fails a scored scenario instead of waiting to be noticed. | R3, and regressions in II/IV | **High** | **Low–Med** |
 | 4 | **Sweep the 40 unreachable SHAs.** `git branch -a --contains` over every SHA quoted in `evaluations/**`; re-anchor or annotate each. They vanish at the next `gc`. | D2 | **Med–High** | **Low** |
 | 5 | **Pin the metrics denominator** (`CW_VERDICT_PIN=1`) and **pin `temperature: 0`** on the LM Studio path. Rotation currently moves rates for reasons unrelated to gate quality; unpinned temperature makes any single run a capability claim it cannot support. | M5 on the metrics, G11 | **Med** | **Low** |
 | 6 | **Add a schema-reorder test** for the LM Studio salvage. It keys on `'{"verdict"'` appearing first; reordering a property in `schema/triage-verdict.schema.json` silently breaks every LM Studio triage and no test covers it. | G3 | **Med** | **Low** |
-| 7 | **Read `anchor-staleness.json`, stop scraping stdout.** The `drifted` metric still regexes prose while the structured artifact sits beside it unopened. This is the surviving third of the defect that already blinded this gate once, and the sentence still matches today — armed, not sprung. | R2 residual | **Med** | **Low** — one reader swap |
+| 7 | **Read `anchor-staleness.json`, stop scraping stdout.** The `drifted` metric reads the structured report through `anchorReport()`, so no metric is keyed to a sentence. | R2 residual | **Med** | **Low** — one reader swap |
 | 8 | **Break the reasoning-lint deadlock.** The lint activates only on calibration history the machine-verdict path must produce, and that path has produced 0 of 623 records. Either seed the calibration node or gate the lint on something the live system actually reaches; leaving it is a guard that reads as protection in every review. | G1, R1 | **Med–High** | **Low–Med** |
 
 ### Band 2 — high impact, medium effort

@@ -385,6 +385,7 @@ const SCANNER_LABEL={
   yaraWitness:'YARA witness · php-malware-finder and signature-base web-shell rules',
   wpIntegrity:'WordPress integrity · core and plugins against wordpress.org checksums, files loose in plugins/',
   wpAdvisories:'WordPress advisories · core, plugin and theme versions against published advisories',
+  wpAuthz:'WordPress access control · request entry points to the state they write, and the guards on the way',
   logEvidence:'Log evidence · injection, traversal and shell probes recorded in the tree\'s logs',
   treeIntegrity:'Tree integrity · git drift on a web root, installed-package RECORD hashes',
   actionsGaps:'CI gaps · self-hosted runners, triggering-head checkouts, missing permissions',

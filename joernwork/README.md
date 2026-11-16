@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 -->
+<!-- verified-against: 2026-11-15 -->
 # joernwork
 
 Repairs for [joernio/joern](https://github.com/joernio/joern) found while wiring the `sast-joern`
@@ -11,7 +11,7 @@ ship in the bottle — a bad `--language` exits 1 and `--exclude-regex 'a\.b'` s
 the local repair does not patch the launcher. The bottle's `csharpsrc2cpg` and `jssrc2cpg`
 astgen dirs are empty again: C# is repaired by `node bin/upstream-fetch.mjs --fetch astgen-dotnet
 --into <prefix>/libexec/frontends/csharpsrc2cpg/bin/astgen` (0.43.0, the version 4.0.640 pins),
-and JS resolves Homebrew's `astgen` 3.50.1 on PATH, also the pinned version.
+and JS resolves Homebrew's `astgen` on PATH; the formula has moved to 3.51.0, so it no longer matches the pinned 3.50.1.
 
 Unless a section says otherwise, the results below are for **joern 4.0.610** (Homebrew, macOS
 arm64) as of **2026-09-01**, against a C file containing `strcpy(buf, argv[1])` and `system(sprintf(cmd, "ls %s", argv[1]))`.

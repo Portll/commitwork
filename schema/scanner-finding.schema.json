@@ -5331,7 +5331,7 @@
     },
     "depsReachability": {
       "type": "array",
-      "description": "One row per dep-scan finding over the dependency graph. `reachability` is `exploitable` ONLY where dep-scan adjudicated a path to the vulnerable symbol; everything else is `unadjudicated` — which is NOT a finding of unreachable, and must never be rendered as one. When the analyser produced no slices at all the category carries reachabilityState:not-produced and no reachability counts whatsoever.",
+      "description": "One row per dep-scan finding over the dependency graph. `reachability` is `exploitable` ONLY where dep-scan adjudicated a path to the vulnerable symbol; everything else is `unadjudicated` — which is NOT a finding of unreachable, and must never be rendered as one. When the analyser produced no slices at all the category carries reachabilityState:not-produced and no reachability counts whatsoever. `prover` and `proofKind` say whose proof the claim is: `prover` is `atom` and `proofKind` is `static-slice` only on an `exploitable` row (`none` otherwise), so a consumer can tell this static slice from the Go compiler's call graph in depsGo.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -5340,6 +5340,8 @@
           "package",
           "sev",
           "reachability",
+          "prover",
+          "proofKind",
           "insight"
         ],
         "properties": {
@@ -5405,6 +5407,16 @@
             "type": "string",
             "maxLength": 240,
             "title": "Reachability"
+          },
+          "prover": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Prover"
+          },
+          "proofKind": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Proof"
           },
           "insight": {
             "type": "string",
@@ -7100,6 +7112,114 @@
             "type": "string",
             "maxLength": 240,
             "title": "Fixed in"
+          },
+          "sev": {
+            "type": "string",
+            "enum": [
+              "",
+              "crit",
+              "high",
+              "med",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "cwe": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Weakness"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4080,
+            "title": "Detail"
+          }
+        }
+      }
+    },
+    "wpAuthz": {
+      "type": "array",
+      "description": "One row per WordPress entry point and rule from bin/wp-authz.mjs, which follows each wp_ajax_, admin_post_, REST route and per-request hook registration to its handler and reads the capability checks, nonce checks and state writes on the way. entry says who can reach it: ajax-nopriv and admin-post-nopriv are anonymous, ajax and admin-post are any logged-in user, rest is whoever the permission_callback admits. Only wp-triggered-write carries a severity (low), because only it met the pre-registered held-out precision rule; every other rule is listed with an empty severity and counted as undetermined, a claim to check rather than a defect. line is where the handler is declared and is not part of the identity.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule",
+          "file",
+          "handler",
+          "hook",
+          "entry",
+          "line",
+          "sev",
+          "cwe",
+          "message"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "prepended by the rollup fleet flatten"
+          },
+          "annotation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "at",
+              "reason",
+              "who",
+              "whoKind"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "accept",
+                  "false-positive",
+                  "wont-fix"
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "whoKind": {
+                "type": "string"
+              }
+            }
+          },
+          "rule": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Rule"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "File"
+          },
+          "handler": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Handler"
+          },
+          "hook": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Hook"
+          },
+          "entry": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Entry"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line"
           },
           "sev": {
             "type": "string",

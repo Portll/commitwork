@@ -52,6 +52,7 @@
     "sastJoern": "dataflow",
     "sastBearer": "dataflow",
     "sastPhpPsalm": "dataflow",
+    "wpAuthz": "dataflow",
     "cspm": "api-metadata",
     "supplyChainPosture": "api-metadata"
   }

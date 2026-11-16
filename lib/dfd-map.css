@@ -1,0 +1,88 @@
+/* lib/dfd-map.css — the map view's own rules, added after the renderer's page CSS and the paths view's. */
+.maplay{display:grid;grid-template-columns:minmax(0,1fr) 24rem;gap:1rem;align-items:start}
+@media (max-width:70rem){.maplay{grid-template-columns:minmax(0,1fr)}}
+#wrap{overflow:auto;max-height:80vh;background:var(--panel);border:1px solid var(--line)}
+#panel{background:var(--panel);border:1px solid var(--line);padding:.6rem .8rem;font-size:.8125rem;max-height:80vh;overflow:auto;position:sticky;top:.5rem}
+#panel h3{margin:0 0 .2rem;font-size:.95rem;overflow-wrap:anywhere}
+#panel h4{margin:.7rem 0 .2rem;font:600 .6875rem var(--mono);letter-spacing:.04em;color:var(--mut);text-transform:uppercase}
+#panel ul{margin:0;padding:0;list-style:none}
+#panel li{padding:.08rem 0;overflow-wrap:anywhere}
+.lk{font:inherit;color:var(--acc);background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.lk:hover{text-decoration:underline}
+#q{font:.8125rem var(--mono);background:var(--panel);color:var(--ink);border:1px solid var(--line2);border-radius:.25rem;padding:.3rem .5rem;width:22rem;max-width:100%}
+#hits{margin:.2rem 0 .5rem;padding:.4rem .7rem;list-style:none;background:var(--panel);border:1px solid var(--line2);max-height:14rem;overflow:auto;font-size:.8125rem}
+svg.map{display:block}
+.mb{cursor:pointer}
+.mb rect{fill:var(--panel);stroke:var(--line2);stroke-width:1.2}
+.mb.grp>rect{stroke:var(--ink);stroke-width:1.4}
+.mb.open>rect{fill:none;stroke:var(--line2);stroke-dasharray:none}
+.mb.open>text.hd{font:600 11px var(--mono);fill:var(--mut)}
+.mb.leaf>rect{stroke-dasharray:3 3}
+.mb.more>rect{stroke-dasharray:2 4}
+.mb.more text{font:11px var(--mono);fill:var(--mut)}
+.mb text.lb{font:11.5px var(--mono);fill:var(--ink)}
+.mb.on>rect{stroke:var(--acc);stroke-width:2.4}
+.mb.sev-critical>rect{fill:color-mix(in srgb,var(--crit) 30%,var(--panel));stroke:var(--crit)}
+.mb.sev-high>rect{fill:color-mix(in srgb,var(--crit) 16%,var(--panel));stroke:var(--crit)}
+.mb.sev-medium>rect{fill:color-mix(in srgb,var(--high) 16%,var(--panel));stroke:var(--high)}
+.mb.sev-low>rect,.mb.sev-undetermined>rect{fill:color-mix(in srgb,var(--mut) 14%,var(--panel));stroke:var(--mut)}
+.mb.cov-low>rect{fill:color-mix(in srgb,var(--high) 20%,var(--panel));stroke:var(--high)}
+.mb.cov-ok>rect{fill:color-mix(in srgb,var(--live) 12%,var(--panel));stroke:var(--live)}
+.mb.cov-none>rect{stroke:var(--mut);stroke-dasharray:4 3}
+.mb.traced>rect{fill:color-mix(in srgb,var(--crit) 14%,var(--panel));stroke:var(--crit)}
+.bd rect{stroke:none}.bd text{font:600 10px var(--mono);fill:var(--on-acc)}
+.bd.sev-critical rect,.bd.sev-high rect{fill:var(--crit)}.bd.sev-medium rect{fill:var(--high)}.bd.sev-low rect,.bd.sev-undetermined rect{fill:var(--mut)}
+.mb circle.tr{fill:var(--crit);stroke:var(--panel);stroke-width:1.5}
+.me line{stroke:var(--mut);opacity:.75}
+.me.taint line{stroke:var(--crit);opacity:1}
+.me text{font:9.5px var(--mono);fill:var(--mut);paint-order:stroke;stroke:var(--panel);stroke-width:3px}
+#map-a path{fill:var(--mut)}
+.st.sev-critical,.st.sev-high{background:var(--crit);border-color:var(--crit);color:var(--on-acc)}
+.st.sev-medium{background:var(--high);border-color:var(--high);color:var(--on-acc)}
+.st.sev-low,.st.sev-undetermined{border-color:var(--mut);color:var(--mut)}
+ul.cols3{columns:2;column-gap:1rem}
+ul.maplegend{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.3rem 1.4rem;font-size:.8125rem;color:var(--mut)}
+.mb .cv-track{fill:var(--line2);stroke:none}
+.mb .cv-fill{fill:var(--live);stroke:none}
+.mb .cv-fill.low{fill:var(--high)}
+.mb .cv-none{fill:none;stroke:var(--mut);stroke-width:.8;stroke-dasharray:2 2}
+.me path{fill:none;stroke:var(--mut);opacity:.5}
+.me.detail path{opacity:.8}
+.me.hot path{stroke:var(--acc);opacity:1}
+.me.taint path{stroke:var(--crit);opacity:1}
+#map-a-t path{fill:var(--crit)}
+.mb text.ct{font:9.5px var(--mono);fill:var(--mut)}
+.mb.sum>rect{stroke:var(--mut);stroke-dasharray:6 3;stroke-width:1.2}
+td.acts{white-space:nowrap}
+.btn.fix{color:var(--ink);border-color:var(--acc)}
+#panel li .btn{padding:.05rem .35rem;font-size:.625rem}
+#brief{margin-top:1rem}
+#brief-text{min-height:22rem}
+svg.map.fit{max-width:100%;height:auto}
+.me.platform path{opacity:.38}
+.me.platform.hot path,.me.platform.taint path{opacity:1}
+.bd.thin rect{fill:var(--mut)}.bd.done rect{fill:var(--live)}
+.mb.thin>rect{stroke:var(--mut);stroke-dasharray:5 3;fill:color-mix(in srgb,var(--mut) 10%,var(--panel))}
+.mb.done>rect{stroke:var(--live)}
+.st.is-open{background:var(--crit);border-color:var(--crit);color:var(--on-acc)}
+.st.is-thin{border-color:var(--mut);color:var(--mut);border-style:dashed}
+.st.is-held{border-color:var(--live);color:var(--live)}
+.st.is-fixed{background:var(--live);border-color:var(--live);color:var(--on-acc)}
+.playbar{background:var(--panel);border:1px solid var(--line2);padding:.4rem .7rem;align-items:center}
+.playbar #pb-out{flex:1 1 24rem;min-width:16rem;font-size:.8125rem}
+.mb.chg>rect{stroke:var(--acc);stroke-width:3;filter:drop-shadow(0 0 5px var(--acc))}
+.story{background:var(--panel);border:1px solid var(--line2);border-left:4px solid var(--acc);padding:.7rem 1rem .8rem;margin:.6rem 0;font-size:.9375rem;line-height:1.5;max-width:70rem}
+.story h2{margin:0 0 .2rem;font-size:1.05rem}
+.story h3{margin:.8rem 0 .25rem;font-size:.95rem}
+.story p{margin:.2rem 0}
+.story .lead{font-size:1.05rem}
+.story ul{margin:.2rem 0 .2rem 1.1rem;padding:0}
+.story li{margin:.3rem 0}
+.story b.ok,.story .now.fixed,.story .now.held{color:var(--live)}
+.story b.bad,.story .now.open{color:var(--crit)}
+.story b.thin,.story .now.thin{color:var(--mut)}
+.story .now{font-weight:600}
+.meter{display:block;width:100%;max-width:40rem;height:.7rem;border:1px solid var(--line2);margin:.4rem 0 .2rem}
+.meter .ok{fill:var(--live)}.meter .thin{fill:var(--mut)}.meter .bad{fill:var(--crit)}
+details.adv{margin:.5rem 0}
+details.adv>summary{cursor:pointer;color:var(--mut);font-size:.8125rem}

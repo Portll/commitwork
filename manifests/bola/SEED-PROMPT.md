@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-09-30 -->
+<!-- verified-against: 2026-11-15 -->
 # BOLA manifest seed prompt
 
 A ready-to-paste prompt that hands an agent (Claude Code, or any coding agent) a repository and asks

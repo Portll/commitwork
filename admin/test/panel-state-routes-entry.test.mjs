@@ -6,14 +6,15 @@
 // /api/exposure resolves deployment state from the cloudflared config, then probes DNS and origins
 // for every hostname in it. Its config path is monitor/deploy-state.mjs's defaultConfigPath(), read
 // per request: CW_CLOUDFLARED_CONFIG, else ~/.cloudflared/config.yml. The variable is cleared and
-// HOME moved to TMP before anything is imported, and the first test proves both held. Only paths
-// that resolve no hostname are driven: a hostname means real DNS and TCP. The row-producing join is
-// not reachable here.
-import { test, describe, after } from 'node:test';
+// HOME moved to TMP before anything is imported, and the first test proves both held. Tests that
+// drive hostnames stub DNS to no record and point every origin at 127.0.0.1:1, so no probe leaves
+// the host.
+import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import dnsPromises from 'node:dns/promises';
 
 const TMP = mkdtempSync(join(tmpdir(), 'cw-panelstate-entry-'));
 const REPORTS = join(TMP, 'reports');
@@ -23,6 +24,21 @@ writeFileSync(join(TMP, 'projects.json'), JSON.stringify({
   projects: [{ name: 'fixrepo', area: 'fixarea', path: join(TMP, 'src'), manifest: 'security-baseline' }],
   areas: [{ slug: 'fixarea', label: 'Fix Area', out: 'fixarea', primary: true, members: ['fixrepo'] }],
 }));
+// Two areas, each declaring one hostname, so a scoped view can be told apart from the unmapped row.
+const SCOPED_REGISTRY = join(TMP, 'projects-deploy.json');
+writeFileSync(SCOPED_REGISTRY, JSON.stringify({
+  reportsRoot: REPORTS, defaultManifest: 'security-baseline', roots: [],
+  projects: [
+    { name: 'fixrepo', area: 'fixarea', path: join(TMP, 'src'), manifest: 'security-baseline' },
+    { name: 'otherrepo', area: 'otherarea', path: join(TMP, 'src'), manifest: 'security-baseline' },
+  ],
+  areas: [
+    { slug: 'fixarea', label: 'Fix Area', out: 'fixarea', primary: true, members: ['fixrepo'],
+      deploy: { hostnames: ['fix.declared.test'], service: 'http://127.0.0.1:1', public: true, requiresAuth: false } },
+    { slug: 'otherarea', label: 'Other Area', out: 'otherarea', members: ['otherrepo'],
+      deploy: { hostnames: ['other.declared.test'], service: 'http://127.0.0.1:1', public: true, requiresAuth: false } },
+  ],
+}));
 process.env.CW_REGISTRY = join(TMP, 'projects.json');
 process.env.CW_HEALTH_RUNS_STORE = join(TMP, 'health-runs.json');
 process.env.HOME = TMP;
@@ -30,10 +46,12 @@ delete process.env.CW_CLOUDFLARED_CONFIG;
 
 const core = await import('../lib/core.mjs');
 const { initJobs } = await import('../lib/jobs.mjs');
-const { primaryArea } = await import('../../monitor/registry.mjs');
+const { primaryArea, loadRegistry } = await import('../../monitor/registry.mjs');
 const { projectSlug } = await import('../../monitor/project-scope.mjs');
 initJobs({ CW: TMP, registry: core.registry, sessionStorePath: () => join(TMP, 'sessions.json'), projectSlug, primaryArea });
 const { routes, initPanelStateRoutes } = await import('../routes/panel-state.mjs');
+
+const SCOPED = loadRegistry({ path: SCOPED_REGISTRY, quiet: true });
 
 after(() => rmSync(TMP, { recursive: true, force: true }));
 
@@ -138,7 +156,77 @@ describe('GET /api/exposure — the paths that resolve no hostname', () => {
     assert.deepEqual(res.body.rows, []);
     assert.equal(res.body.declaredCount, 0);
     assert.equal(res.body.routedCount, 0);
-    assert.deepEqual(res.body.scope, { project: 'Fix Area', area: 'fixarea', hidden: 0, hiddenUndeclared: 0, hiddenDrifted: 0 });
+    assert.deepEqual(res.body.scope, { project: 'Fix Area', area: 'fixarea', hidden: 0, shownUndeclared: 0, hiddenDrifted: 0 });
     assert.deepEqual(res.body.totals, { published: 0, reachable: 0, withFindings: 0, uncertain: 0, clean: 0, unscanned: 0, drifted: 0 });
+  });
+});
+
+describe('GET /api/exposure — project scope never hides an unmapped hostname', () => {
+  // deploy-state resolves DNS on the default path; no record here keeps the lookups off the network.
+  const realResolve4 = dnsPromises.resolve4;
+  const realResolveCname = dnsPromises.resolveCname;
+  before(() => {
+    const noRecord = async () => { throw Object.assign(new Error('no record (fixture)'), { code: 'ENOTFOUND' }); };
+    dnsPromises.resolve4 = noRecord;
+    dnsPromises.resolveCname = noRecord;
+  });
+  after(() => {
+    dnsPromises.resolve4 = realResolve4;
+    dnsPromises.resolveCname = realResolveCname;
+  });
+
+  // One hostname declared by Fix Area, one declared by Other Area, one declared by no area.
+  function writeScopedConfig() {
+    mkdirSync(join(TMP, '.cloudflared'), { recursive: true });
+    writeFileSync(CFG, 'tunnel: fixture\ningress:\n'
+      + '  - hostname: fix.declared.test\n    service: http://127.0.0.1:1\n'
+      + '  - hostname: nobody.declared.test\n    service: http://127.0.0.1:1\n'
+      + '  - hostname: other.declared.test\n    service: http://127.0.0.1:1\n'
+      + '  - service: http_status:404\n');
+  }
+
+  async function callScoped() {
+    const previous = registryFn;
+    registryFn = () => SCOPED;
+    try { return await call('/api/exposure', 'project=Fix%20Area'); }
+    finally { registryFn = previous; }
+  }
+
+  test('a routed hostname no area declares stays in the scoped rows and counts in totals and drift', async () => {
+    writeScopedConfig();
+    const res = await callScoped();
+    assert.equal(res.body.ok, true, JSON.stringify(res.body));
+    assert.deepEqual(res.body.rows.map((r) => r.hostname), ['fix.declared.test', 'nobody.declared.test']);
+    assert.deepEqual(res.body.rows.find((r) => r.hostname === 'nobody.declared.test').area, null);
+    assert.equal(res.body.rows.find((r) => r.hostname === 'nobody.declared.test').worst, 'unmapped');
+    assert.equal(res.body.totals.published, 2, 'the unmapped row counts as published');
+    assert.deepEqual(res.body.drift, ['fix.declared.test', 'nobody.declared.test']);
+  });
+
+  test('the shown unmapped row is reported as shownUndeclared and never as hidden', async () => {
+    writeScopedConfig();
+    const res = await callScoped();
+    assert.equal(res.body.scope.shownUndeclared, 1);
+    assert.equal(res.body.scope.hidden, 1, 'only the other area\'s row is hidden');
+  });
+
+  test('another area\'s hostname is still excluded and counted as hidden', async () => {
+    writeScopedConfig();
+    const res = await callScoped();
+    assert.equal(res.body.rows.some((r) => r.hostname === 'other.declared.test'), false);
+    assert.equal(res.body.scope.hidden, 1);
+    assert.equal(res.body.scope.hiddenDrifted, 1);
+    assert.equal(res.body.drift.includes('other.declared.test'), false);
+  });
+
+  test('without ?project= every row is shown and shownUndeclared is 0', async () => {
+    writeScopedConfig();
+    const previous = registryFn;
+    registryFn = () => SCOPED;
+    let res;
+    try { res = await call('/api/exposure'); }
+    finally { registryFn = previous; }
+    assert.deepEqual(res.body.rows.map((r) => r.hostname), ['fix.declared.test', 'nobody.declared.test', 'other.declared.test']);
+    assert.deepEqual(res.body.scope, { project: null, area: null, hidden: 0, shownUndeclared: 0, hiddenDrifted: 0 });
   });
 });

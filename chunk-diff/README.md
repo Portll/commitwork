@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 -->
+<!-- verified-against: 2026-11-15 -->
 # commitwork · chunk-diff — N-way Markdown comparison sidecar
 
 A self-contained HTML artifact generator (zero runtime deps, `file://`-safe, no CDN) that compares

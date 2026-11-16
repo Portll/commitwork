@@ -1251,15 +1251,19 @@ async function loadExposure(){
   const sc=d.scope||{};
   n.textContent=`${(d.rows||[]).length} hostname(s) · ${t.drifted??0} drifted`
     +(sc.area?` · ${sc.area}`:' · every hostname on this box');
-  // A NARROWED VIEW MUST NEVER READ AS A COMPLETE ONE. What the scope removed is stated, with the
-  // two categories worth acting on called out: hostnames no project declares (which no project
-  // scope will ever show) and hostnames whose applied routing disagrees with the registry.
-  const hiddenNote = sc.hidden
-    ? `<div class="mut gap-top">${sc.hidden} hostname(s) on this box are <b>not shown</b> — scoped to `
-      + `${esc(sc.project||sc.area||'this project')}.`
-      + (sc.hiddenUndeclared?` ${sc.hiddenUndeclared} of them are <b class="txt-part">declared by no project</b>, so no project view will show them.`:'')
-      + (sc.hiddenDrifted?` ${sc.hiddenDrifted} are <b class="txt-crit">drifted</b>.`:'')
-      + ` Tick <b>show all hostnames on this box</b> above to see them.</div>`
+  // A NARROWED VIEW MUST NEVER READ AS A COMPLETE ONE. What the scope removed is stated, together
+  // with the hostnames no project declares: those are never hidden, they appear in every project
+  // view, and they are exactly the rows most worth noticing. Drifted hostnames among the hidden
+  // ones are counted too.
+  const scopeSentences = [];
+  if (sc.hidden) scopeSentences.push(`${sc.hidden} hostname(s) on this box are <b>not shown</b> — scoped to `
+    + `${esc(sc.project||sc.area||'this project')}.`
+    + (sc.hiddenDrifted?` ${sc.hiddenDrifted} are <b class="txt-crit">drifted</b>.`:'')
+    + ` Tick <b>show all hostnames on this box</b> above to see them.`);
+  if (sc.area && sc.shownUndeclared) scopeSentences.push(`${sc.shownUndeclared} hostname(s) shown are `
+    + `<b class="txt-part">declared by no project</b> and appear in every project view.`);
+  const hiddenNote = scopeSentences.length
+    ? `<div class="mut gap-top">${scopeSentences.join(' ')}</div>`
     : '';
   dr.innerHTML+=hiddenNote;
   ft.innerHTML=`tunnel config <code>${esc(d.configPath||'')}</code> · ${d.declaredCount} declared, ${d.routedCount} routed · probed ${esc(String(d.generated||'').slice(0,19))} · `

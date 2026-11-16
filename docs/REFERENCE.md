@@ -10,10 +10,10 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 344 | 282 | 62 |
-| Exit codes (declared in the header) | 359 | 162 | 197 |
-| `CW_*` environment variables (described in an `env` header) | 939 | 227 | 712 |
-| Lane manifest check keys in use (described in the schema) | 44 | 42 | 2 |
+| Commands (a usage line in the header) | 346 | 284 | 62 |
+| Exit codes (declared in the header) | 361 | 164 | 197 |
+| `CW_*` environment variables (described in an `env` header) | 958 | 233 | 725 |
+| Lane manifest check keys in use (described in the schema) | 45 | 43 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
 entry points, plus the `commitwork` subcommands.
@@ -82,7 +82,7 @@ Exit codes:
 - `commitwork setup`: 0 every requested tool was present or installed, or nothing was requested (report-only, declined) · 20 a requested install failed, or a tool --only named has no installer here · 21 nothing failed, but a requested tool needs an administrator; the closing block names the command (declared in `bin/setup.mjs`)
 - `commitwork hook`: undeclared
 - `commitwork update`: undeclared
-- `commitwork dfd`: 0 written · 2 usage · 20 the document is not a valid dfd@1 · 21 an input is absent, unreadable or not a flow graph, --repo is not a git checkout, or --codeql is neither SARIF nor dataflow records · 22 the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw (declared in `flow/dfd-cli.mjs`)
+- `commitwork dfd`: 0 written · 2 usage · 20 the document is not a valid dfd@1 · 21 an input is absent, unreadable or not a flow graph, --repo is not a git checkout, --codeql is neither SARIF nor dataflow records, or --coverage is unreadable or holds no lcov record · 22 the filter matched no node, --collapse named a group with no element, the model is larger than --max, or --repo/--codeql found no flow to draw (declared in `flow/dfd-cli.mjs`)
 - `commitwork version`: undeclared
 - `commitwork help`: undeclared
 
@@ -1495,7 +1495,7 @@ semgrep-pro-delta — the NEGATIVE delta: unsuppressed findings the OSS engine r
 
 bin/semgrep-retry.mjs — re-run Semgrep on the files the main scan timed out on.
 
-- Usage: `node bin/semgrep-retry.mjs <lane-sarif> [--bin semgrep] [--log <file>] -- <config args…>`
+- Usage: `node bin/semgrep-retry.mjs <lane-sarif> [--json <semgrep.json>] [--bin semgrep] [--log <file>] -- <config args…>`
 - Exit: 0 every handled state (the receipt carries the retry's outcome; the lane's exit sidecar was written before this step) · 2 usage
 
 ### `bin/session-roster.mjs`
@@ -1818,7 +1818,7 @@ weak-random-detect.mjs — insufficient randomness in security-sensitive values,
 
 ### `bin/webshell-detect.mjs`
 
-examined in windows, never skipped), CW_WEBSHELL_SKIP_DIRS (comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is listed in summary.skippedPat…
+examined in windows, never skipped), CW_WEBSHELL_SKIP_DIRS (comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty,fixtures/semgrep-classes — every skip is lis…
 
 - Usage: `webshell-detect.mjs [rootDir] (default '.')`
 - Exit: 0 ran · 2 could not run
@@ -1838,6 +1838,20 @@ source variables of bin/lib/wp-source.mjs: CW_WPVULN_URL, CW_WP_API_URL, CW_WP_C
 
 - Usage: `wp-advisories.mjs [rootDir] (default '.')`
 - Exit: 0 ran · 2 could not run
+
+### `bin/wp-authz.mjs`
+
+bin/wp-authz.mjs — WordPress access control from source.
+
+- Usage: `wp-authz.mjs [rootDir] (default '.')`
+- Exit: 0 ran, or wrote a void or not-applicable report saying why it measured nothing · 127 php or nikic/php-parser 5 is absent, so the tree is UNSCANNED (stderr says so; no report) · 2 the root is unreadable or the analyser failed (no report: a crash is never an empty result)
+
+### `bin/wp-dynamic-witness.mjs`
+
+bin/wp-dynamic-witness.mjs — a DYNAMIC witness for WordPress broken access control.
+
+- Usage: `node bin/wp-dynamic-witness.mjs <plugin-dir> [--out DIR] [--routes wpaudit.json]`
+- Exit: 0 every trial measured (findings or no-confirmed-change) · 1 crashed (uncaught exception) · 2 usage · 3 noscan, no consent · 4 could-not-install · 5 error · 6 undetermined (unattributed changes or failed snapshots)
 
 ### `bin/wp-integrity.mjs`
 
@@ -2752,7 +2766,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-939 `CW_*` names read by tracked non-test sources: 810 by name, and
+958 `CW_*` names read by tracked non-test sources: 829 by name, and
 129 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -3363,6 +3377,8 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_PERF_TUNING` | direct | `admin/routes/perf.mjs` | undocumented |
 | `CW_PERSIST_BASELINE` | direct | `monitor/persistence-diff.mjs` | undocumented |
 | `CW_PERSIST_HOME` | direct | `monitor/persistence-diff.mjs` | undocumented |
+| `CW_PHP_BIN` | direct | `bin/wp-authz.mjs` | default `php` |
+| `CW_PHP_PARSER_DIR` | direct | `bin/wp-authz.mjs` | default ~/.composer/vendor/nikic/php-parser, then ~/.config/composer/vendor/nikic/php-parser |
 | `CW_PLATFORM_SUPPORT_RECORD` | direct | `bin/platform-support.mjs` | record path, default &lt;root&gt;/reports/platform-support.json |
 | `CW_PLATFORM_SUPPORT_ROOT` | direct | `bin/platform-support.mjs` | docs root, default this checkout |
 | `CW_PORTS_BASELINE` | direct | `monitor/listening-ports.mjs` | undocumented |
@@ -3428,14 +3444,14 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_RENOVATE_REPO` | direct | `monitor/renovate-status.mjs` | undocumented |
 | `CW_REPORTS_DIR` | direct | `admin/routes/determinations.mjs`, `bin/advisory-index.mjs`, `bin/md-view.mjs`, `cra/advisory-aliases.mjs`, `cra/dataflow-evidence.mjs` | undocumented |
 | `CW_REPORTS_ROOT` | direct | `bin/test-run.mjs`, `monitor/area-coverage.mjs`, `monitor/lane-timing.mjs`, `monitor/perf-feedback.mjs`, `monitor/store-paths.mjs` | holds the digest, its delivery ledger and the job journal &lt;reports&gt;/scheduled-job-journal.jsonl (`bin/digest-scheduled.mjs`) |
-| `CW_REPORT_DIR` | direct | `admin/routes/journey.mjs`, `bin/a11y-scan.mjs`, `bin/boot-harness.sh`, `bin/codeql-model-pack.mjs`, `bin/codeql-swift-build.sh`, `bin/commitwork.mjs` and 10 more | undocumented |
+| `CW_REPORT_DIR` | direct | `admin/routes/journey.mjs`, `bin/a11y-scan.mjs`, `bin/boot-harness.sh`, `bin/codeql-model-pack.mjs`, `bin/codeql-swift-build.sh`, `bin/commitwork.mjs` and 11 more | undocumented |
 | `CW_REPORT_FORMATS` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_REPO_IDENTITIES` | direct | `bin/lib/release-names-head-scan.mjs` | undocumented |
 | `CW_REPO_IDENTITY_LEDGER` | direct | `lib/repo-identity.mjs` | undocumented |
 | `CW_REPO_IDENTITY_ROSTER` | direct | `lib/repo-identity.mjs` | undocumented |
 | `CW_REPO_ROOT` | direct | `bin/changelog.mjs`, `bin/release-build.mjs`, `bin/release-tag.mjs`, `bin/releases-atom.mjs` | the repository read |
 | `CW_REPO_SLUG` | direct | `bin/commitwork.mjs`, `monitor/containers.mjs` | undocumented |
-| `CW_REPO_TRUSTED` | direct | `bin/commitwork.mjs` | undocumented |
+| `CW_REPO_TRUSTED` | direct | `bin/commitwork.mjs`, `bin/wp-dynamic-witness.mjs` | undocumented |
 | `CW_REPO_TUNING` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_RESEND_API_KEY` | direct | `lib/mail.mjs` | undocumented |
 | `CW_RESEND_API_URL` | direct | `lib/mail.mjs` | undocumented |
@@ -3481,6 +3497,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SELF_SWEEP_DEADLINE_MIN` | direct | `monitor/sweep.mjs` | undocumented |
 | `CW_SEMGREP_RETRY` | direct | `bin/semgrep-retry.mjs` | 0 or off switches the retry off and the main scan's timeouts stand as reduced coverage |
 | `CW_SEMGREP_RETRY_BUDGET_SEC` | direct | `bin/semgrep-retry.mjs` | wall-clock seconds for the whole retry, default 600; past it the retry is killed and the SARIF is left untouched |
+| `CW_SEMGREP_RETRY_JOBS` | direct | `bin/semgrep-retry.mjs` | Semgrep -j for the retry; unset keeps Semgrep's default unless a fixpoint-timeout file is retried, which forces 1 |
 | `CW_SEMGREP_RETRY_MAX_FILES` | direct | `bin/semgrep-retry.mjs` | most files one retry scans, default 50; the rest are named in the receipt as not retried |
 | `CW_SEMGREP_RETRY_TIMEOUT` | direct | `bin/semgrep-retry.mjs` | seconds Semgrep may spend per rule on one file in the retry, default 60 |
 | `CW_SESSION_ROSTER` | direct | `bin/session-roster.mjs`, `bin/session-start-roster.mjs` | undocumented |
@@ -3668,7 +3685,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_VULNCHECK_KEV_CACHE` | direct | `monitor/vulncheck-enrich.mjs` | undocumented |
 | `CW_VULNCHECK_KEY` | direct | `monitor/vulncheck-enrich.mjs` | undocumented |
 | `CW_WEBSHELL_MAX_BYTES` | direct | `bin/webshell-detect.mjs` | whole-file read cap, default 4 MiB; larger files are examined in windows, never skipped |
-| `CW_WEBSHELL_SKIP_DIRS` | direct | `bin/webshell-detect.mjs` | comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is listed in summary.skippedPaths |
+| `CW_WEBSHELL_SKIP_DIRS` | direct | `bin/webshell-detect.mjs` | comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty,fixtures/semgrep-classes — every skip is listed in summary.skippedPaths |
 | `CW_WEB_ROADMAP` | direct | `bin/web-roadmap.mjs` | undocumented |
 | `CW_WEB_ROOT` | direct | `lib/web-root.mjs` | undocumented |
 | `CW_WITNESS_BRANCH` | direct | `bin/offbox-watch-check.mjs` | undocumented |
@@ -3681,14 +3698,30 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_WPVULN_TTL_HOURS` | indirect | `bin/lib/wp-source.mjs` | how long advisory and release-status answers are reused (default 24) |
 | `CW_WPVULN_URL` | indirect | `bin/lib/wp-source.mjs` | www.wpvulnerability.net: core, plugin and theme advisories Each takes an http(s) base or a file:// directory laid out as `core/checksums/1.0/&lt;v&gt;-&lt;locale&gt;.json`, `core/stable-check/1.0.json`, `plugin-checksums/&lt;slug&gt;/&lt;ve… |
 | `CW_WP_API_URL` | indirect | `bin/lib/wp-source.mjs` | api.wordpress.org: core checksums and the core release status list |
+| `CW_WP_AUTHZ_MEMORY` | direct | `bin/wp-authz.mjs` | default 2G |
+| `CW_WP_AUTHZ_SKIP_DIRS` | direct | `bin/wp-authz.mjs` | comma list; default the shared scan exclusions plus tests, test and fixtures/scan-canary |
+| `CW_WP_AUTHZ_TIMEOUT_MS` | direct | `bin/wp-authz.mjs` | default 900000 |
+| `CW_WP_BOOT_MS` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
 | `CW_WP_CACHE` | indirect | `bin/lib/wp-source.mjs` | the cache directory (default ~/.commitwork/cache/wordpress; `off` disables) |
 | `CW_WP_DB` | direct | `bin/wp-posture.mjs` | dump path; `none` disables the join |
 | `CW_WP_DOWNLOADS_URL` | indirect | `bin/lib/wp-source.mjs` | downloads.wordpress.org: plugin checksums |
+| `CW_WP_HOME` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
 | `CW_WP_MAX_DEPTH` | direct | `bin/wp-integrity.mjs`, `bin/wp-posture.mjs` | how deep an install is looked for, default 4 |
+| `CW_WP_MAX_ENTRIES` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
+| `CW_WP_NUCLEI` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
+| `CW_WP_NUCLEI_BIN` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
+| `CW_WP_NUCLEI_MS` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
 | `CW_WP_OFFLINE` | indirect | `bin/lib/wp-source.mjs` | `1`: never open a connection; answer from the cache or say why not |
+| `CW_WP_ONLY` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
+| `CW_WP_PHP_VERSION` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
+| `CW_WP_PLAYGROUND_CMD` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
+| `CW_WP_PORT` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
 | `CW_WP_POSTURE_CATALOGUE` | direct | `bin/wp-posture.mjs` | catalogue path, default manifests/wp-weakness-catalogue.json |
+| `CW_WP_ROUTES` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
 | `CW_WP_SKIP_DIRS` | direct | `bin/wp-integrity.mjs`, `bin/wp-posture.mjs` | comma list of directory names or a/b paths; default .git,node_modules,.claude/worktrees,fixtures/scan-canary/dirty — every skip is listed |
 | `CW_WP_TIMEOUT_MS` | indirect | `bin/lib/wp-source.mjs` | per request (default 20000) |
+| `CW_WP_TMP` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
+| `CW_WP_VERSION` | direct | `bin/wp-dynamic-witness.mjs` | undocumented |
 | `CW_WRANGLER` | direct | `bin/docsite-publish.mjs` | undocumented |
 | `CW_XCODEBUILD` | direct | `bin/codeql-swift-build.sh` | undocumented |
 | `CW_Y` | direct | `flow/static.mjs` | undocumented |
@@ -3701,7 +3734,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 
 ## Manifest keys
 
-Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (90); 109 checks in all.
+Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (92); 111 checks in all.
 A nested key is written `parent.child`. A key the schema declares and no check uses is listed with 0.
 
 ### Check keys
@@ -3715,44 +3748,45 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `aliasOf` | 2 | This check reports into another check's category. |
 | `appliesIfExists` | 51 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
 | `appliesIfGit` | 5 | During `scan`, only run this check if the target is a git repo. |
-| `appliesIfSourceExt` | 23 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
+| `appliesIfSourceExt` | 25 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
 | `containment` | 3 | A lane's exclusion from a group, declared as DATA rather than argued in prose. |
 | `containment.excludedFrom` | 3 | Groups this check is deliberately held OUT of. |
 | `containment.reason` | 3 | Why the exclusion exists, in terms a reader can check. |
 | `containment.reviewBy` | 3 | When this exclusion must be revisited, as an ISO-8601 UTC instant. |
 | `coverageSignals` | 4 | Patterns in this check's log that mean a LANE OF THE CHECK DID NOT RUN, even though the tool exited 0. |
-| `description` | 109 | undocumented |
-| `egress` | 109 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
+| `description` | 111 | undocumented |
+| `egress` | 111 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
 | `envPassthrough` | 5 | Credential-shaped environment names (…_TOKEN, …_SECRET, …_API_KEY, …_BEARER_x) this analyser lane may inherit from the operator's environment. |
-| `executesRepoCode` | 12 | This lane runs the scanned repository's own build, test or install code. |
-| `formatNotes` | 88 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
-| `groups` | 109 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
-| `id` | 109 | Stable check id, conventionally matching the workflow filename stem. |
-| `local` | 109 | Shell commands run in sequence (fail-fast) in repoPath. |
-| `notALane` | 16 | Why this check feeds no lane: it writes an inventory, a count or a status that no reader derives a finding from. |
-| `notes` | 68 | undocumented |
+| `executesRepoCode` | 13 | This lane runs the scanned repository's own build, test or install code. |
+| `formatNotes` | 90 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
+| `groups` | 111 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
+| `id` | 111 | Stable check id, conventionally matching the workflow filename stem. |
+| `local` | 111 | Shell commands run in sequence (fail-fast) in repoPath. |
+| `notALane` | 17 | Why this check feeds no lane: it writes an inventory, a count or a status that no reader derives a finding from. |
+| `notes` | 71 | undocumented |
 | `producesIfExists` | 1 | Artifact globs (e.g. *.jar) that must exist somewhere in the repo for an empty-clean result to be trustworthy; otherwise the check is recorded as a void ('no scannable artifact — build first'). |
-| `remediationPrompt` | 86 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
-| `report` | 109 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
-| `report.file` | 109 | Filename written under $CW_REPORT_DIR. |
+| `remediationPrompt` | 88 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
+| `report` | 111 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
+| `report.exitCodes` | 3 | Every exit code the tool can end with, each marked measured (the report is a result) or unmeasured (it is not). |
+| `report.file` | 111 | Filename written under $CW_REPORT_DIR. |
 | `report.findingsExit` | 4 | Exit codes the tool documents as meaning it ran and reported findings. |
-| `report.format` | 109 | Report format. |
+| `report.format` | 111 | Report format. |
 | `report.log` | 19 | Filename (under $CW_REPORT_DIR) of the tool's own log. |
-| `requires` | 109 | Gating conditions. |
+| `requires` | 111 | Gating conditions. |
 | `requires.docker` | 4 | Requires a running Docker daemon. |
 | `requires.secrets` | 2 | Env vars that must be set (checked in process env and repoPath/.env). |
 | `requires.services` | 7 | Free-text service prerequisites surfaced to the user (e.g. 'docker daemon', 'live Supabase'). Informational. |
-| `requires.tools` | 109 | Executables that must be on PATH. |
-| `requiresRepoTrust` | 1 | The lane's command runs a script the scanned repository supplies, not a bundled scanner. |
+| `requires.tools` | 111 | Executables that must be on PATH. |
+| `requiresRepoTrust` | 2 | The lane's command runs a script the scanned repository supplies, not a bundled scanner. |
 | `requiresUrl` | 10 | Runtime scanner: needs a live base URL (--url/--urls/commitwork.url/$CW_TARGET_URL). |
 | `reuse` | 3 | Declares the lane's result a function of inputs bin/lib/lane-reuse.mjs can key: the scanned tree's files, this check, the files under the commitwork root listed in inputs (and their local imports), the tool versions, th… |
 | `reuse.env` | 1 | CW_* settings that change the result beyond those named in the command. |
 | `reuse.inputs` | 2 | Paths under the commitwork root the lane reads or executes. |
 | `reuse.outputs` | 3 | Files the lane writes into CW_REPORT_DIR, as names or * patterns; must include report.file. |
 | `reuse.packs` | 2 | Query packs the tool loads locally: codeql keys the CodeQL package cache and the repository's CodeQL models, joern the query database installed beside the joern-scan launcher. |
-| `sandboxExtraReads` | 17 | Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). |
+| `sandboxExtraReads` | 18 | Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). |
 | `sandboxExtraWrites` | 42 | Paths this lane must write beyond $CW_REPORT_DIR and TMPDIR: a tool's own cache (~/.semgrep, ~/Library/Caches/trivy, ~/.codeql). |
-| `sandboxLoopback` | 1 | The lane's tool connects over TCP loopback to worker processes it starts itself. |
+| `sandboxLoopback` | 2 | The lane's tool connects over TCP loopback to worker processes it starts itself. |
 | `scopeNotes` | 20 | Named limits on what this check can see (e.g. 'language', 'codeql-extractor-baseline'). |
 | `skipsOnGitHub` | 1 | Workflow steps deliberately NOT reproduced locally (SARIF upload, PR comments, artifact retention, cloud uploads). |
 | `timeoutSec` | 9 | Wall-clock bound in seconds for this check. |
@@ -3784,6 +3818,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `groups.rust` | 1 | undocumented |
 | `groups.supply-chain` | 1 | undocumented |
 | `groups.tests` | 1 | undocumented |
+| `groups.wp-dynamic` | 1 | undocumented |
 | `groupsNote` | 2 | Prose beside `groups`, carrying WHY a check is or is not in a group. |
 | `images` | 1 | Container images the sweep pulls ONCE before the first repo (monitor/images.mjs), bounded, recording presence + digest in batch-manifest.json. |
 | `note` | 4 | undocumented |

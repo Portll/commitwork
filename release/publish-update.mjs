@@ -13,9 +13,9 @@
 //              v<patch> tag, which bin/release-tag.mjs refuses and bin/releases-atom.mjs would
 //              list as a release
 //   --dry-run  print the publisher command and exit
-// exit: 0 published (or printed) · 2 usage · 21 the tarball or the publisher is missing ·
-//       otherwise the publisher's own exit code
-// env, read at call time: SPINE_DIR (the spine checkout, default ../spine beside this repository)
+// exit: 0 published (or printed) · 2 usage or SPINE_DIR unset · 21 the tarball or the publisher is
+//       missing · otherwise the publisher's own exit code
+// env, read at call time: SPINE_DIR (the spine checkout; required)
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -24,7 +24,8 @@ import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';
 
 export const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const spineDir = (env = process.env) => resolve(env.SPINE_DIR || join(REPO, '..', 'spine'));
+export const spineDir = (env = process.env) =>
+  (typeof env.SPINE_DIR === 'string' && env.SPINE_DIR !== '' ? resolve(env.SPINE_DIR) : null);
 
 /** { opts } or { error }. */
 export function parsePublishArgs(argv, { version } = {}) {
@@ -61,6 +62,7 @@ export function main(argv, { env = process.env, exists = existsSync, run = spawn
   const p = parsePublishArgs(argv, { version: pkgVersion });
   if (p.error) { log(`publish-update: ${p.error}`); return 2; }
   const spine = spineDir(env);
+  if (spine === null) { log('publish-update: set SPINE_DIR to the spine checkout that holds updates/publish.mjs'); return 2; }
   const argvOut = publisherArgv(p.opts, spine);
   if (p.opts.dryRun) { log(argvOut.join(' ')); return 0; }
   if (!exists(p.opts.file)) { log(`publish-update: ${p.opts.file} does not exist; npm pack --ignore-scripts --pack-destination dist writes it`); return 21; }

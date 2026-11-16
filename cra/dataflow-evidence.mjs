@@ -62,6 +62,23 @@ export function pathOf(result) {
 }
 
 /**
+ * Every step of a result's first threadFlow, in order: [{ file, line, expr }]. pathOf keeps the two
+ * ends and the length; this keeps what lies between, which is what places a trace in the functions
+ * it passes through. Returns null when the result carries no path at all.
+ */
+export function traceOf(result) {
+  const locs = result?.codeFlows?.[0]?.threadFlows?.[0]?.locations;
+  if (!Array.isArray(locs) || !locs.length) return null;
+  return locs.map((l) => {
+    const region = l?.location?.physicalLocation?.region || {};
+    // the columns let a reader check the step against the source it is about to be laid over
+    const cols = Number.isInteger(region.startColumn) && Number.isInteger(region.endColumn) && (region.endLine === undefined || region.endLine === region.startLine)
+      ? { col: region.startColumn, endCol: region.endColumn } : {};
+    return { file: uriOf(l), line: lineOf(l), expr: msgOf(l), ...cols };
+  });
+}
+
+/**
  * One SARIF result → a reachability determination + the evidence behind it.
  * `repo` is supplied by the caller from the artifact's own directory; a result is never attributed
  * to a guess.

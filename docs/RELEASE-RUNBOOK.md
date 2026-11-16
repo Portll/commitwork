@@ -98,8 +98,7 @@ Steps, all done by hand by the releaser:
    edit it so it is marked withdrawn: put a first line saying it is withdrawn, why, and which
    release to use instead, and mark it pre-release so it is no longer shown as Latest. This can be
    done in the GitHub UI or with `gh release edit <tag> --prerelease --notes-file <file>`.
-3. **npm:** not applicable today. `package.json` sets `"private": true` and commitwork has never been
-   published to npm. If it is published later, a yank is
+3. **npm:** nothing is published to npm. If it is published, a yank is
    `npm deprecate commitwork@<version> "<reason>; use <replacement>"`. A deprecation stays visible
    to every installer. Never unpublish.
 4. **Release feed:** a withdrawn state is not yet available. `bin/releases-atom.mjs` has no
@@ -125,9 +124,8 @@ done by a person. Its jobs run in this order, and each one is granted only the p
 | `publish` | Waits for `reproduce` and for approval on the `release` environment, checks every file against its attestation with `gh attestation verify`, then runs `gh release create --verify-tag` with the tarball, the SBOM, the source archive, its manifest and the notes | `contents: write`, `attestations: read` |
 
 The package is the npm tarball, `commitwork-<version>.tgz`. The `files` list in
-`package.json` defines what it contains. `"private": true` blocks `npm publish`, not `npm pack`, and
-nothing is published to npm. `--ignore-scripts` keeps the `prepare` git-hook installer out of the
-build.
+`package.json` defines what it contains. Nothing is published to npm. `--ignore-scripts` keeps the
+`prepare` git-hook installer out of the build.
 
 The SBOM comes from the tarball, which carries no lockfile and no `node_modules`. It lists every
 component only while commitwork has no runtime dependencies, so the build stops if `package.json`
@@ -272,4 +270,4 @@ Never do any of the following:
 | A source archive rebuilt to the same bytes from its commit | `bin/release-build.mjs`, gated by `bin/test/release-build.test.mjs`; the workflow rebuilds it on macOS before publishing |
 | OpenSSF Scorecard | `.github/workflows/scorecard.yml`, dispatch-only until the repository is public |
 | A withdrawn marker in the changelog or the feed | not yet available |
-| npm publication | not applicable: `package.json` is private |
+| npm publication | not done: nothing is published to npm |

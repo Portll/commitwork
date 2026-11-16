@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-13 -->
+<!-- verified-against: 2026-11-15 -->
 # mcp/ — commitwork as an MCP server
 
 commitwork's job is to verify what your agents ship. The agents doing the shipping (Claude
@@ -39,7 +39,7 @@ rollup / ledger / products by default).
 | `list_products` | The product registry (id, version, EU-market flag, repos). |
 | `issues_ready` | Ready work from the issue tracker (open ∧ unblocked ∧ unclaimed ∧ unwaived ∧ no human authority required), severity-ranked, top 50, optional area filter. Read-only. |
 | `issue_claim` | Atomically claim an issue before working on it (TTL-bounded; a conflicting unexpired claim refuses with the holder named). |
-| `issue_close` | Close an issue **with evidence**. `fixed` is refused for auto-sourced issues (finding / scanner-row) — those close on scan evidence at ingest, never by assertion; agents may close `accepted`/`refuted`/`superseded`. |
+| `issue_close` | Close an issue **with evidence**. `fixed` is refused for auto-sourced issues (finding / scanner-row) — those close on scan evidence at ingest, never by assertion; agents may close `refuted`/`superseded`, and `accepted` is refused because accepting a risk is a human act. |
 | `issue_dispositions` | Read an issue's judgement state before judging it: its `subjectDigest` (pin this), every ruling ever filed with who/when/why and whether each is still in force, and its `greenKind`. Read-only. |
 | `issue_judge` | **The return path.** Push a judgement back at a finding — `false-positive` / `remediated` / `not-applicable` — and name the re-scan depth that should verify it. Identity is mandatory (`by` + `authorizedBy`) and an MCP ingest is recorded machine-attributed by construction. |
 | `turn_efficiency` | Token and behavioural-gate aggregates per agent session, derived from the harness transcript: turn counts, token totals, ratios and rule verdicts, never the session text. A ratio with no denominator is `null`, and a transcript with unparseable lines reports outcome `unknown`. |

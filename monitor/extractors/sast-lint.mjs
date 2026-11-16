@@ -1,8 +1,8 @@
 // monitor/extractors/sast-lint.mjs — per-language code scanners that read formats of their own.
 //
-// Thirteen readers:
-//   - SAST, kind `vulnerability`: joern, bearer, sobelow, bandit, brakeman, phpcs, and actionlint
-//     (whose untrusted-input-in-`run:` finding is live script injection);
+// Fourteen readers:
+//   - SAST, kind `vulnerability`: joern, bearer, sobelow, bandit, brakeman, phpcs, wp-authz, and
+//     actionlint (whose untrusted-input-in-`run:` finding is live script injection);
 //   - lint, kind `hygiene`: clippy, hlint, PMD, deno lint, deno check, and shellcheck. All but
 //     shellcheck are non-additive, kept out of the severity headline; shellcheck stays additive,
 //     because SC2086-class quoting defects are injection.
@@ -20,7 +20,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { safeParseFile } from '../safe-parse.mjs';
-import { _zero, _emptyArtifact, _detailFor, _titled, capMessage } from './core.mjs';
+import { _zero, _emptyArtifact, _detailFor, _titled, capMessage, _wtBucket, _setAsideWorktree, _worktreesOf } from './core.mjs';
 import { classifyPath } from '../fixture-paths.mjs';
 import { ruleTitleText } from '../sarif-read.mjs';
 import { publishedTitles, publishedTitle } from '../rule-titles.mjs'; // the rule lists ShellCheck publishes
@@ -417,6 +417,51 @@ export function _phpcsCounts(dir, file) {
     }
   }
   return { ...c, ..._detailFor('sastPhp', rows) };
+}
+// bin/wp-authz.mjs (wpAuthz), written against its real runs over a public WordPress plugin sample
+// and its synthetic fixture: {tool:'wp-authz', summary:{findings, byRule, filesScanned, undetermined:
+// {count, byRule}, partial?, partialReasons?, voidReason?, applicable?, notApplicableReason?}, findings[], undetermined[]}. findings[]
+// carries the rules whose precision was measured; undetermined[] carries every other row with its
+// claim and no severity, and those are counted as undetermined, never minted into a bucket. A run
+// that parsed nothing, or a tree with no WordPress marker (applicable:false), is nosrc with its reason. Identity is (rule,
+// file, handler, hook), never the line.
+export function _wpAuthzCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return _emptyArtifact(p);
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object' || j.tool !== 'wp-authz' || !j.summary || !Array.isArray(j.findings) || !Array.isArray(j.undetermined || [])) {
+    return { ..._zero(), ran: true, unparseable: true };
+  }
+  const s = j.summary;
+  const stated = s.applicable === false && !j.findings.length && !(j.undetermined || []).length ? s.notApplicableReason : s.voidReason;
+  const why = typeof stated === 'string' && stated.trim() ? { nosrcReason: stated.trim().slice(0, 240) } : {};
+  const scanned = Number(s.filesScanned);
+  if (!Number.isFinite(scanned) || scanned <= 0 || why.nosrcReason) return { ..._zero(), ran: true, nosrc: true, ...why };
+  const c = { ..._zero(), ran: true, filesScanned: scanned };
+  const byRule = {};
+  const rows = [];
+  let undetermined = 0;
+  const wt = _wtBucket();
+  for (const f of [...j.findings, ...(j.undetermined || [])]) {
+    if (!f || typeof f !== 'object') continue;
+    const sev = ['crit', 'high', 'med', 'low'].includes(f.sev) ? f.sev : '';
+    const row = { rule: String(f.rule || ''), file: String(f.path || ''), handler: String(f.handler || ''), hook: String(f.hook || ''),
+      entry: String(f.entry || ''), line: Number(f.line) || 0, sev, cwe: String(f.cwe || ''), message: capMessage(String(f.detail || '')) };
+    if (_setAsideWorktree(wt, row)) continue;
+    if (sev) { c[sev]++; c.total++; } else undetermined++;
+    byRule[row.rule] = byRule[row.rule] || { count: 0, sev };
+    byRule[row.rule].count++;
+    rows.push(row);
+  }
+  if (undetermined) c.undetermined = undetermined;
+  if (wt.total) c.worktrees = _worktreesOf(wt, c.total + undetermined + wt.total, file);
+  c.byRule = byRule;
+  if (s.partial === true) {
+    const reasons = Array.isArray(s.partialReasons) ? s.partialReasons.map((r) => String(r).slice(0, 240)) : [];
+    c.partial = { reasons, note: `wp-authz measured only part of what it found (${reasons.join('; ') || 'reason unstated'}), so these counts are a floor.` };
+  }
+  return { ...c, ..._detailFor('wpAuthz', rows) };
 }
 // PMD's parser, written against REAL runs (7.9.0 and 7.27.0, against a fixture with an empty
 // catch block, an always-true if, and System.out usage). --format json:

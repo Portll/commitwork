@@ -164,7 +164,8 @@ test('every CW_/BH_/toolchain name a repo-code lane\'s own wrapper reads survive
   const kept = laneEnv(REPO_CODE, probe);
   // set inside the lane, never inherited: codeql exports the first two to the build it runs, and the
   // Swift lane's own command assigns CW_SWIFT_PLAN in front of codeql
-  const SET_INSIDE = new Set(['CODEQL_EXTRACTOR_GO_ROOT', 'CODEQL_PLATFORM', 'CW_SWIFT_PLAN']);
+  // CW_REPO_TRUSTED is derived by the runner AFTER laneEnv (bin/commitwork.mjs), so the tree cannot set it
+  const SET_INSIDE = new Set(['CODEQL_EXTRACTOR_GO_ROOT', 'CODEQL_PLATFORM', 'CW_SWIFT_PLAN', 'CW_REPO_TRUSTED']);
   const lost = [...read].filter((k) => !(k in kept) && !SET_INSIDE.has(k));
   assert.deepEqual(lost, [], `read by a repo-code wrapper but dropped by laneEnv: ${lost.join(', ')}`);
 });

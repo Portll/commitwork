@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-08 -->
+<!-- verified-against: 2026-11-15 -->
 # codegraph/ — a symbol graph of this repository
 
 Answers the questions an agent asks before it edits: **what does this module export, who imports it,
@@ -8,7 +8,7 @@ sources (330,870 lines on 2026-10-07), that was previously a matter of grep and 
 Zero runtime dependencies; Node as `package.json` declares (measured on 26.7.0). Built after reviewing
 [CodeGraph](https://github.com/codegraph-ai/CodeGraph) — a Rust binary that indexes 38 languages
 with tree-sitter into RocksDB and ranks with ONNX embeddings. None of that fits here, and the parts
-worth having did not need it: this repository is about 1,700 `.mjs` files of about 2,300 tracked, V8 already
+worth having did not need it: this repository is about 4,700 `.mjs` files of about 5,600 tracked, V8 already
 ships a parser, and veld already holds embeddings behind an HTTP API this repo has a client for.
 
 ```sh

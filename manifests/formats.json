@@ -187,7 +187,8 @@
       "schema": "schema/run-scan.schema.json",
       "writer": { "source": "bin/commitwork.mjs", "match": "JSON.stringify({ version: 1, baseline: manifest.repo" },
       "history": [
-        { "version": 1, "fingerprint": "sha256:d8d28e6f342214bfa1c9553f8bf66bbedfdbb5bb17821a65ca999268ad09ab17", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written: the envelope, rows and shared cell fields; the threat models stay isolation.mjs's." }
+        { "version": 1, "fingerprint": "sha256:d8d28e6f342214bfa1c9553f8bf66bbedfdbb5bb17821a65ca999268ad09ab17", "release": "0.5.13", "change": "initial", "note": "Pinned when the schema was written: the envelope, rows and shared cell fields; the threat models stay isolation.mjs's." },
+        { "version": 1, "fingerprint": "sha256:59caecff27861c8cf4a7f1fdba3d1a7ec3e6194dfc9debc5a38266cf30185af7", "release": "0.6.279", "change": "additive", "note": "Optional cell exit {code, outcome, meaning}: on a lane that declares report.exitCodes, the tool exit code and what the declaration says it means; outcome is measured, unmeasured, undeclared (a code the lane does not list) or unrecorded (no exit sidecar). Absent on a lane without a declaration." }
       ]
     },
     {

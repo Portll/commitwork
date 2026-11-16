@@ -998,6 +998,20 @@
    "draftedBy": "fixtures/scan-canary/dirty/wp-site, every source the offline mirror fixtures/scan-canary/wp-source (synthetic, inert)",
    "accepted": "2026-10-08T00:00:00Z"
   },
+  "wpAuthz": {
+   "source": "real",
+   "check": "wp-authz",
+   "tools": [
+    "node",
+    "php"
+   ],
+   "files": [
+    "wp-authz.json",
+    "wp-authz.json.exit"
+   ],
+   "draftedBy": "synthetic WordPress plugin from bin/test/wp-authz-fixture.mjs",
+   "accepted": "2026-11-15T00:00:00Z"
+  },
   "wpIntegrity": {
    "source": "real",
    "check": "wp-integrity",

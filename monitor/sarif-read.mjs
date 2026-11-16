@@ -6,7 +6,8 @@
 // 'never-ran': valid JSON without the spec-required runs[] (a tool's error object, a stub).
 // 'tool-failed': zero results while the invocation channel reports failure; both channels are
 // checked because executionSuccessful can be true while the notifications carry the fatal error.
-// Findings win over errors: any results present ⇒ 'ok' (degraded, not void). So does a run whose
+// Findings win over errors: any results present ⇒ 'ok' (degraded, not void), and executionFailed,
+// toolErrors[] and degraded say so beside the count. So does a run whose
 // only errors are per-file extraction failures while other files extracted: 'ok' with
 // extractionErrors[], which callers report as reduced coverage.
 // 'absent' is ENOENT only; callers decide what absence MEANS, never re-detect it with existsSync.
@@ -91,6 +92,10 @@ export function readSarif(path) {
   // files, so "the rest" is the success set minus the failures. Any other error keeps the void.
   const perFile = errorNotes.map(extractionFailure);
   const extractionErrors = dedupeByUri(perFile.filter(Boolean));
+  // Per-file extraction failures are already in extractionErrors.
+  const survivingToolErrors = errorNotes
+    .filter((_, i) => !perFile[i])
+    .map((n) => (n.message && n.message.text) || 'unspecified tool error');
   const onlyFileErrors = errorNotes.length > 0 && perFile.every(Boolean) && !failedRun;
   const extractedAll = extractedUris(invocations);
   const failedSet = subtractedBy(extractionErrors.map((e) => e.uri), extractedAll);
@@ -113,13 +118,17 @@ export function readSarif(path) {
   // promoting it to tool-failed would fail a large share of documents, most of them truly clean.
   // Consumers holding a second witness (the .exit sidecar) resolve it; consumers without one must
   // not read the zero as clean.
-  const unwitnessedZero = results.length === 0 && invocations.length === 0;
+  // A commitworkFixpoint record is copied from Semgrep's JSON, not an execution, so it witnesses nothing.
+  const unwitnessedZero = results.length === 0 && invocations.filter((i) => !isFixpointRecord(i)).length === 0;
   const partial = partialLedger(invocations);
   return {
     state: 'ok', runs: j.runs, results, resultCount: results.length, tool, ruleCount,
     version: typeof j.version === 'string' ? j.version : null,
     norules: j.runs.length > 0 && ruleCount === 0 && results.length === 0,
     unwitnessedZero,
+    executionFailed: failedRun,
+    toolErrors: survivingToolErrors,
+    degraded: failedRun || survivingToolErrors.length > 0,
     extractionErrors,
     partialAnalysis: partial.rows,
     partialRetry: partial.retry,
@@ -141,9 +150,14 @@ const FILE_PARTIAL_IDS = Object.freeze({
   Timeout: 'timeout', 'Syntax error': 'syntax-error', 'Other syntax error': 'syntax-error', 'Lexical error': 'lexical-error',
   // bin/base-images.mjs: an image Trivy could not scan, or whose OS is past end of support.
   'Image not scanned': 'image-not-scanned',
+  // Never in Semgrep's SARIF: bin/semgrep-retry.mjs copies these in from its JSON time.fixpoint_timeouts.
+  'Fixpoint timeout': 'fixpoint-timeout',
 });
 // The third shape is Semgrep giving up on a whole file: "Timeout at line <file>:<line>:", no rule.
-const FILE_OF = [/ on (.+?):\s*$/s, /^(?:Other )?(?:Syntax|Lexical) error at line (.+?):\d+:/, /^Timeout at line (.+?):\d+:/];
+const FILE_OF = [/ on (.+?):\s*$/s, /^(?:Other )?(?:Syntax|Lexical) error at line (.+?):\d+:/, /^Timeout at line (.+?):\d+:/,
+  /^Fixpoint timeout while performing taint analysis at (.+?):\d+:\d+/];
+/** The reasons bin/semgrep-retry.mjs re-measures; the others are about parsing, which a retry repeats. */
+export const RETRIED_REASONS = Object.freeze(['timeout', 'fixpoint-timeout']);
 const SNIPPET = /When parsing a snippet as/;
 const RULE_OF = [/when running (\S+) on /, /in rule '([^']+)'/];
 
@@ -173,11 +187,16 @@ function rowsOf(facts) {
 
 // bin/semgrep-retry.mjs re-scans the files a run timed out on and appends that pass as a further
 // invocation carrying properties.commitworkRetry {files, timeoutSec}. The first invocation keeps its
-// Timeout notices, so the original claim stays in the document and the subtraction is made here,
-// once: a file's timeout leaves its row only when the retry targeted the file and did not time out
-// on it again. Its other reasons stand, because the retry re-measures time, not parsing. A file the
-// retry never reached stays as measured.
+// notices, so the original claim stays in the document and the subtraction is made here, once.
+// Semgrep's fixpoint timeouts reach the document only through a separate invocation carrying
+// properties.commitworkFixpoint, copied from its JSON; they count as facts like the first's.
+// A targeted file that times out again in the retry, for either time-class reason, keeps every fact.
+// Otherwise its timeout leaves its row, and its fixpoint timeout leaves only when the retry's own
+// fixpoints were measured (commitworkRetry.fixpointMeasured); a file still holding an unmeasured one
+// is named in `unmeasured`, not recovered. Other reasons stand, because the retry re-measures time,
+// not parsing. A file the retry never reached stays as measured.
 const isRetry = (i) => !!(i && i.properties && i.properties.commitworkRetry);
+const isFixpointRecord = (i) => !!(i && i.properties && i.properties.commitworkFixpoint);
 
 function partialLedger(invocations) {
   const list = invocations || [];
@@ -185,25 +204,33 @@ function partialLedger(invocations) {
   const facts = notices(list.filter((i) => !isRetry(i))).map(fileNotice).filter(Boolean);
   if (!retries.length) return { rows: rowsOf(facts), retry: null };
   const spec = (i) => i.properties.commitworkRetry;
-  const targeted = new Set(retries.flatMap((i) => (Array.isArray(spec(i).files) ? spec(i).files : [])));
-  const again = new Set(notices(retries).map(fileNotice).filter((f) => f && f.reason === 'timeout').map((f) => f.uri));
-  const tried = [...new Set(facts.filter((f) => f.reason === 'timeout' && targeted.has(f.uri)).map((f) => f.uri))].sort();
-  const recovered = tried.filter((u) => !again.has(u));
-  const gone = new Set(recovered);
+  const filesOf = (i) => (Array.isArray(spec(i).files) ? spec(i).files : []);
+  const targeted = new Set(retries.flatMap(filesOf));
+  const measured = new Set(retries.filter((i) => spec(i).fixpointMeasured === true).flatMap(filesOf));
+  const timed = (f) => RETRIED_REASONS.includes(f.reason);
+  const again = new Set(notices(retries).map(fileNotice).filter((f) => f && timed(f)).map((f) => f.uri));
+  const tried = [...new Set(facts.filter((f) => timed(f) && targeted.has(f.uri)).map((f) => f.uri))].sort();
+  const finished = tried.filter((u) => !again.has(u));
+  const fixpointOn = new Set(facts.filter((f) => f.reason === 'fixpoint-timeout').map((f) => f.uri));
+  const unmeasured = finished.filter((u) => fixpointOn.has(u) && !measured.has(u));
+  const recovered = finished.filter((u) => !unmeasured.includes(u));
+  const done = new Set(finished);
+  const cleared = (f) => done.has(f.uri) && (f.reason === 'timeout' || (f.reason === 'fixpoint-timeout' && measured.has(f.uri)));
   const timeoutSec = retries.map((i) => spec(i).timeoutSec).filter((s) => s != null).pop() ?? null;
   return {
-    rows: rowsOf(facts.filter((f) => !(f.reason === 'timeout' && gone.has(f.uri)))),
-    retry: { files: [...targeted].sort(), timeoutSec, recovered, stillTimedOut: tried.filter((u) => again.has(u)) },
+    rows: rowsOf(facts.filter((f) => !cleared(f))),
+    retry: { files: [...targeted].sort(), timeoutSec, recovered, stillTimedOut: tried.filter((u) => again.has(u)), ...(unmeasured.length ? { unmeasured } : {}) },
   };
 }
 
 /** Files a run read only in part, one row per file: {uri, reasons, notices}. Sorted by uri. A
- *  commitworkRetry invocation removes the timeout of each file it recovered (partialLedger). */
+ *  commitworkRetry invocation removes the time-class facts it re-measured (partialLedger). */
 export function partialAnalysis(invocations) {
   return partialLedger(invocations).rows;
 }
 
-/** What a retry pass did: {files, timeoutSec, recovered, stillTimedOut}, or null when none ran. */
+/** What a retry pass did: {files, timeoutSec, recovered, stillTimedOut, unmeasured?}, or null when
+ *  none ran. `unmeasured` is present only when non-empty. */
 export function partialRetry(invocations) {
   return partialLedger(invocations).retry;
 }
@@ -223,7 +250,9 @@ export function describePartial(rows, retry = null, { show = 0 } = {}) {
 
 /** One clause for a retry pass, shared by every consumer that reports one. */
 export function describeRetry(retry) {
-  return `a retry at ${retry.timeoutSec ?? '?'}s per rule covered ${retry.files.length} file(s) and recovered ${retry.recovered.length}`;
+  const summary = `a retry at ${retry.timeoutSec ?? '?'}s per rule covered ${retry.files.length} file(s) and recovered ${retry.recovered.length}`;
+  const blind = (retry.unmeasured || []).length;
+  return summary + (blind ? `, ${blind} not re-measured` : '');
 }
 
 /** Rules the engine could not evaluate, one row per rule: {rule, notices, reason}. Sorted by rule. */

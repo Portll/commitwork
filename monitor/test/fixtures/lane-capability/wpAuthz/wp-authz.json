@@ -1,0 +1,201 @@
+{
+  "tool": "wp-authz",
+  "summary": {
+    "findings": 1,
+    "byRule": {
+      "wp-triggered-write": 1
+    },
+    "filesScanned": 2,
+    "phpFiles": 2,
+    "components": [
+      {
+        "kind": "plugin",
+        "path": "cw-authz-fixture.php"
+      }
+    ],
+    "skipDirs": [
+      "node_modules",
+      "target",
+      "vendor",
+      "dist",
+      "build",
+      ".gradle",
+      ".git",
+      "reports",
+      ".claude/worktrees",
+      "tests",
+      "test",
+      "fixtures/scan-canary"
+    ],
+    "skippedPaths": [
+      ".git"
+    ],
+    "unreadable": 0,
+    "notWordPress": 0,
+    "parser": {
+      "name": "nikic/php-parser",
+      "major": 5,
+      "php": "8.5.11"
+    },
+    "entries": {
+      "rest": 4,
+      "ajax-nopriv": 3,
+      "hook": 4,
+      "ajax": 5
+    },
+    "routes": 4,
+    "unresolvedEntries": 0,
+    "undetermined": {
+      "count": 9,
+      "byRule": {
+        "wp-ajax-unguarded-write": 2,
+        "wp-check-discarded": 1,
+        "wp-hook-request-write": 1,
+        "wp-nonce-only-write": 1,
+        "wp-nopriv-unguarded-write": 1,
+        "wp-rest-no-permission-callback": 1,
+        "wp-rest-public-write": 1,
+        "wp-rest-unguarded-write": 1
+      },
+      "note": "rows whose rule has no measured precision that clears the publication bar; each keeps its claim and carries no severity"
+    },
+    "setAside": {
+      "count": 7,
+      "byReason": {
+        "capability check on the path": 2,
+        "hook writes nothing the request influences or triggers": 1,
+        "load-* hook: core checks the page capability first": 1,
+        "no write on the path": 1,
+        "nonce issued only where a capability is checked": 1,
+        "permission_callback checks a capability or nonce": 1
+      }
+    }
+  },
+  "findings": [
+    {
+      "rule": "wp-triggered-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::flush",
+      "hook": "wp_ajax_nopriv_cw_fx_flush",
+      "entry": "ajax-nopriv",
+      "line": 31,
+      "sev": "low",
+      "cwe": "CWE-862",
+      "claim": "a handler with no capability check and no nonce check writes site state whenever it is called; this lane saw no request value reach the write",
+      "detail": "wp_ajax_nopriv_cw_fx_flush -> CwAuthzFixture::flush writes delete_option (first: delete_option in CwAuthzFixture::flush, cw-authz-fixture.php) on every call; no request value reaches it"
+    }
+  ],
+  "undetermined": [
+    {
+      "rule": "wp-ajax-unguarded-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::store",
+      "hook": "wp_ajax_cw_fx_store",
+      "entry": "ajax",
+      "line": 25,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "handler open to any logged-in user (subscriber and up) writes request data with no capability check and no nonce check",
+      "detail": "wp_ajax_cw_fx_store -> CwAuthzFixture::store writes request data via update_option (first: update_option in CwAuthzStore::put, includes/class-store.php)"
+    },
+    {
+      "rule": "wp-ajax-unguarded-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::toggle",
+      "hook": "wp_ajax_cw_fx_toggle",
+      "entry": "ajax",
+      "line": 30,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "handler open to any logged-in user (subscriber and up) writes request data with no capability check and no nonce check",
+      "detail": "wp_ajax_cw_fx_toggle -> CwAuthzFixture::toggle writes request data via update_option (first: update_option in CwAuthzFixture::toggle, cw-authz-fixture.php)"
+    },
+    {
+      "rule": "wp-check-discarded",
+      "path": "cw-authz-fixture.php",
+      "handler": "cw_fx_discarded",
+      "hook": "wp_verify_nonce",
+      "entry": "statement",
+      "line": 51,
+      "sev": "",
+      "cwe": "CWE-352",
+      "claim": "a nonce or capability check is called as a bare statement, so its answer gates nothing",
+      "detail": "wp_verify_nonce() result discarded in cw_fx_discarded"
+    },
+    {
+      "rule": "wp-hook-request-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::maybe_reset",
+      "hook": "admin_init",
+      "entry": "hook",
+      "line": 33,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "a hook that runs on every request writes state when the request asks for it, with no capability check",
+      "detail": "admin_init -> CwAuthzFixture::maybe_reset writes delete_option (first: delete_option in CwAuthzFixture::maybe_reset, cw-authz-fixture.php) when the request asks, no nonce check"
+    },
+    {
+      "rule": "wp-nonce-only-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::save_profile",
+      "hook": "wp_ajax_cw_fx_profile",
+      "entry": "ajax",
+      "line": 29,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "handler writes state behind a nonce check and no capability check; who can reach it is whoever can obtain the nonce",
+      "detail": "wp_ajax_cw_fx_profile -> CwAuthzFixture::save_profile writes update_user_meta (first: update_user_meta in CwAuthzFixture::save_profile, cw-authz-fixture.php) behind a nonce (cw_fx_profile: issued public) and no capability check",
+      "issuedTo": [
+        "public"
+      ]
+    },
+    {
+      "rule": "wp-nopriv-unguarded-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::vote",
+      "hook": "wp_ajax_nopriv_cw_fx_vote",
+      "entry": "ajax-nopriv",
+      "line": 24,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "unauthenticated handler writes request data with no capability check and no nonce check",
+      "detail": "wp_ajax_nopriv_cw_fx_vote -> CwAuthzFixture::vote writes request data via update_option (first: update_option in CwAuthzFixture::vote, cw-authz-fixture.php)"
+    },
+    {
+      "rule": "wp-rest-no-permission-callback",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::status",
+      "hook": "cw-fx/v1/status",
+      "entry": "rest",
+      "line": 48,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "REST route with no permission_callback (WordPress treats it as public); its callback writes nothing this lane can see, so what it discloses is the question",
+      "detail": "REST cw-fx/v1/status [GET] -> CwAuthzFixture::status has no permission_callback"
+    },
+    {
+      "rule": "wp-rest-public-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::add_note",
+      "hook": "cw-fx/v1/note",
+      "entry": "rest",
+      "line": 46,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "REST route declared public (permission_callback __return_true) writes request data",
+      "detail": "REST cw-fx/v1/note [POST] -> CwAuthzFixture::add_note is declared public and writes request data via wp_insert_post (first: wp_insert_post in CwAuthzFixture::add_note, cw-authz-fixture.php)"
+    },
+    {
+      "rule": "wp-rest-unguarded-write",
+      "path": "cw-authz-fixture.php",
+      "handler": "CwAuthzFixture::set_color",
+      "hook": "cw-fx/v1/color",
+      "entry": "rest",
+      "line": 45,
+      "sev": "",
+      "cwe": "CWE-862",
+      "claim": "REST route with no permission_callback (WordPress treats it as public) writes request data with no capability or nonce check in its callback",
+      "detail": "REST cw-fx/v1/color [POST] -> CwAuthzFixture::set_color has no permission_callback and writes request data via $wpdb->update (first: $wpdb->update in CwAuthzFixture::set_color, cw-authz-fixture.php)"
+    }
+  ]
+}

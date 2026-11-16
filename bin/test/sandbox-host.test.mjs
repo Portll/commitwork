@@ -101,10 +101,11 @@ describe('macOS profile text', () => {
     assert.match(OWN_LOOPBACK_REFUSAL, /CW_SANDBOX=off/, 'the refusal names the switch that runs it');
   });
 
-  test('the shipping bearer lane declares it, and the declaration admits only its one value', () => {
+  test('the shipping lanes that declare it are pinned, and the declaration admits only its one value', () => {
     const m = JSON.parse(readFileSync(new URL('../../manifests/security-baseline.json', import.meta.url), 'utf8'));
     const declared = m.checks.filter((c) => c.sandboxLoopback !== undefined).map((c) => [c.id, c.sandboxLoopback]);
-    assert.deepEqual(declared, [['sast-bearer', 'own-processes']]);
+    // the witness serves WordPress Playground on 127.0.0.1 and probes it there
+    assert.deepEqual(declared, [['sast-bearer', 'own-processes'], ['wp-dynamic-witness', 'own-processes']]);
     const doc = (v) => ({ repo: 'x', checks: [{ id: 'x', local: ['true'], egress: 'registry', sandboxLoopback: v }] });
     for (const bad of ['all', true, 'localhost:7878']) {
       assert.ok(validateManifest(doc(bad)).errors.some((e) => /sandboxLoopback/.test(e)), `sandboxLoopback ${JSON.stringify(bad)} must be refused`);
