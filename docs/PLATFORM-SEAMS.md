@@ -29,7 +29,7 @@ Measured 2026-11-12:
 | `users-path` | 2 | 2 | `/Users/<name>` |
 | `homebrew` | 22 | 48 | `/opt/homebrew`, Cellar, `brew <subcommand>`, `'brew'` literals |
 | `sandbox-exec` | 1 | 3 | `sandbox-exec` |
-| `macos-tools` | 10 | 37 | `sw_vers osascript xcrun codesign notarytool spctl plutil pbcopy pbpaste system_profiler softwareupdate mdfind tccutil`, spawning `open`, `'ditto'`/`'xattr'` literals, BSD `sed -i ''`, `stat -f`, `date -j` |
+| `macos-tools` | 11 | 38 | `sw_vers osascript xcrun codesign notarytool spctl plutil pbcopy pbpaste system_profiler softwareupdate mdfind tccutil`, spawning `open`, `'ditto'`/`'xattr'` literals, BSD `sed -i ''`, `stat -f`, `date -j` |
 
 `bin/test/platform-seams.test.mjs` re-measures on every suite run and fails when a class appears
 in a file the [allow-list](#ratchet-allow-list) does not name, or when a listed file no longer has
@@ -140,7 +140,7 @@ report and tool paths outside any home (`/work`, `/srv`, `/opt`, `/tmp`). Lane-c
 | `monitor/update-vulns.mjs`, `monitor/package-inventory.mjs`, `admin/routes/packages.mjs` | OS update lane: `sw_vers`, `softwareupdate`, `plutil` | **Limit: macOS only.** A missing tool is `tool-failed`/`unavailable`, never clean. No Linux distro-advisory lane exists |
 | `monitor/app-inventory.mjs` | App bundles: `plutil`, `codesign`, `xattr` quarantine | **Limit: macOS surfaces only.** A missing tool marks the surface absent |
 | `admin/routes/remediation.mjs` | Opens VS Code with `open -a` and Terminal via `osascript` for a hand-off | `CW_OPEN`/`CW_OSASCRIPT` override the binaries. Portable alternative: `code <dir>` and the overwatch runner, which the route tries first |
-| `bin/daily-run.mjs`, `monitor/images.mjs` | Desktop notification or popup through `osascript` | Best-effort. images reports `osascript not found` as such. Portable alternative: `notify-send` |
+| `bin/daily-run.mjs`, `monitor/images.mjs`, `bin/watch-remote.mjs` | Desktop notification or popup through `osascript` | Best-effort. images reports `osascript not found` as such, and watch-remote prints `NOT notified` for a note it could not show. Portable alternative: `notify-send`, which watch-remote already uses on Linux, with a PowerShell toast on win32 |
 | `bin/md-view.mjs` | Opens a rendered page with `open` | Portable already: `explorer.exe` on win32, `xdg-open` elsewhere |
 | `bin/codeql-swift-build.sh` | Runs `/usr/bin/xcrun swift build` for CodeQL's Swift extractor | **Limit: macOS only**, as CodeQL's Swift support is |
 | `bin/panel-local-name.mjs` | BSD `sed -i ''` in the generated uninstall script | Part of a macOS-only tool (see launchd) |
@@ -205,6 +205,7 @@ adds a seam, and say in the sections above what the portable path is.
 | macos-tools | `bin/daily-run.mjs` |
 | macos-tools | `bin/md-view.mjs` |
 | macos-tools | `bin/panel-local-name.mjs` |
+| macos-tools | `bin/watch-remote.mjs` |
 | macos-tools | `monitor/app-inventory.mjs` |
 | macos-tools | `monitor/images.mjs` |
 | macos-tools | `monitor/package-inventory.mjs` |

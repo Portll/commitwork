@@ -71,6 +71,16 @@ test('fixture: the SHA-pinned action is not a finding, the tag-pinned one is', (
   assert.match(sf.detail, /^actions\/checkout@v4\./);
 });
 
+test('a registry is matched on its whole host: a lookalike host is a URL import, not that registry', () => {
+  const at = (url) => ({ name: 'x', version: '1.0.0', purl: `pkg:npm/x@1.0.0?repository_url=${encodeURIComponent(url)}` });
+  assert.equal(ecosystemOf(at('https://jsr.io')), 'JSR');
+  assert.equal(ecosystemOf(at('https://jsr.io/@std/assert')), 'JSR');
+  assert.equal(ecosystemOf(at('https://jsr.io.example.com')), 'URL');
+  assert.equal(ecosystemOf(at('https://esm.sh.example.com/x@1.0.0')), 'URL');
+  assert.equal(ecosystemOf(at('https://registry.npmjs.org.example.com')), 'URL');
+  assert.equal(ecosystemOf(at('https://registry.npmjs.org/')), 'npm');
+});
+
 test('a JSR package written as an npm purl is JSR, and never matched to an npm advisory', () => {
   const c = { name: '@std/assert', version: '1.0.19', purl: 'pkg:npm/%40std/assert@1.0.19?repository_url=https%3A%2F%2Fjsr.io',
     properties: [{ name: 'syft:location:0:path', value: '/deno.lock' }] };

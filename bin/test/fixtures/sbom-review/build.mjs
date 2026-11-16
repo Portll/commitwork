@@ -6,7 +6,7 @@
 //   billing-api  Go + npm; SBOM older than a go.mod change; a tracked lockfile the SBOM never read
 //   docs-site    no SBOM at all
 
-import { mkdirSync, writeFileSync, utimesSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { mkdirSync, writeFileSync, utimesSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { isMainModule } from '../../../../lib/is-main.mjs';
@@ -22,7 +22,7 @@ const syftProps = (foundBy, loc) => [
   { name: 'syft:package:foundBy', value: foundBy },
   { name: 'syft:location:0:path', value: `/${loc}` },
 ];
-const npm = (name, version, loc, licence) => ({ type: 'library', name, version, purl: `pkg:npm/${name.replace('@', '%40')}@${version}`,
+const npm = (name, version, loc, licence) => ({ type: 'library', name, version, purl: `pkg:npm/${name.replaceAll('@', '%40')}@${version}`,
   ...(licence ? { licenses: [{ license: { id: licence } }] } : {}), properties: syftProps('javascript-lock-cataloger', loc) });
 const gomod = (name, version, loc, foundBy = 'go-module-file-cataloger', licence) => ({ type: 'library', name, version, purl: `pkg:golang/${name}@${version}`,
   ...(licence ? { licenses: [{ license: { id: licence } }] } : {}), properties: syftProps(foundBy, loc) });
@@ -117,9 +117,9 @@ if (isMainModule(import.meta.url)) {
     const { main } = await import('../../../sbom-review.mjs');
     await main(['--group', 'sample', '--label', 'Sample group (synthetic data)', '--reports', fx.reports, '--out', out, ...fx.repos.flatMap((r) => ['--repo', r])]);
     const fwd = tmp.replaceAll('\\', '/');
-    for (const f of readdirSync(out)) {
-      const p = join(out, f);
-      if (!statSync(p).isFile()) continue;
+    for (const d of readdirSync(out, { withFileTypes: true })) {
+      if (!d.isFile()) continue;
+      const p = join(out, d.name);
       let s = readFileSync(p, 'utf8');
       for (const v of [JSON.stringify(tmp).slice(1, -1), tmp, fwd]) s = s.split(v).join('<fixture>');
       writeFileSync(p, s);

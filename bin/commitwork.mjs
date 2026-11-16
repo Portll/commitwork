@@ -3053,7 +3053,7 @@ async function main() {
     case 'list': return cmdList(manifest, repoPath);
     case 'doctor': return cmdDoctor(manifest, repoPath);
     case 'run': return cmdRun(manifest, repoPath, positional[0], opts);
-    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, dfd, doctor, setup, init, hook, update, version, help)`);
+    default: die(`unknown command: ${cmd} (try: list, run, scan, scan-images, reindex, brief, deps, sarif, sbom-review, dfd, doctor, setup, init, hook, update, version, help)`);
   }
 }
 

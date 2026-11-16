@@ -28,7 +28,9 @@ import { join, resolve, dirname, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { esc } from '../lib/render-markdown.mjs';
-import { ROOT_CSS, SEAL_SVG } from '../lib/brand-tokens.mjs';
+import { SEAL_SVG, MARK_ICON } from '../lib/brand-tokens.mjs';
+import { houseCss } from '../lib/house-css.mjs';
+import { scannedGitOut } from './lib/git-env.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 
@@ -55,10 +57,10 @@ export function ecosystemOf(c) {
   const repo = /^pkg:npm\/[^?]*\?(?:.*&)?repository_url=([^&#]+)/i.exec(c.purl || '');
   if (repo) {
     const host = decodeURIComponent(repo[1]);
-    if (/^https?:\/\/jsr\.io/i.test(host)) return 'JSR';
+    if (/^https?:\/\/jsr\.io(?:[/:?#]|$)/i.test(host)) return 'JSR';
     // esm.sh serves npm packages; once sbom-remote has named them, they are those npm packages
-    if (/^https?:\/\/esm\.sh/i.test(host) && !/^esm\.sh/.test(c.name || '')) return 'npm';
-    if (!/^https?:\/\/registry\.npmjs\.org/i.test(host)) return 'URL';
+    if (/^https?:\/\/esm\.sh(?:[/:?#]|$)/i.test(host) && !/^esm\.sh/.test(c.name || '')) return 'npm';
+    if (!/^https?:\/\/registry\.npmjs\.org(?:[/:?#]|$)/i.test(host)) return 'URL';
   }
   const m = /^pkg:([a-z0-9.+-]+)\//i.exec(c.purl || '');
   if (m) return PURL_ECO[m[1].toLowerCase()] || m[1].toLowerCase();
@@ -317,7 +319,8 @@ export function indexOsv(doc) {
 // ── git facts ───────────────────────────────────────────────────────────────────────────────
 
 function git(repo, args, input) {
-  return execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', input, maxBuffer: 256 << 20, stdio: ['pipe', 'pipe', 'ignore'] });
+  // a reviewed repository is a scanned one: hooks, fsmonitor, drivers and transports stay inert
+  return scannedGitOut(repo, args, { input, maxBuffer: 256 << 20 });
 }
 
 /** { isGit, tracked:Set, state(path) -> tracked|ignored|untracked|missing|unknown, lockfiles[] } */
@@ -611,9 +614,7 @@ export function renderMarkdown(g) {
   return L.join('\n');
 }
 
-const CSS = `${ROOT_CSS}
-:root{--hi:#b3261e;--md:#a15c00;--lo:#3f6f9f;--un:#6b6961}
-@media (prefers-color-scheme: dark){:root{--hi:#ff6b5e;--md:#f0a640;--lo:#8ab4f8;--un:#98958e}}
+const CSS = `${houseCss({ fonts: 'none' })}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
 main{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
 header{display:flex;gap:14px;align-items:center;margin-bottom:6px}header svg{width:36px;height:36px;flex:none}
@@ -626,8 +627,8 @@ table{border-collapse:collapse;width:100%;background:var(--panel);border:1px sol
 th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--panel2);font-weight:600;color:var(--head)}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}code{font:12px var(--mono);word-break:break-all}
 .wrap{overflow-x:auto}.lv{display:inline-block;min-width:96px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-.high{color:var(--hi)}.medium{color:var(--md)}.low{color:var(--lo)}.unknown{color:var(--un)}.info{color:var(--mut)}
-.critical{color:var(--hi);font-weight:700}.unscored{color:var(--un)}
+.high{color:var(--high)}.medium{color:var(--med)}.low{color:var(--low)}.unknown{color:var(--dim)}.info{color:var(--mut)}
+.critical{color:var(--crit);font-weight:700}.unscored{color:var(--dim)}
 .bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--panel2);margin:8px 0 4px}.bar i{display:block;height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mut)}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .findings li{margin:6px 0;list-style:none}.findings{padding:0}.findings .d{color:var(--mut);font-size:13px}
@@ -636,7 +637,7 @@ th[aria-sort]{cursor:pointer;user-select:none}th[aria-sort="ascending"]::after{c
 th[aria-sort]:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
 input.tfilter,#filter-all{font:13px var(--sans);padding:5px 8px;margin:8px 0 2px;width:min(320px,100%);border:1px solid var(--line2);border-radius:6px;background:var(--panel);color:var(--ink)}
 `;
-const SCOPE_COLOUR = { product: 'var(--ok)', ci: 'var(--acc)', binary: '#8a6bbf', installed: 'var(--line2)', vendored: 'var(--mut)', 'local-only': 'var(--lo)', unknown: 'var(--un)' };
+const SCOPE_COLOUR = { product: 'var(--live)', ci: 'var(--acc)', binary: 'var(--sev)', installed: 'var(--line2)', vendored: 'var(--mut)', 'local-only': 'var(--low)', unknown: 'var(--dim)' };
 
 const h = (v) => esc(v ?? '');
 // A cell is HTML, or { html, sort } when what it shows is not what it should sort by.
@@ -732,7 +733,9 @@ export function renderHtml(g) {
     [s.vulnsChecked === s.reviewed && s.reviewed ? pv.critical + pv.high : '–', s.vulnsChecked ? 'critical + high in product' : 'vulnerabilities not checked'],
     [s.findings.high + s.findings.medium, 'high + medium findings'], [s.findings.unknown, 'undetermined'],
   ];
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return `<!doctype html>
+<!-- Generated by bin/sbom-review.mjs — do not hand-edit; rerun commitwork sbom-review. -->
+<html lang="en"><head><meta charset="utf-8">${MARK_ICON}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SBOM review — ${h(g.label)}</title><style>${CSS}</style></head><body><main>
 <header>${SEAL_SVG}<h1>SBOM review — ${h(g.label)}</h1></header>
 <p class="sub">${h(g.kind)} <code>${h(g.target)}</code> · ${s.reviewed} of ${s.repos} repos reviewed · generated ${h(g.generatedAt)} by commitwork bin/sbom-review.mjs</p>

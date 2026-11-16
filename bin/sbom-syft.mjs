@@ -8,27 +8,29 @@
 // and what was excluded is written to sbom-syft-scope.json: left out is stated, never silent.
 //
 // Usage (cwd = the repo): node bin/sbom-syft.mjs <reportDir>
-// Writes sbom-syft.json (CycloneDX), sbom-syft-native.json, sbom-syft.json.exit, sbom-syft-scope.json,
-// then runs bin/sbom-enrich.mjs over the pair. Exit code is syft's.
+// Writes sbom-syft.json (CycloneDX), sbom-syft-native.json and sbom-syft-scope.json, then runs
+// bin/sbom-enrich.mjs over the pair. Exit code is syft's (127 when syft cannot be run); the check's
+// command records it as sbom-syft.json.exit, so a runner that crashes is recorded as well.
 
-import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { readFileSync, mkdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collapseRemote } from '../monitor/sbom-remote.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
+import { scannedGitOut } from './lib/git-env.mjs';
+import { SCAN_EXCLUDE_ROOTS } from '../monitor/worktree-paths.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// the excludes the inline syft command carried before this runner replaced it
-export const BASE_EXCLUDES = ['./reference/**', './reports/**', './.claude/worktrees/**', './.git/**'];
+// commitwork's own output dirs, and every nested-checkout root (agent worktrees, checkouts under .git)
+export const BASE_EXCLUDES = ['./reference/**', './reports/**', ...SCAN_EXCLUDE_ROOTS.map((r) => `./${r}/**`)];
 
 /** syft exclude globs for everything git ignores under `repo` -> { git, excludes, ignored }. */
 export function ignoredExcludes(repo) {
   let out;
   try {
-    out = execFileSync('git', ['-C', repo, 'ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z'],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 });
+    out = scannedGitOut(repo, ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z'], { maxBuffer: 64 << 20 });
   } catch { return { git: false, excludes: [], ignored: [] }; }
   const ignored = out.split('\0').filter(Boolean).sort();
   return { git: true, ignored, excludes: ignored.map((p) => (p.endsWith('/') ? `./${p}**` : `./${p}`)) };
@@ -60,7 +62,6 @@ export function run(reportDir, { cwd = process.cwd() } = {}) {
     '-o', `cyclonedx-json=${cdx}`, '-o', `json=${native}`];
   const r = spawnSync('syft', args, { cwd, stdio: ['ignore', 'inherit', 'inherit'] });
   const code = r.error ? 127 : r.status ?? 1;
-  writeFileSync(join(reportDir, 'sbom-syft.json.exit'), `${code}\n`);
   // always: the enricher writes its sidecar even over a failed scan, so "never ran" stays distinguishable
   spawnSync(process.execPath, [join(HERE, 'sbom-enrich.mjs'), cdx, native, '--report', join(reportDir, 'sbom-syft-provenance.json')], { stdio: 'inherit' });
   collapseRemoteIn(cdx, native, join(reportDir, 'sbom-syft-remote.json'));
