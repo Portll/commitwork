@@ -87,7 +87,7 @@ runs:
           ''|,*|*,|*,,*|*[!a-z0-9.,_-]*) bad "install-tools must be true, false, or a comma-separated list of scanner names" ;;
         esac
 
-    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: '26'
 
@@ -173,7 +173,7 @@ runs:
 
     - name: Upload the SARIF to code scanning
       if: inputs.upload-sarif == 'true' && steps.run.outputs.sarif != ''
-      uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+      uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
       with:
         sarif_file: ${{ steps.run.outputs.sarif }}
         checkout_path: ${{ steps.run.outputs.repo }}
