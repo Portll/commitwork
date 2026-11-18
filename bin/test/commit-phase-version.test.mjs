@@ -6,11 +6,12 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   parseSemver, bumpPatch, compareSemver, readVersion, setVersion, sameModuloVersion,
   versionStamp, replayStamps, versionFileCollides, worktreeAction, replayVerdict, VERSION_FILE,
+  checkoutForm,
 } from '../commit-phase-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -187,6 +188,19 @@ describe('replay: one bump per commit, and when package.json really collides', (
     assert.equal(worktreeAction({ worktree: 't', before: 'a', after: 'b', taken: 't' }), 'fast-forward', 'the copy the land took');
     assert.equal(worktreeAction({ worktree: 'p', before: 'a', after: 'b', taken: 't' }), 'merge');
   });
+
+  test('checkoutForm compares a CRLF checkout in the blob\'s form, and only an all-CRLF one', () => {
+    const lf = pkg('0.1.0');
+    const crlf = lf.replace(/\n/g, '\r\n');
+    const f = checkoutForm(crlf, lf);
+    assert.equal(f.text, lf, 'an untouched CRLF checkout reads as the blob');
+    assert.equal(f.restore(pkg('0.1.1')), pkg('0.1.1').replace(/\n/g, '\r\n'), 'and is written back in CRLF');
+    const mixed = crlf.replace('\r\n  "private"', '\n  "private"');
+    assert.equal(checkoutForm(mixed, lf).text, mixed, 'mixed endings are compared as they stand');
+    assert.equal(checkoutForm(lf, lf).text, lf, 'an LF checkout is unchanged');
+    assert.equal(checkoutForm(crlf, crlf).text, crlf, 'a blob that itself holds CRLF is not converted');
+    assert.equal(worktreeAction({ worktree: f.text, before: lf, after: pkg('0.1.1') }), 'fast-forward');
+  });
 });
 
 // ── end to end, against real git ─────────────────────────────────────────────
@@ -262,7 +276,7 @@ describe('every commit path stamps', () => {
 
   test('--from-blob stamps, and its own path still reads and writes no working tree', (t) => {
     const dir = scratch(t);
-    const src = join(dir, '..', `${dir.split('/').pop()}-content`);
+    const src = join(dir, '..', `${basename(dir)}-content`);   // not split('/'): a Windows path has none
     writeFileSync(src, 'from a blob\n');
     t.after(() => rmSync(src, { force: true }));
     const r = cli(dir, ['--from-blob', `mine.txt=${src}`, '-m', 'test: commit content only']);
@@ -319,7 +333,8 @@ describe('--onto', () => {
     assert.deepEqual(g(dir, ['log', '--format=%s', '-3', 'main']).split('\n'), ['test: add mine two', 'test: add mine one', 'test: add theirs']);
     assert.deepEqual([ver(dir, 'main~1'), ver(dir, 'main')], ['0.1.2', '0.1.3']);
     assert.equal(g(dir, ['show', 'main:theirs.txt']), 'theirs', 'their change survived');
-    assert.equal(disk(dir), blob(dir, 'main'), 'the checkout follows the replayed tip');
+    // git writes this checkout itself, so a global core.autocrlf gives it CRLF: compared in the blob's form.
+    assert.equal(disk(dir).replace(/\r\n/g, '\n'), blob(dir, 'main'), 'the checkout follows the replayed tip');
   });
 
   test('one side editing package.json content is not a collision: that edit is carried', (t) => {
@@ -432,6 +447,28 @@ describe("the checkout's package.json after a land", () => {
     const diff = g(dir, ['diff', '--', 'package.json']);
     assert.match(diff, /peer edit/);
     assert.doesNotMatch(diff, /0\.1\.0/, 'the checkout no longer reverts the stamp');
+  });
+
+  // core.autocrlf checks package.json out with CRLF while its blob holds LF. Compared byte for byte,
+  // an untouched file read as a peer's edit, every line conflicted, and the stamp was left behind.
+  test('a CRLF checkout nobody touched: fast-forwarded, in CRLF, and clean', (t) => {
+    const dir = scratch(t);
+    g(dir, ['config', 'core.autocrlf', 'true']);
+    writeFileSync(join(dir, 'package.json'), pkg('0.1.0').replace(/\n/g, '\r\n'));
+    const r = land(dir, 'mine.txt', 'one\n', 'test: add one');
+    assert.doesNotMatch(r.err, /NOT updated/);
+    assert.equal(disk(dir), pkg('0.1.1').replace(/\n/g, '\r\n'));
+    assert.equal(blob(dir), pkg('0.1.1'), 'the commit holds LF');
+    assert.equal(g(dir, ['status', '--porcelain', '--', 'package.json']), '', 'no diff in either direction');
+  });
+
+  test("a CRLF checkout with a peer's edit: merged in the blob's form, written back in CRLF", (t) => {
+    const dir = scratch(t);
+    g(dir, ['config', 'core.autocrlf', 'true']);
+    writeFileSync(join(dir, 'package.json'), pkg('0.1.0', { test: 'peer edit' }).replace(/\n/g, '\r\n'));
+    land(dir, 'mine.txt', 'one\n', 'test: add one');
+    assert.equal(disk(dir), pkg('0.1.1', { test: 'peer edit' }).replace(/\n/g, '\r\n'));
+    assert.doesNotMatch(g(dir, ['diff', '--', 'package.json']), /0\.1\.0/, 'the checkout no longer reverts the stamp');
   });
 
   test("a peer's edit that conflicts with the stamp: left byte for byte, and named", (t) => {

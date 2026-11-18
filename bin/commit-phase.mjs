@@ -99,7 +99,7 @@ import { tmpdir, homedir } from 'node:os';
 
 import {
   sessionKey, privateIndexPath, landVerdict, sharedIndexRepair, replayVerdict,
-  VERSION_FILE, readVersion, versionStamp, replayStamps, versionFileCollides, worktreeAction,
+  VERSION_FILE, readVersion, versionStamp, replayStamps, versionFileCollides, worktreeAction, checkoutForm,
   followAction, checkoutsOf, parseDiffTree, porcelainPaths, claimVerdict, claimHolder,
 } from './commit-phase-core.mjs';
 import { touchAppender } from './lib/touch-ledger-append.mjs';
@@ -412,16 +412,19 @@ function syncVersionFile({ before, after, landed, taken }) {
     left(raw.code === 'ENOENT' ? 'it is absent from the working copy' : `it could not be read (${raw.code || raw.message})`);
   } else {
     const text = raw.toString('utf8');
+    // Compared and merged in the blob's line-ending form, written back in the checkout's.
+    const form = checkoutForm(text, before.text);
+    const takenForm = typeof taken === 'string' ? checkoutForm(taken, before.text).text : taken;
     const action = Buffer.from(text, 'utf8').equals(raw)
-      ? worktreeAction({ worktree: text, before: before.text, after: after.text, taken })
+      ? worktreeAction({ worktree: form.text, before: before.text, after: after.text, taken: takenForm })
       : 'undecodable';
     let next = null;
-    if (action === 'fast-forward') next = after.text;
+    if (action === 'fast-forward') next = form.restore(after.text);
     else if (action === 'undecodable') left('it is not valid UTF-8');
     else if (action === 'merge') {
-      const m = mergeText(text, before.text, after.text);
+      const m = mergeText(form.text, before.text, after.text);
       const v = m.text === undefined ? null : readVersion(m.text);
-      if (v && v.ok && v.version === after.version) next = m.text;
+      if (v && v.ok && v.version === after.version) next = form.restore(m.text);
       else left(`it holds uncommitted edits that do not merge cleanly with the stamp (${m.why || 'the merge lost the stamped version'})`);
     }
     if (next !== null) {
