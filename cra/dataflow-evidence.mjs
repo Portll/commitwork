@@ -22,7 +22,8 @@
 // For Semgrep a missing path is weaker still: as of semgrep 1.182.0 OSS (measured 2026-11-18),
 // --dataflow-traces writes no codeFlows to SARIF and no dataflow_trace to JSON in any output mode,
 // for a taint rule that matched. So there a result without a path may be a taint match whose trace
-// was not exported, and the `why` says exactly that.
+// was not exported, and the `why` says exactly that — unless the rule's own definition was read
+// (cra/semgrep-rule-modes.mjs), in which case the row carries `ruleMode` and the `why` says which.
 //
 // EVERY ROUTE, NOT THE FIRST. A result can carry several codeFlows: CodeQL emits one per
 // source→sink route it found. Measured on a real sweep (one repository, 2026-10-21): 3 results carried 9 code
@@ -52,6 +53,7 @@ import { readSarif } from '../monitor/sarif-read.mjs';
 import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stateBaseFor } from '../monitor/store-paths.mjs';
+import { readRuleModes, readLocalModes, modeFor } from './semgrep-rule-modes.mjs';
 
 const CW = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const reportsDir = () => process.env.CW_REPORTS_DIR || join(stateBaseFor(CW), 'reports');
@@ -207,7 +209,31 @@ const NO_PATH_WHY = {
   semgrep: (rule) => `Semgrep rule ${rule} carries no trace: the rule is pattern-only, or it is a taint rule whose trace the engine did not export (semgrep 1.182.0 OSS exports none with --dataflow-traces), so this result says nothing either way about reachability`,
 };
 NO_PATH_WHY.opengrep = (rule) => NO_PATH_WHY.semgrep(rule).replace('Semgrep rule', 'Opengrep rule');
-const noPathWhy = (engine, rule) => (NO_PATH_WHY[engine] || ((r) => `${labelOf(engine)} result ${r} carries no path, so it says nothing either way about reachability`))(rule);
+
+// When the rule's own definition was read (cra/semgrep-rule-modes.mjs), the two cases the default
+// text has to hold open are told apart. Measured on a real sweep (2026-10-21, modes fetched 2026-11-18):
+// 4 of the 7 registry rules that fired were taint rules, and so were 82 of the 88 sastSemgrep
+// findings (unsafe-formatstring alone is 78). Read from the SARIF alone, they looked like pattern
+// matches; they are matches Semgrep reached by tracing, with the trace kept to itself.
+const SEMGREP_FAMILY = new Set(['semgrep', 'opengrep']);
+const fromWhere = (rm) => (rm.source === 'local' ? "commitwork's own rule file" : 'its registry definition');
+const MODE_WHY = {
+  taint: (label, rule, rm) => `${label} rule ${rule} is a taint rule (mode taint, per ${fromWhere(rm)}): a match means the engine traced data from one of the rule's sources to this sink, but semgrep 1.182.0 OSS did not export the trace, so there is no path to show and this result is not counted as reachable`,
+  search: (label, rule, rm) => `${label} rule ${rule} is a pattern rule (mode ${rm.mode}, per ${fromWhere(rm)}); it matches a code shape and never looks for a flow, so this result says nothing either way about reachability`,
+};
+MODE_WHY.join = MODE_WHY.search;
+MODE_WHY.extract = MODE_WHY.search;
+
+function noPathWhy(engine, rule, ruleMode = null) {
+  if (SEMGREP_FAMILY.has(engine) && ruleMode) {
+    if (ruleMode.mode && MODE_WHY[ruleMode.mode]) return MODE_WHY[ruleMode.mode](labelOf(engine), rule, ruleMode);
+    const base = NO_PATH_WHY[engine](rule);
+    return ruleMode.source === 'unresolved'
+      ? `${base}; its mode could not be read (${ruleMode.why})`
+      : `${base}; its mode is not recorded (bin/semgrep-rule-modes.mjs fetch records it)`;
+  }
+  return (NO_PATH_WHY[engine] || ((r) => `${labelOf(engine)} result ${r} carries no path, so it says nothing either way about reachability`))(rule);
+}
 
 const detailOf = (engine, route, routes) => `${labelOf(engine)} traced ${route.steps} steps from ${route.source.expr || 'a source'} (${route.source.file}:${route.source.line}) to ${route.sink.expr || 'a sink'} (${route.sink.file}:${route.sink.line})${routes > 1 ? `; ${routes} distinct routes` : ''}`;
 
@@ -220,7 +246,7 @@ const detailOf = (engine, route, routes) => `${labelOf(engine)} traced ${route.s
  * route's steps on `path.trace` — that route's, not the first threadFlow's, so the steps and the ends
  * always describe the same route.
  */
-export function dataflowFromResult(result, repo, atIso, { engine = 'codeql', trace = false } = {}) {
+export function dataflowFromResult(result, repo, atIso, { engine = 'codeql', trace = false, ruleMode = null } = {}) {
   const rule = result?.ruleId || null;
   const file = findingFileOf(result?.locations?.[0]?.physicalLocation?.artifactLocation?.uri) || null;
   if (!rule) return null;
@@ -245,7 +271,9 @@ export function dataflowFromResult(result, repo, atIso, { engine = 'codeql', tra
     reachability: 'reachability_unknown',
     path: null,
     evidence: [],
-    why: noPathWhy(engine, rule),
+    why: noPathWhy(engine, rule, ruleMode),
+    // Semgrep-family rows only: the rule's mode and where it was read ({ mode: null } when unknown).
+    ...(SEMGREP_FAMILY.has(engine) && ruleMode ? { ruleMode: { mode: ruleMode.mode, source: ruleMode.source } } : {}),
   };
 }
 
@@ -309,12 +337,22 @@ function mergeRows(prev, row) {
  * Entries are walked in name order, and rows for one key are merged, so the index does not depend
  * on the order a filesystem lists them in.
  */
-export function buildDataflowIndex({ dir = reportsDir(), maxDepth = 6, atIso = new Date().toISOString() } = {}) {
+export function buildDataflowIndex({ dir = reportsDir(), maxDepth = 6, atIso = new Date().toISOString(), ruleModes = null } = {}) {
   const index = new Map();
   const stats = {
     artifacts: 0, results: 0, withPath: 0, syntacticOnly: 0, routes: 0, byState: {}, byEngine: {},
     unreadableDirs: 0, unreadable: [], repos: new Set(), rules: new Set(),
+    // Semgrep-family results without a path, by their rule's mode — or by why the mode is unknown.
+    semgrepNoPath: {},
   };
+  // The Semgrep rule-mode table and commitwork's own rules, read at CALL time. `ruleModes` lets a
+  // caller (a test) supply { table, local } instead. A table that cannot be used is stated, and every
+  // mode reads as unknown — never as 'search'.
+  const modes = ruleModes || (() => {
+    const t = readRuleModes();
+    return { table: t.table, local: readLocalModes(), state: t.state, reason: t.reason };
+  })();
+  stats.ruleModes = { state: modes.state || (modes.table ? 'ok' : 'absent'), reason: modes.reason || null };
 
   // Agreement between engines (corroborationFor): who reported at each site, which sites each
   // finding occupies, which families a finding came from, and which families ran in each repo.
@@ -394,9 +432,14 @@ export function buildDataflowIndex({ dir = reportsDir(), maxDepth = 6, atIso = n
       // a clean zero. monitor/test/one-sarif-reader.test.mjs catches exactly that, and caught this.
       for (const result of rec.results) {
         stats.results++;
-        const row = dataflowFromResult(result, repo, atIso, { engine });
+        const ruleMode = SEMGREP_FAMILY.has(engine) ? modeFor(result?.ruleId, modes) : null;
+        const row = dataflowFromResult(result, repo, atIso, { engine, ruleMode });
         if (!row) continue;
         if (row.reachability === 'reachable') { stats.withPath++; stats.routes += row.paths.length; } else stats.syntacticOnly++;
+        if (row.ruleMode) {
+          const k = row.ruleMode.mode || row.ruleMode.source;
+          stats.semgrepNoPath[k] = (stats.semgrepNoPath[k] || 0) + 1;
+        }
         stats.rules.add(row.rule);
         put(row);
         site(row, result, engine);
@@ -491,7 +534,7 @@ export function dataflowFor(index, repo, rule, file) {
       paths: hit.paths || [hit.path], ...(hit.engines ? { engines: hit.engines } : {}),
     };
   }
-  if (hit) return { reachability: 'reachability_unknown', basis: 'no-path', evidence: [], why: hit.why };
+  if (hit) return { reachability: 'reachability_unknown', basis: 'no-path', evidence: [], why: hit.why, ...(hit.ruleMode ? { ruleMode: hit.ruleMode } : {}) };
   return {
     reachability: 'reachability_unknown',
     basis: 'no-row',

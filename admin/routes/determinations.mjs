@@ -226,6 +226,10 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
   const taint = { findings: 0, proven: 0, routes: 0 };   // scanner findings in a taint engine's lane
   // A second engine family at the finding's site, counted beside the determination and never in it.
   const agreement = { corroborated: 0, uncorroborated: 0, 'single-engine': 0, unsited: 0, 'no-row': 0, witnessPath: 0, witnessFinding: 0 };
+  // Taint-lane findings whose own result carries no path, by why: the Semgrep rule's mode when its
+  // definition was read ('taint' = matched by tracing, trace not exported; 'search' = never traces),
+  // 'unresolved'/'unrecorded' when it was not, and 'not-semgrep' for the other engines' rows.
+  const noPathByRuleMode = {};
   const rows = [];
   let total = 0;
 
@@ -245,6 +249,10 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
       if (dataflowRead) {
         df = dataflowFor(dataflow.index, f.repo, f.rule, f.file);
         if (df.reachability === 'reachable') { r = df; taint.proven++; taint.routes += (df.paths || []).length; }
+        if (df.basis === 'no-path') {
+          const k = df.ruleMode ? (df.ruleMode.mode || df.ruleMode.source) : 'not-semgrep';
+          noPathByRuleMode[k] = (noPathByRuleMode[k] || 0) + 1;
+        }
         co = corroborationFor(dataflow, f.repo, f.rule, f.file);
         agreement[co.state]++;
         if (co.state === 'corroborated') {
@@ -293,6 +301,7 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
         // A traced finding names its shortest route and how many distinct routes reach it.
         ...(df && df.reachability === 'reachable' ? { route: { source: df.path.source, sink: df.path.sink, steps: df.path.steps }, routes: (df.paths || []).length } : {}),
         why, whyText: (df && df.why) || r.why || null,
+        ...(df && df.ruleMode ? { ruleMode: df.ruleMode } : {}),
         ...(co ? { corroboration: { state: co.state, witnesses: co.witnesses, ...(co.why ? { why: co.why } : {}) } } : {}),
         analyser: analyser ? analyser.analyser : null,
         // What each format would be able to say about this determination, and what it would lose.
@@ -332,7 +341,8 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
       // Over the taint-lane findings whose sweep was read. witnessPath: another family traced a route
       // to the site; witnessFinding: it only reported there. 'single-engine' is unmeasured, not 0.
       agreement: dataflowRead ? agreement : null,
-      ...(dataflow && dataflow.stats ? { read: pick(dataflow.stats, ['artifacts', 'results', 'withPath', 'syntacticOnly', 'routes', 'byState', 'byEngine', 'unreadableDirs', 'unreadable', 'repos', 'indexed']) } : {}),
+      noPathByRuleMode: dataflowRead ? Object.fromEntries(Object.keys(noPathByRuleMode).sort().map((k) => [k, noPathByRuleMode[k]])) : null,
+      ...(dataflow && dataflow.stats ? { read: pick(dataflow.stats, ['artifacts', 'results', 'withPath', 'syntacticOnly', 'routes', 'byState', 'byEngine', 'unreadableDirs', 'unreadable', 'repos', 'indexed', 'semgrepNoPath', 'ruleModes']) } : {}),
     },
     // Named, never silent: an exclusion nobody can see reads as a tidier number.
     excludedLanes: { lanes: [...excluded].sort(), why: 'ruled not findings (metrics + correctness linters) — counting them as findings lacking an analyser inflates the gap' },

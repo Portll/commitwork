@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-367 commands: 167 declared, 13 prose, 187 undeclared. Of the declared, 133 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
+368 commands: 168 declared, 13 prose, 187 undeclared. Of the declared, 134 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -858,6 +858,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `sbom-review`, `
 |---:|---|
 | 0 | every handled state (the receipt carries the retry's outcome; the lane's exit sidecar was written before this step) |
 | 2 | usage |
+
+### `bin/semgrep-rule-modes.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | every fired rule has a mode and every artifact was read |
+| 1 | a rule is unresolved, an artifact could not be read, or no Semgrep artifact was found (the table still records what did resolve) |
+| 2 | usage, or the table exists and cannot be used (it is never overwritten then) |
 
 ### `bin/setup.mjs`
 

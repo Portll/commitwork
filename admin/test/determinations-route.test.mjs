@@ -407,3 +407,31 @@ test('a duplicate lane (the sast-auto comparison arm) is named and left out of t
   assert.equal(v.excludedLanes.lanes.includes('sastAuto'), false, 'a duplicate is a finding, not a non-finding: named apart');
   assert.ok(D.duplicateLanes().has('sastAuto'));
 });
+
+test('an untraced Semgrep finding is counted by its rule\'s mode, beside the determination, which it never changes', () => {
+  const at = (rule, file) => ({ ruleId: rule, locations: [{ physicalLocation: { artifactLocation: { uri: file }, region: { startLine: 4 } } }] });
+  const T = sweep({ r: {
+    'semgrep.sarif': sarif('Semgrep OSS', [at('r.taint', 'a.js'), at('r.taint', 'b.js'), at('r.search', 'c.js'), at('r.unknown', 'd.js')]),
+    'codeql.sarif': sarif('CodeQL', [at('js/incomplete-sanitization', 'e.js')]),
+  } });
+  const table = join(T, 'modes.json');
+  writeFileSync(table, JSON.stringify({ v: 1, rules: { 'r.taint': { mode: 'taint' }, 'r.search': { mode: 'search' } }, unresolved: {} }));
+  const was = process.env.CW_SEMGREP_RULE_MODES;
+  process.env.CW_SEMGREP_RULE_MODES = table;
+  try {
+    const roll = { ...rollup([], [], {
+      sastSemgrep: ['a.js', 'b.js', 'c.js', 'd.js'].map((file, i) => ({ repo: 'r', rule: ['r.taint', 'r.taint', 'r.search', 'r.unknown'][i], file, sev: 'med' })),
+      sastCodeql: [{ repo: 'r', rule: 'js/incomplete-sanitization', file: 'e.js', sev: 'med' }],
+    }), source: T };
+    const v = D.determinationView(roll, EMPTY_ALIAS, NOW, { rows: 'all', dataflow: D.dataflowForRollup(roll, NOW) });
+    assert.deepEqual(v.dataflow.noPathByRuleMode, { 'not-semgrep': 1, search: 1, taint: 2, unrecorded: 1 });
+    assert.equal(v.unknownBecause['rule-traces-no-path'], 5, 'every one is still unknown: a taint match without its trace is not shown reachable');
+    assert.deepEqual(v.rows.find((x) => x.file === 'a.js').ruleMode, { mode: 'taint', source: 'registry' });
+    assert.equal(v.rows.find((x) => x.file === 'e.js').ruleMode, undefined);
+    assert.deepEqual(v.dataflow.read.semgrepNoPath, { taint: 2, search: 1, unrecorded: 1 });
+    assert.equal(v.dataflow.read.ruleModes.state, 'ok');
+  } finally {
+    if (was === undefined) delete process.env.CW_SEMGREP_RULE_MODES; else process.env.CW_SEMGREP_RULE_MODES = was;
+    rmSync(T, { recursive: true, force: true });
+  }
+});

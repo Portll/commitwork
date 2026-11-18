@@ -549,6 +549,12 @@
       "binding": "mirrored"
     },
     {
+      "path": "monitor/semgrep-rule-modes.json",
+      "kind": "store",
+      "schema": "schema/semgrep-rule-modes.schema.json",
+      "binding": "mirrored"
+    },
+    {
       "path": "monitor/scanner-binaries.json",
       "kind": "declaration",
       "schema": "schema/scanner-binaries.schema.json",
