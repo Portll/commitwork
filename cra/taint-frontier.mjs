@@ -86,12 +86,19 @@ export function frontierCall(result, sinks) {
   const parsed = parseFrontierMessage(result?.message?.text);
   const hasCols = !!(k && !k.exact.endsWith('|'));
   const claimed = !!k && (hasCols ? sinks.exact.has(k.exact) : sinks.line.has(k.line));
+  // The message abbreviates the source (`globalT ... .search`); the related location its link names
+  // says exactly where the untrusted value comes from, which is the line a reviewer has to read.
+  const linkId = /\]\((\d+)\)\.?\s*$/.exec(String(result?.message?.text || ''));
+  const rel = linkId ? (result?.relatedLocations || []).find((l) => l && l.id === Number(linkId[1])) : null;
+  const rpl = rel?.physicalLocation;
+  const sourceFile = rpl ? findingFileOf(rpl.artifactLocation?.uri) || null : null;
   return {
     file,
     line: Number.isInteger(pl?.region?.startLine) ? pl.region.startLine : null,
     api: parsed ? parsed.api : null,
     param: parsed ? parsed.param : null,
     source: parsed ? parsed.source : null,
+    sourceAt: sourceFile ? { file: sourceFile, line: Number.isInteger(rpl.region?.startLine) ? rpl.region.startLine : null } : null,
     ...(parsed ? {} : { message: cut(result?.message?.text) }),
     claimed,
   };
