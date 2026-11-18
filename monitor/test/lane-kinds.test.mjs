@@ -43,7 +43,10 @@ const WAS_TOTALS_EXCLUDE = ['maliciousPackages', 'stubs', 'denoLint', 'denoTypes
   'tlsTestssl',
   // yaraWitness joined 2026-10-08: lane(I,'duplicate'), YARA rules over the files webshell already
   // judged, wired as its second witness, so summing it would count one shell twice.
-  'yaraWitness'];
+  'yaraWitness',
+  // depsMalwareList joined 2026-11-17: lane(I,'duplicate'), an operator-supplied malware list over
+  // the lockfiles deps-osv's MAL- records (maliciousPackages) already answer for.
+  'depsMalwareList'];
 const WAS_METRIC_CATEGORIES = ['stubs', 'denoLint', 'denoTypes', 'lintRust', 'lintHaskell', 'lintGo', 'lintPython', 'lintJava', 'formatRust', 'cobolCoverage', 'actionsHealth', 'testHermetic'];
 
 describe('derivation is inert', () => {

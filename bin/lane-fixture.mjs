@@ -24,12 +24,13 @@
 
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir, homedir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { LANE_ROSTER } from '../monitor/lane-roster.mjs';
 import { probeCategory } from '../monitor/lane-capability.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
+import { resolveWindowsExecutable } from '../lib/win-spawn.mjs';
 
 const CW = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REDACTED = 'REDACTED-FIXTURE (value removed before commit)';
@@ -59,7 +60,10 @@ export function manifestCheck(checkId) {
   return null;
 }
 
-const onPath = (tool) => spawnSync('/bin/sh', ['-c', `command -v ${JSON.stringify(tool)}`], { stdio: 'ignore' }).status === 0;
+// Windows has no /bin/sh: there the resolver the spawn path uses answers, as in bin/commitwork.mjs.
+const onPath = (tool) => (process.platform === 'win32'
+  ? ['exe', 'batch'].includes(resolveWindowsExecutable(tool).kind)
+  : spawnSync('/bin/sh', ['-c', `command -v ${JSON.stringify(tool)}`], { stdio: 'ignore' }).status === 0);
 const dockerUp = () => spawnSync('docker', ['info'], { stdio: 'ignore', timeout: 20000 }).status === 0;
 
 /** Why a real run cannot measure this lane on this machine, or null when it can. */
@@ -89,9 +93,14 @@ function listFiles(dir) {
 
 /** Replace every spelling of the scratch repo path and the home directory with fixed placeholders. */
 export function scrubPaths(text, repoPaths, home = homedir()) {
+  // A Windows path inside a JSON artifact is written with its backslashes escaped, so each path is
+  // also replaced in that form; on POSIX the two forms are the same string.
+  const forms = (p) => [...new Set([p, p.replace(/\\/g, '\\\\')])];
   let s = text;
-  for (const p of [...new Set(repoPaths)].sort((a, b) => b.length - a.length)) s = s.split(p).join(PLACEHOLDER_REPO);
-  if (home && home.length > 1) s = s.split(home).join(PLACEHOLDER_HOME);
+  for (const p of [...new Set(repoPaths)].sort((a, b) => b.length - a.length)) {
+    for (const f of forms(p)) s = s.split(f).join(PLACEHOLDER_REPO);
+  }
+  if (home && home.length > 1) for (const f of forms(home)) s = s.split(f).join(PLACEHOLDER_HOME);
   return s;
 }
 
@@ -184,7 +193,7 @@ function runReal(spec, seedDir, scratch, manifest = 'security-baseline') {
     env: { ...process.env, CW_REPORT_DIR: reports, CW_SKIP_SETUP: '1', CW_SELF_SWEEP: '0' },
   });
   const wanted = new Set(spec.artifacts.flatMap((a) => [a, `${a}.exit`]));
-  const found = listFiles(reports).filter((p) => wanted.has(p.split('/').pop()));
+  const found = listFiles(reports).filter((p) => wanted.has(basename(p)));
   return { repo, reports, status: r.status, signal: r.signal, tail: `${r.stdout || ''}${r.stderr || ''}`.slice(-1500), found };
 }
 
@@ -238,7 +247,7 @@ export function acceptLane({ category, seed = null, draft = null, out = null, ma
     const repoPaths = [real.repo];
     try { repoPaths.push(realpathSync(real.repo)); } catch { /* scratch removed underneath us: scrub what we have */ }
     for (const p of real.found) {
-      const name = p.split('/').pop();
+      const name = basename(p);
       let text = scrubPaths(readFileSync(p, 'utf8'), repoPaths);
       if (name.endsWith('.sarif')) {
         const pr = pruneSarif(text);
@@ -248,7 +257,7 @@ export function acceptLane({ category, seed = null, draft = null, out = null, ma
     }
     source = 'real';
   } else if (draft && existsSync(draft) && listFiles(draft).length) {
-    for (const p of listFiles(draft)) cpSync(p, join(candidate, p.split('/').pop()));
+    for (const p of listFiles(draft)) cpSync(p, join(candidate, basename(p)));
     source = 'synthetic';
   } else {
     return { ...verdict, accepted: false, source: null, reason: `no artifact: a real run cannot measure this lane here (${blocker}) and no draft was given`, candidate };
