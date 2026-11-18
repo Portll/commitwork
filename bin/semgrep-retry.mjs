@@ -12,7 +12,11 @@
 // It then scans the files whose reasons include `timeout` or `fixpoint-timeout`, and only those,
 // again with a long per-rule timeout and no skip threshold, and merges what it finds into the lane
 // SARIF. A retry of a fixpoint-timeout file runs at one job: measured on 15 live-composer files,
-// the default job count lost 28-29 fixpoint timeouts and a single job lost 3-4.
+// the default job count lost 28-29 fixpoint timeouts and a single job lost 3-4. The per-rule timeout
+// does not reach the fixpoint: Semgrep caps each function's taint fixpoint at a compiled 0.2 s
+// (Limits_semgrep.taint_FIXPOINT_TIMEOUT; no rule option or flag sets it in 1.180.0), so a function
+// that exceeds it alone, such as a 6,600-line options() builder, times out at any job count and stays
+// read in part.
 //
 // The original evidence is never erased. The main invocation keeps its notices; the retry is
 // appended as a further invocation carrying properties.commitworkRetry {files, timeoutSec, jobs,

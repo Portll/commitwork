@@ -46,6 +46,7 @@
                 "blockedReason": { "type": "string" },
                 "coverage": { "enum": ["full", "reduced", "unknown"] },
                 "coverageReason": { "type": ["string", "null"] },
+                "coverageBasis": { "type": "string", "minLength": 1, "description": "How the coverage value was decided, for example none (full coverage), exit-code, report-absent, per-file (a measured k of n files) or signal (a log pattern with no measured size). Two bases that both reduced coverage are joined with +." },
                 "isolation": { "type": "string" },
                 "isolationReason": { "type": "string" },
                 "timedOut": { "type": "boolean" },

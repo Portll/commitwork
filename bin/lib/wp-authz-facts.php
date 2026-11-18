@@ -341,6 +341,8 @@ function resolveCall(Node $c, int $owner): array {
         if ($c->var instanceof Expr\Variable && $c->var->name === 'this') { $r = lookupMethod($cls, $n); if ($r !== null) return [[$r], 'this']; }
         elseif ($c->var instanceof Expr\Variable && is_string($c->var->name) && ($k = newClassOf($owner, $c->var->name) ?? paramType($owner, $c->var->name)) !== null) { $r = lookupMethod($k, $n); if ($r !== null) return [[$r], 'new']; }
         elseif ($c->var instanceof Expr\PropertyFetch && $c->var->var instanceof Expr\Variable && $c->var->var->name === 'this' && $c->var->name instanceof Node\Identifier && ($k = propType($cls, $c->var->name->toString())) !== null) { $r = lookupMethod($k, $n); if ($r !== null) return [[$r], 'property']; }
+        // core's wpdb is not in the tree, so a by-name match is always some plugin method sharing the name
+        if (isWpdb($c->var)) return [[], 'external'];
         $b = byName($n);
         if ($b) return [$b, 'by-name'];
         $b = byName($n, MAX_AMBIGUOUS);
@@ -643,7 +645,7 @@ function summarize(int $id, array $taintedIdx, int $depth, array $stack, array $
             foreach ($args as $i => $ar) if (!$ar->name && exprTainted($ar->value, $tv)) $idx[] = $i;
             $sub = summarize($ce, $idx, $depth + 1, $stack, $cargs);
             $CURCONST = $mine;
-            if ($how === 'ambiguous' || $sub['ambiguous']) { foreach ($sub['muts'] as &$am) $am['viaAmbiguous'] = true; unset($am); $S['ambiguous'] = true; }
+            if ($how === 'ambiguous') { foreach ($sub['muts'] as &$am) $am['viaAmbiguous'] = true; unset($am); $S['ambiguous'] = true; }
             if (isset($under[spl_object_id($c)])) foreach ($sub['muts'] as &$sm) $sm['triggered'] = true;
             unset($sm);
             foreach (['cap', 'capByName', 'nonce', 'nonceByName', 'muts', 'unresolved'] as $k) $S[$k] = array_merge($S[$k], $sub[$k]);
