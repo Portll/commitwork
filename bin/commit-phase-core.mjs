@@ -361,6 +361,21 @@ export function worktreeAction({ worktree, before, after, taken } = {}) {
 }
 
 /**
+ * The working copy's text in the blob's line-ending form, and the way back. A checkout with
+ * core.autocrlf (or eol=crlf) holds CRLF where the blob holds LF, so compared byte for byte an
+ * untouched package.json read as a peer's edit, every line conflicted in the three-way merge, and
+ * the stamp was left behind for the next pathspec commit to revert. Measured on Windows,
+ * 2026-11-18, in a checkout nobody had edited. Only a file whose every line ending is CRLF, beside
+ * a blob with none, is converted; anything else is compared as it stands.
+ */
+export function checkoutForm(worktree, blobText) {
+  const same = { text: worktree, restore: (t) => t };
+  if (typeof worktree !== 'string' || typeof blobText !== 'string') return same;
+  if (!worktree.includes('\r\n') || /(^|[^\r])\n/.test(worktree) || blobText.includes('\r')) return same;
+  return { text: worktree.replace(/\r\n/g, '\n'), restore: (t) => t.replace(/\r?\n/g, '\r\n') };
+}
+
+/**
  * One landed path in ANOTHER checkout that has the moved ref checked out. Each state is
  * `<mode>:<blob>`, or null for absent; `before`/`after` are the parent's and the commit's.
  * 'current' (index and file already the commit's), 'fast-forward' (each of them is the parent's
