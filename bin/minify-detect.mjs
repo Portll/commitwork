@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // usage: minify-detect.mjs [rootDir]
 // env: CW_MINIFY_MAX_BYTES, CW_MINIFY_SEMGREP_CEILING, CW_MINIFY_ENTROPY_RULE, CW_MINIFY_XFILE, CW_MINIFY_DEPS, CW_MINIFY_ALLOWLIST, CW_MINIFY_ALLOWLIST_SCHEMA, CW_NOW
-// writes: JSON to stdout {tool, summary:{findings, byRule, filesScanned, filesSkipped, config}, findings[]}
+// writes: JSON to stdout {tool, summary:{findings, byRule, filesScanned, filesSkipped, config, nestedCheckouts, nestedUndetermined}, findings[]}
 //
 // unreadability is the signal, never a skip
 // vendor-scan names the library, this lane never does
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 import { validateAgainstSchema } from '../monitor/registry.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
-import { excludeDirs, dirExcluder } from './scan-exclusions.mjs';
+import { excludeDirs, repoDirExcluder } from './scan-exclusions.mjs';
 import { linkPolicy } from './lib/walk-links.mjs';
 
 const ROOT = resolve(process.argv[2] || '.');
@@ -415,7 +415,8 @@ function classify(relPath, buf, capped, trueSize, absPath) {
 
 // guarded: importing HIDDEN_TEXT must not walk the importer's cwd
 function main() {
-  skipPath = dirExcluder(excludeDirs().filter((d) => d.includes('/')));
+  // path entries only: this lane reads dependency trees, but never another repository's checkout
+  skipPath = repoDirExcluder(ROOT, { dirs: excludeDirs().filter((d) => d.includes('/')) });
   walkTree(ROOT);
 
   // pins: identity anchors on the sink, the execution locus
@@ -450,6 +451,8 @@ function main() {
       ...(invalidEnv.length ? { invalidEnvFallback: invalidEnv } : {}),
     },
   };
+  summary.nestedCheckouts = skipPath.nestedCheckouts();
+  summary.nestedUndetermined = skipPath.undetermined();
   if (al.unreadable) summary.allowlistUnreadable = true;
   if (allowlistExpired) summary.allowlistExpired = allowlistExpired;
   process.stdout.write(`${JSON.stringify({ tool: 'minify-detect', summary, findings }, null, 2)}\n`);

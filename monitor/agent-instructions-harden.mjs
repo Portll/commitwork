@@ -8,7 +8,7 @@
 import { readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { linkPolicy } from '../bin/lib/walk-links.mjs';
-import { dirExcluder } from '../bin/scan-exclusions.mjs';
+import { repoDirExcluder } from '../bin/scan-exclusions.mjs';
 import { HIDDEN_TEXT } from '../bin/minify-detect.mjs';
 import { isInstructionFile } from '../bin/agent-instructions.mjs';
 import { unifiedDiff as sharedUnifiedDiff } from '../lib/unified-diff.mjs';
@@ -46,7 +46,7 @@ export function unifiedDiff(rel, before, after) {
 /** Declare-only: read every instruction file, strip, and return the diff. Never writes the tree. */
 export function hardenAgentInstructions({ repoDir = '.' } = {}) {
   const root = resolve(repoDir);
-  const skipDir = dirExcluder();
+  const skipDir = repoDirExcluder(root);
   const cap = maxBytes();
   const files = [];
   const links = linkPolicy(root);

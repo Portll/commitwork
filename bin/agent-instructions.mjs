@@ -8,7 +8,7 @@
 import { readFileSync, readdirSync, statSync, lstatSync, realpathSync } from 'node:fs';
 import { join, relative, resolve, dirname, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { dirExcluder } from './scan-exclusions.mjs';
+import { repoDirExcluder } from './scan-exclusions.mjs';
 import { linkPolicy } from './lib/walk-links.mjs';
 import { HIDDEN_TEXT } from './minify-detect.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
@@ -336,7 +336,7 @@ export function crossFileFindings(texts) {
 export function scanTree(rootArg) {
   const root = resolve(rootArg || process.env.CW_AGENT_INSTR_ROOT || '.');
   let skipDir;
-  try { skipDir = dirExcluder(); } catch (e) {
+  try { skipDir = repoDirExcluder(root); } catch (e) {
     return { code: 2, report: { tool: 'agent-instructions', summary: { findings: 0, byRule: {}, filesScanned: 0, filesSkipped: [], void: `exclusion policy unreadable: ${e.message}` }, findings: [] } };
   }
   let selfScan = false;
@@ -390,7 +390,9 @@ export function scanTree(rootArg) {
   findings.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : a.rule < b.rule ? -1 : a.rule > b.rule ? 1 : 0));
   const byRule = {};
   for (const f of findings) byRule[f.rule] = (byRule[f.rule] || 0) + 1;
-  const summary = { findings: findings.length, byRule, filesScanned, filesSkipped };
+  // not in filesSkipped: monitor/extractors/agent-surface.mjs counts that list as files
+  const summary = { findings: findings.length, byRule, filesScanned, filesSkipped,
+    nestedCheckouts: skipDir.nestedCheckouts(), nestedUndetermined: skipDir.undetermined() };
   if (filesScanned === 0) summary.void = 'no instruction files found — a walk that examined nothing is not a clean result';
   if (selfCanary) summary.selfCanarySetAside = selfCanary;
   return { code: 0, report: { tool: 'agent-instructions', summary, findings } };

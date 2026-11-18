@@ -31,6 +31,11 @@
 # excludes that one directory and never a `worktrees/` of the target's own. Blank lines and
 # #-comments ignored. Consumed via bin/scan-exclusions.mjs, which renders it per tool and gives
 # the JS walkers dirExcluder() — never re-typed inline.
+#
+# Nested checkouts (a subdirectory with its own `.git`) have no name to list. repoDirExcluder in
+# bin/scan-exclusions.mjs detects them for weak-random-detect, model-artefacts, minify-detect,
+# agent-instructions, agent-instructions-harden, node-hazards and joern-lane's source count. Lanes
+# with a private skip set are bounded only by the named roots.
 
 node_modules      # every JS dependency tree; four dependency lanes judge these properly instead
 target            # Cargo. The case above.

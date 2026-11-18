@@ -65,7 +65,7 @@ const PINNED = {
 // classifyWorktreePath covers every WORKTREE_ROOTS entry; a dot-directory skip covers both roots.
 const CLASSIFIER = [/classifyWorktreePath/];
 const DOTDIRS = [/startsWith\('\.'\)/];
-const SHARED_LIST = [/excludeDirs|dirExcluder/];
+const SHARED_LIST = [/excludeDirs|dirExcluder|repoDirExcluder/];
 const LITERAL = [/'\.claude\/worktrees'/, /'\.git'/];
 const HELPER = {
   // bin/sbom-syft.mjs builds syft's --exclude list from SCAN_EXCLUDE_ROOTS, in syft's './<root>/**' spelling

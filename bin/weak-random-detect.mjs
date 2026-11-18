@@ -38,7 +38,7 @@
 import { readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
 import { join, relative, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { dirExcluder } from './scan-exclusions.mjs';
+import { repoDirExcluder } from './scan-exclusions.mjs';
 import { linkPolicy, LINK_DANGLING } from './lib/walk-links.mjs';
 
 const ROOT = resolve(process.argv[2] || '.');
@@ -46,7 +46,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // One shared exclusion policy — never a second hand-maintained list. Fails closed: if the policy
 // cannot be read this throws and the lane does not run, rather than walking build output.
-const skipDir = dirExcluder();
+const skipDir = repoDirExcluder(ROOT);
 
 const SCAN_EXT = /\.(mjs|cjs|js|jsx|ts|tsx|java|kt|kts|py|rb|go|rs|php|cs|swift|scala|c|h|cc|cpp)$/i;
 
@@ -286,6 +286,9 @@ const output = {
     filesScanned,
     testContext: inTests.length,
     ...(linksNotFollowed.length ? { linksNotFollowed } : {}),
+    // excluded as another repository, and undetermined so scanned anyway
+    nestedCheckouts: skipDir.nestedCheckouts(),
+    undeterminedDirs: skipDir.undetermined(),
     note: 'A finding needs BOTH a non-cryptographic source (RNG or clock) AND evidence on the same line or the two before it that the value becomes a credential. Neither half alone is published — `Math.random()` is correct for jitter and wrong only for a value an attacker benefits from guessing. Matches in test/bench/fixture paths are counted under testContext, never as findings: a deterministic seed in a benchmark is the correct implementation of a benchmark.',
   },
   findings,

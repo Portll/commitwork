@@ -22,7 +22,7 @@
 import { readFileSync, readdirSync, realpathSync, openSync, closeSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, delimiter, relative } from 'node:path';
-import { dirExcluder } from './scan-exclusions.mjs';
+import { repoDirExcluder } from './scan-exclusions.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 
@@ -116,7 +116,7 @@ export function readQueryDb(path) {
 }
 
 /** Source files per frontend, walking the tree the way the exclusion policy prunes it. */
-export function countSources(root, excluded = dirExcluder()) {
+export function countSources(root, excluded = repoDirExcluder(root)) {
   const counts = Object.fromEntries(FRONTENDS.map((f) => [f.id, 0]));
   const byExt = new Map(FRONTENDS.flatMap((f) => f.exts.map((e) => [e, f.id])));
   const unreadable = [];
@@ -137,7 +137,7 @@ export function countSources(root, excluded = dirExcluder()) {
       if (id) counts[id]++;
     }
   }
-  return { counts, unreadable: unreadable.sort() };
+  return { counts, unreadable: unreadable.sort(), nested: excluded.nestedCheckouts ? excluded.nestedCheckouts() : [] };
 }
 
 const ANSI = /\[[0-9;]*m/g;
@@ -181,7 +181,7 @@ export function runLane(src, reportDir, rx, env = process.env) {
   const mapped = new Set(FRONTENDS.flatMap((f) => f.queryLanguages));
   const unmapped = queryLanguages.filter((l) => !mapped.has(l));
 
-  const { counts, unreadable } = countSources(src, dirExcluder());
+  const { counts, unreadable, nested } = countSources(src);
   const present = FRONTENDS.filter((f) => counts[f.id] > 0 && f.queryLanguages.some((l) => queryLanguages.includes(l)));
   const dumpExit = dump.status === null ? (dump.signal || dump.error || 'no status') : dump.status;
   const record = {
@@ -189,7 +189,7 @@ export function runLane(src, reportDir, rx, env = process.env) {
     launcher: { stderrCaptured: launcher.captured },
     querydb: { source: db ? 'dump' : 'fallback', languages: db ? db.languages : null, tags: tags.split(','),
       ...(db ? {} : { fallbackReason: `query db dump unreadable (dump exit ${dumpExit}); languages and tags are the lane's hardcoded lists` }) },
-    unmapped, sourceCounts: counts, unreadableDirs: unreadable, languages: [],
+    unmapped, sourceCounts: counts, unreadableDirs: unreadable, nestedCheckouts: nested, languages: [],
   };
   const jsonPath = join(reportDir, 'joern-lane.json');
   const publish = () => writeAtomic(jsonPath, `${JSON.stringify(record, null, 2)}\n`);
