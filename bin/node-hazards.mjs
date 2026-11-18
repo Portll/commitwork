@@ -48,7 +48,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, extname, sep, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { excludeDirs } from './scan-exclusions.mjs';
+import { excludeDirs, isNestedCheckout } from './scan-exclusions.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 
 const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.vue']);
@@ -237,7 +237,7 @@ const RULES = [
 ];
 
 /** Walk for files the rules can apply to. Templates and code both, nothing else read. */
-function collect(root, out = [], depth = 0, skip = null) {
+function collect(root, out = [], depth = 0, skip = null, nested = []) {
   if (depth > 12) return out;
   // Read at CALL time, never at module load, so a test's CW_SCAN_EXCLUDE_DIRS override is honoured.
   const skipDirs = skip || new Set(excludeDirs());
@@ -247,7 +247,8 @@ function collect(root, out = [], depth = 0, skip = null) {
     const p = join(root, d.name);
     if (d.isDirectory()) {
       if (skipDirs.has(d.name) || d.name.startsWith('.')) continue;
-      collect(p, out, depth + 1, skipDirs);
+      if (isNestedCheckout(p).nested) { nested.push(p); continue; }
+      collect(p, out, depth + 1, skipDirs, nested);
     } else if (d.isFile()) {
       if (resolve(p) === SELF) continue;   // the tool's own rule definitions are not findings
 
@@ -315,18 +316,20 @@ export function scanFile(path, text, ext) {
 export function scan(root) {
   const findings = [];
   const suppressed = [];
+  const nested = [];
   let scanned = 0;
-  for (const p of collect(root)) {
+  for (const p of collect(root, [], 0, null, nested)) {
     let text; try { text = readFileSync(p, 'utf8'); } catch { continue; }
     scanned++;
     const got = scanFile(relative(root, p).split(sep).join('/'), text, extname(p).toLowerCase());
     findings.push(...got);
     suppressed.push(...(got.suppressed || []));
   }
-  return { findings, suppressed, scanned };
+  const nestedCheckouts = nested.map((p) => relative(root, p).split(sep).join('/')).sort();
+  return { findings, suppressed, scanned, nestedCheckouts };
 }
 
-export function toSarif({ findings, suppressed = [] }) {
+export function toSarif({ findings, suppressed = [], nestedCheckouts = [] }) {
   const ids = [...new Set(findings.map((f) => f.ruleId))];
   return {
     $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
@@ -334,7 +337,7 @@ export function toSarif({ findings, suppressed = [] }) {
     runs: [{
       // Suppressed items are counted here but NOT placed in results — see scanFile's header. The
       // number is the honest half: a reader can tell "nothing fired" from "three were adjudicated".
-      properties: { suppressedCount: suppressed.length },
+      properties: { suppressedCount: suppressed.length, nestedCheckouts },
       tool: { driver: { name: 'commitwork-node-hazards', informationUri: 'https://commitwork.portll.net', rules: ids.map((id) => ({ id })) } },
       results: findings.map((f) => ({
         ruleId: f.ruleId,

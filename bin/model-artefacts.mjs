@@ -22,7 +22,7 @@ import { inflateRawSync, inflateSync, gunzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';
-import { dirExcluder } from './scan-exclusions.mjs';
+import { repoDirExcluder } from './scan-exclusions.mjs';
 
 export const TOOL = 'model-artefacts';
 
@@ -577,7 +577,7 @@ const firstLine = (s) => Number((/line (\d+)/.exec(s) || [])[1]) || 0;
 
 export function scanTree(root) {
   const cap = maxBytes();
-  const skipDir = dirExcluder();
+  const skipDir = repoDirExcluder(root);
   const skipRel = new Set(skipPaths());
   const summary = {
     findings: 0, byRule: {}, filesScanned: 0, unreadable: 0, skippedOversize: 0,
@@ -707,6 +707,8 @@ export function scanTree(root) {
     }
   };
   walk(root);
+  summary.nestedCheckouts = skipDir.nestedCheckouts();
+  summary.nestedUndetermined = skipDir.undetermined();
 
   findings.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : a.rule < b.rule ? -1 : a.rule > b.rule ? 1 : 0));
   for (const f of findings) summary.byRule[f.rule] = (summary.byRule[f.rule] || 0) + 1;

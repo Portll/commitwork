@@ -3806,7 +3806,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `producesIfExists` | 1 | Artifact globs (e.g. *.jar) that must exist somewhere in the repo for an empty-clean result to be trustworthy; otherwise the check is recorded as a void ('no scannable artifact — build first'). |
 | `remediationPrompt` | 88 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
 | `report` | 111 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
-| `report.exitCodes` | 3 | Every exit code the tool can end with, each marked measured (the report is a result) or unmeasured (it is not). |
+| `report.exitCodes` | 92 | Every exit code the tool can end with, each marked measured (the report is a result) or unmeasured (it is not). |
 | `report.file` | 111 | Filename written under $CW_REPORT_DIR. |
 | `report.findingsExit` | 4 | Exit codes the tool documents as meaning it ran and reported findings. |
 | `report.format` | 111 | Report format. |

@@ -20,7 +20,7 @@ const zeros = { c: 0, java: 0, kotlin: 0, php: 0 };
 
 test('An empty directory gives zero for every frontend and no unreadable paths', () => {
   withDir((dir) => {
-    assert.deepEqual(countSources(dir, none), { counts: zeros, unreadable: [] });
+    assert.deepEqual(countSources(dir, none), { counts: zeros, unreadable: [], nested: [] });
   });
 });
 
@@ -33,6 +33,7 @@ test('Files are counted by their last extension case-insensitively and other fil
     assert.deepEqual(countSources(dir, none), {
       counts: { c: 3, java: 1, kotlin: 2, php: 2 },
       unreadable: [],
+      nested: [],
     });
   });
 });
@@ -41,7 +42,7 @@ test('A file whose only dot is at index 0 is not counted', () => {
   withDir((dir) => {
     writeFileSync(join(dir, '.c'), '');
     writeFileSync(join(dir, '.php'), '');
-    assert.deepEqual(countSources(dir, none), { counts: zeros, unreadable: [] });
+    assert.deepEqual(countSources(dir, none), { counts: zeros, unreadable: [], nested: [] });
   });
 });
 
@@ -52,6 +53,7 @@ test('A one-character base name with the dot at index 1 is counted', () => {
     assert.deepEqual(countSources(dir, none), {
       counts: { c: 0, java: 1, kotlin: 1, php: 0 },
       unreadable: [],
+      nested: [],
     });
   });
 });
@@ -69,7 +71,7 @@ test('Excluded subdirectories are not descended into and the excluder sees root-
       seen.push(rel);
       return rel === 'skip';
     });
-    assert.deepEqual(r, { counts: { c: 0, java: 1, kotlin: 1, php: 1 }, unreadable: [] });
+    assert.deepEqual(r, { counts: { c: 0, java: 1, kotlin: 1, php: 1 }, unreadable: [], nested: [] });
     assert.deepEqual(seen.sort(), ['keep', join('keep', 'inner'), 'skip']);
   });
 });
@@ -84,13 +86,14 @@ test('Symbolic links are neither counted nor followed', () => {
     assert.deepEqual(countSources(dir, none), {
       counts: { c: 1, java: 0, kotlin: 0, php: 1 },
       unreadable: [],
+      nested: [],
     });
   });
 });
 
 test('A missing root is skipped without being reported as unreadable', () => {
   withDir((dir) => {
-    assert.deepEqual(countSources(join(dir, 'missing'), none), { counts: zeros, unreadable: [] });
+    assert.deepEqual(countSources(join(dir, 'missing'), none), { counts: zeros, unreadable: [], nested: [] });
   });
 });
 
@@ -98,6 +101,6 @@ test('A root that is a file is reported as the unreadable path "."', () => {
   withDir((dir) => {
     const file = join(dir, 'root.c');
     writeFileSync(file, '');
-    assert.deepEqual(countSources(file, none), { counts: zeros, unreadable: ['.'] });
+    assert.deepEqual(countSources(file, none), { counts: zeros, unreadable: ['.'], nested: [] });
   });
 });

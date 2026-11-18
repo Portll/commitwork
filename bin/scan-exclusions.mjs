@@ -18,9 +18,11 @@
  * exactly the moment nobody is watching. An unreadable policy is a reason to stop, not a
  * reason to proceed unfiltered.
  *
+ * It also detects nested checkouts, which have no name to list.
+ *
  * Env-overridable at CALL time (house rule): CW_SCAN_EXCLUDE_DIRS.
  */
-import { readFileSync, realpathSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -52,20 +54,51 @@ export function excludeDirs(path = LIST_PATH()) {
   return dirs;
 }
 
+// a `.git` directory or gitlink file marks another repository; lib/repo-walk.mjs counts directories only, for a different question
+
+/** `{ nested, code }`: only a readable `.git` excludes; an undetermined stat keeps the directory in scope and sets `code`. ENOTDIR means a file, so it is determined. */
+const DETERMINED_ABSENT = new Set(['ENOENT', 'ENOTDIR']);
+export function isNestedCheckout(absDir, fs = { statSync }) {
+  try {
+    const st = fs.statSync(join(absDir, '.git'));
+    return { nested: st.isDirectory() || st.isFile(), code: null };
+  } catch (e) {
+    const code = (e && e.code) || 'error';
+    return { nested: false, code: DETERMINED_ABSENT.has(code) ? null : code };
+  }
+}
+
 /**
  * The predicate every in-house walker tests a directory against, given its ROOT-RELATIVE path.
  * A name entry matches the last segment anywhere; a path entry matches only when the whole path
  * ends with it on a segment boundary, so `.claude/worktrees` never excludes a `worktrees/` of its own.
+ * With `root`, also excludes nested checkouts; `nestedCheckouts()` and `undetermined()` disclose them, sorted.
  */
-export function dirExcluder(dirs = excludeDirs()) {
+export function dirExcluder(dirs = excludeDirs(), { root = null, fs = { statSync } } = {}) {
   const names = new Set(dirs.filter((d) => !d.includes('/')));
   const paths = dirs.filter((d) => d.includes('/'));
-  return (rel) => {
-    const r = String(rel || '').split('\\').join('/').replace(/^\.\//, '').replace(/\/+$/, '');
+  const seen = new Map();                                 // root-relative dir -> 'checkout' | error code
+  const test = (rel) => {
+    const r = String(rel || '').split('\\').join('/').replace(/^\.\//, '').replace(/\/+$/, '').replace(/^\.$/, '');
     if (names.has(r.slice(r.lastIndexOf('/') + 1))) return true;
-    return paths.some((p) => r === p || r.endsWith(`/${p}`));
+    if (paths.some((p) => r === p || r.endsWith(`/${p}`))) return true;
+    // the root's own `.git` is the scanned repository
+    if (!root || !r) return false;
+    const { nested, code } = isNestedCheckout(join(root, r), fs);
+    if (nested) { seen.set(r, 'checkout'); return true; }
+    if (code) seen.set(r, code);
+    return false;
   };
+  // sorted on read so readdir order never reaches output
+  const pick = (want) => [...seen].filter(([, v]) => (v === 'checkout') === want).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  test.nestedCheckouts = () => pick(true).map(([path]) => path);
+  test.undetermined = () => pick(false).map(([path, code]) => ({ path, code }));
+  return test;
 }
+
+/** `dirExcluder` for a walker rooted at `root`: the shared list plus any nested checkout it meets. */
+export const repoDirExcluder = (root, { dirs = excludeDirs(), fs = { statSync } } = {}) =>
+  dirExcluder(dirs, { root, fs });
 
 // NO BACKSLASHES IN THE RENDERED REGEX, and this is a correctness requirement rather than a style
 // one. joern-scan takes `--frontend-args` and embeds them in generated Scala, where `\.` inside a
