@@ -24,7 +24,7 @@ import { isMainModule } from '../lib/is-main.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // The lane's --language value → the library pack its extensions target.
-const LIBRARY = Object.freeze({
+export const LIBRARY = Object.freeze({
   'javascript-typescript': 'javascript', javascript: 'javascript', java: 'java', ruby: 'ruby', python: 'python',
   cpp: 'cpp', swift: 'swift', csharp: 'csharp', rust: 'rust', go: 'go',
 });

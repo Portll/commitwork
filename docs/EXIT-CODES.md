@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-365 commands: 165 declared, 13 prose, 187 undeclared. Of the declared, 131 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
+367 commands: 167 declared, 13 prose, 187 undeclared. Of the declared, 133 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -225,6 +225,12 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `sbom-review`, `
 | 0 | done |
 | 1 | refused, failed, or a verdict other than pass |
 | 2 | usage |
+
+### `bin/codeql-frontier.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | always. This is a side measurement: the lane's verdict is its own analyze, and a frontier that could not run is recorded as such (state failed / unsupported / no-database), never as an empty frontier. |
 
 ### `bin/codeql-go-build.mjs`
 
@@ -461,6 +467,14 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `sbom-review`, `
 | 20 | --check: docs/EXIT-CODES.md is stale or absent |
 | 21 | a source could not be read (git ls-files failed, or a read other than ENOENT) |
 | 22 | usage |
+
+### `bin/frontier-review.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | done; status always, its JSON naming any worksheet it could not use |
+| 1 | draft or emit: a worksheet could not be used, or a decision does not validate (named on stderr; nothing is written for that repository) |
+| 2 | usage |
 
 ### `bin/gate-ratchet.mjs`
 

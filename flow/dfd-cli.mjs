@@ -30,7 +30,7 @@ import { validateDfd, analyse, filterModel, subgraph, taintOnly, scannerOnly } f
 import { fromFlowGraph, fromCodeFlows, mergeModels, unknownOf, fromFindings, issuesFromRecords, applyVerdicts } from './dfd-adapter.mjs';
 import { parseLcov, applyLcov, applyExercised, hopsExercisedByLcov, splitDrifted } from './dfd-coverage-adapter.mjs';
 import { analyseRepo, isSelf, lsFiles, targetSources, trackedSources } from './static.mjs';
-import { dataflowFromResult, traceOf } from '../cra/dataflow-evidence.mjs';
+import { dataflowFromResult, dataflowsFromResult, engineOf } from '../cra/dataflow-evidence.mjs';
 import { functionsOf, functionAt } from '../codegraph/function-at.mjs';
 import { readSarif } from '../monitor/sarif-read.mjs';
 import { renderHtml, groupSizes, ORIENTATIONS } from '../lib/dfd-render.mjs';
@@ -247,27 +247,37 @@ export function issueFacts(result, rules) {
 }
 
 /**
- * --codeql <file> -> { records } or { error }. A SARIF document goes through the one SARIF reader
- * (monitor/sarif-read.mjs) and each result through dataflowFromResult, attributed to `repo`; a JSON
- * array, or an object with a `records` array, is taken as dataflow records already.
+ * --codeql <file> -> { records, results } or { error }. A SARIF document goes through the one SARIF
+ * reader (monitor/sarif-read.mjs), attributed to `repo`, its engine named by the document's driver
+ * (CodeQL, Psalm, Semgrep: any engine that writes codeFlows):
+ *   records  one per ROUTE (dataflowsFromResult): a result with three distinct source→sink routes
+ *            is three records, so the diagram draws every route the engine found, not the first
+ *   results  one per RESULT (dataflowFromResult, its shortest route): what --issues places, because
+ *            an issue is a scan result, and three routes to one sink are one issue
+ * A JSON array, or an object with a `records` array, is taken as dataflow records already, and is
+ * both lists.
  */
 export function readCodeFlows(path, repo, { trace = false } = {}) {
   let text;
   try { text = readFileSync(path, 'utf8'); } catch (e) { return { error: `--codeql ${path}: ${e.code || e.message}` }; }
   let doc = null;
   try { doc = JSON.parse(text); } catch { /* the reader below names what is wrong with it */ }
-  if (Array.isArray(doc)) return { records: doc };
-  if (doc && Array.isArray(doc.records)) return { records: doc.records };
+  if (Array.isArray(doc)) return { records: doc, results: doc };
+  if (doc && Array.isArray(doc.records)) return { records: doc.records, results: doc.records };
   const rec = readSarif(path);
   const rules = rulesOf(doc);
   if (rec.state !== 'ok') return { error: `--codeql ${path} is neither dataflow records nor a readable SARIF document (SARIF state: ${rec.state}${rec.reason ? `, ${rec.reason}` : ''})` };
-  return { records: rec.results.map((r) => {
-    const row = dataflowFromResult(r, repo, null);
-    // --functions needs every step of the trace, which the record's path does not keep
-    if (trace && row && row.path) row.path.trace = traceOf(r);
-    if (row) Object.assign(row, issueFacts(r, rules));
-    return row;
-  }).filter(Boolean) };
+  const engine = engineOf(rec.tool, basename(path));
+  const records = [];
+  const results = [];
+  for (const r of rec.results) {
+    const facts = issueFacts(r, rules);
+    // --functions needs every step of the trace, which a record's path keeps only when asked
+    for (const row of dataflowsFromResult(r, repo, null, { engine, trace })) records.push(Object.assign(row, facts));
+    const one = dataflowFromResult(r, repo, null, { engine, trace });
+    if (one) results.push(Object.assign(one, facts));
+  }
+  return { records, results };
 }
 
 const FUNCTION_SOURCES = /\.(mjs|cjs|js)$/;
@@ -348,7 +358,7 @@ export async function scannedModel(opts, { env = process.env, analyse: pass = an
     const got = readCodeFlows(opts.codeql, repo, { trace: !!opts.functions || !!opts.issues });
     if (got.error) return { code: EXIT.INPUT, error: got.error };
     codeRecords = got.records;
-    allRecords = got.records;
+    allRecords = got.results;
     if (opts.functions) {
       // the scan names lines, not a revision: a flow whose steps are no longer where it recorded
       // them would be drawn through whichever functions now own those line numbers

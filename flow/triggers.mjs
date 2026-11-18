@@ -19,7 +19,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { basename, isAbsolute, join, normalize, relative } from 'node:path';
+import { basename, isAbsolute, join, relative, sep, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { matchBracket } from './lexer.mjs';
 
@@ -152,7 +152,9 @@ export function argvModule(argv, root, cw = root) {
   if (!script) return null;
   const abs = isAbsolute(script) ? script : join(cw, script);
   const rel = relative(cw, abs);
-  return rel.startsWith('..') || isAbsolute(rel) ? null : normalize(rel);
+  // A module is named as git names it, `/`-separated; relative() answers with the platform's own
+  // separator, which on Windows named `bin\a.mjs`, a module no tracked set contains.
+  return rel.startsWith('..') || isAbsolute(rel) ? null : posix.normalize(rel.split(sep).join('/'));
 }
 
 /** -> { schedulers:[{key, extra, targets:[{module, evidence}]}], sites:[…] } */
@@ -183,7 +185,7 @@ const NODE_SCRIPT_RE = /(?:^|[\s;&|(])node\s+(?:-{1,2}[\w-]+(?:=\S+)?\s+)*((?:\.
 
 /** Every `node <script>` in a shell fragment. */
 export function nodeScripts(shell) {
-  return [...String(shell).matchAll(NODE_SCRIPT_RE)].map((m) => normalize(m[1]));
+  return [...String(shell).matchAll(NODE_SCRIPT_RE)].map((m) => posix.normalize(m[1]));
 }
 
 /**

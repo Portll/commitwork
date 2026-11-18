@@ -1,0 +1,210 @@
+{
+ "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "tool": {
+    "driver": {
+     "name": "CodeQL",
+     "semanticVersion": "2.27.3",
+     "rules": [
+      {
+       "id": "js/command-line-injection",
+       "name": "js/command-line-injection",
+       "properties": {
+        "kind": "path-problem",
+        "tags": [
+         "correctness",
+         "security",
+         "external/cwe/cwe-078",
+         "external/cwe/cwe-088"
+        ]
+       }
+      },
+      {
+       "id": "js/sql-injection",
+       "name": "js/sql-injection",
+       "properties": {
+        "kind": "path-problem",
+        "tags": [
+         "security",
+         "external/cwe/cwe-089",
+         "external/cwe/cwe-090",
+         "external/cwe/cwe-943"
+        ]
+       }
+      },
+      {
+       "id": "js/missing-rate-limiting",
+       "name": "js/missing-rate-limiting",
+       "properties": {
+        "kind": "problem",
+        "tags": [
+         "security",
+         "external/cwe/cwe-770",
+         "external/cwe/cwe-307",
+         "external/cwe/cwe-400"
+        ]
+       }
+      }
+     ]
+    }
+   },
+   "invocations": [
+    {
+     "executionSuccessful": true,
+     "toolExecutionNotifications": []
+    }
+   ],
+   "results": [
+    {
+     "ruleId": "js/command-line-injection",
+     "message": {
+      "text": "This command line depends on a [user-provided value](1)."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 6,
+         "startColumn": 11,
+         "endColumn": 32
+        }
+       }
+      }
+     ],
+     "codeFlows": [
+      {
+       "threadFlows": [
+        {
+         "locations": [
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.js",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 6,
+              "startColumn": 19,
+              "endColumn": 32
+             }
+            },
+            "message": {
+             "text": "req.query.dir"
+            }
+           }
+          },
+          {
+           "location": {
+            "physicalLocation": {
+             "artifactLocation": {
+              "uri": "app.js",
+              "uriBaseId": "%SRCROOT%",
+              "index": 0
+             },
+             "region": {
+              "startLine": 6,
+              "startColumn": 11,
+              "endColumn": 32
+             }
+            },
+            "message": {
+             "text": "'ls ' + ... ery.dir"
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 6,
+         "startColumn": 19,
+         "endColumn": 32
+        }
+       },
+       "message": {
+        "text": "user-provided value"
+       }
+      },
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 6,
+         "startColumn": 19,
+         "endColumn": 32
+        }
+       }
+      }
+     ]
+    },
+    {
+     "ruleId": "js/missing-rate-limiting",
+     "message": {
+      "text": "This route handler performs [a system command](1), but is not rate-limited."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 5,
+         "startColumn": 15,
+         "endLine": 8,
+         "endColumn": 2
+        }
+       }
+      }
+     ],
+     "relatedLocations": [
+      {
+       "id": 1,
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "app.js",
+         "uriBaseId": "%SRCROOT%",
+         "index": 0
+        },
+        "region": {
+         "startLine": 6,
+         "startColumn": 3,
+         "endColumn": 33
+        }
+       },
+       "message": {
+        "text": "a system command"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

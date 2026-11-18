@@ -293,7 +293,7 @@ test('anything that is neither pairs nor a reconcile report is refused', () => {
 
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { main, parseArgs, prepare, readCoverage, rangeResolver, EXIT, HELP, USAGE } from '../dfd-cli.mjs';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'flow-dfd-cov-'));
@@ -337,7 +337,8 @@ test('rangeResolver gives a file its functions, and null for what it cannot read
 
 test('readCoverage measures file elements, and function elements when the checkout is given', () => {
   // arrange
-  const files = { '/r/cov.lcov': 'SF:lib/a.mjs\nDA:1,2\nDA:2,2\nDA:5,0\nDA:6,0\nDA:9,1\nend_of_record\n', '/r/lib/a.mjs': SRC };
+  // the source is read at the native path the resolver builds (`C:\r\lib\a.mjs` on Windows)
+  const files = { '/r/cov.lcov': 'SF:lib/a.mjs\nDA:1,2\nDA:2,2\nDA:5,0\nDA:6,0\nDA:9,1\nend_of_record\n', [resolve('/r', 'lib/a.mjs')]: SRC };
   const read = (p) => { if (!(p in files)) throw Object.assign(new Error('no such file'), { code: 'ENOENT' }); return files[p]; };
   const m = model([mod('lib/a.mjs'), fn('lib/a.mjs', 'inner'), fn('lib/a.mjs', '')]);
   // act

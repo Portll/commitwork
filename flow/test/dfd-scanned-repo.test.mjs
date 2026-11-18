@@ -10,7 +10,7 @@ import vm from 'node:vm';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SELF = fileURLToPath(import.meta.url);
@@ -451,7 +451,8 @@ if (typeof vm.SourceTextModule !== 'function') {
     assert.equal(code, 0, s.err.join(''));
     const model = JSON.parse(s.out.join(''));
     assert.equal(model.source.producer, 'codeql-code-flows');
-    assert.ok(model.nodes.some((n) => n.id === `code:${dirname(file).split('/').pop()}:src/api.ts`));
+    // basename, not split('/'): `file` is a native path, `\`-separated on Windows
+    assert.ok(model.nodes.some((n) => n.id === `code:${basename(dirname(file))}:src/api.ts`));
   });
 
   test('--codeql refuses an unreadable file, exit 21', async () => {

@@ -27,7 +27,7 @@ test('returns reachable with path when codeFlows present and source expr is set'
       { location: { physicalLocation: { artifactLocation: { uri: 'src/b.js' }, region: { startLine: 20 } }, message: { text: 'sql exec' } } }
     ] }] }]
   }, 'repo', '2024-01-01T00:00:00Z');
-  assert.deepEqual(r, { repo: "repo", rule: "rule1", file: "src/a.js", reachability: "reachable", path: { steps: 2, flows: 1, source: { file: "src/a.js", line: 10, expr: "user input" }, sink: { file: "src/b.js", line: 20, expr: "sql exec" } }, evidence: { source: "codeql", method: "dataflow", confidence: "high", at: "2024-01-01T00:00:00Z", detail: "CodeQL traced 2 steps from user input (src/a.js:10) to sql exec (src/b.js:20)" } });
+  assert.deepEqual(r, { repo: "repo", rule: "rule1", file: "src/a.js", reachability: "reachable", path: { steps: 2, flows: 1, source: { file: "src/a.js", line: 10, expr: "user input" }, sink: { file: "src/b.js", line: 20, expr: "sql exec" } }, paths: [{ steps: 2, source: { file: "src/a.js", line: 10, expr: "user input" }, sink: { file: "src/b.js", line: 20, expr: "sql exec" } }], evidence: { source: "codeql", method: "dataflow", confidence: "high", at: "2024-01-01T00:00:00Z", detail: "CodeQL traced 2 steps from user input (src/a.js:10) to sql exec (src/b.js:20)" } });
 });
 
 test('returns reachable with path when source expr is null', () => {
@@ -39,7 +39,7 @@ test('returns reachable with path when source expr is null', () => {
       { location: { physicalLocation: { artifactLocation: { uri: 'src/b.js' }, region: { startLine: 20 } }, message: { text: 'sink' } } }
     ] }] }]
   }, 'repo', '2024-01-01T00:00:00Z');
-  assert.deepEqual(r, { repo: "repo", rule: "rule1", file: "src/a.js", reachability: "reachable", path: { steps: 2, flows: 1, source: { file: "src/a.js", line: 10, expr: null }, sink: { file: "src/b.js", line: 20, expr: "sink" } }, evidence: { source: "codeql", method: "dataflow", confidence: "high", at: "2024-01-01T00:00:00Z", detail: "CodeQL traced 2 steps from a source (src/a.js:10) to sink (src/b.js:20)" } });
+  assert.deepEqual(r, { repo: "repo", rule: "rule1", file: "src/a.js", reachability: "reachable", path: { steps: 2, flows: 1, source: { file: "src/a.js", line: 10, expr: null }, sink: { file: "src/b.js", line: 20, expr: "sink" } }, paths: [{ steps: 2, source: { file: "src/a.js", line: 10, expr: null }, sink: { file: "src/b.js", line: 20, expr: "sink" } }], evidence: { source: "codeql", method: "dataflow", confidence: "high", at: "2024-01-01T00:00:00Z", detail: "CodeQL traced 2 steps from a source (src/a.js:10) to sink (src/b.js:20)" } });
 });
 
 test('returns reachable with single-step path when one location in threadFlow', () => {
@@ -50,5 +50,5 @@ test('returns reachable with single-step path when one location in threadFlow', 
       { location: { physicalLocation: { artifactLocation: { uri: 'src/a.js' }, region: { startLine: 5 } }, message: { text: 'both' } } }
     ] }] }]
   }, 'repo', '2024-01-01T00:00:00Z');
-  assert.deepEqual(r, { repo: "repo", rule: "rule1", file: "src/a.js", reachability: "reachable", path: { steps: 1, flows: 1, source: { file: "src/a.js", line: 5, expr: "both" }, sink: { file: "src/a.js", line: 5, expr: "both" } }, evidence: { source: "codeql", method: "dataflow", confidence: "high", at: "2024-01-01T00:00:00Z", detail: "CodeQL traced 1 steps from both (src/a.js:5) to both (src/a.js:5)" } });
+  assert.deepEqual(r, { repo: "repo", rule: "rule1", file: "src/a.js", reachability: "reachable", path: { steps: 1, flows: 1, source: { file: "src/a.js", line: 5, expr: "both" }, sink: { file: "src/a.js", line: 5, expr: "both" } }, paths: [{ steps: 1, source: { file: "src/a.js", line: 5, expr: "both" }, sink: { file: "src/a.js", line: 5, expr: "both" } }], evidence: { source: "codeql", method: "dataflow", confidence: "high", at: "2024-01-01T00:00:00Z", detail: "CodeQL traced 1 steps from both (src/a.js:5) to both (src/a.js:5)" } });
 });
