@@ -156,6 +156,18 @@ them onto scanner findings by `repo|rule|file`. A path makes a finding `reachabl
 reason: `rule-traces-no-path`, `dataflow-no-row` or `dataflow-evidence-unavailable`. As of
 semgrep 1.182.0, OSS Semgrep exports no trace, so Semgrep findings carry the first of these.
 
+`semgrep-rule-modes.mjs` says which of two things that untraced Semgrep finding is. A taint rule
+matched by tracing data from a source to the sink, and Semgrep kept the trace. A pattern rule
+matched a code shape and never looked for a flow. SARIF does not record a rule's mode, so
+`bin/semgrep-rule-modes.mjs fetch <reports dir>` reads the definition of each fired registry rule
+from semgrep.dev and records only its mode, a hash of the definition and the fetch time in
+`monitor/semgrep-rule-modes.json`. The rule text is not kept. commitwork's own `manifests/semgrep-*`
+rules are read from the checkout. The finding row then carries `ruleMode`, and the route counts
+`dataflow.noPathByRuleMode`. A rule whose fetch failed is `unresolved`, and one nobody fetched is
+`unrecorded`; neither is read as a pattern rule. On a real sweep (2026-10-21), 82 of the 88 Semgrep
+findings came from taint rules. The mode changes the reason, never the determination: a taint match
+without its trace is still not shown as reachable.
+
 `corroborationFor` in the same module asks whether a second engine family reported at the
 finding's site (repo, file, line) in the same sweep. Semgrep and Opengrep are one family, and so are
 `semgrep.sarif` and `semgrep-auto.sarif`. The answer is `corroborated`, `uncorroborated`,

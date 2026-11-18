@@ -153,6 +153,9 @@ async function loadDeterminations(){
   // A second engine family at the same site. Single-engine findings are unmeasured, so they are
   // named apart rather than counted as disagreement.
   const ag=df.agreement||null;
+  // Untraced findings by their Semgrep rule's mode: a taint rule matched by tracing (trace not exported); a pattern rule never traces.
+  const nm=df.noPathByRuleMode||null;
+  const nmTxt=nm&&Object.keys(nm).some((k)=>k!=='not-semgrep')?` · untraced: ${nm.taint||0} matched by a taint rule (trace not exported), ${(nm.search||0)+(nm.join||0)+(nm.extract||0)} by a pattern rule${(nm.unresolved||0)+(nm.unrecorded||0)?`, ${(nm.unresolved||0)+(nm.unrecorded||0)} rule mode unknown`:''}`:'';
   const agTxt=ag&&df.findings?` · ${ag.corroborated||0} corroborated by a second engine${ag['single-engine']?` (${ag['single-engine']} had only one engine)`:''}`:'';
   // The frontier bounds what a taint lane's silence means: untrusted data entering library calls
   // no taint route ends at. Stated, never folded into the finding counts.
@@ -161,7 +164,7 @@ async function loadDeterminations(){
   // decided a sink that is still unclaimed means its model did not take, and is named apart.
   const frOpen=ft.open!=null?ft.open:ft.unclaimed;
   const frTxt=fr.state==='ok'&&ft.calls?` · ${frOpen} untrusted calls into libraries no taint rule followed${ft.neutral?` (${ft.neutral} reviewed as plumbing)`:''}${ft.sinkOpen?` · ${ft.sinkOpen} modelled as sinks but still unclaimed`:''}`:'';
-  set('dt-n',`${d.total} findings · ${r.proven||0} proven reachable · ${r.unproven||0} analysed, no path · ${r.unknown||0} unknown${dfTxt}${agTxt}${frTxt}`);
+  set('dt-n',`${d.total} findings · ${r.proven||0} proven reachable · ${r.unproven||0} analysed, no path · ${r.unknown||0} unknown${dfTxt}${nmTxt}${agTxt}${frTxt}`);
   set('dt-unknown-n',String(r.unknown||0));
 
   const why=d.unknownBecause||{};

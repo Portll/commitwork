@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://commitwork.online/schema/semgrep-rule-modes.schema.json",
+  "title": "Semgrep registry rule modes",
+  "description": "Written by bin/semgrep-rule-modes.mjs fetch, read by cra/semgrep-rule-modes.mjs. Each fired registry rule's mode, a hash of the definition it was read from and when; never the rule text. A rule whose fetch failed is under unresolved, with the reason.",
+  "type": "object",
+  "required": ["v", "generatedBy", "registry", "rules", "unresolved"],
+  "additionalProperties": false,
+  "properties": {
+    "v": { "const": 1 },
+    "generatedBy": { "type": "string", "minLength": 1 },
+    "registry": { "type": "string", "minLength": 1 },
+    "rules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["mode", "sha256", "fetchedAt"],
+        "additionalProperties": false,
+        "properties": {
+          "mode": { "enum": ["search", "taint", "join", "extract"] },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "fetchedAt": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "unresolved": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["reason", "at"],
+        "additionalProperties": false,
+        "properties": {
+          "reason": { "type": "string", "minLength": 1 },
+          "at": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

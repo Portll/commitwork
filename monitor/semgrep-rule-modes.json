@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "generatedBy": "bin/semgrep-rule-modes.mjs fetch",
+  "registry": "https://semgrep.dev/c/r/",
+  "rules": {
+    "generic.secrets.security.detected-generic-secret.detected-generic-secret": {
+      "mode": "search",
+      "sha256": "196613e0ddb3fc100b33dab015eb3a0c283f32fe7efdae6b3838754c7dc03309",
+      "fetchedAt": "2026-11-18T09:59:37.624Z"
+    },
+    "generic.secrets.security.detected-jwt-token.detected-jwt-token": {
+      "mode": "search",
+      "sha256": "87216622b8912d753a241676bb4981112b04c7eafe51a1cad2b03a6e563c2b47",
+      "fetchedAt": "2026-11-18T09:59:37.624Z"
+    },
+    "javascript.browser.security.open-redirect.js-open-redirect": {
+      "mode": "taint",
+      "sha256": "c89deb80ff2b560c3af90a3f5d717e5f696410208ad08b5a236580ff39a80a23",
+      "fetchedAt": "2026-11-18T09:59:37.624Z"
+    },
+    "javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp": {
+      "mode": "taint",
+      "sha256": "68c0a7972623b2d2050839dd9b0335246e7e6f9dcfd130cac74cd2f7666438d6",
+      "fetchedAt": "2026-11-18T09:59:37.624Z"
+    },
+    "javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring": {
+      "mode": "taint",
+      "sha256": "31d5bf13706ff7b8cd2677582f368af6e5caaf87394386b43064f4a72bf099f2",
+      "fetchedAt": "2026-11-18T09:59:37.624Z"
+    },
+    "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected": {
+      "mode": "search",
+      "sha256": "d795b89c22e0ab5fcac7373c0f1ec9695b599b70f276c738efd5d8b4b5327ea8",
+      "fetchedAt": "2026-11-18T09:59:37.624Z"
+    },
+    "typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml": {
+      "mode": "taint",
+      "sha256": "ee93ce0f7667d599ec7ef3e99f7d3743488d3e8970c946304adddbe183a0f5c1",
+      "fetchedAt": "2026-11-18T09:59:37.624Z"
+    }
+  },
+  "unresolved": {}
+}

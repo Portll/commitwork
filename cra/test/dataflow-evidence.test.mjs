@@ -299,3 +299,58 @@ test('siteKey normalises the separator and nothing else', () => {
   assert.equal(D.siteKey('r', 'a\\b\\c.ts', 7), D.siteKey('r', 'a/b/c.ts', 7));
   assert.notEqual(D.siteKey('r', 'a/b.ts', 7), D.siteKey('r', 'a/B.ts', 7), 'case is the engines\' own spelling, kept');
 });
+
+test('a Semgrep result without a path says which kind of rule it is, when the rule\'s definition was read', () => {
+  // arrange: one taint rule, one pattern rule, one whose fetch failed, one nobody fetched, and CodeQL
+  const sg = (rule, file) => ({ ruleId: rule, locations: [{ physicalLocation: { artifactLocation: { uri: file }, region: { startLine: 2 } } }] });
+  const T = sweepOf({
+    'semgrep.sarif': { runs: [{ tool: { driver: { name: 'Semgrep OSS' } }, results: [sg('r.taint', 'a.js'), sg('r.search', 'b.js'), sg('r.gone', 'c.js'), sg('r.never', 'd.js')] }] },
+    'codeql.sarif': { runs: [{ tool: { driver: { name: 'CodeQL' } }, results: [syntactic()] }] },
+  });
+  const ruleModes = {
+    table: { v: 1, rules: { 'r.taint': { mode: 'taint' }, 'r.search': { mode: 'search' } }, unresolved: { 'r.gone': { reason: 'HTTP 404' } } },
+    local: { rules: new Map(), errors: [] },
+  };
+  try {
+    // act
+    const b = D.buildDataflowIndex({ dir: T, atIso: NOW, ruleModes });
+    const at = (rule, file) => D.dataflowFor(b.index, 'repo-a', rule, file);
+    const [t, s, g, n, c] = [at('r.taint', 'a.js'), at('r.search', 'b.js'), at('r.gone', 'c.js'), at('r.never', 'd.js'), at('js/incomplete-sanitization', 'b.js')];
+    // assert
+    assert.deepEqual([t.ruleMode, s.ruleMode, g.ruleMode, n.ruleMode], [
+      { mode: 'taint', source: 'registry' }, { mode: 'search', source: 'registry' },
+      { mode: null, source: 'unresolved' }, { mode: null, source: 'unrecorded' },
+    ]);
+    assert.match(t.why, /is a taint rule .*traced data .*did not export the trace/);
+    assert.match(s.why, /is a pattern rule \(mode search, per its registry definition\); it matches a code shape and never looks for a flow/);
+    assert.match(g.why, /its mode could not be read \(HTTP 404\)$/);
+    assert.match(n.why, /its mode is not recorded/);
+    assert.equal(c.ruleMode, undefined, 'a CodeQL row carries no Semgrep rule mode');
+    assert.equal(t.reachability, 'reachability_unknown', 'a taint match without its trace is still not shown reachable');
+    assert.deepEqual(b.stats.semgrepNoPath, { taint: 1, search: 1, unresolved: 1, unrecorded: 1 });
+    assert.deepEqual(b.stats.ruleModes, { state: 'ok', reason: null });
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test('the rule-mode table is read at call time, and one that cannot be used leaves every mode unknown', () => {
+  // arrange
+  const sg = { ruleId: 'r.search', locations: [{ physicalLocation: { artifactLocation: { uri: 'b.js' }, region: { startLine: 2 } } }] };
+  const T = sweepOf({ 'semgrep.sarif': { runs: [{ tool: { driver: { name: 'Semgrep OSS' } }, results: [sg] }] } });
+  const table = join(T, 'modes.json');
+  const was = process.env.CW_SEMGREP_RULE_MODES;
+  try {
+    writeFileSync(table, JSON.stringify({ v: 1, rules: { 'r.search': { mode: 'search' } }, unresolved: {} }));
+    process.env.CW_SEMGREP_RULE_MODES = table;
+    // act
+    const ok = D.buildDataflowIndex({ dir: T, atIso: NOW });
+    writeFileSync(table, '{corrupt');
+    const bad = D.buildDataflowIndex({ dir: T, atIso: NOW });
+    // assert
+    assert.equal(D.dataflowFor(ok.index, 'repo-a', 'r.search', 'b.js').ruleMode.mode, 'search');
+    assert.equal(bad.stats.ruleModes.state, 'unparseable');
+    assert.deepEqual(D.dataflowFor(bad.index, 'repo-a', 'r.search', 'b.js').ruleMode, { mode: null, source: 'unrecorded' });
+  } finally {
+    if (was === undefined) delete process.env.CW_SEMGREP_RULE_MODES; else process.env.CW_SEMGREP_RULE_MODES = was;
+    rmSync(T, { recursive: true, force: true });
+  }
+});
