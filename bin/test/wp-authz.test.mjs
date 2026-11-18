@@ -32,18 +32,27 @@ describe('sevFor', () => {
 });
 
 describe('classify', () => {
-  test('only wp-triggered-write publishes, at low', () => {
+  test('the triggered write and the four no-guard rules publish; the rest stay undetermined', () => {
     const published = Object.entries(RULES).filter(([, r]) => r.publish).map(([k, r]) => [k, r.sev]);
-    assert.deepEqual(published, [['wp-triggered-write', 'low']]);
+    assert.deepEqual(published, [['wp-nopriv-unguarded-write', undefined], ['wp-ajax-unguarded-write', undefined],
+      ['wp-rest-unguarded-write', undefined], ['wp-check-discarded', undefined], ['wp-triggered-write', 'low']]);
   });
 
-  test('an unauthenticated request-driven write is undetermined, its claim kept', () => {
+  test('an unauthenticated request-driven write is a finding at the write\'s severity, its claim kept', () => {
     const r = classify({ entries: [entry({ kind: 'ajax-nopriv', hook: 'wp_ajax_nopriv_x', muts: [write({ influenced: true })] })] });
-    assert.equal(r.findings.length, 0);
-    assert.equal(r.undetermined.length, 1);
-    assert.equal(r.undetermined[0].rule, 'wp-nopriv-unguarded-write');
-    assert.equal(r.undetermined[0].sev, '');
-    assert.equal(r.undetermined[0].claim, RULES['wp-nopriv-unguarded-write'].claim);
+    assert.equal(r.undetermined.length, 0);
+    assert.deepEqual(r.findings.map((f) => [f.rule, f.sev, f.cwe]), [['wp-nopriv-unguarded-write', 'med', 'CWE-862']]);
+    assert.equal(r.findings[0].claim, RULES['wp-nopriv-unguarded-write'].claim);
+  });
+
+  test('a request-chosen key on an unguarded high-weight write is high', () => {
+    const r = classify({ entries: [entry({ muts: [write({ influenced: true, keyFromRequest: true })] })] });
+    assert.deepEqual(r.findings.map((f) => [f.rule, f.sev]), [['wp-ajax-unguarded-write', 'high']]);
+  });
+
+  test('an unguarded REST route write is a finding', () => {
+    const r = classify({ entries: [entry({ kind: 'rest', hook: 'x/v1/y', rest: { perm: 'none' }, muts: [write({ influenced: true, weight: 'med' })] })] });
+    assert.deepEqual(r.findings.map((f) => [f.rule, f.sev]), [['wp-rest-unguarded-write', 'low']]);
   });
 
   test('a triggered write with no guard is a low finding', () => {
@@ -52,9 +61,11 @@ describe('classify', () => {
   });
 
   test('a write reached only through an ambiguous method name never carries a severity', () => {
-    const r = classify({ entries: [entry({ kind: 'ajax-nopriv', hook: 'wp_ajax_nopriv_x', muts: [write({ viaAmbiguous: true })] })] });
-    assert.equal(r.findings.length, 0);
-    assert.match(r.undetermined[0].detail, /ambiguous method name/);
+    for (const w of [write({ viaAmbiguous: true }), write({ viaAmbiguous: true, influenced: true })]) {
+      const r = classify({ entries: [entry({ kind: 'ajax-nopriv', hook: 'wp_ajax_nopriv_x', muts: [w] })] });
+      assert.equal(r.findings.length, 0);
+      assert.match(r.undetermined[0].detail, /ambiguous method name/);
+    }
   });
 
   test('guarded and write-free entry points are counted by reason, not reported', () => {
@@ -72,7 +83,7 @@ describe('classify', () => {
   test('a handler registered for both ajax hooks is judged once, as the public one', () => {
     const muts = [write({ influenced: true })];
     const r = classify({ entries: [entry({ muts }), entry({ kind: 'ajax-nopriv', hook: 'wp_ajax_nopriv_x', muts })] });
-    assert.deepEqual(r.undetermined.map((u) => u.rule), ['wp-nopriv-unguarded-write']);
+    assert.deepEqual(r.findings.map((u) => u.rule), ['wp-nopriv-unguarded-write']);
     assert.equal(r.setAside['also registered for unauthenticated users; judged there'], 1);
   });
 
@@ -81,18 +92,18 @@ describe('classify', () => {
     assert.deepEqual(r.undetermined.map((u) => u.rule), ['wp-unproven-guard-write']);
   });
 
-  test('a discarded capability check is CWE-862 and a discarded nonce check CWE-352', () => {
+  test('a discarded capability check is a low CWE-862 finding and a discarded nonce check CWE-352', () => {
     const r = classify({ entries: [], discarded: [
       { file: 'a.php', fn: 'f', call: 'current_user_can', line: 4 },
       { file: 'a.php', fn: 'g', call: 'wp_verify_nonce', line: 9 },
     ] });
-    assert.deepEqual(r.undetermined.map((u) => [u.handler, u.cwe]), [['f', 'CWE-862'], ['g', 'CWE-352']]);
+    assert.deepEqual(r.findings.map((u) => [u.handler, u.sev, u.cwe]), [['f', 'low', 'CWE-862'], ['g', 'low', 'CWE-352']]);
   });
 
   test('identity excludes the line: a second registration elsewhere is the same row', () => {
     const muts = [write({ influenced: true })];
     const r = classify({ entries: [entry({ handlerLine: 3, muts }), entry({ handlerLine: 40, muts })] });
-    assert.equal(r.undetermined.length, 1);
+    assert.equal(r.findings.length, 1);
   });
 
   test('output order does not depend on input order', () => {
@@ -176,7 +187,8 @@ describe('the planted fixture', () => {
       const rows = [...r.findings, ...r.undetermined].map((f) => [f.rule, f.handler, f.hook])
         .sort((a, b) => (a.join('|') < b.join('|') ? -1 : 1));
       assert.deepEqual(rows, [...EXPECTED].sort((a, b) => (a.join('|') < b.join('|') ? -1 : 1)));
-      assert.deepEqual(r.findings.map((f) => [f.rule, f.sev]), [['wp-triggered-write', 'low']]);
+      assert.deepEqual(r.findings.map((f) => [f.rule, f.sev]).sort(), [['wp-ajax-unguarded-write', 'high'], ['wp-ajax-unguarded-write', 'med'],
+        ['wp-check-discarded', 'low'], ['wp-nopriv-unguarded-write', 'med'], ['wp-rest-unguarded-write', 'med'], ['wp-triggered-write', 'low']]);
       assert.equal(r.summary.filesScanned, 2);
       assert.ok(r.summary.setAside.count > 0);
       assert.notEqual(r.summary.partial, true);

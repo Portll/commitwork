@@ -1329,9 +1329,10 @@ function cmdRun(manifest, repoPath, target, opts) {
     // not of a scan, and timedOutResult already says coverage is unknown.
     // An n/a carries no coverage here or below, the same as an appliesIf miss: nothing was there to see.
     if (!opts.dryRun && reportDir && check.report && !res.timedOut && res.status !== 'skipped') {
-      const { coverage, coverageReason } = laneCoverage(check, reportDir);
+      const { coverage, coverageReason, coverageBasis } = laneCoverage(check, reportDir);
       res.coverage = coverage;
       res.coverageReason = coverageReason;
+      res.coverageBasis = coverageBasis;
     }
     // A lane run below the top of its own ladder looked at less than it can. Its findings are real;
     // its silence covers only the level it ran at, and the row has to say which.
@@ -1339,7 +1340,7 @@ function cmdRun(manifest, repoPath, target, opts) {
       const was = res.coverage === 'reduced' && res.coverageReason ? `${res.coverageReason}; ` : '';
       res.coverage = 'reduced';
       res.coverageReason = `${was}ran at level "${res.depthLevel.label}" (${res.depthLevel.rank} of ${res.depthLevel.of}) for depth ${res.depthLevel.depth}, not its full level`;
-      res.coverageBasis = 'depth-level';
+      res.coverageBasis = was && res.coverageBasis ? `depth-level+${res.coverageBasis}` : 'depth-level';
     }
     if (!opts.dryRun && !res.timedOut) applyIsolation(res, check);
     finish(res);
@@ -2337,8 +2338,8 @@ function cmdScan(manifest, opts) {
       // already committed to it: the run summary tells the operator to open index.md for coverage,
       // so a coverage fact that never reaches index.md is one the reader was sent to find and
       // cannot. Computed here beside the classifier, on the same two axes.
-      const { coverage, coverageReason } = laneCoverage(check, repoDir);
-      cells[check.id] = withIsolation({ sev, summary, coverage, coverageReason, ...(exit ? { exit } : {}) }, sb);
+      const { coverage, coverageReason, coverageBasis } = laneCoverage(check, repoDir);
+      cells[check.id] = withIsolation({ sev, summary, coverage, coverageReason, coverageBasis, ...(exit ? { exit } : {}) }, sb);
       process.stdout.write(sev === 'high' ? red('!') : sev === 'med' ? yellow('+') : sev === 'noscan' ? cyan('▚') : green('.'));
     }
     rows.push({ repo, slug, cells });

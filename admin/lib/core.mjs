@@ -118,8 +118,8 @@ export function manifestFiles(namedOnly = null) {
   return [...named].filter((n) => existsSync(join(MANIFEST_DIR, `${n}.json`))).sort();
 }
 
-export function manifestSummary(name) {
-  const j = readJSON(join(MANIFEST_DIR, `${name}.json`));
+export function manifestSummary(name, { dir = MANIFEST_DIR } = {}) {
+  const j = readJSON(join(dir, `${name}.json`));
   if (!j) return { name, ok: false };
   const checks = Array.isArray(j.checks) ? j.checks : [];
   return {

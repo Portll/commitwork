@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-11-15 -->
+<!-- verified-against: 2026-11-17 -->
 # commitwork
 
 **Repository security scanner, local CI runner and scheduled monitor, with remediation and
@@ -139,8 +139,11 @@ unmeasured, never as clean.
 point (`wp_ajax_` and `admin_post_` actions, REST routes, and hooks that run on every request)
 through its handler to the site state it writes. On the way it reads the capability check, the
 nonce check and the route's `permission_callback`. It parses the tree with nikic/php-parser 5
-and never runs it. One rule carries a severity: `wp-triggered-write` (low, CWE-862). The other
-nine rules list undetermined rows with no severity.
+and never runs it. Five rules carry a severity. `wp-triggered-write` is low. The three rules for a write with no
+guard at all (`wp-nopriv-unguarded-write`, `wp-ajax-unguarded-write`, `wp-rest-unguarded-write`)
+are high when the request picks the key of a high-weight write, med for another high-weight write
+and low otherwise. `wp-check-discarded` is low. The other five rules list undetermined rows with
+no severity.
 
 `wp-dynamic-witness` is opt-in and outside `all`. It installs the plugin in WordPress Playground
 (PHP in WASM, no Docker or MySQL) and calls each entry point as an anonymous visitor and as a
@@ -205,9 +208,10 @@ automatic update, the same one that loads any change on disk. The panel log and 
 the Settings page say what was installed and that the restart is pending. `CW_PANEL_AUTO_UPDATE=0`
 turns off both.
 
-Releases are published by `.github/workflows/publish-update.yml` when the repository variable
-`PORTLL_UPDATES` is `on`. It calls spine's `publish-update.yml`: a beta manifest for every push to main, and a stable one after `release.yml`
-publishes a `v*` release. `npm run publish-update -- --channel <c>` runs spine's publisher by hand,
+Releases are published from spine by its `publish-commitwork.yml`, because GitHub refuses a public
+repository's call to a private repository's reusable workflow. It runs hourly and publishes a beta
+manifest for main and a stable one for the latest `v*` release, each when its version is newer than
+the published manifest. `npm run publish-update -- --channel <c>` runs spine's publisher by hand,
 with `SPINE_DIR` naming the spine checkout.
 
 ### Windows

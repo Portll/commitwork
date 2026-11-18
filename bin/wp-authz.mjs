@@ -96,14 +96,16 @@ export function walkTree(root) {
 }
 
 // ── the decision ──────────────────────────────────────────────────────────────────────────────────
-// publish: the rule's rows carry a severity. It is true only where held-out adjudicated precision
-// cleared the bar written down before measuring; the measurement is in the lane's formatNotes. A
-// rule with publish false keeps every row, in undetermined[], with its claim.
+// publish: the rule's rows carry a severity. wp-triggered-write cleared the pre-registered held-out
+// bar. The four rules for a write with no guard of any kind (nopriv/ajax/rest-unguarded and
+// check-discarded) were promoted by the operator on 2026-11-16 on a pooled, post-hoc held-out reading
+// (15 of 15 true across 4 repositories), each below the per-rule bar for want of rows. A rule with
+// publish false keeps every row, in undetermined[], with its claim.
 export const RULES = Object.freeze({
-  'wp-nopriv-unguarded-write': { publish: false, cwe: 'CWE-862', claim: 'unauthenticated handler writes request data with no capability check and no nonce check' },
-  'wp-ajax-unguarded-write': { publish: false, cwe: 'CWE-862', claim: 'handler open to any logged-in user (subscriber and up) writes request data with no capability check and no nonce check' },
-  'wp-rest-unguarded-write': { publish: false, cwe: 'CWE-862', claim: 'REST route with no permission_callback (WordPress treats it as public) writes request data with no capability or nonce check in its callback' },
-  'wp-check-discarded': { publish: false, cwe: 'CWE-252', claim: 'a nonce or capability check is called as a bare statement, so its answer gates nothing' },
+  'wp-nopriv-unguarded-write': { publish: true, cwe: 'CWE-862', claim: 'unauthenticated handler writes request data with no capability check and no nonce check' },
+  'wp-ajax-unguarded-write': { publish: true, cwe: 'CWE-862', claim: 'handler open to any logged-in user (subscriber and up) writes request data with no capability check and no nonce check' },
+  'wp-rest-unguarded-write': { publish: true, cwe: 'CWE-862', claim: 'REST route with no permission_callback (WordPress treats it as public) writes request data with no capability or nonce check in its callback' },
+  'wp-check-discarded': { publish: true, cwe: 'CWE-252', claim: 'a nonce or capability check is called as a bare statement, so its answer gates nothing' },
   'wp-nonce-only-write': { publish: false, cwe: 'CWE-862', claim: 'handler writes state behind a nonce check and no capability check; who can reach it is whoever can obtain the nonce' },
   'wp-unproven-guard-write': { publish: false, cwe: 'CWE-862', claim: 'handler writes request data and its only guard is one this lane cannot read (a weak capability, a permission callback with no capability check, or a call named like a guard it cannot resolve)' },
   'wp-rest-public-write': { publish: false, cwe: 'CWE-862', claim: 'REST route declared public (permission_callback __return_true) writes request data' },
@@ -262,7 +264,7 @@ export function scanTree(root) {
   for (const e of facts.entries) kinds[e.kind] = (kinds[e.kind] || 0) + 1;
   const summary = { ...base, findings: findings.length, byRule, filesScanned: facts.parsed, notWordPress: Number(facts.notWordPress) || 0, parser: { name: 'nikic/php-parser', major: 5, php: facts.php },
     entries: kinds, routes: facts.routes, unresolvedEntries: facts.unresolvedEntries.length,
-    undetermined: { count: undetermined.length, byRule: undByRule, note: 'rows whose rule has no measured precision that clears the publication bar; each keeps its claim and carries no severity' },
+    undetermined: { count: undetermined.length, byRule: undByRule, note: 'rows whose rule does not publish, or whose every write is reached through a method name several classes share; each keeps its claim and carries no severity' },
     setAside: { count: Object.values(setAside).reduce((a, b) => a + b, 0), byReason: setAside } };
   const reasons = [];
   if (facts.parseErrors.length) { reasons.push(`${facts.parseErrors.length} PHP file(s) could not be parsed`); summary.parseErrors = facts.parseErrors.slice(0, SAMPLE); }

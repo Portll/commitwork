@@ -1,123 +1,91 @@
 // manifestSummary reads a manifest JSON and returns a structured summary with checks, groups, and metadata (admin/lib/core.mjs manifestSummary).
-import { test } from 'node:test';
+import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { manifestSummary, MANIFEST_DIR } from '../lib/core.mjs';
-import { writeFileSync, rmSync, existsSync } from 'node:fs';
+import { manifestSummary } from '../lib/core.mjs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-let counter = 0;
-function uniqueName(prefix) {
-  return `${prefix}-${++counter}`;
-}
+let dir;
+
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'cw-manifests-')); });
+afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
 function writeManifest(name, content) {
-  const path = join(MANIFEST_DIR, `${name}.json`);
-  writeFileSync(path, JSON.stringify(content));
-  return path;
-}
-
-function removeManifest(name) {
-  const path = join(MANIFEST_DIR, `${name}.json`);
-  if (existsSync(path)) rmSync(path);
+  writeFileSync(join(dir, `${name}.json`), JSON.stringify(content));
 }
 
 test('missing manifest file returns ok false', () => {
-  const name = uniqueName('missing');
-  try {
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "missing-1", ok: false });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'missing';
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "missing", ok: false });
 });
 
 test('invalid JSON manifest returns ok false', () => {
-  const name = uniqueName('invalid');
-  try {
-    writeFileSync(join(MANIFEST_DIR, `${name}.json`), 'not json');
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "invalid-2", ok: false });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'invalid';
+  writeFileSync(join(dir, `${name}.json`), 'not json');
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "invalid", ok: false });
 });
 
 test('valid manifest with no optional fields returns ok true with defaults', () => {
-  const name = uniqueName('empty');
-  try {
-    writeManifest(name, {});
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "empty-3", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 0, checks: [] });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'empty';
+  writeManifest(name, {});
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "empty", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 0, checks: [] });
 });
 
 test('manifest with groups but no checks returns groups and groupMembers', () => {
-  const name = uniqueName('groups');
-  try {
-    writeManifest(name, { groups: { grp1: ['a'], grp2: ['b'] } });
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "groups-4", ok: true, repo: null, note: null, groups: ["grp1", "grp2"], groupMembers: { grp1: ["a"], grp2: ["b"] }, checkCount: 0, checks: [] });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'groups';
+  writeManifest(name, { groups: { grp1: ['a'], grp2: ['b'] } });
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "groups", ok: true, repo: null, note: null, groups: ["grp1", "grp2"], groupMembers: { grp1: ["a"], grp2: ["b"] }, checkCount: 0, checks: [] });
 });
 
 test('manifest with checks maps all check fields correctly', () => {
-  const name = uniqueName('full');
-  try {
-    writeManifest(name, {
-      repo: 'repo',
-      note: 'note',
-      groups: { grp: ['a'] },
-      checks: [{
-        id: 'c1',
-        description: 'desc',
-        groups: ['grp'],
-        requires: { foo: 'bar' },
-        report: { file: 'report.txt' },
-        aliasOf: 'other',
-        remediationPrompt: 'fix it',
-        formatNotes: 'fmt'
-      }]
-    });
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "full-5", ok: true, repo: "repo", note: "note", groups: ["grp"], groupMembers: { grp: ["a"] }, checkCount: 1, checks: [{ id: "c1", description: "desc", groups: ["grp"], requires: { foo: "bar" }, report: "report.txt", aliasOf: "other", remediationPrompt: "fix it", formatNotes: "fmt" }] });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'full';
+  writeManifest(name, {
+    repo: 'repo',
+    note: 'note',
+    groups: { grp: ['a'] },
+    checks: [{
+      id: 'c1',
+      description: 'desc',
+      groups: ['grp'],
+      requires: { foo: 'bar' },
+      report: { file: 'report.txt' },
+      aliasOf: 'other',
+      remediationPrompt: 'fix it',
+      formatNotes: 'fmt'
+    }]
+  });
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "full", ok: true, repo: "repo", note: "note", groups: ["grp"], groupMembers: { grp: ["a"] }, checkCount: 1, checks: [{ id: "c1", description: "desc", groups: ["grp"], requires: { foo: "bar" }, report: "report.txt", aliasOf: "other", remediationPrompt: "fix it", formatNotes: "fmt" }] });
 });
 
 test('check with requires as non-object becomes null', () => {
-  const name = uniqueName('requires-str');
-  try {
-    writeManifest(name, { checks: [{ id: 'c1', requires: 'string' }] });
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "requires-str-6", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 1, checks: [{ id: "c1", description: "", groups: [], requires: null, report: null, aliasOf: null, remediationPrompt: null, formatNotes: null }] });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'requires-str';
+  writeManifest(name, { checks: [{ id: 'c1', requires: 'string' }] });
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "requires-str", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 1, checks: [{ id: "c1", description: "", groups: [], requires: null, report: null, aliasOf: null, remediationPrompt: null, formatNotes: null }] });
 });
 
 test('check with requires as object keeps object', () => {
-  const name = uniqueName('requires-obj');
-  try {
-    writeManifest(name, { checks: [{ id: 'c1', requires: { a: 1 } }] });
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "requires-obj-7", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 1, checks: [{ id: "c1", description: "", groups: [], requires: { a: 1 }, report: null, aliasOf: null, remediationPrompt: null, formatNotes: null }] });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'requires-obj';
+  writeManifest(name, { checks: [{ id: 'c1', requires: { a: 1 } }] });
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "requires-obj", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 1, checks: [{ id: "c1", description: "", groups: [], requires: { a: 1 }, report: null, aliasOf: null, remediationPrompt: null, formatNotes: null }] });
 });
 
 test('check with missing optional fields becomes defaults', () => {
-  const name = uniqueName('missing-fields');
-  try {
-    writeManifest(name, { checks: [{ id: 'c1' }] });
-    const result = manifestSummary(name);
-    assert.deepEqual(result, { name: "missing-fields-8", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 1, checks: [{ id: "c1", description: "", groups: [], requires: null, report: null, aliasOf: null, remediationPrompt: null, formatNotes: null }] });
-  } finally {
-    removeManifest(name);
-  }
+  const name = 'missing-fields';
+  writeManifest(name, { checks: [{ id: 'c1' }] });
+  const result = manifestSummary(name, { dir });
+  assert.deepEqual(result, { name: "missing-fields", ok: true, repo: null, note: null, groups: [], groupMembers: {}, checkCount: 1, checks: [{ id: "c1", description: "", groups: [], requires: null, report: null, aliasOf: null, remediationPrompt: null, formatNotes: null }] });
+});
+
+test('reads the bundled manifest directory by default', () => {
+  const result = manifestSummary('security-baseline');
+  assert.equal(result.ok, true);
+  assert.ok(result.checkCount > 0);
 });

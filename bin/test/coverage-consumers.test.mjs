@@ -159,9 +159,9 @@ describe('index.md — the Markdown sink, with its own escaping discipline', () 
   const CW = readFileSync(join(REPO, 'bin', 'commitwork.mjs'), 'utf8');
 
   test('the scan path computes coverage, or index.md has nothing to report', () => {
-    assert.match(CW, /const \{ coverage, coverageReason \} = laneCoverage\(check, repoDir\);/,
+    assert.match(CW, /const \{ coverage, coverageReason(?:, coverageBasis)? \} = laneCoverage\(check, repoDir\);/,
       'the CLI tells the operator to open index.md for coverage; a fact that never reaches it is one they were sent to find and cannot');
-    assert.match(CW, /cells\[check\.id\] = withIsolation\(\{ sev, summary, coverage, coverageReason(?:, \.\.\.\(exit \? \{ exit \} : \{\}\))? \}, sb\)/);
+    assert.match(CW, /cells\[check\.id\] = withIsolation\(\{ sev, summary, coverage, coverageReason(?:, coverageBasis)?(?:, \.\.\.\(exit \? \{ exit \} : \{\}\))? \}, sb\)/);
   });
 
   test('degraded lanes are their OWN section, not folded into the voids table', () => {

@@ -57,7 +57,7 @@
         "wp-rest-public-write": 1,
         "wp-rest-unguarded-write": 1
       },
-      "note": "rows whose rule has no measured precision that clears the publication bar; each keeps its claim and carries no severity"
+      "note": "rows whose rule does not publish, or whose every write is reached through a method name several classes share; each keeps its claim and carries no severity"
     },
     "setAside": {
       "count": 7,
