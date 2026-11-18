@@ -21,6 +21,7 @@ test('an unmodelled library call is UNCLAIMED: the lane said nothing, and that i
   assert.equal(call.api, 'weird-db-client.raw()');
   assert.equal(call.param, 'param 0');
   assert.equal(call.source, 'req.query.id');
+  assert.deepEqual(call.sourceAt, { file: 'app.js', line: 10 }, 'the related location the message links to: where the untrusted value comes from');
   assert.equal(call.claimed, false);
   assert.deepEqual(f.apis, [{ api: 'weird-db-client.raw()', calls: 1, unclaimed: 1, repos: 1, files: 1 }]);
 });

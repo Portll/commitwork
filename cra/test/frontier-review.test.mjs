@@ -25,12 +25,40 @@ const call = (o) => ({ language: JS, file: 'a.js', line: 1, api: 'lib.f()', para
 
 test('a draft asks one question per language|api|argument, never per line, and only of UNCLAIMED calls', () => {
   // Arrange
-  const calls = [call({ line: 3 }), call({ file: 'b.js', line: 40 }), call({ claimed: true, api: 'lib.g()' }), call({ api: null })];
+  const calls = [call({ line: 3, source: 'location.search', sourceAt: { file: 'a.js', line: 1 } }), call({ file: 'b.js', line: 40, source: 'req.body' }), call({ claimed: true, api: 'lib.g()' }), call({ api: null })];
   // Act
   const r = R.mergeReview(null, 'fx', calls, 'sweep-1');
   // Assert
   assert.equal(r.entries.length, 1, 'two lines of one API are one question; a claimed call is already a finding; an unparsed one has no API to decide');
-  assert.deepEqual(r.entries[0], { language: JS, api: 'lib.f()', param: 'param 0', calls: 2, files: ['a.js', 'b.js'], filesCut: null, firstSeen: 'sweep-1', lastSeen: 'sweep-1', decision: null });
+  assert.deepEqual(r.entries[0], {
+    language: JS, api: 'lib.f()', param: 'param 0', calls: 2, files: ['a.js', 'b.js'], filesCut: null,
+    sources: ['location.search', 'req.body'],
+    sites: [{ file: 'a.js', line: 3, from: { file: 'a.js', line: 1, label: 'location.search' } }, { file: 'b.js', line: 40, from: null }], sitesCut: null,
+    firstSeen: 'sweep-1', lastSeen: 'sweep-1', decision: null,
+  });
+});
+
+test('a drafted worksheet carries the decision guide: the question, each choice\'s shape, and what it does', () => {
+  // Act
+  const r = R.mergeReview(null, 'fx', [call()], 'sweep-1');
+  // Assert
+  assert.deepEqual(Object.keys(r.guide), ['question', 'neutral', 'sink', 'summary', 'undecided']);
+  for (const as of ['neutral', 'sink', 'summary']) {
+    assert.equal(R.validateDecision(r.guide[as].shape).ok, true, `the ${as} example validates as written`);
+  }
+  assert.equal(r.guide.undecided.shape, null);
+});
+
+test('a site moved within its file refreshes the evidence and keeps the decision: the line is never the key', () => {
+  // Arrange
+  const first = R.mergeReview(null, 'fx', [call({ line: 3 })], 'sweep-1');
+  first.entries[0].decision = { as: 'neutral', why: 'plumbing' };
+  // Act
+  const moved = R.mergeReview(first, 'fx', [call({ line: 30 })], 'sweep-2');
+  // Assert
+  assert.equal(moved.entries.length, 1);
+  assert.deepEqual(moved.entries[0].sites, [{ file: 'a.js', line: 30, from: null }]);
+  assert.deepEqual(moved.entries[0].decision, { as: 'neutral', why: 'plumbing' });
 });
 
 test('a re-draft keeps every decision and every entry the sweep did not see, and the same sweep writes the same bytes', () => {

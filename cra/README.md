@@ -184,7 +184,10 @@ findings.
 `frontier-review.mjs` closes that frontier by review rather than by guess. `bin/frontier-review.mjs
 draft` turns a sweep's unclaimed calls into a worksheet per repository in the private models store,
 and the reviewer decides each one: `neutral` (plumbing, with a reason) or the `sink`/`summary` model
-row CodeQL takes. Neutral lives here because CodeQL's JavaScript frontier excludes safe APIs through
+row CodeQL takes. Each entry carries what that decision is made against: the untrusted `sources`
+and every call `site` (file and line, refreshed each sweep and never the entry's key). The
+worksheet's `guide` states the question and the exact shape of each choice. Neutral lives here
+because CodeQL's JavaScript frontier excludes safe APIs through
 QL classes, not data extensions. `emit` writes the rows where `bin/codeql-model-pack.mjs` loads them.
 The determinations route applies the worksheets to the frontier: `open` is what is still unanswered,
 and `sinkOpen` counts calls decided a sink that are still unclaimed, which means the model did not

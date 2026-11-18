@@ -54,6 +54,20 @@ export const reviewKey = (language, api, param) => [language, api, param || ''].
 //   summary  { as: 'summary', row: [...] }                a summaryModel row (taint passes through)
 const EXTENSIBLE = Object.freeze({ sink: 'sinkModel', summary: 'summaryModel' });
 
+/**
+ * What a reviewer needs on the page to decide, written into every drafted worksheet: the three
+ * choices, the exact shape each takes, and what each does downstream. The entries carry the rest —
+ * where untrusted data comes from (`sources`) and every call site (`sites`), so a decision is made
+ * against the code and not against an API name.
+ */
+export const DECISION_GUIDE = Object.freeze({
+  question: 'Untrusted data reaches this library argument and no taint rule follows it further. What happens to it inside the library?',
+  neutral: { shape: { as: 'neutral', why: '<why the value reaches nothing dangerous>' }, when: 'Plumbing: state, rendering as text, test code. Counted reviewed; emits no model.' },
+  sink: { shape: { as: 'sink', row: ['<package>', '<access path>', '<sink kind>'] }, when: 'The library itself does something dangerous with the value. The row is the language\'s CodeQL sinkModel row as written; emit places it in the next CodeQL lane.' },
+  summary: { shape: { as: 'summary', row: ['<package>', '<access path in>', '<access path out>', 'taint'] }, when: 'The library hands the value back (a return or a callback) and taint should continue there. The row is a CodeQL summaryModel row.' },
+  undecided: { shape: null, when: 'Leave decision null. The call stays open in the frontier count.' },
+});
+
 /** -> { ok: true, as } | { ok: false, reason }. null is undecided and valid. */
 export function validateDecision(d) {
   if (d === null || d === undefined) return { ok: true, as: null };
@@ -107,23 +121,35 @@ export function mergeReview(review, repo, calls, source) {
   for (const c of calls || []) {
     if (c.claimed || !c.api) continue;
     const k = reviewKey(c.language, c.api, c.param);
-    const s = seen.get(k) || { language: c.language, api: c.api, param: c.param || null, calls: 0, files: new Set() };
+    const s = seen.get(k) || { language: c.language, api: c.api, param: c.param || null, calls: 0, files: new Set(), sources: new Set(), sites: new Map() };
     s.calls++;
     if (c.file) s.files.add(c.file);
+    if (c.source) s.sources.add(c.source);
+    // A site is evidence for the reviewer, never the entry's identity: it is refreshed every sweep.
+    if (c.file) {
+      s.sites.set(`${c.file}|${c.line ?? ''}`, {
+        file: c.file, line: Number.isInteger(c.line) ? c.line : null,
+        // where the untrusted value this call receives comes from: the other line to read
+        from: c.sourceAt ? { file: c.sourceAt.file, line: c.sourceAt.line, label: c.source || null } : null,
+      });
+    }
     seen.set(k, s);
   }
   const out = new Map(prev);
   for (const [k, s] of seen) {
     const had = prev.get(k);
+    const sites = [...s.sites.values()].sort((a, b) => byString(a.file, b.file) || (a.line ?? 0) - (b.line ?? 0));
     out.set(k, {
       language: s.language, api: s.api, param: s.param,
       calls: s.calls, files: [...s.files].sort(byString).slice(0, MAX_FILES), filesCut: s.files.size > MAX_FILES ? s.files.size : null,
+      sources: [...s.sources].sort(byString).slice(0, MAX_FILES),
+      sites: sites.slice(0, MAX_FILES), sitesCut: sites.length > MAX_FILES ? sites.length : null,
       firstSeen: had ? had.firstSeen : source, lastSeen: source,
       decision: had ? (had.decision ?? null) : null,
     });
   }
   const entries = [...out.entries()].sort(([a], [b]) => byString(a, b)).map(([, e]) => e);
-  return { v: REVIEW_VERSION, repo, entries };
+  return { v: REVIEW_VERSION, repo, guide: DECISION_GUIDE, entries };
 }
 
 /** The worksheet as written: two-space JSON and a final newline, so a diff of a decision is one line. */
