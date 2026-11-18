@@ -28,8 +28,8 @@ test('a phpcs report holding findings is counted by the rollup reader, not publi
   assert.match(r.summary, /^2 findings — .*\(counted by the rollup reader\)$/);
 });
 
-test('a phpcs report with no messages keeps the presence verdict it had', () => {
+test('a phpcs report with no messages stays ok and carries its declared exit meaning', () => {
   const r = classify(report([]), 0);
   assert.equal(r.sev, 'ok');
-  assert.equal(r.summary, 'written');
+  assert.equal(r.summary, `exited 0: ${PHPCS.report.exitCodes['0'].meaning}`);
 });
