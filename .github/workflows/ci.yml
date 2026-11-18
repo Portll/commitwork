@@ -52,10 +52,12 @@ jobs:
     # Supported majors: 22 is the floor package.json engines.node declares (maintenance LTS until
     # 2027-04-30) and 26 is the version CI, releases and the Action run. bin/test/node-floor.test.mjs holds the lowest version here,
     # the engines floor and the CLI's refusal to one declaration, and requires every OS to run it.
+    # Linux is pinned to 24.04: ubuntu-latest became 26.04 on 2026-11-18, which preinstalls bwrap and
+    # ships a dash that accepts pipefail; the suite failed 18 tests on its first run there.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, macos-latest]
         node: ['22', '26']
     runs-on: ${{ matrix.os }}
     # macOS Node 26 runs take 22-25 minutes (2026-11-12); 30 left one queue hiccup between a green
@@ -111,7 +113,8 @@ jobs:
   # a skip. A skip of a Linux confinement test in this job is a failure.
   linux-sandbox:
     name: Linux lane sandbox (bwrap + pasta)
-    runs-on: ubuntu-latest
+    # Pinned with the suite: pasta's DNS times out inside the namespace on 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

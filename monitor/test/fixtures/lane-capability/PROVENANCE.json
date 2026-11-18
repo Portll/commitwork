@@ -1010,7 +1010,7 @@
     "wp-authz.json.exit"
    ],
    "draftedBy": "synthetic WordPress plugin from bin/test/wp-authz-fixture.mjs",
-   "accepted": "2026-11-15T00:00:00Z"
+   "accepted": "2026-11-18T00:00:00Z"
   },
   "wpIntegrity": {
    "source": "real",

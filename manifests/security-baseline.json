@@ -137,7 +137,13 @@
       ],
       "report": {
         "file": "trufflehog.json",
-        "format": "trufflehog"
+        "format": "trufflehog",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "the scan ran to the end; findings, if any, are in the report" },
+          "1": { "outcome": "unmeasured", "meaning": "trufflehog stopped on a fatal error (bad flag, config or scan start); trufflehog.log says which" },
+          "2": { "outcome": "unmeasured", "meaning": "trufflehog crashed with a Go runtime panic" },
+          "255": { "outcome": "unmeasured", "meaning": "the scan process was killed and its supervisor reported -1" }
+        }
       },
       "requires": {
         "tools": [
@@ -162,7 +168,12 @@
       ],
       "report": {
         "file": "gitleaks.json",
-        "format": "gitleaks"
+        "format": "gitleaks",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "gitleaks scanned the tree and found no leaks" },
+          "1": { "outcome": "unmeasured", "meaning": "leaks found, a failure, or a partial scan all exit 1; gitleaks.log says which" },
+          "2": { "outcome": "unmeasured", "meaning": "gitleaks crashed with a Go runtime panic" }
+        }
       },
       "requires": {
         "tools": [
@@ -185,7 +196,12 @@
       ],
       "report": {
         "file": "betterleaks.json",
-        "format": "betterleaks"
+        "format": "betterleaks",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "betterleaks scanned the tree; findings, if any, are in the report" },
+          "1": { "outcome": "unmeasured", "meaning": "betterleaks failed, or scanned or validated only part of the tree; betterleaks.log says which" },
+          "2": { "outcome": "unmeasured", "meaning": "betterleaks crashed with a Go runtime panic" }
+        }
       },
       "requires": {
         "tools": [
@@ -218,7 +234,17 @@
       ],
       "report": {
         "file": "semgrep.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "semgrep completed the scan; findings and any per-file timeouts are in the SARIF" },
+          "1": { "outcome": "unmeasured", "meaning": "semgrep crashed before its error handler; without --error, exit 1 is never findings" },
+          "2": { "outcome": "unmeasured", "meaning": "semgrep hit a fatal error or rejected its arguments; semgrep.log says which" },
+          "3": { "outcome": "unmeasured", "meaning": "the run ended on an error-level target parse failure" },
+          "4": { "outcome": "unmeasured", "meaning": "a rule pattern is invalid" },
+          "5": { "outcome": "unmeasured", "meaning": "a rule file is not valid YAML" },
+          "7": { "outcome": "unmeasured", "meaning": "a rule pack failed to load, for example a registry pack that returned 404" },
+          "8": { "outcome": "unmeasured", "meaning": "a rule names an unknown language" }
+        }
       },
       "requires": {
         "tools": [
@@ -255,7 +281,15 @@
       ],
       "report": {
         "file": "semgrep.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "opengrep completed the scan; findings and any per-file timeouts are in the SARIF" },
+          "2": { "outcome": "unmeasured", "meaning": "opengrep hit a fatal error or rejected its arguments; opengrep.log says which" },
+          "3": { "outcome": "unmeasured", "meaning": "the run ended on an error-level target parse failure" },
+          "4": { "outcome": "unmeasured", "meaning": "a rule failed schema validation" },
+          "7": { "outcome": "unmeasured", "meaning": "a rule pack failed to load or a rule file is invalid" },
+          "8": { "outcome": "unmeasured", "meaning": "a rule names an unknown language" }
+        }
       },
       "requires": {
         "tools": [
@@ -299,7 +333,17 @@
       ],
       "report": {
         "file": "codeql.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no javascript-typescript source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -340,7 +384,12 @@
       ],
       "report": {
         "file": "gosec.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "scanned the Go modules and wrote the merged SARIF" },
+          "1": { "outcome": "unmeasured", "meaning": "no go.mod found, or no module produced parseable SARIF; no report" },
+          "2": { "outcome": "unmeasured", "meaning": "usage error; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -367,7 +416,12 @@
       "report": {
         "file": "bandit.json",
         "format": "json",
-        "log": "bandit.log"
+        "log": "bandit.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "bandit completed and wrote its JSON report" },
+          "1": { "outcome": "unmeasured", "meaning": "bandit is absent, timed out, or wrote no readable JSON report; no report" },
+          "2": { "outcome": "unmeasured", "meaning": "usage error; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -401,7 +455,12 @@
       ],
       "report": {
         "file": "ruff.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ruff completed and wrote its SARIF report" },
+          "1": { "outcome": "unmeasured", "meaning": "ruff is absent, timed out, or wrote no parseable SARIF; no report" },
+          "2": { "outcome": "unmeasured", "meaning": "usage error; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -441,7 +500,12 @@
       ],
       "report": {
         "file": "golangci.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "linted the Go modules and wrote the merged SARIF" },
+          "1": { "outcome": "unmeasured", "meaning": "no go.mod found, or no module produced parseable SARIF; no report" },
+          "2": { "outcome": "unmeasured", "meaning": "usage error; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -476,7 +540,12 @@
       ],
       "report": {
         "file": "govulncheck.json",
-        "format": "generic"
+        "format": "generic",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "scanned the Go modules and wrote the govulncheck stream" },
+          "1": { "outcome": "unmeasured", "meaning": "no go.mod found, or govulncheck analysed nothing (banner only); no report" },
+          "2": { "outcome": "unmeasured", "meaning": "usage error; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -509,7 +578,16 @@
       "report": {
         "file": "osv.sarif",
         "format": "sarif",
-        "log": "osv.log"
+        "log": "osv.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "osv-scanner scanned the package sources and matched no known vulnerability" },
+          "1": { "outcome": "measured", "meaning": "osv-scanner scanned the package sources and found vulnerabilities; they are in osv.sarif" },
+          "125": { "outcome": "unmeasured", "meaning": "docker could not start the scanner container; no report" },
+          "127": { "outcome": "unmeasured", "meaning": "osv-scanner hit a general error; the cause is in osv.log" },
+          "128": { "outcome": "unmeasured", "meaning": "osv-scanner found no package sources to scan" },
+          "129": { "outcome": "unmeasured", "meaning": "the vulnerability database query failed; the cause is in osv.log" },
+          "130": { "outcome": "unmeasured", "meaning": "osv-scanner rejected its configuration; the cause is in osv.log" }
+        }
       },
       "notes": "Exit codes are load-bearing: osv-scanner returns 0 clean, 1 VULNERABILITIES FOUND, 127 tool error, 128 no packages scanned, and `|| true` would collapse all four to pass, recording a tool error and an empty scan as a clean run. 0 and 1 pass (severity comes from parsing osv.sarif, not from the exit code) and anything higher fails with the code logged. EXIT 128 IS A VOID, NOT A FAILURE: osv indexed no package sources, a coverage void whose cause lives in preflight, not in the repo. 128 falls through with an empty sarif, which classifyReport reads as noscan; the rollup appends preflight's verdict so the reader learns WHICH void (blind vs no-surface). 127 still exits, because a tool error is not a void. And $rc is written to osv.sarif.exit for every outcome, so an empty artifact and a crashed tool are not the same absence. The image is pulled ONCE PER SWEEP by monitor/images.mjs (see the top-level `images` list), bounded, with presence + digest recorded in batch-manifest.json -- not `--pull=always` per repo. The freshness argument is unchanged: `:latest` is NOT self-updating, `docker run` reuses the cached image indefinitely, and a stale scanner silently misses every advisory published since it was pulled. A per-repo pull would cost a registry round-trip per repo, and one stalled pull could hold a repo for hours with no alarm. An unreachable registry still must not read as clean: the preamble records {pulled:false, reason} and the batch carries it; a CLI `commitwork run` outside a sweep does no pull and runs the cached tag, which tool-version-deps-osv.json records. --experimental-exclude 'g:**/.git/**' because bin/gate-tests.mjs materialises pristine HEAD worktrees at .git/gate-head-<pid>, and a scan racing a live gate (or meeting a leaked tree) would index their lockfiles as this repo's. PATTERN FORM MATTERS: the documented bare-dirname form (`--experimental-exclude .git`) does NOT exclude it (planted lockfile still scanned -- an exclusion that does not exclude reads as coverage), `g:.git/**` also fails; `g:**/.git/**` and `r:/\\.git/` both verified excluding the planted .git lockfile while the real tree stays scanned. .git/ is never source; nothing legitimate is lost. call analysis: --call-analysis=go is ENABLED (as of 2026-08-20 it adds no network endpoint beyond api.osv.dev, which this lane already contacts; Go call analysis does not run build scripts \u2014 that caveat attaches to rust). Its experimental_analysis.called field is NEVER used to suppress a finding:  is emitted even when call analysis was not requested at all, so it means \"not determined to be called\", not \"unreachable\". Only called:true carries information. UNPINNED-FETCH EXEMPTION: `bin/test/no-unpinned-fetch.test.mjs` fails any scan-time command that fetches an unpinned artifact, and this line is the ONE deliberate exception in the roster -- `:latest` plus a per-sweep pull is an unpinned pull by construction, and that is the point, for the reason two paragraphs up: the image IS the advisory database, so a digest pin freezes the database and a frozen vulnerability database reports 'clean' about advisories it has never heard of. The exemption is written down in the gate itself, keyed to this check id and this file, with this reason -- it is not a pattern hole that any future `:latest` can slip through, and if this command is ever edited to fetch something else the exemption no longer matches and the gate bites. Contrast supply-chain-guarddog below, which IS pinned and says why the trade lands the other way.",
       "requires": {
@@ -583,7 +661,10 @@
       ],
       "report": {
         "file": "depscan.json",
-        "format": "depscan"
+        "format": "depscan",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a ran:false report saying why it measured nothing; dep-scan's own exit is in depscan.json" }
+        }
       },
       "requires": {
         "tools": [
@@ -633,7 +714,11 @@
       ],
       "report": {
         "file": "trivy-jvm.json",
-        "format": "trivy"
+        "format": "trivy",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "trivy completed the scan; any findings are in the report" },
+          "1": { "outcome": "unmeasured", "meaning": "trivy stopped on a fatal error; the reason is in the log" }
+        }
       },
       "requires": {
         "tools": [
@@ -666,7 +751,12 @@
       "report": {
         "file": "gradle-deps.sarif",
         "format": "sarif",
-        "log": "gradle-deps.log"
+        "log": "gradle-deps.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "resolved the declared dependencies, queried the advisory database and wrote SARIF" },
+          "1": { "outcome": "unmeasured", "meaning": "wrote no report: no dependency coordinates, the lookups reached nothing, or node failed; gradle-deps.log says which" },
+          "2": { "outcome": "unmeasured", "meaning": "usage error; nothing was scanned" }
+        }
       },
       "requires": {
         "tools": [
@@ -696,7 +786,11 @@
       ],
       "report": {
         "file": "gradle-wrapper.json",
-        "format": "gradle-wrapper"
+        "format": "gradle-wrapper",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "verified the wrapper with no high-severity finding, or wrote a not-applicable report saying why" },
+          "1": { "outcome": "measured", "meaning": "verified the wrapper and found a high-severity defect; the report holds it" }
+        }
       },
       "requires": {
         "tools": [
@@ -732,7 +826,12 @@
         "format": "retire",
         "findingsExit": [
           13
-        ]
+        ],
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "retire.js scanned the tree and found no vulnerable library" },
+          "1": { "outcome": "unmeasured", "meaning": "retire.js failed: a file could not be scanned, the vulnerability repository did not load, or bad arguments; errors are in retire.json and retire.log" },
+          "13": { "outcome": "measured", "meaning": "retire.js scanned the tree and found vulnerable libraries; they are in retire.json" }
+        }
       },
       "requires": {
         "tools": [
@@ -770,7 +869,12 @@
       ],
       "report": {
         "file": "socket.json",
-        "format": "socket"
+        "format": "socket",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "scan created and the report meets every error-level policy" },
+          "1": { "outcome": "unmeasured", "meaning": "a policy violation at error level, an API refusal, or a fatal error" },
+          "2": { "outcome": "unmeasured", "meaning": "socket rejected an unknown argument; nothing scanned" }
+        }
       },
       "requires": {
         "tools": [
@@ -806,7 +910,13 @@
       ],
       "report": {
         "file": "guarddog.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "guarddog verified the declared npm dependencies; findings, if any, are in guarddog.sarif" },
+          "1": { "outcome": "unmeasured", "meaning": "guarddog failed (an uncaught error, or no scanner for the ecosystem); the trace is in guarddog.log" },
+          "2": { "outcome": "unmeasured", "meaning": "guarddog rejected its arguments; no report" },
+          "125": { "outcome": "unmeasured", "meaning": "docker could not start the scanner container; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -835,7 +945,11 @@
       ],
       "report": {
         "file": "npm-audit.json",
-        "format": "npm-audit"
+        "format": "npm-audit",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "npm audit read the lockfile and found no vulnerability at or above low" },
+          "1": { "outcome": "measured", "meaning": "npm audit found vulnerabilities at or above low; an npm failure also exits 1, but its error JSON has no audit metadata and parses as no data" }
+        }
       },
       "requires": {
         "tools": [
@@ -855,11 +969,16 @@
       "egress": "registry",
       "description": "npm advisory audit for yarn.lock repos (exact pinned versions, npm-audit v2 shape)",
       "local": [
-        "node \"$CW_ROOT/bin/yarn-audit.mjs\" . --out \"$CW_REPORT_DIR/npm-audit.json\" 2>\"$CW_REPORT_DIR/npm-audit.log\""
+        "node \"$CW_ROOT/bin/yarn-audit.mjs\" . --out \"$CW_REPORT_DIR/npm-audit.json\" 2>\"$CW_REPORT_DIR/npm-audit.log\"; rc=$?; echo $rc > \"$CW_REPORT_DIR/npm-audit.json.exit\"; exit $rc"
       ],
       "report": {
         "file": "npm-audit.json",
-        "format": "npm-audit"
+        "format": "npm-audit",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "the yarn.lock packages were checked against the npm advisory database; findings, if any, are in npm-audit.json" },
+          "1": { "outcome": "unmeasured", "meaning": "the advisory query or the report write failed; no report" },
+          "2": { "outcome": "unmeasured", "meaning": "no yarn.lock, or no packages parsed from it (yarn berry); no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -889,7 +1008,11 @@
       ],
       "report": {
         "file": "trivy-config.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "trivy completed the scan; any findings are in the report" },
+          "1": { "outcome": "unmeasured", "meaning": "trivy stopped on a fatal error; the reason is in the log" }
+        }
       },
       "requires": {
         "tools": [
@@ -910,7 +1033,12 @@
       ],
       "report": {
         "file": "eol.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "checked the declared runtimes against the end-of-life snapshot and wrote SARIF" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed before writing SARIF; the error is in eol.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the end-of-life snapshot could not be read, so nothing was checked" }
+        }
       },
       "formatNotes": "Writes SARIF 2.1.0 to eol.sarif: one run, driver commitwork-eol, always one invocation with executionSuccessful true, so an empty results[] is a witnessed zero. Rule ids are eol/<product>-<cycle>; level warning is past end of life, note is within 90 days of it. run.properties.undetermined lists declarations the snapshot cannot place, and snapshotFetched and asOf date the verdicts. Exit 2 means the snapshot was unreadable and no SARIF was written.",
       "requires": {
@@ -936,7 +1064,12 @@
       ],
       "report": {
         "file": "base-images.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "the report was written; images that could not be scanned are listed as notifications" },
+          "1": { "outcome": "unmeasured", "meaning": "the wrapper crashed before writing its report" },
+          "2": { "outcome": "unmeasured", "meaning": "bad arguments; no report written" }
+        }
       },
       "formatNotes": "Writes SARIF 2.1.0 to base-images.sarif: one run, driver commitwork-base-images. Rule ids are the advisory ids (CVE-, GHSA-); security-severity carries Trivy's severity (CRITICAL 9.5, HIGH 8.0, MEDIUM 5.5, LOW 2.0). Each result sits on the Dockerfile or Compose line naming the image. \"Image not scanned\" notifications (level warning, located on that line) mean the pull or scan failed, the image was over CW_BASE_IMAGES_MAX, or its OS is past end of support; run.properties.images lists every image with scanned, fixable and unfixed counts. executionSuccessful is false only when trivy is missing.",
       "requires": {
@@ -961,7 +1094,11 @@
       ],
       "report": {
         "file": "hadolint.json",
-        "format": "hadolint"
+        "format": "hadolint",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "hadolint linted every Dockerfile with no finding at or above info, or no Dockerfile matched" },
+          "1": { "outcome": "measured", "meaning": "hadolint reported rule violations or a Dockerfile parse error" }
+        }
       },
       "requires": {
         "tools": [
@@ -987,7 +1124,13 @@
       ],
       "report": {
         "file": "actionlint.json",
-        "format": "actionlint"
+        "format": "actionlint",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "no problem found" },
+          "1": { "outcome": "measured", "meaning": "problems found; listed in the report" },
+          "2": { "outcome": "unmeasured", "meaning": "invalid command-line option; nothing linted" },
+          "3": { "outcome": "unmeasured", "meaning": "fatal error; nothing linted" }
+        }
       },
       "requires": {
         "tools": [
@@ -1012,7 +1155,14 @@
       ],
       "report": {
         "file": "shellcheck.json",
-        "format": "shellcheck"
+        "format": "shellcheck",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "every file scanned with no issues; also written when no shell file matched" },
+          "1": { "outcome": "measured", "meaning": "every file scanned and issues were reported" },
+          "2": { "outcome": "unmeasured", "meaning": "some files could not be processed" },
+          "3": { "outcome": "unmeasured", "meaning": "bad syntax or unknown flag" },
+          "4": { "outcome": "unmeasured", "meaning": "bad options or unknown formatter" }
+        }
       },
       "requires": {
         "tools": [
@@ -1041,7 +1191,12 @@
       ],
       "report": {
         "file": "sbom.json",
-        "format": "sbom"
+        "format": "sbom",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "cyclonedx-npm inventoried the npm dependency tree and wrote the SBOM" },
+          "1": { "outcome": "unmeasured", "meaning": "the generated SBOM failed validation or was empty, npx could not fetch the generator, or bad arguments; no usable SBOM" },
+          "254": { "outcome": "unmeasured", "meaning": "cyclonedx-npm stopped on an error (missing manifest, unsupported npm, unreadable npm ls output); no SBOM" }
+        }
       },
       "requires": {
         "tools": [
@@ -1071,7 +1226,11 @@
       "report": {
         "file": "sbom-syft.json",
         "format": "sbom",
-        "log": "sbom-syft.log"
+        "log": "sbom-syft.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "syft catalogued the tree and wrote the CycloneDX and native SBOMs" },
+          "1": { "outcome": "unmeasured", "meaning": "syft failed (bad arguments, an unreadable source, or a write failure); the error is in sbom-syft.log" }
+        }
       },
       "requires": {
         "tools": [
@@ -1142,7 +1301,17 @@
       "notes": "REQUIRES A WORKING JRE, declared. CodeQL's Java extractor shells out to `java` even under --build-mode=none, and macOS ships a /usr/bin/java STUB that exists on PATH and exits 1 with 'Unable to locate a Java Runtime'. So `command -v java` succeeds, the check runs, the extractor indexes zero files, and every service records `noscan \u2014 no output (tool absent/failed)`: a Java taint VOID that looks like a tool crash rather than a missing dependency. Declaring java here turns it into `skip: tool:java`, which names the thing to install. bin/commitwork.mjs probes java by RUNNING it, precisely because the stub defeats a PATH check. appliesIfSourceExt is declared because monitor/codeql-coverage.mjs derives its language-aware denominator from it: gated by appliesIfExists ALONE, the did-the-extractor-read-what-it-claims guard could not measure Java. The gates AND together: a gradle tree with .java sources fires, a gradle tree with zero JVM sources skips with a named why instead of running a degenerate extractor, and .kt/.kts join the gate because CodeQL's java pack is java-kotlin \u2014 though Kotlin EXTRACTION coverage remains an unverified-upstream property.",
       "report": {
         "file": "codeql-java.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no java source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -1175,7 +1344,17 @@
       ],
       "report": {
         "file": "codeql-ruby.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no ruby source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -1212,7 +1391,17 @@
       ],
       "report": {
         "file": "codeql-python.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no python source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -1270,7 +1459,13 @@
       "report": {
         "file": "joern.txt",
         "format": "generic",
-        "log": "joern-lane.log"
+        "log": "joern-lane.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "every covered language scanned" },
+          "1": { "outcome": "unmeasured", "meaning": "at least one language failed to scan; joern-lane.json names which" },
+          "3": { "outcome": "unmeasured", "meaning": "no source in a language the query bundle covers; nothing scanned" },
+          "127": { "outcome": "unmeasured", "meaning": "no readable joern-scan launcher; nothing scanned" }
+        }
       },
       "requires": {
         "tools": [
@@ -1313,7 +1508,11 @@
       ],
       "report": {
         "file": "bearer.json",
-        "format": "bearer"
+        "format": "bearer",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "scan completed with no findings" },
+          "1": { "outcome": "measured", "meaning": "scan completed and reported findings, or failed; a failed run leaves no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -1357,7 +1556,11 @@
       ],
       "report": {
         "file": "nuclei.jsonl",
-        "format": "nuclei"
+        "format": "nuclei",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "scan completed; findings, if any, are in the report" },
+          "1": { "outcome": "unmeasured", "meaning": "nuclei stopped on a fatal error or was interrupted; results may be missing or partial" }
+        }
       },
       "requires": {
         "tools": [
@@ -1385,7 +1588,11 @@
       ],
       "report": {
         "file": "authz-bola.json",
-        "format": "authz-bola"
+        "format": "authz-bola",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "probed the target's endpoints, or wrote a not-run report saying why" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed before the probe finished; the error is in authz-bola.log" }
+        }
       },
       "requires": {
         "tools": [
@@ -1410,7 +1617,11 @@
       ],
       "report": {
         "file": "tls-headers.json",
-        "format": "tls-headers"
+        "format": "tls-headers",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "graded the target's headers and TLS, or wrote a not-run report saying why" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed before writing a report; the error is in tls-headers.log" }
+        }
       },
       "requires": {
         "tools": [
@@ -1438,7 +1649,12 @@
       ],
       "report": {
         "file": "schemathesis.ndjson",
-        "format": "schemathesis"
+        "format": "schemathesis",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "every selected operation was tested and no check failed" },
+          "1": { "outcome": "unmeasured", "meaning": "checks failed, an operation errored, or schemathesis crashed; the report alone cannot tell which" },
+          "2": { "outcome": "unmeasured", "meaning": "schema, configuration or internal error, or nothing was tested" }
+        }
       },
       "requires": {
         "tools": [
@@ -1461,7 +1677,12 @@
       ],
       "report": {
         "file": "jackson-guard.txt",
-        "format": "jackson-guard"
+        "format": "jackson-guard",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "read the tree and found the toggle not enabled, or found no file to check (SKIPPED)" },
+          "1": { "outcome": "measured", "meaning": "a line enables the toggle; GUARD FAILED names each path:line" },
+          "2": { "outcome": "unmeasured", "meaning": "the root or some paths could not be read, so the tree was not fully checked" }
+        }
       },
       "requires": {
         "tools": [
@@ -1488,7 +1709,13 @@
       ],
       "report": {
         "file": "zizmor.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "audit completed; findings, if any, are in the SARIF" },
+          "1": { "outcome": "unmeasured", "meaning": "error during the audit" },
+          "2": { "outcome": "unmeasured", "meaning": "argument parsing failed" },
+          "3": { "outcome": "unmeasured", "meaning": "no workflow or action inputs were collected; nothing audited" }
+        }
       },
       "requires": {
         "tools": [
@@ -1523,7 +1750,11 @@
       ],
       "report": {
         "file": "cspm-github.json",
-        "format": "cspm-github"
+        "format": "cspm-github",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a ran:false report saying why it measured nothing (no target, prowler or a credential absent, or prowler failed)" },
+          "2": { "outcome": "unmeasured", "meaning": "the report directory could not be created; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -1553,7 +1784,10 @@
       ],
       "report": {
         "file": "scorecard.json",
-        "format": "scorecard"
+        "format": "scorecard",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a ran:false report saying why it measured nothing" }
+        }
       },
       "requires": {
         "tools": [
@@ -1607,7 +1841,11 @@
       ],
       "report": {
         "file": "a11y.json",
-        "format": "a11y"
+        "format": "a11y",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "audited the served HTML, or wrote a not-run report saying none was found" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed, often on an unreadable page; the error is in a11y.log" }
+        }
       },
       "requires": {
         "tools": [
@@ -1630,7 +1868,11 @@
       ],
       "report": {
         "file": "stub.json",
-        "format": "generic"
+        "format": "generic",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "walked the tree and wrote the stub inventory" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed before writing the inventory; the error is in stub.log" }
+        }
       },
       "requires": {
         "tools": [
@@ -1652,7 +1894,11 @@
       ],
       "report": {
         "file": "weak-random.json",
-        "format": "weak-random"
+        "format": "weak-random",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "scanned the source for weak random number use and wrote the report" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed before writing the report; the error is in weak-random.log" }
+        }
       },
       "requires": {
         "tools": [
@@ -1674,7 +1920,11 @@
       ],
       "report": {
         "file": "minify.json",
-        "format": "minify"
+        "format": "minify",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "examined the tree for minified or obfuscated files and wrote the report" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed before writing the report, for example on an unreadable large file" }
+        }
       },
       "requires": {
         "tools": [
@@ -1697,7 +1947,11 @@
       ],
       "report": {
         "file": "vendor-scan.json",
-        "format": "generic"
+        "format": "generic",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "identified vendored files and found no known vulnerability, or wrote ran:false saying the advisory lookup failed" },
+          "1": { "outcome": "unmeasured", "meaning": "found vulnerable vendored files, or node failed; the generic reader cannot tell which" }
+        }
       },
       "requires": {
         "tools": [
@@ -1720,7 +1974,12 @@
       ],
       "report": {
         "file": "dep-provenance.json",
-        "format": "json"
+        "format": "json",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "wrote the dependency resolution inventory, or ran:false naming why there was none" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed before writing the inventory; the error is in dep-provenance.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the scan root is not a directory; nothing was read" }
+        }
       },
       "requires": {
         "tools": [
@@ -1743,7 +2002,11 @@
       ],
       "report": {
         "file": "renovate-updates.json",
-        "format": "json"
+        "format": "json",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "the renovate log was parsed into an update summary, or ran:false where there was no log; renovate's own exit is masked" },
+          "1": { "outcome": "unmeasured", "meaning": "the log parser crashed; renovate-updates.json is empty or partial" }
+        }
       },
       "requires": {
         "tools": [
@@ -1786,11 +2049,16 @@
       "description": "Automated dependency-update wiring present + valid (Renovate). Config-only gate; the self-hosted runner bin/renovate-run.sh opens the actual PRs (local dry-run needs no token; pr mode needs RENOVATE_TOKEN).",
       "notes": "PINNED to renovate@44.173.0, the SAME version package.json's devDependencies declares (`^44.173.0`) and the same version monitor/renovate-dryrun.mjs spawns -- one number in three places rather than three independent resolutions of `latest`. An unpinned `npx --yes --package renovate --` would be a scan-time fetch of a very large package (renovate pulls hundreds of transitive deps) executed by the security scanner. Choosing the devDependency's own version rather than the registry's latest is deliberate: renovate the tool proposes its own bumps, so letting it also silently BE a different version on every run would mean the validator's verdict could change without anything in this repo changing. When the devDependency is bumped, bump this literal and the two in monitor/renovate-dryrun.mjs with it -- `bin/test/no-unpinned-fetch.test.mjs` enforces that a pin exists, and `bin/test/dependency-policy.test.mjs` that the three agree.",
       "local": [
-        "npx --prefix=\"$CW_NPX_PREFIX\" --yes --package renovate@44.173.0 -- renovate-config-validator renovate.json > \"$CW_REPORT_DIR/renovate-validate.txt\" 2>&1 || echo RENOVATE_CONFIG_INVALID >> \"$CW_REPORT_DIR/renovate-validate.txt\""
+        "npx --prefix=\"$CW_NPX_PREFIX\" --yes --package renovate@44.173.0 -- renovate-config-validator renovate.json > \"$CW_REPORT_DIR/renovate-validate.txt\" 2>&1; rc=$?; echo $rc > \"$CW_REPORT_DIR/renovate-validate.txt.exit\"; [ $rc -eq 0 ] || echo RENOVATE_CONFIG_INVALID >> \"$CW_REPORT_DIR/renovate-validate.txt\""
       ],
       "report": {
         "file": "renovate-validate.txt",
-        "format": "text"
+        "format": "text",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "the renovate config validated" },
+          "1": { "outcome": "unmeasured", "meaning": "the config is missing, unparseable or has errors or warnings, or npx could not fetch the validator; renovate-validate.txt says which" },
+          "99": { "outcome": "unmeasured", "meaning": "the validator crashed; the trace is in renovate-validate.txt" }
+        }
       },
       "requires": {
         "tools": [
@@ -1822,7 +2090,11 @@
       ],
       "report": {
         "file": "deno-lint.json",
-        "format": "json"
+        "format": "json",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "linted at least one deno config and wrote the merged JSON" },
+          "1": { "outcome": "unmeasured", "meaning": "deno lint failed for every config; the report lists configs but holds no diagnostics" }
+        }
       },
       "requires": {
         "tools": [
@@ -1853,7 +2125,11 @@
       ],
       "report": {
         "file": "deno-check.log",
-        "format": "text"
+        "format": "text",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "deno check ran for at least one config" },
+          "1": { "outcome": "unmeasured", "meaning": "deno could not be started for any config; no type check ran" }
+        }
       },
       "requires": {
         "tools": [
@@ -1891,7 +2167,13 @@
       "report": {
         "file": "clippy.json",
         "format": "json",
-        "log": "clippy.log"
+        "log": "clippy.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "clippy checked every target; lint warnings do not fail the run" },
+          "1": { "outcome": "unmeasured", "meaning": "rustup could not run cargo or clippy for the selected toolchain; nothing was checked" },
+          "101": { "outcome": "unmeasured", "meaning": "cargo did not finish: a target failed to compile, a dependency was not available offline, or a crate denies a lint; diagnostics cover only what was reached" },
+          "127": { "outcome": "unmeasured", "meaning": "cargo-clippy is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -1934,7 +2216,13 @@
       "report": {
         "file": "rustfmt.json",
         "format": "json",
-        "log": "rustfmt.log"
+        "log": "rustfmt.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "checked the Cargo roots; any root that failed is marked partial in the report" },
+          "1": { "outcome": "unmeasured", "meaning": "no Cargo root was found or produced a check result; no report" },
+          "2": { "outcome": "unmeasured", "meaning": "usage error; no report" },
+          "127": { "outcome": "unmeasured", "meaning": "cargo-fmt or rustfmt is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -1965,7 +2253,12 @@
       "report": {
         "file": "sobelow.json",
         "format": "json",
-        "log": "sobelow.log"
+        "log": "sobelow.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "sobelow scanned the project and printed its JSON report, with or without findings" },
+          "1": { "outcome": "unmeasured", "meaning": "sobelow failed (not a Mix project, unreadable config, write error or crash), or a repository config made findings exit non-zero; sobelow.log says which" },
+          "127": { "outcome": "unmeasured", "meaning": "sobelow is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -1995,7 +2288,12 @@
       "report": {
         "file": "hlint.json",
         "format": "json",
-        "log": "hlint.log"
+        "log": "hlint.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "hlint checked the sources and wrote its hints, with or without findings" },
+          "1": { "outcome": "unmeasured", "meaning": "hlint failed or crashed (no Haskell sources found, unreadable settings, uncaught error); no usable report" },
+          "127": { "outcome": "unmeasured", "meaning": "hlint is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2033,7 +2331,17 @@
       ],
       "report": {
         "file": "codeql-cpp.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no cpp source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -2083,7 +2391,17 @@
       ],
       "report": {
         "file": "codeql-swift.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed, including a traced build that could not start or failed (xcodebuild or swift build); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no swift source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -2126,7 +2444,17 @@
       ],
       "report": {
         "file": "codeql-csharp.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no csharp source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -2165,7 +2493,19 @@
         "log": "brakeman.log",
         "findingsExit": [
           3
-        ]
+        ],
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "brakeman scanned the app and reported no warnings" },
+          "1": { "outcome": "unmeasured", "meaning": "brakeman crashed or was interrupted; the report may be absent or stale" },
+          "3": { "outcome": "measured", "meaning": "brakeman scanned the app and reported warnings" },
+          "4": { "outcome": "unmeasured", "meaning": "brakeman found no Rails application at the root; no report" },
+          "5": { "outcome": "unmeasured", "meaning": "brakeman refused to run because it is not the latest version; no report" },
+          "6": { "outcome": "unmeasured", "meaning": "brakeman refused to run because configured checks do not exist; no report" },
+          "7": { "outcome": "unmeasured", "meaning": "brakeman hit errors such as unparseable files and reported no warnings; the errors are not read, so the scan may be partial" },
+          "8": { "outcome": "measured", "meaning": "brakeman scanned the app with no warnings, but the repository's ignore file has entries without notes" },
+          "9": { "outcome": "measured", "meaning": "brakeman scanned the app with no warnings, but the repository's ignore file lists entries that no longer match" },
+          "127": { "outcome": "unmeasured", "meaning": "brakeman is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2196,7 +2536,14 @@
       "report": {
         "file": "bundler-audit.json",
         "format": "json",
-        "log": "bundler-audit.log"
+        "log": "bundler-audit.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "audited at least one Gemfile.lock; no advisories" },
+          "1": { "outcome": "measured", "meaning": "audited at least one Gemfile.lock and found advisories; the JSON report lists them" },
+          "2": { "outcome": "unmeasured", "meaning": "no Gemfile.lock found; no report" },
+          "3": { "outcome": "unmeasured", "meaning": "every Gemfile.lock found failed to audit; no report" },
+          "127": { "outcome": "unmeasured", "meaning": "bundle-audit is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2233,7 +2580,17 @@
           1,
           2,
           3
-        ]
+        ],
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "phpcs checked every file and reported no issues" },
+          "1": { "outcome": "measured", "meaning": "phpcs checked every file and reported only auto-fixable issues" },
+          "2": { "outcome": "measured", "meaning": "phpcs checked every file and reported issues that are not auto-fixable" },
+          "3": { "outcome": "measured", "meaning": "phpcs checked every file and reported both fixable and non-fixable issues" },
+          "16": { "outcome": "unmeasured", "meaning": "phpcs refused its arguments or ruleset before checking files; no usable report" },
+          "64": { "outcome": "unmeasured", "meaning": "phpcs refused to run because its PHP requirements are not met; no report" },
+          "127": { "outcome": "unmeasured", "meaning": "phpcs or the security ruleset is absent; no report" },
+          "255": { "outcome": "unmeasured", "meaning": "PHP died with a fatal error such as memory exhaustion; the report is absent or truncated" }
+        }
       },
       "requires": {
         "tools": [
@@ -2274,7 +2631,14 @@
         "log": "psalm.log",
         "findingsExit": [
           2
-        ]
+        ],
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "psalm analysed the code and reported no issues" },
+          "1": { "outcome": "unmeasured", "meaning": "psalm refused to start (arguments, config, autoloader or baseline) or crashed with an uncaught exception; no usable report" },
+          "2": { "outcome": "measured", "meaning": "psalm analysed the code and reported issues" },
+          "127": { "outcome": "unmeasured", "meaning": "psalm is absent; no report" },
+          "255": { "outcome": "unmeasured", "meaning": "PHP died with a fatal error such as memory exhaustion; no usable report" }
+        }
       },
       "local": [
         "PSALM=\"\"; for c in \"$HOME/.composer/vendor/bin/psalm\" \"$HOME/.config/composer/vendor/bin/psalm\" psalm; do command -v \"$c\" >/dev/null 2>&1 && { PSALM=\"$c\"; break; }; done\nif [ -z \"$PSALM\" ]; then echo 'psalm not installed -- this lane did NOT run and this repo is UNSCANNED for Psalm taint findings, not clean' > \"$CW_REPORT_DIR/psalm.log\"; echo 127 > \"$CW_REPORT_DIR/psalm.sarif.exit\"; exit 127; fi\n# Run with PHP's PRODUCTION assertion setting. This box ships zend.assertions=1 (the\n# development default), and on psalm 6.x-dev a debug assert in php-parser\n# (assert(!$this->isFirstClassCallable()) in CallLike::getArgs) aborts the whole run on\n# laravel and phpmyadmin. As of 2026-09-02, an identical run with zend.assertions=-1\n# completes rc=0. A scanner must not be killed by its parser's debug assertions.\nPHPBIN=\"$(command -v php || true)\"\n# Only a psalm that is itself a PHP script can be handed to php; a shell wrapper runs as it is.\nPSALM_BIN=\"$(command -v \"$PSALM\" 2>/dev/null || true)\"\nif [ -n \"$PHPBIN\" ] && [ -n \"$PSALM_BIN\" ] && head -1 \"$PSALM_BIN\" | grep -q php; then PSALM_RUN=\"$PHPBIN -d zend.assertions=-1 $PSALM_BIN\"; else PSALM_RUN=\"$PSALM\"; fi\n# Full mode REQUIRES the scanned tree's vendor/autoload.php, and composer's autoloader runs every\n# `files` entry it lists: code the tree supplies, executed by the scanner. Only with the operator's\n# consent (--trust-repo-manifest, seen here as CW_REPO_TRUSTED=1); otherwise the degraded mode below,\n# whose autoloader is an empty stub commitwork writes.\nUNTRUSTED=\"\"; [ -f vendor/autoload.php ] && [ \"${CW_REPO_TRUSTED:-0}\" != 1 ] && UNTRUSTED=1\nif [ -f vendor/autoload.php ] && [ -z \"$UNTRUSTED\" ]; then\n  echo 'MODE: full -- the repo has its own composer autoloader, so third-party symbols resolve and taint can be traced through dependencies.' > \"$CW_REPORT_DIR/psalm.log\"\n  $PSALM_RUN --taint-analysis --threads=1 --scan-threads=1 --no-cache --no-progress --report=\"$CW_REPORT_DIR/psalm.sarif\" >/dev/null 2>>\"$CW_REPORT_DIR/psalm.log\"; rc=$?\nelse\n  H=\"$CW_REPORT_DIR/.psalm-host\"; rm -rf \"$H\"; mkdir -p \"$H/vendor\"; printf '<?php\\n' > \"$H/vendor/autoload.php\"\n  # The src/app/lib/source subset is a library layout, taken only when those directories hold PHP and\n  # the root holds none. A WordPress theme keeps its PHP at the root and in modules/, and its src/ is\n  # often JS or SCSS, which points psalm at zero files so it exits 0, clean.\n  dirs=\"\"; for sub in src app lib source; do [ -d \"$sub\" ] && [ -n \"$(find \"$sub\" -name '*.php' -print 2>/dev/null | head -1)\" ] && dirs=\"$dirs<directory name=\\\"$PWD/$sub\\\" />\"; done\n  [ -n \"$(find . -maxdepth 1 -name '*.php' -print 2>/dev/null | head -1)\" ] && dirs=\"\"\n  [ -z \"$dirs\" ] && dirs=\"<directory name=\\\"$PWD\\\" />\"\n  # ignoreFiles entries must MATCH SOMETHING: psalm aborts with \"Could not resolve config path\" on any\n  # entry that resolves to nothing, so these are enumerated from the tree rather than globbed blind.\n  ign=\"\"\n  for sub in src app lib source .; do\n    [ -d \"$sub\" ] || continue\n    for t in $(find \"$sub\" -type d \\( -name Tests -o -name tests -o -name Fixtures -o -name fixtures \\) 2>/dev/null | head -400); do\n      ign=\"$ign<directory name=\\\"$PWD/${t#./}\\\" />\"\n    done\n  done\n  # Nested checkouts are this repository again (monitor/worktree-paths.mjs). Only roots that exist, for the reason above.\n  for nc in .claude/worktrees .git; do [ -d \"$nc\" ] && ign=\"$ign<directory name=\\\"$PWD/$nc\\\" />\"; done\n  [ -n \"$ign\" ] && ign=\"<ignoreFiles>$ign</ignoreFiles>\"\n  # A WordPress tree gets commitwork's own taint stub and plugin (manifests/psalm/): $wpdb, option and meta\n  # key, redirect, remote-request, hook and file sinks, the REST and shortcode sources, and the esc_*/sanitize_*\n  # escapes. Public WordPress stubs declare types only, and psalm traces no injection through them.\n  wp=\"\"; WPSTUB=\"$CW_ROOT/manifests/psalm/wordpress-taint.phpstub\"; WPPLUGIN=\"$CW_ROOT/manifests/psalm/WordPressTaintPlugin.php\"\n  if [ -f \"$WPSTUB\" ] && { [ -d wp-includes ] || [ -d wp-content ] || { [ -d plugins ] && [ -d themes ]; } || grep -qsl \"Plugin Name:\" ./*.php || grep -qs \"Theme Name:\" style.css; }; then\n    wp=\"<stubs><file name=\\\"$WPSTUB\\\" /></stubs><globals><var name=\\\"wpdb\\\" type=\\\"wpdb\\\" /></globals>\"\n    # Without the plugin the stub's WordPress kinds never reach $_GET/$_POST/$_COOKIE/$_REQUEST.\n    [ -f \"$WPPLUGIN\" ] && wp=\"$wp<plugins><plugin filename=\\\"$WPPLUGIN\\\" /></plugins>\"\n  fi\n  { echo '<?xml version=\"1.0\"?>'; echo '<psalm errorLevel=\"8\" resolveFromConfigFile=\"true\" xmlns=\"https://getpsalm.org/schema/config\">'; echo \"  <projectFiles>$dirs$ign</projectFiles>$wp\"; echo '</psalm>'; } > \"$H/psalm.xml\"\n  echo 'MODE: degraded (first-party only) -- the repo has no composer autoloader, so a STUB one is hosted OUTSIDE the repo and psalm is pointed at the source directories by absolute path. The scanned tree is not modified and composer install is deliberately not run. Third-party symbols do NOT resolve, so taint entering or leaving a dependency is INVISIBLE here. A zero in this mode means no first-party taint path was found, NOT that the repo is clean.' > \"$CW_REPORT_DIR/psalm.log\"\n  [ -n \"$UNTRUSTED\" ] && echo 'UNTRUSTED: vendor/autoload.php is present, but full mode would execute the autoload files the scanned tree supplies; ran degraded instead (--trust-repo-manifest allows full mode)' >> \"$CW_REPORT_DIR/psalm.log\"\n  if [ -n \"$wp\" ]; then\n    echo \"WORDPRESS: commitwork taint stub loaded ($WPSTUB) -- \\$wpdb, option/meta key, redirect, remote-request, hook and file sinks; REST and shortcode sources; esc_*/sanitize_* escapes\" >> \"$CW_REPORT_DIR/psalm.log\"\n    if [ -f \"$WPPLUGIN\" ]; then echo \"WORDPRESS: taint plugin loaded ($WPPLUGIN) -- request superglobals carry the option-key and redirect kinds\" >> \"$CW_REPORT_DIR/psalm.log\"\n    else echo \"WORDPRESS: taint plugin MISSING ($WPPLUGIN) -- option names and redirect targets chosen through \\$_GET/\\$_POST/\\$_COOKIE/\\$_REQUEST are NOT traced\" >> \"$CW_REPORT_DIR/psalm.log\"; fi\n  fi\n  ( cd \"$H\" && $PSALM_RUN --taint-analysis --threads=1 --scan-threads=1 --no-cache --no-progress --report=\"$CW_REPORT_DIR/psalm.sarif\" >/dev/null 2>>\"$CW_REPORT_DIR/psalm.log\" ); rc=$?\nfi\necho $rc > \"$CW_REPORT_DIR/psalm.sarif.exit\"\nif [ $rc -ne 0 ] && [ $rc -ne 2 ]; then echo \"psalm exited $rc -- tool failure, NOT a clean scan. As of psalm 6.16.1, large real codebases hit upstream defects (Amp\\\\Parallel worker crashes, 'unexpected NAN value coerced to string', and on the brew phar build a PsalmPhar\\\\Composer\\\\InstalledVersions redeclare). Runs --threads=1 --scan-threads=1 because the host sandbox denies the unix socket psalm's worker pools bind.\" >> \"$CW_REPORT_DIR/psalm.log\"; exit $rc; fi\nnode -e \"const f=process.argv[1],s=require('node:fs');try{const j=JSON.parse(s.readFileSync(f,'utf8'));if(!j||!Array.isArray(j.runs))throw 0;}catch{s.rmSync(f,{force:true});}\" \"$CW_REPORT_DIR/psalm.sarif\""
@@ -2299,7 +2663,13 @@
       "report": {
         "file": "pmd.json",
         "format": "json",
-        "log": "pmd.log"
+        "log": "pmd.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "pmd analysed the sources and wrote its report, with or without violations" },
+          "1": { "outcome": "unmeasured", "meaning": "pmd could not initialise, hit a configuration error, or threw; the report may be absent or incomplete" },
+          "2": { "outcome": "unmeasured", "meaning": "pmd rejected its command line; no report" },
+          "127": { "outcome": "unmeasured", "meaning": "pmd is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2327,7 +2697,11 @@
       ],
       "report": {
         "file": "mobile-manifest.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "examined the app manifests and wrote SARIF, or found none and wrote nothing" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed; the guard removed its output" }
+        }
       },
       "requires": {
         "tools": [
@@ -2354,7 +2728,11 @@
       ],
       "report": {
         "file": "node-hazards.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "scanned the JavaScript and template sources and wrote SARIF, or found none and wrote nothing" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed; the guard removed its output" }
+        }
       },
       "requires": {
         "tools": [
@@ -2397,7 +2775,13 @@
       "report": {
         "file": "cobolwork.json",
         "format": "json",
-        "log": "cobolwork.log"
+        "log": "cobolwork.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "cobolwork scanned the tree and wrote its report; any coverage gap is stated in the report summary" },
+          "1": { "outcome": "unmeasured", "meaning": "node crashed before cobolwork could handle the error; no usable report" },
+          "2": { "outcome": "unmeasured", "meaning": "cobolwork refused its arguments or failed during the scan; no report or a stale one" },
+          "127": { "outcome": "unmeasured", "meaning": "the pinned cobolwork install is not configured (a cobolwork on PATH is not used); no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2437,7 +2821,13 @@
       "report": {
         "file": "cargo-audit.json",
         "format": "json",
-        "log": "cargo-audit.log"
+        "log": "cargo-audit.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "audited Cargo.lock; no vulnerabilities" },
+          "1": { "outcome": "measured", "meaning": "audited Cargo.lock and found vulnerabilities; the JSON report lists them" },
+          "2": { "outcome": "unmeasured", "meaning": "Cargo.lock at the repository root could not be loaded or audited; the report is empty" },
+          "127": { "outcome": "unmeasured", "meaning": "cargo-audit is absent; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2477,7 +2867,17 @@
       ],
       "report": {
         "file": "codeql-rust.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no rust source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -2522,7 +2922,17 @@
       "report": {
         "file": "codeql-go.sarif",
         "format": "sarif",
-        "log": "codeql-go.log"
+        "log": "codeql-go.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed, including the go build wrapper finding no module or extracting none; no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no go source after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
       },
       "requires": {
         "tools": [
@@ -2558,7 +2968,17 @@
       ],
       "report": {
         "file": "semgrep-auto.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "semgrep completed the scan; findings and any per-file timeouts are in the SARIF" },
+          "1": { "outcome": "unmeasured", "meaning": "semgrep crashed before its error handler; without --error, exit 1 is never findings" },
+          "2": { "outcome": "unmeasured", "meaning": "semgrep hit a fatal error or rejected its arguments; semgrep-auto.log says which" },
+          "3": { "outcome": "unmeasured", "meaning": "the run ended on an error-level target parse failure" },
+          "4": { "outcome": "unmeasured", "meaning": "a rule pattern is invalid" },
+          "5": { "outcome": "unmeasured", "meaning": "a rule file is not valid YAML" },
+          "7": { "outcome": "unmeasured", "meaning": "a rule pack failed to load, for example a registry pack that returned 404" },
+          "8": { "outcome": "unmeasured", "meaning": "a rule names an unknown language" }
+        }
       },
       "requires": {
         "tools": [
@@ -2588,7 +3008,11 @@
       ],
       "report": {
         "file": "cppcheck.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "cppcheck analysed the sources and wrote SARIF, with or without findings" },
+          "1": { "outcome": "unmeasured", "meaning": "cppcheck rejected its arguments or found no source files to check; no SARIF" }
+        }
       },
       "requires": {
         "tools": [
@@ -2621,7 +3045,14 @@
       ],
       "report": {
         "file": "flawfinder.sarif",
-        "format": "sarif"
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "flawfinder scanned every C/C++ file and wrote SARIF, with or without findings" },
+          "1": { "outcome": "unmeasured", "meaning": "flawfinder crashed with an uncaught Python error; no usable report" },
+          "14": { "outcome": "unmeasured", "meaning": "flawfinder could not open a file and stopped mid-scan; no usable report" },
+          "15": { "outcome": "unmeasured", "meaning": "flawfinder skipped one or more files it could not decode; the scan is partial and the report is usually unreadable" },
+          "16": { "outcome": "unmeasured", "meaning": "flawfinder rejected its command line; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2669,7 +3100,13 @@
       "report": {
         "file": "cobol-inventory.json",
         "format": "cobol-inventory",
-        "log": "cobol-inventory.log"
+        "log": "cobol-inventory.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "cobolwork inventoried the tree and wrote its report; missing copybooks and unreadable files are listed in it" },
+          "1": { "outcome": "unmeasured", "meaning": "node crashed before cobolwork could handle the error; no usable report" },
+          "2": { "outcome": "unmeasured", "meaning": "cobolwork refused its arguments or failed during the inventory; no report or a stale one" },
+          "127": { "outcome": "unmeasured", "meaning": "the pinned cobolwork install is not configured (a cobolwork on PATH is not used); no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2723,7 +3160,13 @@
       "report": {
         "file": "gitleaks-mainframe.json",
         "format": "gitleaks",
-        "log": "gitleaks-mainframe.log"
+        "log": "gitleaks-mainframe.log",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "gitleaks scanned the mainframe sources; findings, if any, are in the report" },
+          "1": { "outcome": "unmeasured", "meaning": "gitleaks failed or scanned only part of the tree; gitleaks-mainframe.log says which" },
+          "2": { "outcome": "unmeasured", "meaning": "gitleaks crashed with a Go runtime panic" },
+          "127": { "outcome": "unmeasured", "meaning": "cobolwork, its gitleaks rules or gitleaks was unavailable, or the scope config could not be written; no scan ran" }
+        }
       },
       "requires": {
         "tools": [
@@ -2749,7 +3192,12 @@
       ],
       "report": {
         "file": "deps-content.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or found no lockfile and wrote a void report" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed or crashed before writing a report; the error is in deps-content.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the lockfile is unreadable, not JSON or not v2/v3; a could-not-run report with nothing scanned" }
+        }
       },
       "requires": {
         "tools": [
@@ -2775,7 +3223,12 @@
       ],
       "report": {
         "file": "agent-instructions.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a void report because no instruction files were found" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed or crashed before writing a report; the error is in agent-instructions.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root or the exclusion policy is unreadable; a void report with nothing scanned" }
+        }
       },
       "requires": {
         "tools": [
@@ -2797,7 +3250,12 @@
       ],
       "report": {
         "file": "commit-provenance.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a void report because the history holds no commits" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed or crashed before writing a report; the error is in commit-provenance.log" },
+          "2": { "outcome": "unmeasured", "meaning": "not a git repository, git failed, or a provenance config is unreadable; a could-not-run report with nothing scanned" }
+        }
       },
       "requires": {
         "tools": [
@@ -2821,7 +3279,12 @@
       ],
       "report": {
         "file": "agent-config.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a partial or void report saying what it could not read" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed or crashed before writing a report; the error is in agent-config.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2852,7 +3315,12 @@
       ],
       "report": {
         "file": "model-artefacts.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a void report because the tree has no model surface" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in model-artefacts.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2883,7 +3351,12 @@
       ],
       "report": {
         "file": "commit-velocity.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a void report because the history holds no commits" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed or crashed before writing a report; the error is in commit-velocity.log" },
+          "2": { "outcome": "unmeasured", "meaning": "not a git repository, git failed, or a setting is invalid; a could-not-run report with nothing scanned" }
+        }
       },
       "requires": {
         "tools": [
@@ -2907,7 +3380,12 @@
       ],
       "report": {
         "file": "actions-gaps.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a void report because no workflows were found" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in actions-gaps.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root or the workflows directory is unreadable, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2932,7 +3410,12 @@
       ],
       "report": {
         "file": "webshell.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a partial or void report saying what it could not read" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in webshell.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2954,7 +3437,12 @@
       ],
       "report": {
         "file": "log-evidence.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a partial or void report saying what it could not read" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in log-evidence.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -2976,7 +3464,12 @@
       ],
       "report": {
         "file": "yara-witness.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a void report saying why yara-x or its rules could not scan" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in yara-witness.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan could not start; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -3002,7 +3495,12 @@
       ],
       "report": {
         "file": "tree-integrity.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a partial, void or not-applicable report saying why" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in tree-integrity.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -3025,7 +3523,12 @@
       ],
       "report": {
         "file": "wp-integrity.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a partial or void report saying what it could not verify" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in wp-integrity.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -3054,7 +3557,12 @@
       ],
       "report": {
         "file": "wp-advisories.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a partial or void report saying what it could not look up" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in wp-advisories.log" },
+          "2": { "outcome": "unmeasured", "meaning": "the root is unreadable, not a directory, or the scan failed; no report" }
+        }
       },
       "requires": {
         "tools": [
@@ -3080,7 +3588,7 @@
         "~/.composer",
         "~/.config/composer"
       ],
-      "description": "WordPress access control from source (bin/wp-authz.mjs, with bin/lib/wp-authz-facts.php on nikic/php-parser 5). Every place a request enters a plugin, theme or site (wp_ajax_ and wp_ajax_nopriv_ actions, admin_post_ and admin_post_nopriv_, register_rest_route, and init, admin_init and the other hooks that run on every request) is followed through its handler, to a depth limit, to the site state it writes, and the guards on the way are read: a capability check, a nonce check and whether a failed one stops the request, and a REST route's permission_callback. The tree is parsed as data and never included or executed. Five rules publish a severity. wp-triggered-write (low, CWE-862) is a handler with no capability check and no nonce check that writes site state whenever it is called, where no request value was seen reaching the write. wp-nopriv-unguarded-write, wp-ajax-unguarded-write and wp-rest-unguarded-write (CWE-862) are an unauthenticated handler, a handler open to any logged-in user, or a REST route with no permission_callback, that writes request data with no capability check and no nonce check; each is high when the request chooses the key of a high-weight write, med for another high-weight write, and low otherwise. wp-check-discarded (low) is a capability check (CWE-862) or nonce check (CWE-352) called as a bare statement, so its answer gates nothing. A row whose every write is reached only through a method name several classes share carries no severity. The other five rules (wp-nonce-only-write, wp-unproven-guard-write, wp-rest-public-write, wp-rest-no-permission-callback, wp-hook-request-write) are undetermined rows: each keeps its claim, file, handler and hook, and carries no severity, because its held-out precision has not cleared the publication bar. A handler that checks a capability, or a route whose permission_callback does, is set aside with its reason and counted, never listed as clean.",
+      "description": "WordPress access control from source (bin/wp-authz.mjs, with bin/lib/wp-authz-facts.php on nikic/php-parser 5). Every place a request enters a plugin, theme or site (wp_ajax_ and wp_ajax_nopriv_ actions, admin_post_ and admin_post_nopriv_, register_rest_route, and init, admin_init and the other hooks that run on every request) is followed through its handler, to a depth limit, to the site state it writes, and the guards on the way are read: a capability check, a nonce check and whether a failed one stops the request, and a REST route's permission_callback. The tree is parsed as data and never included or executed. Three rules publish a severity. wp-ajax-unguarded-write and wp-rest-unguarded-write (CWE-862) are a handler open to any logged-in user, or a REST route with no permission_callback, that writes request data with no capability check and no nonce check; each is high when the request chooses the key of a high-weight write, med for another high-weight write, and low otherwise. wp-check-discarded (low) is a capability check (CWE-862) or nonce check (CWE-352) called as a bare statement, so its answer gates nothing. A row whose every write is reached only through a method name several classes share carries no severity. The other seven rules (wp-nopriv-unguarded-write, an unauthenticated handler that writes request data unguarded; wp-triggered-write, an unguarded handler that writes site state where no request value was seen reaching the write; wp-nonce-only-write, wp-unproven-guard-write, wp-rest-public-write, wp-rest-no-permission-callback, wp-hook-request-write) are undetermined rows: each keeps its claim, file, handler and hook, and carries no severity, because its held-out precision has not cleared the publication bar. A handler that checks a capability, or a route whose permission_callback does, is set aside with its reason and counted, never listed as clean.",
       "remediationPrompt": "You are triaging WordPress access-control rows from wp-authz.json. findings[] (rule, path, line, handler, hook, entry, sev, cwe, claim, detail) is the published rule; undetermined[] carries the same fields with sev empty, and is a list of claims to check, not of defects. For each row open the handler named in handler at path and confirm who can reach the entry (entry: ajax-nopriv and admin-post-nopriv are anonymous, ajax and admin-post are any logged-in user, rest is whoever the permission_callback admits) and what it writes. The fix for a real one is a capability check that matches the action (current_user_can with the capability the admin screen requires, not read or exist), placed before the write, plus a nonce check whose failure ends the request (check_ajax_referer, or wp_verify_nonce with the result tested) for anything a browser can be made to submit; for a REST route, a permission_callback that checks the capability. Do not register a route with __return_true to silence the row. A row is a false positive when the guard lives where this lane cannot follow it (a parent method, a middleware class, a dynamic call): say which guard and where, rather than adding a redundant check. summary.partialReasons and summary.unresolvedSample list handlers the lane could not read; those are unchecked, not clean.",
       "local": [
         "node \"$CW_ROOT/bin/wp-authz.mjs\" . > \"$CW_REPORT_DIR/wp-authz.json\" 2>\"$CW_REPORT_DIR/wp-authz.log\"; echo $? > \"$CW_REPORT_DIR/wp-authz.json.exit\""
@@ -3107,7 +3615,7 @@
       "groups": [
         "all"
       ],
-      "notes": "PUBLICATION RULE (pre-registered before any held-out adjudication, 2026-11-13): a rule publishes a severity only when its held-out adjudicated precision is at least 0.75 over at least 5 rows from at least 3 repositories. Measured on 58 blindly adjudicated held-out rows from a sample of public WordPress plugin repositories: wp-triggered-write is 10 of 11 published rows true across 5 repositories (0.91; the Wilson 95% lower bound is about 0.62, a small sample), and no other rule cleared the bar, most because the corpus held too few rows from enough repositories (four rules were 1.00 on 1 to 6 rows from one repository) and three because they were mostly wrong (wp-nonce-only-write and wp-hook-request-write 0.25 over 8 repositories each, wp-unproven-guard-write 0 of 3). OPERATOR PROMOTION (2026-11-16, post-hoc, outside the pre-registered rule): those four rules (wp-nopriv-unguarded-write, wp-ajax-unguarded-write, wp-rest-unguarded-write, wp-check-discarded) publish on a pooled held-out reading of 15 of 15 rows true across 4 repositories (Wilson 95% lower bound about 0.80, with 6 of the 15 rows from one repository). No single one of them cleared the per-rule bar. Rerun over the same sample, the promotion gives a severity to 10 more of the same 207 rows: 5 wp-check-discarded (low) and 4 wp-ajax-unguarded-write (med), each from one repository, and 1 wp-nopriv-unguarded-write (low). All 41 wp-rest-unguarded-write rows and 2 wp-nopriv-unguarded-write rows reach their writes only through an ambiguous method name, so they stay undetermined. On the full sample (107 WordPress repositories analysed, 9 void with their reason, 36 partial, no crashes, at most 21 s each) no rule fires on more than 13% of repositories, and 1,705 entry and handler pairs were set aside with a reason. The extractor counts undetermined rows outside crit, high, med and low, and the runner row says how many there are beside the finding count. A tree with no WordPress marker within 3 directories of its root is not applicable (non-WordPress PHP is outside this lane); a tree whose PHP is all under skipped directories, or none of whose files parse, is a void with its reason.",
+      "notes": "PUBLICATION RULE (pre-registered before any held-out adjudication, 2026-11-13): a rule publishes a severity only when its held-out adjudicated precision is at least 0.75 over at least 5 rows from at least 3 repositories. Measured on 58 blindly adjudicated held-out rows from a sample of public WordPress plugin repositories: wp-triggered-write is 10 of 11 published rows true across 5 repositories (0.91; the Wilson 95% lower bound is about 0.62, a small sample), and no other rule cleared the bar, most because the corpus held too few rows from enough repositories (four rules were 1.00 on 1 to 6 rows from one repository) and three because they were mostly wrong (wp-nonce-only-write and wp-hook-request-write 0.25 over 8 repositories each, wp-unproven-guard-write 0 of 3). OPERATOR PROMOTION (2026-11-16, post-hoc, outside the pre-registered rule): those four rules (wp-nopriv-unguarded-write, wp-ajax-unguarded-write, wp-rest-unguarded-write, wp-check-discarded) publish on a pooled held-out reading of 15 of 15 rows true across 4 repositories (Wilson 95% lower bound about 0.80, with 6 of the 15 rows from one repository). No single one of them cleared the per-rule bar. Rerun over the same sample, the promotion gives a severity to 10 more of the same 207 rows: 5 wp-check-discarded (low) and 4 wp-ajax-unguarded-write (med), each from one repository, and 1 wp-nopriv-unguarded-write (low). All 41 wp-rest-unguarded-write rows and 2 wp-nopriv-unguarded-write rows reach their writes only through an ambiguous method name, so they stay undetermined. On the full sample (107 WordPress repositories analysed, 9 void with their reason, 36 partial, no crashes, at most 21 s each) no rule fires on more than 13% of repositories, and 1,705 entry and handler pairs were set aside with a reason. The extractor counts undetermined rows outside crit, high, med and low, and the runner row says how many there are beside the finding count. A tree with no WordPress marker within 3 directories of its root is not applicable (non-WordPress PHP is outside this lane); a tree whose PHP is all under skipped directories, or none of whose files parse, is a void with its reason. INDEPENDENT CORPUS (2026-11-17): 400 public WordPress plugin repositories outside that sample were analysed, and the 53 published rows from 27 of them were triaged blind from source, for exploitability as the code stands and for latent vulnerability if the surrounding code changes; a second blind adjudication agreed on 48 of the 53. wp-ajax-unguarded-write held at 8 of 10 exploitable across 8 repositories (0.80). wp-triggered-write fell to 10 of 33 across 16 repositories (0.30) and wp-nopriv-unguarded-write to 1 of 9 across 7 (0.11), and no row of either was latent: the rest were incidental writes, writes scoped to the caller, handlers public by design, or guards this lane cannot read (a signed token, an OAuth state, a nonce checked in a parent constructor). All three rows published at high were among them. Both rules no longer publish. wp-rest-unguarded-write and wp-check-discarded had 0 and 1 independent rows, too few to move either way.",
       "formatNotes": "wp-authz.json is the shared in-house rule-counts shape plus an undetermined list: {tool:'wp-authz', summary:{findings, byRule, filesScanned (PHP files parsed), phpFiles, components:[{kind, path}], notWordPress, parser:{name, major, php}, entries:{<kind>: n}, routes, unresolvedEntries, undetermined:{count, byRule, note}, setAside:{count, byReason}, skipDirs, skippedPaths, unreadable, unreadableFiles?, parseErrors?, unresolvedSample?, partial?, partialReasons?, voidReason?, applicable?, notApplicableReason?}, findings:[{rule, path, line, handler, hook, entry, sev, cwe, claim, detail}], undetermined:[the same fields, sev '']}. Row identity is (rule, path, handler, hook), never the line. Unparsed files, handlers that could not be resolved, and calls deeper than the analyser follows each set summary.partial, and zero findings beside a partial read is a void. EXIT: 0 ran, or wrote a void or not-applicable report; 1 node failed before the analyser ran; 2 the root is unreadable or the analyser failed (no report); 127 php or nikic/php-parser 5 is absent (no report). Env, read at call time: CW_PHP_BIN, CW_PHP_PARSER_DIR (default ~/.composer/vendor/nikic/php-parser, then ~/.config/composer/vendor/nikic/php-parser), CW_WP_AUTHZ_SKIP_DIRS, CW_WP_AUTHZ_TIMEOUT_MS (default 900000), CW_WP_AUTHZ_MEMORY (default 2G). GATE: appliesIfSourceExt .php. EGRESS: none."
     },
     {
@@ -3123,7 +3631,12 @@
       ],
       "report": {
         "file": "actions-health.json",
-        "format": "rule-counts"
+        "format": "rule-counts",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "ran, or wrote a void report because the origin is not on GitHub or Actions holds no runs" },
+          "1": { "outcome": "unmeasured", "meaning": "node failed to load the script; no report, the error is in actions-health.log" },
+          "2": { "outcome": "unmeasured", "meaning": "gh is absent or could not read Actions; a void report or none" }
+        }
       },
       "requires": {
         "tools": [

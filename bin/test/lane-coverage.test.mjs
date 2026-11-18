@@ -310,7 +310,8 @@ describe('the PHP lanes declare their findings exits', () => {
     }
     for (const code of [16, 255]) {
       const r = run({ 'phpcs.json': PHPCS([EVAL]), 'phpcs.json.exit': `${code}\n`, 'phpcs.log': 'x\n' }, shipped('sast-php-phpcs'));
-      assert.equal(r.coverageReason, `the tool exited ${code}`);
+      assert.equal(r.coverage, 'reduced');
+      assert.equal(r.coverageReason, `the tool exited ${code}: ${shipped('sast-php-phpcs').report.exitCodes[code].meaning}`);
     }
   });
 
@@ -386,7 +387,8 @@ describe('the brakeman lane declares its findings exit', () => {
     assert.equal(empty.coverage, 'reduced');
     assert.match(empty.coverageReason, /exited 3, which it documents as having reported findings, but/);
     const partial = run({ 'brakeman.json': REPORT([SQLI]), 'brakeman.json.exit': '7\n', 'brakeman.log': 'x\n' });
-    assert.equal(partial.coverageReason, 'the tool exited 7');
+    assert.equal(partial.coverage, 'reduced');
+    assert.equal(partial.coverageReason, `the tool exited 7: ${shipped.report.exitCodes['7'].meaning}`);
   });
 });
 

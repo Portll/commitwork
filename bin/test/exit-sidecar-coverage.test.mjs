@@ -22,10 +22,10 @@ const CW_SRC = readFileSync(join(REPO, 'bin', 'commitwork.mjs'), 'utf8');
 //
 // jackson-caseinsensitive-guard LEFT it too: its GUARD_FAIL marker was read by nothing, because the
 // lane was a 'generic' pass-through. It now writes jackson-guard.txt.exit, which its parser reads.
-const OWN_IDIOM = new Map([
-  ['yarn-audit', 'no trailing `|| true`; the command ends in a redirect and its status reaches sh directly'],
-  ['deps-renovate', 'writes RENOVATE_CONFIG_INVALID into its own report on failure'],
-]);
+//
+// yarn-audit and deps-renovate LEFT it when every lane declared report.exitCodes: a declared lane
+// with no sidecar is unrecorded on every run, so both now write theirs.
+const OWN_IDIOM = new Map([]);
 
 const localOf = (c) => (Array.isArray(c.local) ? c.local : c.local ? [c.local] : []);
 const cmdText = (c) => localOf(c).join('\n');

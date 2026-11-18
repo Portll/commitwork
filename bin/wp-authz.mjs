@@ -96,13 +96,14 @@ export function walkTree(root) {
 }
 
 // ── the decision ──────────────────────────────────────────────────────────────────────────────────
-// publish: the rule's rows carry a severity. wp-triggered-write cleared the pre-registered held-out
-// bar. The four rules for a write with no guard of any kind (nopriv/ajax/rest-unguarded and
-// check-discarded) were promoted by the operator on 2026-11-16 on a pooled, post-hoc held-out reading
-// (15 of 15 true across 4 repositories), each below the per-rule bar for want of rows. A rule with
-// publish false keeps every row, in undetermined[], with its claim.
+// publish: the rule's rows carry a severity. ajax/rest-unguarded and check-discarded were promoted by
+// the operator on 2026-11-16 on a pooled, post-hoc held-out reading (15 of 15 true across 4
+// repositories). An independent corpus (2026-11-17) held ajax at 0.80 over 8 repositories and put
+// wp-triggered-write at 0.30 over 16 and nopriv at 0.11 over 7, below the pre-registered bar of 0.75,
+// so those two do not publish: most of their rows were incidental, self-scoped or guarded in a way
+// this lane cannot read. A rule with publish false keeps every row, in undetermined[], with its claim.
 export const RULES = Object.freeze({
-  'wp-nopriv-unguarded-write': { publish: true, cwe: 'CWE-862', claim: 'unauthenticated handler writes request data with no capability check and no nonce check' },
+  'wp-nopriv-unguarded-write': { publish: false, cwe: 'CWE-862', claim: 'unauthenticated handler writes request data with no capability check and no nonce check' },
   'wp-ajax-unguarded-write': { publish: true, cwe: 'CWE-862', claim: 'handler open to any logged-in user (subscriber and up) writes request data with no capability check and no nonce check' },
   'wp-rest-unguarded-write': { publish: true, cwe: 'CWE-862', claim: 'REST route with no permission_callback (WordPress treats it as public) writes request data with no capability or nonce check in its callback' },
   'wp-check-discarded': { publish: true, cwe: 'CWE-252', claim: 'a nonce or capability check is called as a bare statement, so its answer gates nothing' },
@@ -111,7 +112,7 @@ export const RULES = Object.freeze({
   'wp-rest-public-write': { publish: false, cwe: 'CWE-862', claim: 'REST route declared public (permission_callback __return_true) writes request data' },
   'wp-rest-no-permission-callback': { publish: false, cwe: 'CWE-862', claim: 'REST route with no permission_callback (WordPress treats it as public); its callback writes nothing this lane can see, so what it discloses is the question' },
   'wp-hook-request-write': { publish: false, cwe: 'CWE-862', claim: 'a hook that runs on every request writes state when the request asks for it, with no capability check' },
-  'wp-triggered-write': { publish: true, sev: 'low', cwe: 'CWE-862', claim: 'a handler with no capability check and no nonce check writes site state whenever it is called; this lane saw no request value reach the write' },
+  'wp-triggered-write': { publish: false, cwe: 'CWE-862', claim: 'a handler with no capability check and no nonce check writes site state whenever it is called; this lane saw no request value reach the write' },
 });
 
 const NOPRIV = new Set(['ajax-nopriv', 'admin-post-nopriv']);
@@ -143,7 +144,7 @@ export function classify(facts) {
   const push = (rule, e, detail, muts, extra = {}) => {
     // a write reached only through a method name several classes share is not a proven path
     const certain = muts.some((m) => !m.viaAmbiguous);
-    const sev = RULES[rule].publish && (certain || !muts.length) ? (RULES[rule].sev || sevFor(muts)) : '';
+    const sev = RULES[rule].publish && (certain || !muts.length) ? sevFor(muts) : '';
     rows.push({ rule, path: e.handlerFile, handler: e.handler, hook: e.hook, entry: e.kind, line: e.handlerLine,
       sev, cwe: RULES[rule].cwe, claim: RULES[rule].claim, detail: certain || !muts.length ? detail : `${detail}; every write found is reached through an ambiguous method name`, ...extra });
   };

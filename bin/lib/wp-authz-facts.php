@@ -330,6 +330,20 @@ function lastAssign(int $owner, string $var): ?Node {
     foreach (own($owner)['assigns'] as $a) if ($a instanceof Expr\Assign && $a->var instanceof Expr\Variable && $a->var->name === $var) $v = $a->expr;
     return $v;
 }
+/** A REST spec's [key, value] pairs in order, `...$var` and `...[...]` expanded; [null, expr] marks a spread that cannot be read. */
+function specItems(Expr\Array_ $a, int $owner, int $depth = 0): array {
+    $out = [];
+    foreach ($a->items as $it) {
+        if (!$it) continue;
+        if ($it->unpack) {
+            $v = $it->value;
+            if ($v instanceof Expr\Variable && is_string($v->name)) $v = lastAssign($owner, $v->name);
+            if ($v instanceof Expr\Array_ && $depth < 4) array_push($out, ...specItems($v, $owner, $depth + 1));
+            else $out[] = [null, $it->value];
+        } elseif ($it->key) $out[] = [litOf($it->key), $it->value];
+    }
+    return $out;
+}
 /** [ids, how] for a call site. */
 function resolveCall(Node $c, int $owner): array {
     global $functions, $FN;
@@ -725,28 +739,31 @@ foreach ($ids as $owner) {
             if ($spec instanceof Expr\Variable && is_string($spec->name)) $spec = lastAssign($owner, $spec->name);
             if (!$spec instanceof Expr\Array_) { $unresolvedEntries[] = ['kind' => 'rest', 'hook' => $route, 'file' => $file, 'line' => $line, 'how' => 'spec']; continue; }
             $first = $spec->items[0] ?? null;
-            $isList = $first && $first->key === null && ($first->value instanceof Expr\Array_);
+            $isList = $first && $first->key === null && !$first->unpack && ($first->value instanceof Expr\Array_);
             $specs = $isList ? array_map(fn($i) => $i?->value, $spec->items) : [$spec];
             foreach ($specs as $s) {
                 if (!$s instanceof Expr\Array_) continue;
                 $cbE = null; $permE = null; $hasPerm = false; $methods = '';
-                foreach ($s->items as $it) {
-                    if (!$it || !$it->key) continue;
-                    $k = litOf($it->key);
-                    if ($k === 'callback') $cbE = $it->value;
-                    elseif ($k === 'permission_callback') { $permE = $it->value; $hasPerm = true; }
+                // A spread nobody can read may carry either key, so it shadows whatever came before it.
+                $cbShadowed = false; $permShadowed = false;
+                foreach (specItems($s, $owner) as [$k, $v]) {
+                    if ($k === null) { $cbShadowed = $permShadowed = true; continue; }
+                    if ($k === 'callback') { $cbE = $v; $cbShadowed = false; }
+                    elseif ($k === 'permission_callback') { $permE = $v; $hasPerm = true; $permShadowed = false; }
                     elseif ($k === 'methods') {
-                        $mv = $it->value;
+                        $mv = $v;
                         if ($mv instanceof Expr\Array_) $methods = implode(',', array_map(fn($i) => $i ? (litOf($i->value) ?? (($i->value instanceof Expr\ClassConstFetch) ? lc($i->value->name) : '?')) : '?', $mv->items));
                         elseif ($mv instanceof Expr\ClassConstFetch) $methods = (string) lc($mv->name);
                         else $methods = litOf($mv) ?? '?';
                     }
                 }
+                if ($cbShadowed) { $unresolvedEntries[] = ['kind' => 'rest', 'hook' => $route, 'file' => $file, 'line' => $line, 'how' => 'spread']; continue; }
                 if ($cbE === null) continue;
                 [$cb, $how] = resolveCallable($cbE, $owner);
                 $perm = 'missing';
                 $permFacts = null;
-                if ($hasPerm) {
+                if ($permShadowed) $perm = 'unresolved';
+                elseif ($hasPerm) {
                     if ($permE instanceof Node\Scalar\String_ && strtolower($permE->value) === '__return_true') $perm = 'return-true';
                     elseif ($permE instanceof Node\Scalar\String_ && strtolower($permE->value) === '__return_false') $perm = 'closed';
                     elseif ($permE instanceof Expr\ConstFetch && lc($permE->name) === 'true') $perm = 'return-true';
