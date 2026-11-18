@@ -62,7 +62,13 @@ test('returns null for a path under a parent directory that does not exist', () 
   }
 });
 
-test('throws CW_FLOW_STAT_FAILED naming ENOTDIR when the path goes through a regular file', () => {
+// POSIX only. Measured on Windows 11 / Node 24.14: stat of `<file>\child` and of a 300-character name
+// both fail with ENOENT, the one code mtimeOf reads as absent. The OS gives no distinct code to fail
+// closed on there, so these two cases can only be asserted where it does.
+const POSIX_ONLY = process.platform === 'win32'
+  && 'Windows stat reports ENOENT for a path through a regular file and for an over-long name (measured), so there is no distinct code to assert';
+
+test('throws CW_FLOW_STAT_FAILED naming ENOTDIR when the path goes through a regular file', { skip: POSIX_ONLY }, () => {
   const dir = mkdtempSync(join(tmpdir(), 'mtimeOf-'));
   try {
     const f = join(dir, 'plain.txt');
@@ -78,7 +84,7 @@ test('throws CW_FLOW_STAT_FAILED naming ENOTDIR when the path goes through a reg
   }
 });
 
-test('throws CW_FLOW_STAT_FAILED naming ENAMETOOLONG for a file name longer than 255 bytes', () => {
+test('throws CW_FLOW_STAT_FAILED naming ENAMETOOLONG for a file name longer than 255 bytes', { skip: POSIX_ONLY }, () => {
   const dir = mkdtempSync(join(tmpdir(), 'mtimeOf-'));
   try {
     const p = join(dir, 'x'.repeat(300));

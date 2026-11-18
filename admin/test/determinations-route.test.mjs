@@ -6,6 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const D = await import(pathToFileURL(join(REPO, 'admin', 'routes', 'determinations.mjs')).href);
 const A = await import(pathToFileURL(join(REPO, 'cra', 'advisory-aliases.mjs')).href);
@@ -88,10 +90,11 @@ test('the POPULATION is every lane, not just the dependency-CVE one', () => {
 });
 
 test('a scanner finding is `no-analyser-for-lane`, distinct from an unanalysed ecosystem', () => {
-  // Collapsing the two would hide that ~90% of the fleet is a different, larger gap.
+  // Collapsing the two would hide that ~90% of the fleet is a different, larger gap. sastGo (gosec)
+  // traces nothing, so no engine in the fleet answers for it; a taint lane's reasons are below.
   const v = D.determinationView(rollup(
     [{ repo: 'r', id: 'CVE-2026-1', package: 'left-pad' }], [],
-    { sastSemgrep: [{ repo: 'r', rule: 'js/xss', file: 'a.js', sev: 'high' }] },
+    { sastGo: [{ repo: 'r', rule: 'G204', file: 'a.go', sev: 'high' }] },
   ), EMPTY_ALIAS, NOW);
   assert.equal(v.unknownBecause['no-analyser-for-lane'], 1);
   assert.equal(v.unknownBecause['no-analyser-for-ecosystem'], 1);
@@ -238,4 +241,169 @@ test('the ruling is READ FROM THE ARTIFACT when the rollup declares it', () => {
   }, EMPTY_ALIAS, NOW, { rows: 'all' });
   assert.equal(v.total, 0, 'a lane the artifact declares a metric is excluded without a code change');
   assert.ok(v.excludedLanes.lanes.includes('someNewMetricLane'));
+});
+
+// ── taint paths answer for OUR OWN code ────────────────────────────────────────────────────────
+// A taint engine's codeFlow proves untrusted data reaches the sink; joined on the finding's own
+// identity from the sweep the rollup names. Each way of NOT having one keeps its own reason.
+const loc = (uri, line, text) => ({ location: { physicalLocation: { artifactLocation: { uri }, region: { startLine: line } }, message: { text } } });
+const traced = (rule, file, flows) => ({
+  ruleId: rule,
+  locations: [{ physicalLocation: { artifactLocation: { uri: file }, region: { startLine: 9 } } }],
+  codeFlows: flows.map((locs) => ({ threadFlows: [{ locations: locs }] })),
+});
+function sweep(perRepo) {
+  const T = mkdtempSync(join(tmpdir(), 'det-df-'));
+  for (const [repo, files] of Object.entries(perRepo)) {
+    mkdirSync(join(T, repo), { recursive: true });
+    for (const [name, doc] of Object.entries(files)) writeFileSync(join(T, repo, name), JSON.stringify(doc));
+  }
+  return T;
+}
+const sarif = (driver, results) => ({ runs: [{ tool: { driver: { name: driver, rules: [] } }, results }] });
+
+test('a CodeQL taint path makes a scanner finding REACHABLE, cited from the rollup\'s own sweep', () => {
+  const T = sweep({ r: { 'codeql.sarif': sarif('CodeQL', [
+    traced('js/command-line-injection', 'src/a.js', [
+      [loc('src/a.js', 3, 'req.query.dir'), loc('src/a.js', 6, "'ls ' + req.query.dir")],
+      [loc('src/a.js', 4, 'req.query.x'), loc('src/b.js', 2, 'x'), loc('src/a.js', 6, "'ls ' + req.query.dir")],
+    ]),
+    { ruleId: 'js/missing-rate-limiting', locations: [{ physicalLocation: { artifactLocation: { uri: 'src/a.js' }, region: { startLine: 5 } } }] },
+  ]) } });
+  try {
+    const roll = { ...rollup([], [], { sastCodeql: [
+      { repo: 'r', rule: 'js/command-line-injection', file: 'src/a.js', sev: 'high' },
+      { repo: 'r', rule: 'js/missing-rate-limiting', file: 'src/a.js', sev: 'med' },
+      { repo: 'r', rule: 'js/sql-injection', file: 'src/z.js', sev: 'high' },
+    ] }), source: T };
+    const v = D.determinationView(roll, EMPTY_ALIAS, NOW, { rows: 'all', dataflow: D.dataflowForRollup(roll, NOW) });
+    assert.equal(v.reachability.proven, 1);
+    assert.equal(v.unknownBecause['rule-traces-no-path'], 1, 'a syntactic rule never looked');
+    assert.equal(v.unknownBecause['dataflow-no-row'], 1, 'the sweep holds nothing for this finding');
+    assert.equal(v.unknownBecause['no-analyser-for-lane'], 0, 'a taint lane HAS an analyser');
+    const row = v.rows.find((x) => x.rule === 'js/command-line-injection');
+    assert.equal(row.reachability, 'reachable');
+    assert.equal(row.evidence[0].method, 'dataflow');
+    assert.equal(row.evidence[0].source, 'codeql');
+    assert.equal(row.routes, 2, 'both distinct routes are counted, not the first');
+    assert.equal(row.route.steps, 2, 'the shortest route leads');
+    assert.equal(row.determination.reachability, 'reachable');
+    assert.equal(v.dataflow.state, 'ok');
+    assert.deepEqual([v.dataflow.findings, v.dataflow.proven, v.dataflow.routes], [3, 1, 2]);
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test('Psalm taint paths count too, attributed to Psalm', () => {
+  const T = sweep({ p: { 'psalm.sarif': sarif('Psalm', [traced('TaintedShell', 'inc/x.php', [[loc('inc/x.php', 2, '$_GET'), loc('inc/x.php', 8, 'shell_exec')]])]) } });
+  try {
+    const roll = { repos: [], scannerFindings: { sastPhpPsalm: [{ repo: 'p', rule: 'TaintedShell', file: 'inc/x.php', sev: 'high' }] }, source: T };
+    const v = D.determinationView(roll, EMPTY_ALIAS, NOW, { rows: 'all', dataflow: D.dataflowForRollup(roll, NOW) });
+    assert.equal(v.reachability.proven, 1);
+    assert.equal(v.rows[0].evidence[0].source, 'psalm');
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test('a rollup that names no sweep makes taint evidence UNAVAILABLE — never "no analyser"', () => {
+  const roll = rollup([], [], { sastCodeql: [{ repo: 'r', rule: 'js/xss', file: 'a.js', sev: 'high' }] });
+  const dataflow = D.dataflowForRollup(roll, NOW);
+  assert.equal(dataflow.state, 'absent');
+  const v = D.determinationView(roll, EMPTY_ALIAS, NOW, { dataflow });
+  assert.equal(v.unknownBecause['dataflow-evidence-unavailable'], 1);
+  assert.equal(v.unknownBecause['no-analyser-for-lane'], 0);
+  assert.equal(v.dataflow.state, 'absent');
+  assert.match(v.dataflow.reason, /names no sweep/);
+});
+
+test('a sweep directory that is gone is ABSENT, and one that cannot be listed is UNREADABLE', () => {
+  const gone = D.dataflowForRollup({ source: join(tmpdir(), `det-df-gone-${process.pid}`) }, NOW);
+  assert.equal(gone.state, 'absent');
+  const T = mkdtempSync(join(tmpdir(), 'det-df-file-'));
+  const file = join(T, 'not-a-dir');
+  writeFileSync(file, 'x');
+  try {
+    const bad = D.dataflowForRollup({ source: file }, NOW);
+    assert.equal(bad.state, 'unreadable', 'ENOTDIR is not "legitimately absent"');
+    const v = D.determinationView({ repos: [], scannerFindings: { sastCodeql: [{ repo: 'r', rule: 'js/xss', file: 'a.js' }] } }, EMPTY_ALIAS, NOW, { dataflow: bad });
+    assert.equal(v.unknownBecause['dataflow-evidence-unavailable'], 1);
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test('the frontier of the rollup\'s own sweep travels beside the determinations, never inside them', () => {
+  const plain = join(REPO, 'cra', 'test', 'fixtures', 'taint-frontier', 'plain');
+  const models = mkdtempSync(join(tmpdir(), 'det-models-'));   // never the operator's private store
+  try {
+    const f = D.frontierFor({ source: plain }, { modelsDir: models });
+    assert.equal(f.state, 'ok');
+    assert.deepEqual([f.totals.calls, f.totals.unclaimed], [1, 1]);
+    assert.deepEqual([f.totals.open, f.totals.neutral, f.totals.sinkOpen], [1, 0, 0], 'no worksheet: every unclaimed call is still open');
+    assert.equal(f.apis[0].api, 'weird-db-client.raw()');
+    assert.equal(f.byRepo.fx.languages['javascript-typescript'].state, 'ran');
+    assert.equal(f.apisCut, null);
+    mkdirSync(join(models, 'fx'));
+    writeFileSync(join(models, 'fx', 'frontier-review.json'), JSON.stringify({ v: 1, repo: 'fx', entries: [
+      { language: 'javascript-typescript', api: 'weird-db-client.raw()', param: 'param 0', decision: { as: 'neutral', why: 'fixture: plumbing' } }] }));
+    const reviewed = D.frontierFor({ source: plain }, { modelsDir: models });
+    assert.deepEqual([reviewed.totals.unclaimed, reviewed.totals.open, reviewed.totals.neutral], [1, 0, 1], 'a reviewed call stays unclaimed but is no longer open');
+    const none = D.frontierFor({});
+    assert.equal(none.state, 'absent', 'no sweep named is not an empty frontier');
+  } finally { rmSync(models, { recursive: true, force: true }); }
+});
+
+test('agreement travels beside the determination: counted per state, on the row, and never changes reachability', () => {
+  const T = sweep({
+    r: {
+      'codeql.sarif': sarif('CodeQL', [traced('js/command-line-injection', 'src/a.js', [[loc('src/a.js', 3, 'req.query.dir'), loc('src/a.js', 6, 'exec(..)')]])]),
+      // Semgrep on Windows spells the same file with backslashes, at the route's sink
+      'semgrep.sarif': sarif('Semgrep OSS', [{ ruleId: 'javascript.exec.non-literal', locations: [{ physicalLocation: { artifactLocation: { uri: 'src\\a.js' }, region: { startLine: 6 } } }] }]),
+    },
+    solo: { 'codeql.sarif': sarif('CodeQL', [traced('js/xss', 'b.js', [[loc('b.js', 1, 'location'), loc('b.js', 9, 'innerHTML')]])]) },
+  });
+  try {
+    const roll = { ...rollup([], [], {
+      sastCodeql: [{ repo: 'r', rule: 'js/command-line-injection', file: 'src/a.js', sev: 'high' }, { repo: 'solo', rule: 'js/xss', file: 'b.js', sev: 'high' }],
+      sastSemgrep: [{ repo: 'r', rule: 'javascript.exec.non-literal', file: 'src\\a.js', sev: 'med' }],
+    }), source: T };
+    const v = D.determinationView(roll, EMPTY_ALIAS, NOW, { rows: 'all', dataflow: D.dataflowForRollup(roll, NOW) });
+    const a = v.dataflow.agreement;
+    assert.deepEqual([a.corroborated, a['single-engine'], a.uncorroborated], [2, 1, 0]);
+    assert.deepEqual([a.witnessPath, a.witnessFinding], [1, 1], 'the Semgrep finding is witnessed by a CodeQL route; the CodeQL finding only by a Semgrep finding');
+    const cq = v.rows.find((x) => x.rule === 'js/command-line-injection');
+    assert.equal(cq.corroboration.state, 'corroborated');
+    assert.deepEqual(cq.corroboration.witnesses.map((w) => w.engine), ['semgrep']);
+    const sg = v.rows.find((x) => x.lane === 'sastSemgrep');
+    assert.equal(sg.reachability, 'reachability_unknown', 'a CodeQL route at the same site is a witness, never the Semgrep finding\'s own path');
+    assert.equal(sg.why, 'rule-traces-no-path');
+    assert.equal(v.rows.find((x) => x.repo === 'solo').corroboration.state, 'single-engine');
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test('a reports-root-relative `source` is read under the reports root, never the panel\'s cwd', () => {
+  // The real rollup of the 2026-10-21 sweep carries a bare batch name as `source`.
+  const root = sweep({ 'batch-1/r': { 'codeql.sarif': sarif('CodeQL', [traced('js/xss', 'a.js', [[loc('a.js', 1, 'location'), loc('a.js', 9, 'innerHTML')]])]) } });
+  try {
+    const roll = { ...rollup([], [], { sastCodeql: [{ repo: 'r', rule: 'js/xss', file: 'a.js', sev: 'high' }] }), source: 'batch-1' };
+    assert.equal(D.sweepDirOf(roll, root).dir, join(root, 'batch-1'));
+    const df = D.dataflowForRollup(roll, NOW, { root });
+    assert.equal(df.state, 'ok');
+    const v = D.determinationView(roll, EMPTY_ALIAS, NOW, { rows: 'all', dataflow: df });
+    assert.equal(v.reachability.proven, 1, 'resolved against the cwd the batch is absent and the finding reads unavailable');
+    assert.equal(D.frontierFor(roll, { root, modelsDir: join(root, 'no-models') }).byRepo.r.languages['javascript-typescript'].state, 'not-run');
+    assert.equal(D.sweepDirOf({ source: root }).dir, root, 'an older rollup\'s absolute source is taken as written');
+    assert.equal(D.sweepDirOf({}).state, 'absent');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('a duplicate lane (the sast-auto comparison arm) is named and left out of the population, as the rollup totals leave it', () => {
+  // Measured on a real batch (2026-10-21): sastAuto's 87 rows sat beside sastSemgrep's 88, the same rule packs run twice.
+  const roll = rollup([], [], {
+    sastSemgrep: [{ repo: 'r', rule: 'js.fmt', file: 'a.ts', sev: 'med' }],
+    sastAuto: [{ repo: 'r', rule: 'js.fmt', file: 'a.ts', sev: 'med' }],
+  });
+  const v = D.determinationView(roll, EMPTY_ALIAS, NOW, { rows: 'all' });
+  assert.equal(v.total, 1, 'one finding, not the same finding twice');
+  assert.deepEqual(v.rows.map((r) => r.lane), ['sastSemgrep']);
+  assert.ok(v.duplicateLanes.lanes.includes('sastAuto'));
+  assert.match(v.duplicateLanes.why, /count each finding twice/);
+  assert.equal(v.excludedLanes.lanes.includes('sastAuto'), false, 'a duplicate is a finding, not a non-finding: named apart');
+  assert.ok(D.duplicateLanes().has('sastAuto'));
 });

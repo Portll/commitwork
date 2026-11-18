@@ -12,16 +12,33 @@
 //   analysed-no-row            govulncheck ran on that repo and emitted no row for this advisory.
 //   ambiguous-alias            two Go advisories claim the same CVE; the proof is REFUSED, not picked.
 //
+// A scanner finding is our OWN code, and its analyser is a taint engine (cra/dataflow-evidence.mjs:
+// CodeQL, Psalm, Semgrep when it exports a trace) reading the same sweep the rollup came from:
+//   no-analyser-for-lane          the lane's engine traces nothing (gosec, bandit, a linter)
+//   rule-traces-no-path           the lane's engine is a taint engine and this result carries no
+//                                 path: a syntactic rule, or a trace the engine did not export
+//   dataflow-no-row               the sweep was read and holds no result for this repo|rule|file
+//   dataflow-evidence-unavailable the sweep the rollup names could not be read, so nothing was asked
+//
 // And the denominator is published three ways deliberately. The same work reads very differently
 // depending only on which is chosen, and the low one makes working plumbing look broken.
 //
 // Every route requires a session OR the operator port, matching every other lane.
 
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, isAbsolute, resolve } from 'node:path';
+import { reportsRootDir } from '../../monitor/area.mjs';
+import { LANE_KINDS } from '../../monitor/lane-kinds.mjs';
+
+const CW_ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 import { resolvePaths, loadJSON, nowISO } from '../../cra/lib.mjs';
 import { openFindings } from '../../cra/lib.mjs';
 import { buildReachabilityIndex, reachabilityFor, proverCoverage } from '../../cra/reachability-evidence.mjs';
+import { buildDataflowIndex, dataflowFor, corroborationFor, DATAFLOW_LANES } from '../../cra/dataflow-evidence.mjs';
+import { buildFrontier, frontierSummary } from '../../cra/taint-frontier.mjs';
+import { readReview, reviewPath, applyReview } from '../../cra/frontier-review.mjs';
+import { codeqlModelsDirFor } from '../../monitor/store-paths.mjs';
+import { fileURLToPath } from 'node:url';
 import { buildAliasIndex, aliasesOf } from '../../cra/advisory-aliases.mjs';
 import { determinationForStatement } from '../../cra/vex.mjs';
 import { project } from '../../cra/determination-projection.mjs';
@@ -69,6 +86,16 @@ export const RULED_OUT_LANES = Object.freeze(new Set(['stubs', 'denoLint', 'deno
 export function nonFindingLanes(rollup) {
   const declared = Object.keys(rollup?.metrics || {});
   return new Set([...RULED_OUT_LANES, ...declared]);
+}
+
+/**
+ * Lanes whose rows ARE findings but repeat another lane's: monitor/lane-kinds.mjs marks them
+ * `duplicate` (sastAuto runs sastSemgrep's rule packs again as the Pro-engine comparison arm), and
+ * the rollup's totals already leave them out. Counted here, every such finding counted twice:
+ * measured on a real batch (2026-10-21), sastAuto's 87 rows sat beside sastSemgrep's 88.
+ */
+export function duplicateLanes() {
+  return new Set(Object.entries(LANE_KINDS).filter(([, k]) => k && k.why === 'duplicate').map(([name]) => name));
 }
 
 /**
@@ -120,12 +147,64 @@ export function* allFindings(rollup, excluded = new Set()) {
 }
 
 /**
+ * The taint-path index for one rollup, read from the sweep directory the rollup itself names
+ * (`rollup.source`), so a determination cites the scan that produced the finding and never an older
+ * sweep of the same repository. A rollup that names no sweep is `absent` with the reason, not an
+ * empty index.
+ */
+export function dataflowForRollup(rollup, atIso, { root = null } = {}) {
+  const at = sweepDirOf(rollup, root);
+  if (!at.dir) return { state: at.state, reason: `${at.reason}, so no scan artifact can be read`, index: new Map(), stats: null };
+  return buildDataflowIndex({ dir: at.dir, atIso });
+}
+
+/**
+ * The taint frontier of the sweep the rollup names (cra/taint-frontier.mjs), with each repository's
+ * review worksheet applied (cra/frontier-review.mjs) and summarised. totals.open is what the
+ * frontier still asks; totals.neutral was reviewed as plumbing; totals.sinkOpen was decided a sink
+ * and is still unclaimed, so its model did not take.
+ */
+export function frontierFor(rollup, { root = null, modelsDir = null } = {}) {
+  const at = sweepDirOf(rollup, root);
+  if (!at.dir) return { state: at.state, reason: `${at.reason}, so no frontier can be read`, totals: null, apis: [], apisCut: null, byRepo: {} };
+  const f = buildFrontier({ dir: at.dir });
+  const store = modelsDir || codeqlModelsDirFor(CW_ROOT);
+  const reviews = Object.fromEntries(Object.keys(f.repos || {}).map((repo) => [repo, readReview(reviewPath(store, repo))]));
+  return frontierSummary(applyReview(f, reviews));
+}
+
+/**
+ * The sweep directory a rollup names. `rollup.source` is reports-root-relative since sourceKey()
+ * (monitor/area.mjs) and absolute in older rollups. A relative one is resolved against the reports
+ * root, never the panel's cwd: read against the cwd, the real rollup of a 2026-10-21 sweep
+ * (`source` a bare batch name) named no directory, and every taint finding would
+ * have read as evidence unavailable. A registry that cannot be read leaves the root unknown, which
+ * is `unreadable`, never absent.
+ */
+export function sweepDirOf(rollup, root = null) {
+  const s = rollup && typeof rollup.source === 'string' && rollup.source ? rollup.source : null;
+  if (!s) return { dir: null, state: 'absent', reason: 'the rollup names no sweep directory (`source`)' };
+  if (isAbsolute(s)) return { dir: s, state: 'ok', reason: null };
+  let base = root;
+  if (!base) {
+    try { base = reportsRootDir(); } catch (e) {
+      return { dir: null, state: 'unreadable', reason: `the rollup names ${s.slice(0, 120)} relative to the reports root, and the root is unknown: ${String((e && e.message) || e).slice(0, 160)}` };
+    }
+  }
+  return { dir: resolve(base, s), state: 'ok', reason: null };
+}
+
+/**
  * Build the determination view for one rollup. EVERY row is returned.
  *
  * No cap: an unrequired cap is a silent truncation, and one taken in iteration order can hide every
  * proven reachability behind rows reading `unknown`.
+ *
+ * `dataflow` is dataflowForRollup's result. Without it, a finding in a taint lane is
+ * `dataflow-evidence-unavailable` — nothing was asked — never `no-analyser-for-lane`, which would say
+ * the fleet has no engine that could answer.
  */
-export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 'evidenced', lane = null } = {}) {
+export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 'evidenced', lane = null, dataflow = null } = {}) {
   const index = buildReachabilityIndex(rollup, atIso);
   const reposWithEvidence = new Set([...index.values()].map((v) => v.repo));
   // Prefer the declared status; fall back to row-presence ONLY when no status exists, and say so.
@@ -134,21 +213,45 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
   const ranRepos = ranIn || reposWithEvidence;
 
   const excluded = nonFindingLanes(rollup);
+  const duplicates = duplicateLanes();
+  const skipped = new Set([...excluded, ...duplicates]);
   const reach = EMPTY();
   const unknownBecause = {
     'no-analyser-for-lane': 0, 'no-analyser-for-ecosystem': 0, 'analyser-did-not-run': 0,
     'analysed-no-row': 0, 'ambiguous-alias': 0,
+    'rule-traces-no-path': 0, 'dataflow-no-row': 0, 'dataflow-evidence-unavailable': 0,
   };
   const covered = { total: 0, resolved: 0 };   // the honest denominator: analyser exists AND ran here
+  const dataflowRead = !!(dataflow && dataflow.state === 'ok');
+  const taint = { findings: 0, proven: 0, routes: 0 };   // scanner findings in a taint engine's lane
+  // A second engine family at the finding's site, counted beside the determination and never in it.
+  const agreement = { corroborated: 0, uncorroborated: 0, 'single-engine': 0, unsited: 0, 'no-row': 0, witnessPath: 0, witnessFinding: 0 };
   const rows = [];
   let total = 0;
 
   const byLane = {};
-  for (const f of allFindings(rollup, excluded)) {
+  for (const f of allFindings(rollup, skipped)) {
     total++;
     byLane[f.lane] = byLane[f.lane] || { total: 0, proven: 0, unproven: 0, unknown: 0 };
     byLane[f.lane].total++;
-    const r = reachabilityFor(index, f.repo, f.id, f.package, aliasIndex);
+    let r = reachabilityFor(index, f.repo, f.id, f.package, aliasIndex);
+    // A taint path answers for our own code what a call graph answers for a dependency. Joined on
+    // the finding's own identity, repo|rule|file, from the sweep that produced it.
+    const taintLane = f.kind === 'scanner' && DATAFLOW_LANES.has(f.lane);
+    let df = null;
+    let co = null;
+    if (taintLane) {
+      taint.findings++;
+      if (dataflowRead) {
+        df = dataflowFor(dataflow.index, f.repo, f.rule, f.file);
+        if (df.reachability === 'reachable') { r = df; taint.proven++; taint.routes += (df.paths || []).length; }
+        co = corroborationFor(dataflow, f.repo, f.rule, f.file);
+        agreement[co.state]++;
+        if (co.state === 'corroborated') {
+          if (co.witnesses.some((w) => w.kind === 'path')) agreement.witnessPath++; else agreement.witnessFinding++;
+        }
+      }
+    }
     const analyser = analyserFor(aliasIndex, f.id);
     // Circular rows excluded: a depsGo row is the proof, not an independent finding to be covered.
     const independent = !ANALYSER_OUTPUT_LANES.has(f.lane);
@@ -164,6 +267,8 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
       // the reason is distinct from a dependency in an unanalysed ecosystem. Collapsing the two
       // would hide that 90% of the fleet is a different, larger gap.
       why = r.refused === 'ambiguous-alias' ? 'ambiguous-alias'
+        : taintLane ? (!dataflowRead ? 'dataflow-evidence-unavailable'
+          : df.basis === 'no-path' ? 'rule-traces-no-path' : 'dataflow-no-row')
         : f.kind === 'scanner' ? 'no-analyser-for-lane'
           : !analyser ? 'no-analyser-for-ecosystem'
             : !ranRepos.has(f.repo) ? 'analyser-did-not-run'
@@ -185,7 +290,10 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
         reachability: r.reachability,
         via: r.via || null, aliased: !!r.aliased, fanOut: r.fanOut || null,
         evidence: (r.evidence || []).map((e) => ({ source: e.source, method: e.method, confidence: e.confidence, detail: e.detail })),
-        why, whyText: r.why || null,
+        // A traced finding names its shortest route and how many distinct routes reach it.
+        ...(df && df.reachability === 'reachable' ? { route: { source: df.path.source, sink: df.path.sink, steps: df.path.steps }, routes: (df.paths || []).length } : {}),
+        why, whyText: (df && df.why) || r.why || null,
+        ...(co ? { corroboration: { state: co.state, witnesses: co.witnesses, ...(co.why ? { why: co.why } : {}) } } : {}),
         analyser: analyser ? analyser.analyser : null,
         // What each format would be able to say about this determination, and what it would lose.
         projection: determination ? summarise(project(determination, { kev: f.kev, epss: f.epss })) : null,
@@ -213,8 +321,22 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
         note: 'Findings in repos where the analyser actually produced evidence, EXCLUDING the analyser\'s own output lanes — measuring a tool against rows it emitted is circular. This is the coverage figure that means something.' },
     },
     analysers: REACHABILITY_ANALYSERS,
+    // The taint engines' own denominator: findings in their lanes, and how many carry a route. Kept
+    // beside the call-graph figures, never summed into them — a different proof of a different thing.
+    dataflow: {
+      state: dataflow ? dataflow.state : 'not-supplied',
+      reason: dataflow ? dataflow.reason || null : 'no dataflow index was built for this view',
+      lanes: [...DATAFLOW_LANES].sort(),
+      findings: taint.findings, proven: taint.proven, routes: taint.routes,
+      pct: pct(taint.proven, taint.findings),
+      // Over the taint-lane findings whose sweep was read. witnessPath: another family traced a route
+      // to the site; witnessFinding: it only reported there. 'single-engine' is unmeasured, not 0.
+      agreement: dataflowRead ? agreement : null,
+      ...(dataflow && dataflow.stats ? { read: pick(dataflow.stats, ['artifacts', 'results', 'withPath', 'syntacticOnly', 'routes', 'byState', 'byEngine', 'unreadableDirs', 'unreadable', 'repos', 'indexed']) } : {}),
+    },
     // Named, never silent: an exclusion nobody can see reads as a tidier number.
     excludedLanes: { lanes: [...excluded].sort(), why: 'ruled not findings (metrics + correctness linters) — counting them as findings lacking an analyser inflates the gap' },
+    duplicateLanes: { lanes: [...duplicates].filter((l) => !excluded.has(l)).sort(), why: 'findings that repeat another lane\'s (monitor/lane-kinds.mjs `duplicate`, e.g. the sast-auto comparison arm) — the rollup\'s totals leave them out, and counting them here would count each finding twice' },
     reposWithEvidence: reposWithEvidence.size,
     analyserRan: { repos: ranRepos.size, basis: ranBasis,
       clearedNoFindings: ranIn ? [...ranIn].filter((r) => !reposWithEvidence.has(r)).length : null },
@@ -228,7 +350,11 @@ export function determinationView(rollup, aliasIndex, atIso, { rows: rowScope = 
 }
 
 const pct = (n, d) => (d > 0 ? Number(((100 * n) / d).toFixed(1)) : null);
-const countWhere = (why, reach) => reach.proven + reach.unproven + why['analyser-did-not-run'] + why['analysed-no-row'] + why['ambiguous-alias'];
+const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
+// Findings an analyser could in principle cover. A taint lane's finding whose sweep could not be
+// read, or that had no row, is one; a syntactic rule's is not — no engine asked its question.
+const countWhere = (why, reach) => reach.proven + reach.unproven + why['analyser-did-not-run'] + why['analysed-no-row'] + why['ambiguous-alias']
+  + why['dataflow-no-row'] + why['dataflow-evidence-unavailable'];
 
 function summarise(p) {
   const out = {};
@@ -258,13 +384,16 @@ export const routes = [
     const aliasIndex = buildAliasIndex();
     const rows = (query && query.get('rows')) || 'evidenced';
     const lane = (query && query.get('lane')) || null;
-    const view = determinationView(rollup, aliasIndex, at, { rows, lane });
+    const view = determinationView(rollup, aliasIndex, at, { rows, lane, dataflow: dataflowForRollup(rollup, at) });
     return send(200, {
       ok: true, configured: true, area, at,
       aliasIndex: aliasIndex.stats,
       // The fleet cannot prove absence; said here so the tab never has to infer it from a zero.
       canAssertUnreachable: proverCoverage(buildReachabilityIndex(rollup, at)).canAssertUnreachableStatic,
       ...view,
+      // Where untrusted data entered library calls no taint route in the sweep ends at: the bound on
+      // what a taint lane's silence can mean. Not findings, and never counted with them.
+      frontier: frontierFor(rollup),
     });
   } },
 ];

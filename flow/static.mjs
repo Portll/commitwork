@@ -13,7 +13,13 @@
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import * as nodeModule from 'node:module';
-import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
+import { dirname, extname, join, relative, resolve, posix } from 'node:path';
+
+// Repo paths (git's tracked names, module paths, literals from the source) are `/`-separated on
+// every platform, so they are built with path.posix. node:path's own join/normalize write `\` on
+// Windows: `fs.readFileSync('a/c.json')` became the node `a\c.json`, which nothing else names.
+// Native path functions remain only for the filesystem (reading a file, resolving this checkout).
+const rp = posix;
 import { fileURLToPath } from 'node:url';
 import { classify, rawQuotedRuns, matchBracket, splitArgs, importedNames } from './lexer.mjs';
 import { timerSites, inRanges, analyseTriggers } from './triggers.mjs';
@@ -374,7 +380,7 @@ export function resolveValue(ctx, d, depth = 0) {
           parts.push(String(r.value));
         }
         const kept = parts.filter((p) => p !== '');
-        const value = kept.length ? normalize(join(...kept)).replace(/^\.$/, '') : '';
+        const value = kept.length ? rp.normalize(rp.join(...kept)).replace(/^\.$/, '') : '';
         return base ? { ok: true, value, base } : { ok: true, value };
       }
       return { ok: false, reason: `computed ${d.callee}()` };
@@ -385,8 +391,8 @@ export function resolveValue(ctx, d, depth = 0) {
 
 /** Candidate repo paths for a resolved path value, most specific first; outside the repo dropped. */
 export function pathCandidates(modulePath, r) {
-  const mod = (v) => normalize(join(dirname(modulePath), v));
-  const root = (v) => normalize(v).replace(/^\.\//, '');
+  const mod = (v) => rp.normalize(rp.join(rp.dirname(modulePath), v));
+  const root = (v) => rp.normalize(v).replace(/^\.\//, '');
   const v = String(r.value);
   if (r.fileOfModule) return [modulePath];
   let out;
@@ -932,7 +938,7 @@ function lineTextAt(s, at) {
 }
 
 function resolveSpec(fromFile, spec) {
-  const base = normalize(join(dirname(fromFile), spec));
+  const base = rp.normalize(rp.join(rp.dirname(fromFile), spec));
   return /\.[a-z]+$/i.test(base) ? base : `${base}.mjs`;
 }
 
@@ -940,8 +946,8 @@ function resolveSpec(fromFile, spec) {
 // `../area.mjs` read by monitor/test/freshness.test.mjs becomes its own node with no producer, and
 // C4 reports a dead dependency on a file that is right there.
 function normalise(p, fromFile) {
-  if (/^\.\.?\//.test(p) && fromFile) return normalize(join(dirname(fromFile), p));
-  return normalize(p).replace(/^\.\//, '');
+  if (/^\.\.?\//.test(p) && fromFile) return rp.normalize(rp.join(rp.dirname(fromFile), p));
+  return rp.normalize(p).replace(/^\.\//, '');
 }
 
 /** A test module's fixtures are not repo artifacts. Kept, bucketed, never headline. */

@@ -13,6 +13,7 @@
 
 import { isDirected } from '../lib/dfd.mjs';
 import { sinkKindOf } from './dfd-adapter.mjs';
+import { routeKey } from '../cra/dataflow-evidence.mjs';
 
 const FILE_PREFIXES = ['node:module:', 'code:'];
 
@@ -154,7 +155,9 @@ export function rescanScope(model, changedFiles, { hops = 1, fullOver = 0.25 } =
 }
 
 /** A code-flow record's identity across two scans: its rule and both ends by file and expression. Line numbers move when code above them changes, so they take no part. */
-export const recordKey = (r) => [r.rule, r.path.source.file, r.path.source.expr || '', r.path.sink.file, r.path.sink.expr || ''].join('\u0000');
+// The route half is cra/dataflow-evidence.mjs routeKey, which also dedupes the routes of one finding:
+// one identity, so a route the evidence index merged is the route a rescan compares.
+export const recordKey = (r) => [r.rule, routeKey(r.path)].join('\u0000');
 
 /** The from/to pairs fromCodeFlows draws for one record, in order: input -> source file [-> sink file] -> sink. */
 export function pairsOfRecord(r) {

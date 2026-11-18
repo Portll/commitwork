@@ -1,0 +1,11 @@
+{
+ "language": "javascript-typescript",
+ "query": "js/untrusted-data-to-external-api",
+ "sarif": "codeql-frontier-javascript-typescript.sarif",
+ "state": "ran",
+ "reason": null,
+ "exit": 0,
+ "models": {
+  "state": "none"
+ }
+}

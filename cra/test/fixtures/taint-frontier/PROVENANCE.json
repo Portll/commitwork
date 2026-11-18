@@ -1,0 +1,32 @@
+{
+ "generatedBy": "hand, 2026-11-18, from a real CodeQL run; trimmed to the results named below with every machine path removed",
+ "tool": "CodeQL CLI 2.27.3, codeql/javascript-queries 2.4.8",
+ "source": {
+  "file": "app.js",
+  "text": [
+   "const express = require('express');",
+   "const cp = require('child_process');",
+   "const weird = require('weird-db-client');",
+   "const app = express();",
+   "app.get('/a', (req, res) => {",
+   "  cp.exec('ls ' + req.query.dir);            // modelled sink: expect js/command-line-injection",
+   "  res.send('ok');",
+   "});",
+   "app.get('/b', (req, res) => {",
+   "  weird.raw('SELECT * FROM t WHERE id = ' + req.query.id);   // unmodelled library: no finding expected",
+   "  res.send('ok');",
+   "});",
+   "app.listen(3000);",
+   ""
+  ]
+ },
+ "runs": {
+  "plain/fx/codeql.sarif": "codeql database create db --language=javascript-typescript --source-root src; codeql database analyze db codeql/javascript-queries:codeql-suites/javascript-code-scanning.qls --format=sarif-latest",
+  "modelled/fx/codeql.sarif": "the same analyze with a model pack declaring [\"weird-db-client\", \"Member[raw].Argument[0]\", \"sql-injection\"] as a sinkModel (bin/codeql-model-pack.mjs buildPack)",
+  "*/fx/codeql-frontier-javascript-typescript.{sarif,json}": "CW_REPORT_DIR=<dir> node bin/codeql-frontier.mjs javascript-typescript db"
+ },
+ "measured": [
+  "plain: the suite reports js/command-line-injection and nothing for weird-db-client.raw; the frontier lists that call — unclaimed",
+  "modelled: the suite adds js/sql-injection ending at app.js 10:13-57; the frontier STILL lists the call, at the same region — claimed"
+ ]
+}

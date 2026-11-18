@@ -26,6 +26,7 @@ const net = require('node:net');
 const tls = require('node:tls');
 const http = require('node:http');
 const https = require('node:https');
+const url = require('node:url');               // not patched: fileURLToPath turns a frame or a URL into a path
 
 const OUT = process.env.CW_FLOW_TRACE;
 const ROOT = process.env.CW_FLOW_ROOT || process.cwd();
@@ -45,9 +46,55 @@ function fsRealpath(p) {
   return require('node:fs').realpathSync(p);
 }
 
-function underRoot(abs) {
-  for (const r of ROOTS) if (abs === r || abs.startsWith(`${r}/`)) return path.relative(r, abs);
+// Windows is measured here as its own platform, not as POSIX with other letters. On it a stack frame
+// is `C:\repo\a.js:1:2` (CommonJS) or `file:///C:/repo/a.mjs:1:2` (ESM), the root arrives with
+// backslashes, and its drive letter's case depends on who spawned the process (an editor's terminal
+// gives `c:`, realpath gives `C:`). A `/`-only frame pattern and a `${root}/` prefix test attributed
+// NOTHING there — every row's actor was null, so every run read as unattributed — and the relative
+// paths it did produce carried backslashes C1 never writes. Both helpers take the platform as an
+// argument so each platform's shapes are tested on the other.
+const WIN = process.platform === 'win32';
+
+/** A path in the hook's comparison form: `/`-separated; on Windows with a lower-case drive letter. */
+function canon(p, win = WIN) {
+  const s = String(p);
+  return win ? s.replace(/\\/g, '/').replace(/^[A-Za-z]:/, (d) => d.toLowerCase()) : s;
+}
+
+/**
+ * `abs` relative to the first root containing it, `/`-separated, or null when no root contains it.
+ * Windows compares without case, as its filesystem does; the result keeps `abs`'s own spelling.
+ */
+function relUnder(roots, abs, win = WIN) {
+  const a = canon(abs, win);
+  const fold = (s) => (win ? s.toLowerCase() : s);
+  const fa = fold(a);
+  for (const r0 of roots) {
+    const r = canon(r0, win).replace(/\/+$/, '');
+    const fr = fold(r);
+    if (fa === fr) return '';
+    // Lower-casing can change a non-ASCII string's length; then the slice would land wrong, so only
+    // an exact-spelling match counts.
+    const exact = fr.length !== r.length || fa.length !== a.length;
+    if (exact ? a.startsWith(`${r}/`) : fa.startsWith(`${fr}/`)) return a.slice(r.length + 1);
+  }
   return null;
+}
+
+function underRoot(abs) {
+  return relUnder(ROOTS, abs);
+}
+
+// The file of one stack-frame line: `at f (/a/b.js:1:2)`, `at /a/b.js:1:2`, `at f (file:///a/b.mjs:1:2)`,
+// `at f (C:\a\b.js:1:2)`, `at f (file:///C:/a/b.mjs:1:2)`. A file URL is converted by the platform
+// that runs the hook. `node:internal/...` and `<anonymous>` frames name no file, and give null.
+const FRAME = /(file:\/\/\/[^\s()]+?|[A-Za-z]:[\\/][^():]+?|\/[^():]+?)\.([cm]?js)(?=:\d|\)|$)/;
+function frameFile(line) {
+  const m = FRAME.exec(String(line));
+  if (!m) return null;
+  const hit = `${m[1]}.${m[2]}`;
+  if (!hit.startsWith('file:')) return hit;
+  try { return url.fileURLToPath(hit); } catch { return null; }
 }
 
 // ── open flags ──────────────────────────────────────────────────────────────────────────────────
@@ -155,7 +202,7 @@ function listenKey(args) {
   return { key: n ? `listen:${n}` : null, ephemeral: !n };
 }
 
-module.exports = { flagsAccess, endpointKey, urlKey, httpKey, socketKey, listenKey, OPENS };
+module.exports = { flagsAccess, endpointKey, urlKey, httpKey, socketKey, listenKey, OPENS, frameFile, relUnder, canon };
 
 if (OUT) install();
 
@@ -199,12 +246,13 @@ function install() {
     Error.stackTraceLimit = 24;
     const stack = new Error().stack || '';
     Error.stackTraceLimit = limit;
+    const self = canon(__filename);
     for (const line of stack.split('\n').slice(2)) {
-      const m = /\(?((?:\/|file:\/\/\/)[^):]+\.[cm]?js)/.exec(line);
-      if (!m) continue;
-      const f = m[1].replace(/^file:\/\//, '');
-      if (f === __filename) continue;
-      if (f.includes('/node_modules/')) continue;
+      const f = frameFile(line);
+      if (!f) continue;
+      const c = canon(f);
+      if (c === self) continue;
+      if (c.includes('/node_modules/')) continue;
       const r = underRoot(f);
       if (r === null) continue;
       return r;
@@ -212,9 +260,11 @@ function install() {
     return null;
   };
 
+  // fileURLToPath, not a stripped `file://`: on Windows the stripped form is `/C:/...`, which
+  // isAbsolute accepts and no root contains.
   const rel = (p) => {
     let s = typeof p === 'string' ? p : (p && p.href) || String(p);
-    s = s.replace(/^file:\/\//, '');
+    if (s.startsWith('file:')) { try { s = url.fileURLToPath(s); } catch { s = s.replace(/^file:\/\//, ''); } }
     if (!path.isAbsolute(s)) s = path.resolve(process.cwd(), s);
     return underRoot(s) ?? s;
   };

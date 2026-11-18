@@ -56,7 +56,11 @@ test('A directory path throws the unreadable error naming the EISDIR code', () =
   }
 });
 
-test('A path beneath a regular file throws the unreadable error naming the ENOTDIR code', () => {
+// POSIX only: measured on Windows 11 / Node 24.14, a read beneath a regular file fails with ENOENT,
+// the one code readJson reads as absent, so the OS gives no distinct code to fail closed on there.
+test('A path beneath a regular file throws the unreadable error naming the ENOTDIR code', {
+  skip: process.platform === 'win32' && 'Windows reports ENOENT for a path beneath a regular file (measured)',
+}, () => {
   const dir = mkdtempSync(join(tmpdir(), 'readJson-'));
   try {
     const f = join(dir, 'plain.json');

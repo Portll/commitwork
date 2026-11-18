@@ -8,6 +8,7 @@ import { validateDfd, pathStates, taintOnly } from '../../lib/dfd.mjs';
 import { traceOf } from '../../cra/dataflow-evidence.mjs';
 import { fromCodeFlows, mergeModels } from '../dfd-adapter.mjs';
 import { functionResolver, parseArgs } from '../dfd-cli.mjs';
+import { resolve } from 'node:path';
 
 const loc = (uri, line, text) => ({ location: { physicalLocation: { artifactLocation: { uri }, region: { startLine: line } }, message: { text } } });
 const step = (file, line, expr) => ({ file, line, expr });
@@ -131,7 +132,8 @@ test('functionResolver places a line, caches the file, and refuses what it canno
   const got = [at('lib/a.mjs', 2), at('lib/a.mjs', 4), at('lib/gone.mjs', 1), at('tools/x.py', 1), at('../outside.mjs', 1)];
   // assert
   assert.deepEqual(got, [{ name: 'f', kind: 'function' }, null, undefined, undefined, undefined]);
-  assert.deepEqual(reads, ['/repo/lib/a.mjs', '/repo/lib/gone.mjs']);
+  // native absolute paths, as the resolver reads them: `C:\repo\lib\a.mjs` on Windows
+  assert.deepEqual(reads, [resolve('/repo', 'lib/a.mjs'), resolve('/repo', 'lib/gone.mjs')]);
 });
 
 test('--functions needs both the sources and the traces', () => {

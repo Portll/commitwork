@@ -128,6 +128,9 @@ const DT_WHY={
   'analyser-did-not-run':['analyser did not run','part','A finding an analyser covers, in a repo where it produced no evidence at all.'],
   'analysed-no-row':['analysed, no row','part','The analyser ran on this repo and emitted nothing for this advisory. The genuine residual.'],
   'ambiguous-alias':['ambiguous alias — REFUSED','high','Two advisories claim this id. A proof exists but attributing it would be a guess, so it is refused.'],
+  'rule-traces-no-path':['taint engine, rule traces no path','plan','Our own code, from a lane whose engine does taint analysis (CodeQL, Psalm, Semgrep), but this result carries no source-to-sink path: the rule is syntactic, or the engine did not export its trace. Nothing searched, so this is not "unreachable".'],
+  'dataflow-no-row':['taint engine, no result','part','The sweep was read and holds no taint-engine result for this repo, rule and file.'],
+  'dataflow-evidence-unavailable':['taint evidence unavailable','part','The sweep this rollup came from could not be read, so no taint path was looked up. A gap in our plumbing, never a finding about the code.'],
 };
 async function loadDeterminations(){
   const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
@@ -144,7 +147,21 @@ async function loadDeterminations(){
   }
   dtData=d;
   const r=d.reachability||{};
-  set('dt-n',`${d.total} findings · ${r.proven||0} proven reachable · ${r.unproven||0} analysed, no path · ${r.unknown||0} unknown`);
+  const df=d.dataflow||{};
+  // The taint engines' own figure, beside the call-graph one and never summed into it.
+  const dfTxt=df.state==='ok'?` · ${df.proven||0} of ${df.findings||0} taint-lane findings traced (${df.routes||0} routes)`:(df.findings?` · taint evidence ${df.state||'unavailable'}`:'');
+  // A second engine family at the same site. Single-engine findings are unmeasured, so they are
+  // named apart rather than counted as disagreement.
+  const ag=df.agreement||null;
+  const agTxt=ag&&df.findings?` · ${ag.corroborated||0} corroborated by a second engine${ag['single-engine']?` (${ag['single-engine']} had only one engine)`:''}`:'';
+  // The frontier bounds what a taint lane's silence means: untrusted data entering library calls
+  // no taint route ends at. Stated, never folded into the finding counts.
+  const fr=d.frontier||{}, ft=fr.totals||{};
+  // open = unclaimed minus the calls a reviewer marked plumbing (bin/frontier-review.mjs); a call
+  // decided a sink that is still unclaimed means its model did not take, and is named apart.
+  const frOpen=ft.open!=null?ft.open:ft.unclaimed;
+  const frTxt=fr.state==='ok'&&ft.calls?` · ${frOpen} untrusted calls into libraries no taint rule followed${ft.neutral?` (${ft.neutral} reviewed as plumbing)`:''}${ft.sinkOpen?` · ${ft.sinkOpen} modelled as sinks but still unclaimed`:''}`:'';
+  set('dt-n',`${d.total} findings · ${r.proven||0} proven reachable · ${r.unproven||0} analysed, no path · ${r.unknown||0} unknown${dfTxt}${agTxt}${frTxt}`);
   set('dt-unknown-n',String(r.unknown||0));
 
   const why=d.unknownBecause||{};
