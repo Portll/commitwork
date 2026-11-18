@@ -265,7 +265,11 @@ let headerCols = null; const repos = [];
 if (hasIndex) {
   const md = readFileSync(join(reportsDir, 'index.md'), 'utf8');
   for (const line of md.split('\n')) {
-    if (!/^\s*\|/.test(line)) continue;
+    // The grid is the FIRST table, and it ends at its first non-table line. index.md carries a second
+    // table (## Coverage voids) whose rows also start with a repo; read as grid rows, its header
+    // became a repo named `Repo` and every voided repo was rolled up twice — measured on the
+    // 2026-10-21 batch as 14 CodeQL rows for 7 results (monitor/test/rollup-index-tables.test.mjs).
+    if (!/^\s*\|/.test(line)) { if (headerCols) break; continue; }
     const cells = line.split('|').slice(1, -1).map((c) => c.trim());
     if (!headerCols) { if (/repo/i.test(cells[0])) headerCols = cells.slice(1); continue; }
     if (/^:?-{2,}/.test(cells[0].replace(/\s/g, ''))) continue;

@@ -213,7 +213,7 @@ if (typeof vm.SourceTextModule !== 'function') {
     const a = storePath('flow.json', { CW_HARNESS_STORE: '/tmp/one' });
     const b = storePath('flow.json', { CW_HARNESS_STORE: '/tmp/two' });
     assert.notEqual(a, b, 'a module-load const would make these identical and the test would prove nothing');
-    assert.match(storePath('flow.json', {}), /reports\/harness\/flow\.json$/);
+    assert.match(storePath('flow.json', {}), /reports[\\/]harness[\\/]flow\.json$/, 'a native path: `\\`-separated on Windows');
   });
 }
 

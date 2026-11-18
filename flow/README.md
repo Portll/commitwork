@@ -234,8 +234,12 @@ name (200 listed, the rest counted), tracked files in other languages by languag
 whose target is computed. The page banner states each count, zero included; `--out` prints them.
 A path assembled from variables at an fs call is still not a site (see Analysis limitations).
 
-`--codeql <file>` takes a SARIF file (through `monitor/sarif-read.mjs`, each result through
-`dataflowFromResult`) or dataflow records (a JSON array or `{ records }`). Alone it draws
+`--codeql <file>` takes a SARIF file (through `monitor/sarif-read.mjs`) or dataflow records (a JSON
+array or `{ records }`). Any engine that writes `codeFlows` is read, and it is named from the SARIF
+driver (CodeQL, Psalm, Semgrep). Changed 2026-11-18: the drawing takes one record per distinct
+source→sink route (`dataflowsFromResult`), where it used to take the first `codeFlow` of each
+result. Measured on a real CodeQL sweep, 3 results carried 6 distinct routes and the old reader drew
+3. `--issues` still places one issue per result (`dataflowFromResult`, its shortest route). Alone it draws
 `fromCodeFlows`, attributed to the SARIF's directory name. With `--repo` the two models merge
 (`mergeModels`): **a CodeQL process and a static module are one element when their repository-
 relative paths are equal** (`file://`, `./` dropped, an absolute path under the root made relative);
@@ -394,6 +398,9 @@ a third file is not drawn; with `path.trace` and a `functionOf`, every step is p
 function and the trace is drawn hop by hop. A record of a rule that traces no value is drawn at its
 place, from an origin marked `input not traced`, with `evidence.method` `pattern`. Every flow is
 `existence: unknown`: a CodeQL trace proves data can reach the sink, not that a run did.
+`dfd-rescan.mjs`'s `recordKey` is the rule plus `cra/dataflow-evidence.mjs` `routeKey`. That module
+dedupes one finding's routes by the same key, so the route the evidence index keeps is the route a
+rescan compares.
 
 `docs/dfd/threat-model.dfd.json` is `docs/THREAT-MODEL.md` drawn by hand: six boundaries, the
 attackers as actors, every element citing its section and every flow `authored` / `unknown`.

@@ -147,6 +147,38 @@ POA&M ids are content-derived: `poamId = V-<sha256(key).slice(0,8)>` (`cra/poam.
 `reachability-evidence.mjs` reads `scannerFindings{}` from the rollup for reachability only; it
 does not add POA&M rows.
 
+`dataflow-evidence.mjs` is the same kind of producer for our own code. It reads the taint paths
+(`codeFlows`) that CodeQL, Psalm and Semgrep write into SARIF, from the sweep directory a rollup
+names (`rollup.source`), and the determinations route (`admin/routes/determinations.mjs`) joins
+them onto scanner findings by `repo|rule|file`. A path makes a finding `reachable` with method
+`dataflow`, which is never `call_graph`. Every distinct source→sink route is kept, keyed by
+`routeKey` (both ends by file and expression, never the line). A finding without a path keeps a
+reason: `rule-traces-no-path`, `dataflow-no-row` or `dataflow-evidence-unavailable`. As of
+semgrep 1.182.0, OSS Semgrep exports no trace, so Semgrep findings carry the first of these.
+
+`corroborationFor` in the same module asks whether a second engine family reported at the
+finding's site (repo, file, line) in the same sweep. Semgrep and Opengrep are one family, and so are
+`semgrep.sarif` and `semgrep-auto.sarif`. The answer is `corroborated`, `uncorroborated`,
+`single-engine` (not measurable), `unsited` or `no-row`. It travels on the row and in
+`dataflow.agreement`, and never changes a determination.
+
+`taint-frontier.mjs` reads what `bin/codeql-frontier.mjs` writes beside each CodeQL lane: the
+calls where untrusted data enters an external API. A call is `claimed` when a taint route in the
+same scan ends at exactly its region, and `unclaimed` otherwise. An unclaimed call is either an
+API nobody modelled as a sink, or one a sanitiser stopped. Either way, the lane's silence about it
+is not a clean result. The frontier is reported beside the determinations and is never counted as
+findings.
+
+`frontier-review.mjs` closes that frontier by review rather than by guess. `bin/frontier-review.mjs
+draft` turns a sweep's unclaimed calls into a worksheet per repository in the private models store,
+and the reviewer decides each one: `neutral` (plumbing, with a reason) or the `sink`/`summary` model
+row CodeQL takes. Neutral lives here because CodeQL's JavaScript frontier excludes safe APIs through
+QL classes, not data extensions. `emit` writes the rows where `bin/codeql-model-pack.mjs` loads them.
+The determinations route applies the worksheets to the frontier: `open` is what is still unanswered,
+and `sinkOpen` counts calls decided a sink that are still unclaimed, which means the model did not
+take. On the fixture the measured row `["weird-db-client", "Member[raw].Argument[0]",
+"sql-injection"]` moves the call from unclaimed to claimed.
+
 ## What this deliberately is NOT (yet)
 
 - **Not a submitter.** The ENISA SRP was not yet live when this was built; drafts are

@@ -2,7 +2,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { storeDir } from '../store.mjs';
-import { join } from 'node:path';
+import { join, parse } from 'node:path';
+
+// A filesystem root on this platform (`/` on POSIX, the working drive's `C:\` on Windows): storeDir
+// returns native paths, so the expectations are native too.
+const ROOT = parse(process.cwd()).root;
 
 test('returns cwd reports/harness when the env var is missing', () => {
   const r = storeDir({});
@@ -30,8 +34,9 @@ test('returns cwd reports/harness when the env var is false', () => {
 });
 
 test('returns an absolute override path unchanged', () => {
-  const r = storeDir({ CW_HARNESS_STORE: '/custom/store' });
-  assert.equal(r, '/custom/store');
+  const abs = join(ROOT, 'custom', 'store');
+  const r = storeDir({ CW_HARNESS_STORE: abs });
+  assert.equal(r, abs);
 });
 
 test('resolves a relative override path against the current directory', () => {
@@ -40,8 +45,8 @@ test('resolves a relative override path against the current directory', () => {
 });
 
 test('normalizes dot segments and trailing slash in an absolute override', () => {
-  const r = storeDir({ CW_HARNESS_STORE: '/a/b/../c/' });
-  assert.equal(r, '/a/c');
+  const r = storeDir({ CW_HARNESS_STORE: `${ROOT}a/b/../c/` });
+  assert.equal(r, join(ROOT, 'a', 'c'));
 });
 
 test('returns the current directory when the override is a single dot', () => {
