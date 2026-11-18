@@ -87,6 +87,7 @@ export const SCANNER_LABELS = Object.freeze({
   cobolCoverage: 'COBOL coverage · copybooks resolved, formats, unreadable',
   mainframeSecrets: 'Mainframe credentials · RACF, JCL, TSO, CICS signon',
   depsContent: 'Dependency content · lockfile integrity + install hooks',
+  depsMalwareList: 'Malware list · resolved packages in an operator-supplied list',
   agentInstructions: 'Agent instructions · hidden characters + injected directives',
   commitProvenance: 'Commit provenance · signatures, bots, identity',
   agentConfig: 'Agent config · MCP servers, hooks, permission grants',
@@ -222,6 +223,10 @@ export const LANE_KINDS = Object.freeze({
   // advisory lanes read the same lockfile for a different question (published CVEs), so nothing
   // here duplicates their counts.
   depsContent: lane(I),
+  // integrity, NON-additive as a duplicate: deps-osv's MAL- records (maliciousPackages) answer the
+  // same question about the same lockfiles, so a package on both lists would count twice. The rows
+  // stay actionable one by one; only the headline sum leaves them out.
+  depsMalwareList: lane(I, 'duplicate'),
   // vulnerability, additive: a directive an agent will obey is exploitable on its own, and no
   // other lane reads an instruction file (minify-detect's bidi rule over prose counts a hidden
   // character, not the directive it hides — a different claim about the same line).

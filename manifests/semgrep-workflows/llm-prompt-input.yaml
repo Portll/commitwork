@@ -1,0 +1,58 @@
+# Workflow inputs that hand a language model text an outsider controls.
+#
+# A GitHub Actions step that calls a model takes its instructions from an input such as `prompt:`.
+# When that input interpolates an issue title, a comment body, a branch name or a commit message,
+# anyone who can open an issue or a pull request writes part of the model's instructions, and the
+# model acts with the job's token and tools. The untrusted contexts below are the ones GitHub's
+# security hardening guide lists for script injection; the same text is just as attacker-chosen
+# when it lands in a prompt instead of a shell.
+#
+# Step outputs and inputs.* are deliberately NOT matched: their provenance is the workflow's own,
+# and flagging them would bury the rows that name a context an outsider sets directly.
+rules:
+  - id: workflow-llm-prompt-untrusted-input
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      A model prompt in this workflow interpolates text anyone can set (an issue, comment, review,
+      pull request title or body, branch name or commit message). Treat it as an instruction from
+      that person: pass the text as data the model is told not to obey, strip the job's write
+      permissions and tools, or gate the job on the author's association.
+    metadata:
+      class: prompt-injection-in-workflow
+      cwe: ["CWE-1427: Improper Neutralization of Input Used for LLM Prompting"]
+    paths:
+      include:
+        - .github/workflows/*.yml
+        - .github/workflows/*.yaml
+    patterns:
+      - pattern: "$KEY: $VALUE"
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: ^(prompt|prompts|direct_prompt|override_prompt|system_prompt|system-prompt|custom_instructions|instructions|query|message)$
+      # metavariable-regex does not see a YAML string value as text (measured 2026-11-17, semgrep 1.182.0);
+      # metavariable-pattern with pattern-regex does.
+      - metavariable-pattern:
+          metavariable: $VALUE
+          pattern-regex: \$\{\{[^}]*(github\.head_ref|github\.event\.[A-Za-z0-9_.*\[\]-]*\b(title|body|message|page_name|label|head_branch|display_title)\b|github\.event\.pull_request\.head\.ref|github\.event\.(head_commit|commits[^}]*)\.author\.(name|email))[^}]*\}\}
+      - focus-metavariable: $VALUE
+
+  - id: workflow-llm-agent-open-to-anyone
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      This AI agent step accepts requests from users without write access to the repository
+      ("*"). Anyone on GitHub can then instruct an agent that holds the job's token and tools.
+      Name the users who may trigger it, or remove the setting.
+    metadata:
+      class: prompt-injection-in-workflow
+      cwe: ["CWE-1427: Improper Neutralization of Input Used for LLM Prompting"]
+    paths:
+      include:
+        - .github/workflows/*.yml
+        - .github/workflows/*.yaml
+    patterns:
+      - pattern: "allowed_non_write_users: $VALUE"
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^["']?\*["']?$

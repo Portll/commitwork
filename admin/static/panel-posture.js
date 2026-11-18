@@ -376,7 +376,7 @@ const SCANNER_LABEL={
   formatRust:'Format · rustfmt (Rust, not a security scan)',
   mobileManifest:'Mobile app settings · what Android/iOS apps expose',
   nodeHazards:'Node hazards · unsafe-by-presence constructs (JS/TS + templates)',
-  depsContent:'Dependency content · lockfile integrity + install hooks',
+  depsContent:'Dependency content · lockfile integrity + install hooks', depsMalwareList:'Malware list · resolved packages in an operator-supplied list',
   agentInstructions:'Agent instructions · hidden characters + injected directives',
   commitProvenance:'Commit origin · signatures, bots, identity',
   commitVelocity:'Commit velocity · machine-speed activity',

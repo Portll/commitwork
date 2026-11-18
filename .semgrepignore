@@ -17,6 +17,12 @@
 # See fixtures/scan-canary/README.md and EXPECTED.json (selfScanExclusions).
 fixtures/scan-canary/dirty/
 
+# The workflow-rule fixtures plant prompt injections in .github/workflows/ files so that
+# monitor/test/semgrep-workflows.test.mjs can show each rule firing. Same reasoning as the canary:
+# that test scans this directory as its own root and asserts every plant, and this repository's
+# own sast lane should not report them as its own workflows.
+fixtures/semgrep-workflows/
+
 # Two data files whose purpose is to CARRY detection-shaped strings. Neither is code and neither
 # ships a credential: labelled-findings.json is the labelled corpus the detection lanes are graded
 # against (every secret in it is fabricated, `provenance: synthetic`), and the scan-canary

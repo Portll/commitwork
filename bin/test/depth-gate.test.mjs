@@ -98,7 +98,7 @@ test('every declared depth ladder changes what its command runs, and its top is 
 test('the top levels are the invocations these lanes had before ladders', () => {
   const sb = JSON.parse(readFileSync(join(ROOT, 'manifests/security-baseline.json'), 'utf8'));
   const sast = renderedArgs(sb.checks.find((c) => c.id === 'sast'), 3).split('\n');
-  for (const pack of ['p/default', 'p/owasp-top-ten', 'p/security-audit', join(ROOT, 'manifests/semgrep-taint'), join(ROOT, 'manifests/semgrep-classes')]) assert.ok(sast.includes(pack), `sast full level lost ${pack}`);
+  for (const pack of ['p/default', 'p/owasp-top-ten', 'p/security-audit', join(ROOT, 'manifests/semgrep-taint'), join(ROOT, 'manifests/semgrep-classes'), join(ROOT, 'manifests/semgrep-workflows')]) assert.ok(sast.includes(pack), `sast full level lost ${pack}`);
   assert.ok(!renderedArgs(sb.checks.find((c) => c.id === 'sast'), 1).split('\n').includes('p/security-audit'));
   assert.ok(!renderedArgs(sb.checks.find((c) => c.id === 'secrets'), 2).includes('--max-depth'), 'secrets full level walks the whole history');
   assert.ok(renderedArgs(sb.checks.find((c) => c.id === 'secrets'), 1).includes('--max-depth=1000'));

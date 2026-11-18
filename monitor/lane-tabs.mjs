@@ -49,7 +49,7 @@ export const LANE_SECTION = Object.freeze({
   // reads Java and Spring config without running anything
   jacksonCaseInsensitive: 'static',
   // these read a lockfile, not the code
-  depsBundlerAudit: 'deps', depsRustAudit: 'deps', depsContent: 'deps',
+  depsBundlerAudit: 'deps', depsRustAudit: 'deps', depsContent: 'deps', depsMalwareList: 'deps',
   // model artefacts and hub-loading calls are what the tree pulls in from a model hub
   modelArtefacts: 'deps',
   // reads every file by content without running anything
