@@ -127,6 +127,7 @@ export const CLASS_FOR_CATEGORY = Object.freeze({
   // An install hook that fetches and executes, a registry package with no integrity hash, an
   // installed tree that disagrees with its lockfile: the dependency content is the attack surface.
   depsContent: 'S',
+  depsMalwareList: 'S',
 
   // A directive hidden in the file an agent obeys is the agentic attack surface itself.
   agentInstructions: 'S',

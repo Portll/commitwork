@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// actions-gaps.mjs — four GitHub Actions workflow findings the fleet could not see: a job on a
+// actions-gaps.mjs — five GitHub Actions workflow findings the fleet could not see: a job on a
 // self-hosted runner, a privileged trigger (workflow_run / pull_request_target) whose job checks
-// out or downloads the triggering run's head, a job with no permissions: block above it, and a
-// run step whose exit status is a pipe's last command rather than the command that did the work.
+// out or downloads the triggering run's head, a job with no permissions: block above it, a run
+// step whose exit status is a pipe's last command rather than the command that did the work, and
+// a job that publishes to npm directly instead of staging the release for a 2FA approval.
 // Reports rule ids, workflow paths, job and step names only — never a script body.
 //   node bin/actions-gaps.mjs [rootDir]        exit 0 ran · 2 could not run
 //   env, read at call time: CW_ACTIONS_GAPS_ROOT (overrides rootDir)
@@ -15,6 +16,7 @@ export const RULE_CWE = Object.freeze({
   'workflow-run-trigger': 'CWE-829',
   'permissions-absent': 'CWE-250',
   'exit-masked-by-pipe': 'CWE-252',
+  'npm-publish-unstaged': 'CWE-308',
 });
 
 export const RULE_SEV = Object.freeze({
@@ -22,6 +24,7 @@ export const RULE_SEV = Object.freeze({
   'workflow-run-trigger': 'high',
   'permissions-absent': 'med',
   'exit-masked-by-pipe': 'med',
+  'npm-publish-unstaged': 'low',
 });
 
 export const WORKFLOWS_DIR = '.github/workflows';
@@ -312,6 +315,23 @@ export function maskedPipelines(script) {
   return out;
 }
 
+// `npm publish` and Yarn Berry's `yarn npm publish` put a version live the moment CI runs them.
+// `npm stage publish` (npm CLI 11.15.0, 2026-05-22) queues it until a maintainer approves with 2FA,
+// and it never matches here because `stage` sits between the two words. A --dry-run publishes
+// nothing. `pnpm publish` is left out: staging is an npm CLI command, and pnpm has no equivalent.
+const NPM_PUBLISH = /(?:^|[\s;&|(])((?:yarn\s+)?npm\s+publish)(?=$|[\s;&|)])/;
+
+/** The publish command a run: script invokes directly, or null. Comment lines are skipped. */
+export function unstagedNpmPublish(script) {
+  for (const raw of String(script).split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const m = line.match(NPM_PUBLISH);
+    if (m && !/--dry-run\b/.test(line)) return m[1].replace(/\s+/g, ' ');
+  }
+  return null;
+}
+
 const stepLabel = (step, i) => {
   const name = get(step, 'name');
   return name && name.type === 'scalar' && name.value ? name.value : `step ${i + 1}`;
@@ -377,6 +397,24 @@ export function scanWorkflow(path, doc) {
         const more = hits.length > 1 ? `; ${hits.length - 1} more step(s) in this job do the same` : '';
         add('exit-masked-by-pipe', jobName, h.label, h.line,
           `a pipeline into ${h.masked[0].sink} on ${how}: the step's status is ${h.masked[0].sink}'s, so a failure of ${h.masked[0].source} cannot fail the job${more}`);
+      }
+    }
+
+    // One finding per job, as for exit-masked-by-pipe: (rule, workflow, job) is the row identity.
+    if (allSteps && allSteps.type === 'seq') {
+      const hits = [];
+      allSteps.items.forEach((step, i) => {
+        if (step.type !== 'map') return;
+        const run = get(step, 'run');
+        if (!run || run.type !== 'scalar') return;
+        const cmd = unstagedNpmPublish(run.value);
+        if (cmd) hits.push({ label: stepLabel(step, i), line: step.line, cmd });
+      });
+      if (hits.length) {
+        const [h] = hits;
+        const more = hits.length > 1 ? `; ${hits.length - 1} more step(s) in this job publish the same way` : '';
+        add('npm-publish-unstaged', jobName, h.label, h.line,
+          `${h.cmd} puts the version live with no approval step; npm stage publish queues it for a maintainer's 2FA approval (a package's first version cannot be staged)${more}`);
       }
     }
 

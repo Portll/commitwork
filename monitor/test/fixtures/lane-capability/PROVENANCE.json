@@ -300,6 +300,19 @@
    "draftedBy": "hand-written seed, 2026-10-04",
    "accepted": "2026-10-04"
   },
+  "depsMalwareList": {
+   "source": "real",
+   "check": "deps-malware-list",
+   "tools": [
+    "node"
+   ],
+   "files": [
+    "malware-list.json",
+    "malware-list.json.exit"
+   ],
+   "draftedBy": "synthetic seed: invented package names and an invented list at the default ~/.commitwork/malware-lists path; no published list data",
+   "accepted": "2026-11-17"
+  },
   "depsNpmAudit": {
    "source": "real",
    "check": "npm-audit",

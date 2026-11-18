@@ -607,6 +607,15 @@ export const ROW_SCHEMAS = Object.freeze({
     identity: ['component', 'id'],
     note: 'One row per known-vulnerable library found BY CONTENT, not by manifest. `Found in` is the file the library was detected inside, which is the point of the category: it is frequently a bundle belonging to some OTHER package, so the row names a library the lockfile never declares. Read it as a complement to deps-osv/npm-audit, never as a duplicate of them.',
   },
+  depsMalwareList: {
+    fields: [['rule', 'str', 'Rule'], ['file', 'path', 'Lockfile'], ['ecosystem', 'str', 'Ecosystem'], ['package', 'str', 'Package'],
+      ['version', 'str', 'Version'], ['sev', 'sev', 'Severity'], ['cwe', 'str', 'Weakness'], ['message', 'text', 'Detail']],
+    sort: ['file', 'package', 'version', 'rule'],
+    // (rule, lockfile, package) is the place: an upgrade from one listed version to another is the
+    // same finding, and a lockfile re-serialised by an install moves nothing.
+    identity: ['rule', 'file', 'package'],
+    note: 'One row per resolved package found in an operator-supplied malware list by bin/malware-list.mjs: listed-malware (crit), listed-protestware (high), listed-telemetry (low), and listed-other for a list reason the lane does not know, kept with no severity. `file` is the lockfile, never a source path. The list is the operator\'s own (by default ~/.commitwork/malware-lists/); commitwork ships and fetches none, and the lane records each list by entry count and SHA-256. Not added to headline totals: deps-osv\'s MAL- rows answer the same question. Rows whose path lies under a nested agent worktree (.claude/worktrees/<name>/) are set aside under `worktrees`, severity intact, and are not in these counts.',
+  },
   depsContent: {
     fields: [['rule', 'str', 'Rule'], ['file', 'path', 'Lockfile key'], ['package', 'str', 'Package'],
       ['sev', 'sev', 'Severity'], ['cwe', 'str', 'Weakness'], ['message', 'text', 'Detail']],
@@ -718,7 +727,7 @@ export const ROW_SCHEMAS = Object.freeze({
     sort: ['file', 'rule', 'job'],
     // (rule, workflow, job) is the place: a job keeps its finding when steps are added above it.
     identity: ['rule', 'file', 'job'],
-    note: 'One row per job×rule from bin/actions-gaps.mjs: a job whose runs-on names the self-hosted label (self-hosted-runner), a workflow_run or pull_request_target job that checks out or downloads the triggering run\'s head (workflow-run-trigger — `step` names the first step that does), a job with no permissions: block on itself or the workflow (permissions-absent), and a job whose run step pipes a command into tee, cat, head, tail, sed, awk, cut, tr, sort, uniq or grep on a shell with no pipefail, so the step exits with the pipe\'s last command (exit-masked-by-pipe — `step` names the first such step). Detail carries the form of the match, the trigger names and command names — never a script body, an action reference or an expression. The summary declares `unparseable` and `unreadable` counts; a zero here with either non-zero is a partial read, not a clean one. Rows whose path lies under a nested agent worktree (.claude/worktrees/<name>/) are set aside under `worktrees`, severity intact, and are not in these counts.',
+    note: 'One row per job×rule from bin/actions-gaps.mjs: a job whose runs-on names the self-hosted label (self-hosted-runner), a workflow_run or pull_request_target job that checks out or downloads the triggering run\'s head (workflow-run-trigger — `step` names the first step that does), a job with no permissions: block on itself or the workflow (permissions-absent), and a job whose run step pipes a command into tee, cat, head, tail, sed, awk, cut, tr, sort, uniq or grep on a shell with no pipefail, so the step exits with the pipe\'s last command (exit-masked-by-pipe — `step` names the first such step), and a job whose run step publishes with npm publish or yarn npm publish instead of npm stage publish (npm-publish-unstaged — `step` names the first such step). Detail carries the form of the match, the trigger names and command names — never a script body, an action reference or an expression. The summary declares `unparseable` and `unreadable` counts; a zero here with either non-zero is a partial read, not a clean one. Rows whose path lies under a nested agent worktree (.claude/worktrees/<name>/) are set aside under `worktrees`, severity intact, and are not in these counts.',
   },
   actionsHealth: {
     fields: [['rule', 'str', 'Rule'], ['file', 'path', 'Workflow'], ['sev', 'sev', 'Severity'], ['message', 'text', 'Detail']],

@@ -79,6 +79,7 @@ export const SCANNER_CHECKS = Object.freeze({
   actionsLint: 'actions-actionlint',
   shellLint: 'shell-lint',
   depsContent: 'deps-content',
+  depsMalwareList: 'deps-malware-list',
   agentInstructions: 'agent-instructions',
   // Reads the object graph for WHO made each commit, not the tree for what it contains.
   commitProvenance: 'commit-provenance',

@@ -43,7 +43,8 @@
     "self-hosted-runner": ["CWE-1104", "CWE-284"],
     "workflow-run-trigger": ["CWE-829"],
     "permissions-absent": ["CWE-250"],
-    "exit-masked-by-pipe": ["CWE-252"]
+    "exit-masked-by-pipe": ["CWE-252"],
+    "npm-publish-unstaged": ["CWE-308"]
   },
   "cobolwork": {
     "argv-or-env-to-os-command": ["CWE-78"],

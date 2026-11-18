@@ -1451,6 +1451,19 @@
       "note": "Reads the lockfile's own keys and the installed package.json at each — no registry, no network, no walk. A clean result means no locked package on disk declares a fetch-or-exec hook and every registry-resolved entry carries a sha512; it says nothing about a hook whose package is not installed (the lockfile carries only hasInstallScript, and the scanner reports that as declared-but-not-on-disk only under CW_DEPS_INSTALL_SCRIPTS=1). An absent lockfile is a declared void, an unparseable or v1 one a could-not-run — both are filesScanned 0, never a clean zero."
     },
     {
+      "check": "deps-malware-list",
+      "name": "Malware list — resolved npm and PyPI packages in an operator-supplied known-malicious list",
+      "type": "supply-chain",
+      "sourceKind": "dependencies",
+      "oracleTier": 2,
+      "findsSourceVulns": false,
+      "weaknessClasses": [
+        "malicious-package"
+      ],
+      "escalates": "Escalate listed-malware first and treat the machines and pipelines that installed it as compromised: the package ran its install hooks there with whatever they could read. Remove it, regenerate the lockfile, rotate the credentials those hosts held, and only then look at listed-protestware (code that acts on a condition, usually locale or IP) and listed-telemetry (data leaving, not code running).",
+      "note": "Exact name and version against a list the operator supplies (by default ~/.commitwork/malware-lists/); commitwork ships and fetches none, and the list's terms are between the operator and its publisher. The answer is only as current as that file: the summary records each list's entry count and SHA-256 so a result names the snapshot it was measured against. A tree whose ecosystem has no list is unmeasured, never clean. Not added to headline totals: deps-osv's MAL- records answer the same question."
+    },
+    {
       "check": "agent-instructions",
       "name": "Agent instruction files — hidden characters and injected directives",
       "type": "sast",
@@ -1683,7 +1696,7 @@
       "ruleIds": [
         "self-hosted-runner",
         "workflow-run-trigger",
-        "permissions-absent", "exit-masked-by-pipe"
+        "permissions-absent", "exit-masked-by-pipe", "npm-publish-unstaged"
       ],
       "escalates": "Escalate workflow-run-trigger first: a workflow_run or pull_request_target job holds the base repository's token and secrets, and a step that checks out the triggering head or downloads the triggering run's artifacts hands that job content a fork controls — the poisoned-pipeline shape, and zizmor's dangerous-triggers fires on the trigger alone without saying whether the job took the content. self-hosted-runner is second and is an infrastructure question, not a workflow edit: which triggers reach the job, whether the runner is ephemeral, and what it can reach; the report says who owns the finding, the runner's owner decides what to do. permissions-absent is the floor under both — a job with no permissions: block on itself or the workflow takes the repository default, which on an older repository is write-all.",
       "note": "Zero-dependency block-YAML reader over .github/workflows/*.yml at the root only, which is the only place GitHub reads workflows from. As of 2026-09-16 (zizmor 1.30.1), excessive-permissions and dangerous-triggers fire at the regular persona the zizmor lane runs; self-hosted-runner fires only at --persona auditor, which also emits anonymous-definition and concurrency-limits on every job. This lane is therefore the only witness for self-hosted-runner at the zizmor lane's persona, the only witness anywhere for the trigger-plus-checkout compound, and the witness for all three on a hosted runner where zizmor is absent. weaknessClasses carries ci-workflow-injection (CWE-829 and CWE-1104 are in its cwes); CWE-250 and CWE-284 ride on the rows through ruleId-cwe.json. runsOnDynamic and runnerGroups are stated counts of what the walk could not settle, never findings."

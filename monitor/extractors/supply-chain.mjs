@@ -495,6 +495,59 @@ export function _depsContentCounts(dir, file) {
   return { ...c, ..._detailFor('depsContent', rows) };
 }
 
+// bin/malware-list.mjs — resolved npm/PyPI packages looked up in an operator-supplied malware list.
+// Severity is per row; a row whose list reason the lane does not know has none and is counted under
+// `undetermined`. filesScanned === 0 is a void and the scanner says which kind (noList, noLockfile,
+// or couldNotRun when a list exists and could not be read). The lists the run was measured against
+// ride along by path, entry count and SHA-256; a partial read keeps its rows and says so.
+export function _malwareListCounts(dir, file) {
+  const p = join(dir, file); if (!existsSync(p)) return null;
+  let raw; try { raw = readFileSync(p, 'utf8'); } catch { return null; }
+  if (!raw.trim()) return _emptyArtifact(p);
+  let j; try { j = JSON.parse(raw); } catch { return { ..._zero(), ran: true, unparseable: true }; }
+  if (!j || typeof j !== 'object' || j.tool !== 'malware-list' || !j.summary || !Array.isArray(j.findings)) {
+    return { ..._zero(), ran: true, unparseable: true };
+  }
+  const lists = {};
+  for (const eco of ['npm', 'pypi']) {
+    const l = j.summary.lists && j.summary.lists[eco];
+    if (l && typeof l === 'object') lists[eco] = { state: String(l.state || ''), entries: Number(l.entries) || 0, sha256: String(l.sha256 || '') };
+  }
+  const scanned = Number(j.summary.filesScanned);
+  if (!Number.isFinite(scanned) || scanned <= 0) {
+    const v = { ..._zero(), ran: true, nosrc: true, lists };
+    if (j.summary.couldNotRun) v.couldNotRun = String(j.summary.couldNotRun).slice(0, 240);
+    else if (j.summary.noList) v.noList = true;
+    else if (j.summary.noLockfile) v.noLockfile = true;
+    return v;
+  }
+  const c = { ..._zero(), ran: true, filesScanned: scanned, lists };
+  const byRule = {};
+  const rows = [];
+  let undetermined = 0;
+  const wt = _wtBucket();
+  for (const f of j.findings) {
+    if (!f || typeof f !== 'object') continue;
+    const rule = String(f.rule || '');
+    const sev = ['crit', 'high', 'med', 'low'].includes(f.sev) ? f.sev : '';
+    const row = { rule, file: String(f.path || ''), ecosystem: String(f.ecosystem || ''), package: String(f.package || ''),
+      version: String(f.version || ''), sev, cwe: String(f.cwe || ''), message: capMessage(String(f.detail || '')) };
+    if (_setAsideWorktree(wt, row)) continue;
+    if (sev) { c[sev]++; c.total++; } else undetermined++;
+    byRule[rule] = byRule[rule] || { count: 0, sev };
+    byRule[rule].count++;
+    rows.push(row);
+  }
+  if (undetermined) c.undetermined = undetermined;
+  if (wt.total) c.worktrees = _worktreesOf(wt, c.total + undetermined + wt.total, file);
+  c.byRule = byRule;
+  if (j.summary.partial === true) {
+    const reasons = Array.isArray(j.summary.partialReasons) ? j.summary.partialReasons.map(String) : [];
+    c.partial = { reasons: reasons.slice(0, 20), note: `${reasons.length} lockfile(s) were not checked; these counts are a floor.` };
+  }
+  return { ...c, ..._detailFor('depsMalwareList', rows) };
+}
+
 // bin/wp-integrity.mjs (wpIntegrity) and bin/wp-advisories.mjs (wpAdvisories) — the WordPress core,
 // plugins and themes a site pulls in from wordpress.org and its vendors: is each what was shipped,
 // and does a published advisory name its version. Both carry what they could NOT measure in the

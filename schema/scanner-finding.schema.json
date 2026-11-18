@@ -6237,6 +6237,109 @@
         }
       }
     },
+    "depsMalwareList": {
+      "type": "array",
+      "description": "One row per resolved package found in an operator-supplied malware list by bin/malware-list.mjs: listed-malware (crit), listed-protestware (high), listed-telemetry (low), and listed-other for a list reason the lane does not know, kept with no severity. `file` is the lockfile, never a source path. The list is the operator's own (by default ~/.commitwork/malware-lists/); commitwork ships and fetches none, and the lane records each list by entry count and SHA-256. Not added to headline totals: deps-osv's MAL- rows answer the same question. Rows whose path lies under a nested agent worktree (.claude/worktrees/<name>/) are set aside under `worktrees`, severity intact, and are not in these counts.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule",
+          "file",
+          "ecosystem",
+          "package",
+          "version",
+          "sev",
+          "cwe",
+          "message"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "prepended by the rollup fleet flatten"
+          },
+          "annotation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "at",
+              "reason",
+              "who",
+              "whoKind"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "accept",
+                  "false-positive",
+                  "wont-fix"
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "whoKind": {
+                "type": "string"
+              }
+            }
+          },
+          "rule": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Rule"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "Lockfile"
+          },
+          "ecosystem": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Ecosystem"
+          },
+          "package": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Package"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Version"
+          },
+          "sev": {
+            "type": "string",
+            "enum": [
+              "",
+              "crit",
+              "high",
+              "med",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "cwe": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Weakness"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4080,
+            "title": "Detail"
+          }
+        }
+      }
+    },
     "depsContent": {
       "type": "array",
       "description": "One row per dependency-content finding from bin/deps-content.mjs: an install hook that fetches or executes (dep-install-exec), a registry package with no or a sha1 integrity hash (dep-missing-integrity / dep-weak-integrity), or an installed version that disagrees with the lockfile (dep-version-drift). `file` is the lockfile key (node_modules/<pkg>), never a source path. A hook's command is never carried: it is attacker-authored text. `cwe` is the rule's declared weakness (CWE-829, CWE-494, CWE-1357). Rows whose path lies under a nested agent worktree (.claude/worktrees/<name>/) are set aside under `worktrees`, severity intact, and are not in these counts.",
@@ -7349,7 +7452,7 @@
     },
     "actionsGaps": {
       "type": "array",
-      "description": "One row per job×rule from bin/actions-gaps.mjs: a job whose runs-on names the self-hosted label (self-hosted-runner), a workflow_run or pull_request_target job that checks out or downloads the triggering run's head (workflow-run-trigger — `step` names the first step that does), a job with no permissions: block on itself or the workflow (permissions-absent), and a job whose run step pipes a command into tee, cat, head, tail, sed, awk, cut, tr, sort, uniq or grep on a shell with no pipefail, so the step exits with the pipe's last command (exit-masked-by-pipe — `step` names the first such step). Detail carries the form of the match, the trigger names and command names — never a script body, an action reference or an expression. The summary declares `unparseable` and `unreadable` counts; a zero here with either non-zero is a partial read, not a clean one. Rows whose path lies under a nested agent worktree (.claude/worktrees/<name>/) are set aside under `worktrees`, severity intact, and are not in these counts.",
+      "description": "One row per job×rule from bin/actions-gaps.mjs: a job whose runs-on names the self-hosted label (self-hosted-runner), a workflow_run or pull_request_target job that checks out or downloads the triggering run's head (workflow-run-trigger — `step` names the first step that does), a job with no permissions: block on itself or the workflow (permissions-absent), and a job whose run step pipes a command into tee, cat, head, tail, sed, awk, cut, tr, sort, uniq or grep on a shell with no pipefail, so the step exits with the pipe's last command (exit-masked-by-pipe — `step` names the first such step), and a job whose run step publishes with npm publish or yarn npm publish instead of npm stage publish (npm-publish-unstaged — `step` names the first such step). Detail carries the form of the match, the trigger names and command names — never a script body, an action reference or an expression. The summary declares `unparseable` and `unreadable` counts; a zero here with either non-zero is a partial read, not a clean one. Rows whose path lies under a nested agent worktree (.claude/worktrees/<name>/) are set aside under `worktrees`, severity intact, and are not in these counts.",
       "items": {
         "type": "object",
         "additionalProperties": false,

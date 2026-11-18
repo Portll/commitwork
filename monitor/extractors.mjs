@@ -59,7 +59,7 @@ import { safeParseFile } from './safe-parse.mjs';
 import { _zero, _emptyArtifact, _detailFor } from './extractors/core.mjs';
 import { _sarifCounts, _sarifDetail } from './extractors/sarif.mjs';
 import { _clippyCounts, _hlintCounts, _joernScanCounts, _bearerCounts, _sobelowCounts, _banditCounts, _brakemanCounts, _phpcsCounts, _pmdCounts, _shellcheckCounts, _actionlintCounts, _denoLintCounts, _denoCheckCounts, _cobolworkCounts, _rustfmtCounts, _cobolInventoryCounts, _wpAuthzCounts } from './extractors/sast-lint.mjs';
-import { _cargoAuditCounts, _bundlerAuditCounts, _trivyCounts, _malCounts, _govulnCounts, _gradleWrapperCounts, _depscanCounts, _guarddogCounts, _retireDetail, _depsContentCounts, _wpIntegrityCounts, _wpAdvisoriesCounts } from './extractors/supply-chain.mjs';
+import { _cargoAuditCounts, _bundlerAuditCounts, _trivyCounts, _malCounts, _govulnCounts, _gradleWrapperCounts, _depscanCounts, _guarddogCounts, _retireDetail, _depsContentCounts, _malwareListCounts, _wpIntegrityCounts, _wpAdvisoriesCounts } from './extractors/supply-chain.mjs';
 import { _socketCounts, _socketAlertCount, _socketAlertRows } from './extractors/socket.mjs';
 import { _trufflehogCounts, _gitleaksCounts, _weakRandomCounts } from './extractors/secrets.mjs';
 import { _hadolintCounts, _tlsHeaderCounts, _testsslCounts, _cspmCounts, _scorecardCounts, _actionsGapsCounts, _actionsHealthCounts, _testHermeticCounts, _jacksonGuardCounts, zizmorSev } from './extractors/posture.mjs';
@@ -263,6 +263,7 @@ const SCANNER_SPECS = [
   ['actionsLint', 'actions-actionlint', (d) => _actionlintCounts(d, 'actionlint.json')],
   ['shellLint', 'shell-lint', (d) => _shellcheckCounts(d, 'shellcheck.json')],
   ['depsContent', 'deps-content', (d) => _depsContentCounts(d, 'deps-content.json')],
+  ['depsMalwareList', 'deps-malware-list', (d) => _malwareListCounts(d, 'malware-list.json')],
   ['agentInstructions', 'agent-instructions', (d) => _agentInstructionsCounts(d, 'agent-instructions.json')],
   ['commitProvenance', 'commit-provenance', (d) => _commitProvenanceCounts(d, 'commit-provenance.json')],
   // The target's own agent configuration: what an agent running in that repo may execute, where it
@@ -331,6 +332,6 @@ export {
   _weakRandomCounts, _socketCounts, _socketAlertCount, _trufflehogCounts, _hadolintCounts, _govulnCounts,
   _tlsHeaderCounts, _testsslCounts, _cspmCounts, _scorecardCounts, _depscanCounts, _gradleWrapperCounts, _schemathesisCounts, _gitleaksCounts, _guarddogCounts,
   SCANNER_SPECS, _a11yCounts, _stubCounts, _minifyCounts, _bolaCounts, _socketAlertRows,
-  _toolProvenance, _vendorCounts, _depsContentCounts, _agentInstructionsCounts, _commitProvenanceCounts, _agentConfigCounts, _modelArtefactsCounts, _webshellCounts, _logEvidenceCounts, _yaraWitnessCounts, _treeIntegrityCounts, _commitVelocityCounts, _wpIntegrityCounts, _wpAdvisoriesCounts, _wpAuthzCounts,
+  _toolProvenance, _vendorCounts, _depsContentCounts, _malwareListCounts, _agentInstructionsCounts, _commitProvenanceCounts, _agentConfigCounts, _modelArtefactsCounts, _webshellCounts, _logEvidenceCounts, _yaraWitnessCounts, _treeIntegrityCounts, _commitVelocityCounts, _wpIntegrityCounts, _wpAdvisoriesCounts, _wpAuthzCounts,
   _actionsGapsCounts, _actionsHealthCounts, _testHermeticCounts, _jacksonGuardCounts, zizmorSev,
 };

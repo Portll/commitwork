@@ -23,6 +23,7 @@ import { laneProgress } from '../monitor/lane-progress.mjs'; // per-lane run sta
 import { containerName, killByPrefix, selfOwner } from '../monitor/containers.mjs'; // a container the runner starts is one it can stop
 import { sidecarLockDir } from '../monitor/preflight-build.mjs'; // sidecar lockfile directory per repo
 import { shellPlan, posixShellHint, shellDiagnostics } from '../lib/posix-shell.mjs'; // `sh` is absent on stock Windows; resolve it, never assume it
+import { resolveWindowsExecutable } from '../lib/win-spawn.mjs'; // tool presence on Windows: where.exe + PATHEXT, not `sh -c command -v`
 import { killTree, describeKill } from '../lib/proc-tree.mjs'; // kill(-pid) is POSIX-only and was silently a no-op on Windows
 import { findGitRepos } from '../lib/repo-walk.mjs'; // GNU `find` is not on Windows; walk in Node instead
 import { homedir, tmpdir, cpus, loadavg, totalmem, constants as osConstants } from 'node:os';
@@ -409,9 +410,17 @@ function repoPathFor(manifest, flagVal) {
 const RUN_PROBE = Object.freeze({ java: ['-version'] });
 
 function hasTool(name) {
-  // `sh -c 'command -v "$1"' sh <name>` — passes name as $1 (no shell interpolation).
-  const r = spawnSync('sh', ['-c', 'command -v "$1" >/dev/null 2>&1', 'sh', name], { stdio: 'ignore' });
-  if (r.status !== 0) return false;
+  if (process.platform === 'win32') {
+    // Stock Windows has no `sh` on PATH (Git for Windows puts only git.exe there), so the POSIX
+    // probe below failed for EVERY tool and every lane recorded BLOCKED over an installed scanner.
+    // Same resolver the spawn path uses: where.exe + PATHEXT, a bare extensionless script refused.
+    const kind = resolveWindowsExecutable(name).kind;
+    if (kind !== 'exe' && kind !== 'batch') return false;
+  } else {
+    // `sh -c 'command -v "$1"' sh <name>` — passes name as $1 (no shell interpolation).
+    const r = spawnSync('sh', ['-c', 'command -v "$1" >/dev/null 2>&1', 'sh', name], { stdio: 'ignore' });
+    if (r.status !== 0) return false;
+  }
   const probe = RUN_PROBE[name];
   if (!probe) return true;
   // argv array, never a shell string; the tool name is a manifest-declared key of RUN_PROBE, so

@@ -94,6 +94,8 @@ jobs:
       group: hosted-larger
     steps:
       - run: make
+      - name: Release
+        run: npm publish --access public
 `,
   [`${WF}/broken.yml`]: 'name: broken\non: push\njobs:\n  x:\n      runs-on: ubuntu-latest\n   steps: []\n',
   [`${WF}/notes.txt`]: 'not a workflow\n',
@@ -110,6 +112,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: npm test
+      - run: npm stage publish --provenance
 `,
   [`${WF}/label.yml`]: `name: label
 on:
@@ -173,6 +176,11 @@ describe('the dirty tree fires every rule, exactly where planted', () => {
   test('every rule in RULE_CWE fires at least once — no rule is left unexercised', () => {
     for (const rule of Object.keys(RULE_CWE)) assert.ok(r.json.summary.byRule[rule] > 0, `${rule} never fired on the dirty tree`);
     for (const f of r.json.findings) { assert.equal(f.sev, RULE_SEV[f.rule]); assert.equal(f.cwe, RULE_CWE[f.rule]); }
+  });
+
+  test('npm-publish-unstaged: the direct publish in jobperm b, naming its step', () => {
+    const rows = r.json.findings.filter((f) => f.rule === 'npm-publish-unstaged');
+    assert.deepEqual(rows.map((f) => [f.path, f.job, f.step]), [[`${WF}/jobperm.yml`, 'b', 'Release']]);
   });
 
   test('self-hosted-runner: the scalar, the list, the labels map and the matrix — and a plain runner group does not count', () => {
