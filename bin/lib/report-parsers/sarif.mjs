@@ -1,4 +1,4 @@
-import { readSarif, isSuppressed } from '../../../monitor/sarif-read.mjs';
+import { readSarif, isSuppressed, cvssBands } from '../../../monitor/sarif-read.mjs';
 import { classifyWorktreePath } from '../../../monitor/worktree-paths.mjs';
 import { sarifMalicious } from './common.mjs';
 
@@ -34,21 +34,28 @@ export function parseSarif(path) {
   const suppressed = r.results.length - live.length;
   const levels = { error: 0, warning: 0, note: 0, none: 0 };
   for (const res of live) { const l = res.level || 'warning'; levels[l] = (levels[l] || 0) + 1; }
+  // A CVSS score outranks the level. osv-scanner writes level `warning` on every result and puts the
+  // advisory's score in its rule's `security-severity`, so grading by level alone showed 2 critical
+  // and 10 high advisories as 29 yellow warnings (measured on this repository, 2026-11-18). The band
+  // is sarifBand's, the one the rollup and the CodeQL fleet view use; a result with no score keeps
+  // the level reading below, so tools that grade by level are unchanged. Same population as `live`.
+  const cvss = cvssBands(r.runs, (res) => !isSuppressed(res));
   // Confirmed malware outranks the level tally — never `med`, whatever osv-scanner labelled it.
   const mal = sarifMalicious(r.runs);
-  const sev = (mal.hits || levels.error) ? 'high' : live.length ? 'med' : 'ok';
+  const sev = (mal.hits || levels.error || cvss?.crit || cvss?.high) ? 'high' : live.length ? 'med' : 'ok';
   const unparsed = r.extractionErrors.length;
   // Same population as laneCoverage and the extractor: worktree copies are not this repo's files.
   const partial = r.partialAnalysis.filter((p) => !classifyWorktreePath(p.uri).worktree).length;
   const recovered = r.partialRetry ? r.partialRetry.recovered.length : 0;
   const detail = (live.length
     ? `${live.length} (${levels.error}e/${levels.warning}w${mal.hits ? `, ${mal.hits} MALICIOUS` : ''})`
+      + (cvss ? ` · by CVSS ${cvss.crit}c/${cvss.high}h/${cvss.med}m/${cvss.low}l` : '')
     : '0') + (suppressed ? ` · ${suppressed} suppressed in source` : '') + (unparsed ? ` — ${unparsed} file(s) failed extraction` : '')
     + (partial ? ` — ${partial} file(s) read only in part` : '')
     + (recovered ? ` — ${recovered} file(s) recovered on retry` : '');
   // A zero nothing witnessed. Carried, not acted on: the grade stays as measured, because
   // promoting it here would fail many stored SARIFs that are truly clean.
   // The consumer that holds the exit witness decides; one that holds none must not read it clean.
-  return { ok: true, total: live.length, suppressed, sev, summary: detail, levels, malicious: mal.hits, maliciousIds: mal.ids,
+  return { ok: true, total: live.length, suppressed, sev, summary: detail, levels, ...(cvss ? { cvss } : {}), malicious: mal.hits, maliciousIds: mal.ids,
     unwitnessedZero: r.unwitnessedZero };
 }

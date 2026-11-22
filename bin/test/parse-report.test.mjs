@@ -219,6 +219,40 @@ test('sarif: a CVE-only report keeps its existing severity exactly (no regressio
   assert.equal(clean.summary, '0');
 });
 
+// osv-scanner writes level `warning` on every result and the advisory's CVSS in its rule's
+// security-severity. Graded by level alone, commitwork's own 2026-11-18 osv.sarif (2 critical and
+// 10 high advisories) read as 29 yellow warnings, four days before the same packages were reported
+// elsewhere.
+test('sarif: a CVSS score outranks the warning level, and the bands are in the summary', () => {
+  const r = parseReport('sarif', write('osv-cvss.sarif', sarif(
+    [{ ruleId: 'CVE-2026-2001', level: 'warning' }, { ruleId: 'CVE-2026-2002', level: 'warning' },
+      { ruleId: 'CVE-2026-2003', level: 'warning' }],
+    [{ id: 'CVE-2026-2001', properties: { 'security-severity': '9.8' } },
+      { id: 'CVE-2026-2002', properties: { 'security-severity': '7.5' } },
+      { id: 'CVE-2026-2003', properties: { 'security-severity': '5.3' } }],
+  )));
+  assert.equal(r.sev, 'high', 'a critical advisory at level warning was graded med');
+  assert.deepEqual(r.cvss, { crit: 1, high: 1, med: 1, low: 0 });
+  assert.match(r.summary, /^3 \(0e\/3w\) · by CVSS 1c\/1h\/1m\/0l$/, 'the existing prefix is kept for its readers');
+  assert.equal(r.total, 3);
+});
+
+test('sarif: medium and low scores keep a warning-only report at med, and a score on the result counts too', () => {
+  const r = parseReport('sarif', write('osv-cvss-med.sarif', sarif(
+    [{ ruleId: 'CVE-2026-2004', level: 'warning' }, { ruleId: 'X1', level: 'warning', properties: { 'security-severity': '2.0' } }],
+    [{ id: 'CVE-2026-2004', properties: { 'security-severity': '6.1' } }],
+  )));
+  assert.equal(r.sev, 'med');
+  assert.deepEqual(r.cvss, { crit: 0, high: 0, med: 1, low: 1 });
+});
+
+test('sarif: a report with no scores is graded by level exactly as before, with no CVSS field', () => {
+  const r = parseReport('sarif', write('nocvss.sarif', sarif([{ ruleId: 'R1', level: 'warning' }], [{ id: 'R1' }])));
+  assert.equal(r.sev, 'med');
+  assert.equal(r.cvss, undefined);
+  assert.equal(r.summary, '1 (0e/1w)');
+});
+
 // The `clean` case at :217 above asserts sev 'ok' / summary '0' on sarif([]) — zero results, and
 // the helper emits NO invocations[]. That is the deps-osv false-clean shape exactly: with egress
 // severed osv-scanner writes precisely this document. The assertion stays, deliberately, because

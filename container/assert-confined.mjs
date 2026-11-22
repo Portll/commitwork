@@ -23,6 +23,7 @@ export function notRunCause(cell) {
   if (/Can'?t find source path/.test(s)) return 'bwrap refused a bind whose source is absent';
   if (/host sandbox profile could not be applied/.test(s)) return 'the sandbox profile could not be applied';
   if (/not on PATH/.test(s)) return 'a tool it requires is not installed';
+  if (/docker daemon not running/.test(s)) return 'the Docker daemon it runs in is not running';
   if (/no live URL|--urls?/.test(s)) return 'a runtime lane with no target URL';
   if (/scanned 0 files|examined no/.test(s)) return 'the walk matched no file';
   // Trigger misses are the long tail and they are NOT a defect: a lane with no Cargo.lock to read

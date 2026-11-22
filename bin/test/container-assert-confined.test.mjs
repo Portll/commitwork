@@ -78,6 +78,7 @@ describe('a shortfall names why the lanes did not run', () => {
     assert.equal(cause('host sandbox profile could not be applied, so the lane did not run: something else'),
       'the sandbox profile could not be applied');
     assert.equal(cause('tool:betterleaks (not on PATH)'), 'a tool it requires is not installed');
+    assert.equal(cause('docker daemon not running'), 'the Docker daemon it runs in is not running');
     assert.equal(cause('no findings and no completion receipt in trufflehog.log — the scan did not finish'),
       'the tool started and did not finish');
     // The long tail. Forty-three single-item groups buried the four that mattered.

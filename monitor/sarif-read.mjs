@@ -387,6 +387,29 @@ export function sarifBand(res, rule) {
   return lvl === 'error' ? 'high' : lvl === 'warning' ? 'med' : 'low';
 }
 
+/**
+ * {crit, high, med, low} over the results `keep` admits that carry a security-severity score, on
+ * the rule or the result; null when none does. A result with no score is not counted, so a tool
+ * that grades by level alone gets null and its level reading stands. osv-scanner is the case this
+ * exists for: level `warning` on every result, the advisory's CVSS on its rule.
+ */
+export function cvssBands(runs, keep = () => true) {
+  const bands = { crit: 0, high: 0, med: 0, low: 0 };
+  let n = 0;
+  for (const run of Array.isArray(runs) ? runs : []) {
+    const idx = ruleIndex(run);
+    for (const res of run && Array.isArray(run.results) ? run.results : []) {
+      if (!res || !keep(res)) continue;
+      const rule = idx[res.ruleId] || null;
+      const ss = parseFloat(((rule && rule.properties && rule.properties['security-severity']) ?? (res.properties && res.properties['security-severity'])) ?? NaN);
+      if (Number.isNaN(ss)) continue;
+      bands[sarifBand(res, rule)]++;
+      n++;
+    }
+  }
+  return n ? bands : null;
+}
+
 export function ruleIndex(run, { extensions = false } = {}) {
   const rules = {};
   for (const r of (run && run.tool && run.tool.driver && run.tool.driver.rules) || []) if (r && r.id) rules[r.id] = r;

@@ -503,10 +503,11 @@ function evalRequirements(check, repoPath, envKeys) {
     if (pinned.ok) toolEnv[toolEnvVar(t)] = pinned.path;
     else { missing.push(`tool:${t} (${pinned.reason})`); toolsMissing.push(t); }
   }
-  if (req.docker && !dockerUp()) missing.push('docker daemon not running');
+  const dockerDown = !!req.docker && !dockerUp();
+  if (dockerDown) missing.push('docker daemon not running');
   const sec = secretsFor(check, envKeys);
   missing.push(...sec.missing);
-  return { ok: missing.length === 0, missing, secretEnv: sec.env, toolEnv, toolsMissing };
+  return { ok: missing.length === 0, missing, secretEnv: sec.env, toolEnv, toolsMissing, dockerDown };
 }
 
 // ── check selection ──────────────────────────────────────────────────────────
@@ -792,12 +793,16 @@ const ghAuthToken = () => {
 const withBoundary = (res, sb) => (sb && sb.boundary ? { ...res, boundary: sb.boundary } : res);
 const withIsolation = (res, sb) => withBoundary({ ...res, isolation: sb ? sb.isolation : 'none', ...(sb && sb.isolationReason ? { isolationReason: sb.isolationReason } : {}) }, sb);
 
-// A lane that matches the repo and cannot run because a tool it requires is absent. It is a void
-// one install clears, never an n/a: the rollup counts n/a as a correct exclusion, and that reads an
-// uninstalled scanner as a repo with nothing for it to scan.
+// A lane that matches the repo and cannot run because a tool it requires is absent, or the Docker
+// daemon it runs in is stopped. It is a void one action clears, never an n/a: the rollup counts n/a
+// as a correct exclusion, and that reads an uninstalled scanner as a repo with nothing for it to scan.
+// Measured 2026-11-22: with Docker stopped, deps-osv recorded n/a on this repository while its own
+// container/requirements.txt pinned three packages under seven open advisories.
 function toolVoid(check, reason) {
+  const cause = /docker daemon not running/.test(reason) ? 'the Docker daemon it runs in is not running'
+    : 'a tool it requires is not installed';
   return { id: check.id, status: 'noscan', blocked: true, blockedReason: reason, reason,
-    coverage: 'unknown', coverageReason: 'the lane never ran: a tool it requires is not installed' };
+    coverage: 'unknown', coverageReason: `the lane never ran: ${cause}` };
 }
 
 export const UNTRUSTED_SCRIPT_REASON = 'repo-supplied script; pass --trust-repo-manifest to run it';
@@ -1258,7 +1263,8 @@ function cmdRun(manifest, repoPath, target, opts) {
       if (!ap.applies) {
         const msg = ap.why;
         if (opts.strict) { finish({ id: check.id, status: 'fail', reason: msg }); console.log(`  ${STATUS.fail(msg)}`); }
-        // The lane applies here and a tool it requires is not installed: a void one action clears, never n/a.
+        // The lane applies here and a tool it requires is not installed, or Docker is stopped: a void
+        // one action clears, never n/a.
         else if (ap.toolVoid) { finish(toolVoid(check, msg)); console.log(`  ${STATUS.blocked(msg)}`); }
         else { finish({ id: check.id, status: 'skipped', reason: `n/a — ${msg}` }); console.log(`  ${STATUS.na(msg)}`); }
         if (check.skipsOnGitHub?.length) console.log(dim(`    GitHub-only steps dropped: ${check.skipsOnGitHub.length}`));
@@ -1740,10 +1746,11 @@ function checkApplies(check, repoPath, envKeys) {
     && !treeHasFile(repoPath, (n) => check.appliesIfSourceExt.some((x) => n.toLowerCase().endsWith(x.toLowerCase())))) {
     return { applies: false, why: `no ${check.appliesIfSourceExt.join('/')} sources found` };
   }
-  // Past the gates above the lane matches this repo, so a tool it cannot find makes it a void, not
-  // an exclusion. A missing secret or a stopped Docker daemon is still reported as n/a here.
-  const { ok, missing, secretEnv, toolEnv, toolsMissing } = evalRequirements(check, repoPath, envKeys);
-  if (!ok) return { applies: false, why: missing.join(', '), ...(toolsMissing.length ? { toolVoid: true } : {}) };
+  // Past the gates above the lane matches this repo, so a tool it cannot find, or a stopped Docker
+  // daemon it runs in, makes it a void, not an exclusion. A missing secret is still reported as n/a:
+  // a lane keyed to a service account the operator does not hold is out of scope by choice.
+  const { ok, missing, secretEnv, toolEnv, toolsMissing, dockerDown } = evalRequirements(check, repoPath, envKeys);
+  if (!ok) return { applies: false, why: missing.join(', '), ...(toolsMissing.length || dockerDown ? { toolVoid: true } : {}) };
   // the resolved secrets travel WITH the verdict so the run path can hand them to this check's
   // command. Dropping secretEnv here is silent: the check still runs, still reports pass/noscan,
   // and the credential simply never arrives — which is how it shipped, because the tests cover the
