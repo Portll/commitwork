@@ -83,7 +83,11 @@ const CRED_VAR = /\$\{?[A-Za-z_]*(?:TOKEN|SECRET|KEY|PASSWORD|PASSWD|CREDENTIAL)
 const CRED_WORD = /\b(?:api[_ -]?keys?|access[_ -]?tokens?|auth[_ -]?tokens?|credentials?|secrets?|private[_ -]?keys?|passwords?|environment variables?|env vars?)\b/i;
 const READ_VERB = /\b(?:cat|read|print|echo|dump|collect|copy|grab|list|include|attach|output|reveal|show|display|gather|extract)\b/i;
 // a bare URL is a link, not a sink: it needs a transport word in front of it
-const SEND_SINK = /\b(?:curl|wget|nc|netcat|scp|rsync)\b|\b(?:to|into|via|toward|POST|upload|send|submit|forward)\s+`?https?:\/\/|\bwebhook\b|pastebin|ngrok|requestbin|transfer\.sh|discord\.com\/api|hooks\.slack\.com|\b(?:send|sends|upload|uploads|transmit|exfiltrate|e-?mail|paste|submit|forward|POST)\s+(?:it|them|this|that|the|all|these|those|its|your|my|every|any|a)\b/i;
+// guard: and a transport word in front of a LOOPBACK URL is where a local service listens, not a remote destination
+// note: the host must END at loopback (`localhost.example` is remote); a shell transport aimed at loopback still fires
+// guard: `localhost@remote.example` is userinfo and its host is remote, so an `@` in the authority keeps the sink
+// note: a loopback port forwarded off the machine (a tunnel, `ssh -R`) is a stated miss of this exemption
+const SEND_SINK = /\b(?:curl|wget|nc|netcat|scp|rsync)\b|\b(?:to|into|via|toward|POST|upload|send|submit|forward)\s+`?https?:\/\/(?!(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?![\w.-])(?![^\s\/`]*@))|\bwebhook\b|pastebin|ngrok|requestbin|transfer\.sh|discord\.com\/api|hooks\.slack\.com|\b(?:send|sends|upload|uploads|transmit|exfiltrate|e-?mail|paste|submit|forward|POST)\s+(?:it|them|this|that|the|all|these|those|its|your|my|every|any|a)\b/i;
 const SHELL_SEND = /\b(?:curl|wget|nc|netcat|scp|rsync)\b/i;
 const NEGATED_SEND = /\b(?:never|do not|don't|must not|should not|shouldn't|avoid)\s+(?:\w+\s+){0,3}(?:send|upload|post|e-?mail|curl|wget|transfer|exfiltrate|share|paste)/i;
 const GITIGNORE_CONTEXT = /\bgitignore\b|\b(?:never|do not|don't|not)\s+(?:be\s+)?commit(?:ted)?\b|\buntracked\b/i;

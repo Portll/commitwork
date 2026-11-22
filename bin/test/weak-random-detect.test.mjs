@@ -144,6 +144,40 @@ test('a session id built from a clock and Math.random() is a finding', () => {
   assert.equal(r.summary.findings, 1);
 });
 
+// ── TOTP: the clock is the algorithm's public input, not its secret ──────────────────────────────
+// closed by reading RFC 6238: the code is HMAC(secret, floor(time / period)), and the time step is public by design
+// reason: the secret is the HMAC key, so a clock read in a TOTP function is the specified counter, not a credential
+const TOTP_CLEAN = [
+  ['python, the RFC 6238 counter', 'app/totp.py', 'def generate_totp(secret, timestamp=None, period=30):\n    if timestamp is None:\n        timestamp = int(time.time())\n    counter = timestamp // period\n'],
+  ['python, the counter assigned directly', 'app/mfa.py', 'def compute_totp_code(secret):\n    counter = int(time.time()) // 30\n    return hotp(secret, counter)\n'],
+  ['js, a time step', 'src/totp.ts', 'function generateTotp(secret) {\n  const step = Math.floor(Date.now() / 30000);\n  return hotp(secret, step);\n}\n'],
+];
+for (const [name, rel, body] of TOTP_CLEAN) {
+  test(`a clock read as the TOTP time step is clean: ${name}`, () => {
+    const r = scan({ [rel]: body });
+
+    assert.deepEqual(rules(r), [], JSON.stringify(r.findings));
+  });
+}
+
+// guard: the exemption is for the time step only; minting the SECRET from the clock is the defect this lane exists for
+const TOTP_STILL_FOUND = [
+  ['a TOTP secret minted from the clock', 'app/enrol.py', 'def generate_totp_secret():\n    secret = str(time.time())\n    return secret\n', 'py-time'],
+  ['a TOTP seed minted from the clock', 'app/enrol.py', 'def create_totp_seed():\n    value = int(time.time())\n    return value\n', 'py-time'],
+  ['a credential-named target inside a TOTP function', 'app/totp.py', 'def generate_totp(user):\n    secret = str(time.time())\n    return secret\n', 'py-time'],
+  ['a recovery code minted in a TOTP-named function', 'app/enrol.py', 'def generate_totp_recovery_code():\n    timestamp = int(time.time())\n    return timestamp\n', 'py-time'],
+  ['a backup token minted in a TOTP-named function', 'app/enrol.py', 'def create_totp_backup_token():\n    now = int(time.time())\n    return now\n', 'py-time'],
+  ['a bland target inside a TOTP function', 'app/totp.py', 'def generate_totp(user):\n    value = int(time.time())\n    return value\n', 'py-time'],
+  ['a plain OTP, which is not time-based by definition', 'app/otp.py', 'def generate_otp():\n    value = int(time.time())\n    return value % 1000000\n', 'py-time'],
+];
+for (const [name, rel, body, rule] of TOTP_STILL_FOUND) {
+  test(`the TOTP exemption does not cover ${name}`, () => {
+    const r = scan({ [rel]: body });
+
+    assert.deepEqual(rules(r), [rule], JSON.stringify(r.findings));
+  });
+}
+
 // ── context, not suppression ────────────────────────────────────────────────────────────────────
 test('test and bench paths are counted apart, never as findings, and never dropped', () => {
   const r = scan({

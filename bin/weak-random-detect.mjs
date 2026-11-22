@@ -149,6 +149,14 @@ const CRYPTO_OK = /\b(?:randomBytes|randomUUID|getRandomValues|secrets\.[a-z_]+|
 const FN_DEF = /(?:\bfn\s+([A-Za-z_]\w*)|\bfunction\s+([A-Za-z_]\w*)|\bdef\s+([A-Za-z_]\w*)|\bfunc\s+([A-Za-z_]\w*)|(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>))/;
 const GENERATES = /\b(?:gen(?:erate)?|make|new|create|mint|issue|build|derive|fresh)\w*/i;
 
+// TOTP IS DEFINED ON THE CLOCK: RFC 6238 computes HMAC(secret, floor(time / period)); the time step is public by design
+// reason: `timestamp = int(time.time())` inside `generate_totp` is the specified counter, and the secret is the HMAC key
+// guard: only a clock assigned to a time-step name is exempt; a bland or credential-named target still fires
+// guard: a function minting a secret, key, seed, recovery, backup, reset or invite value fires whatever the target
+const TOTP_FN = /totp|time[_-]?based[_-]?(?:otp|one[_-]?time)/i;
+const MINTS_SECRET = /secret|key|seed|recover|backup|reset|invite/i;
+const TIME_STEP = /^(?:t|ts|now\w*|time\w*|counter|step\w*|epoch\w*|unix\w*|current\w*)$/i;
+
 /** Name of the nearest function definition at or above `i`, or ''. */
 function enclosingFn(lines, i) {
   for (let k = i; k >= 0 && k > i - 60; k--) {
@@ -214,6 +222,7 @@ function walkEntries(dir, entries, statOf) {
           const fn = enclosingFn(lines, i);
           const inGenerator = !!fn && SINK.test(fn) && GENERATES.test(fn);
           const targetIsCredential = !!target && SINK.test(target);
+          if (TOTP_FN.test(fn) && !MINTS_SECRET.test(fn) && TIME_STEP.test(target)) continue;
           // ORDER MATTERS. The defect this lane exists for is `let timestamp = SystemTime::now()`
           // inside `fn generate_api_key`: the variable is HONESTLY named a timestamp, and then
           // formatted into the key, so skipping on a timing-shaped target before consulting the
