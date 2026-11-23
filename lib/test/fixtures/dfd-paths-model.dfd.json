@@ -1,0 +1,1228 @@
+{
+  "v": 1,
+  "kind": "dfd",
+  "title": "Archive toolkit: untrusted bundle paths (synthetic)",
+  "source": {
+    "producer": "synthetic fixture",
+    "note": "Invented names; structure only."
+  },
+  "groups": [
+    {
+      "id": "g_kit",
+      "label": "archive toolkit",
+      "boundary": "system",
+      "plain": "Archive toolkit"
+    },
+    {
+      "id": "g_runner",
+      "label": "runner",
+      "boundary": "system",
+      "parent": "g_kit",
+      "plain": "Job runner"
+    },
+    {
+      "id": "g_store",
+      "label": "store",
+      "boundary": "system",
+      "parent": "g_kit",
+      "plain": "Chunk store reader"
+    },
+    {
+      "id": "g_bundle",
+      "label": "bundle",
+      "plain": "Bundle manifest",
+      "boundary": "system",
+      "parent": "g_kit"
+    },
+    {
+      "id": "g_checks",
+      "label": "checks",
+      "boundary": "system",
+      "parent": "g_kit",
+      "plain": "Format validators"
+    },
+    {
+      "id": "g_host",
+      "label": "host platform",
+      "boundary": "trust",
+      "plain": "Host platform (closed)"
+    },
+    {
+      "id": "g_host_store",
+      "label": "host store",
+      "boundary": "trust",
+      "parent": "g_host",
+      "plain": "Host chunk store"
+    },
+    {
+      "id": "g_host_checks",
+      "label": "host checks",
+      "boundary": "trust",
+      "parent": "g_host",
+      "plain": "Host validators"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "E1",
+      "kind": "external",
+      "label": "System E1",
+      "subtype": "actor",
+      "plain": "System E1"
+    },
+    {
+      "id": "P11",
+      "kind": "process",
+      "label": "kit/p11.c",
+      "group": "g_runner",
+      "plain": "Stage P11"
+    },
+    {
+      "id": "P10",
+      "kind": "process",
+      "label": "kit/p10.c",
+      "group": "g_runner",
+      "plain": "Stage P10"
+    },
+    {
+      "id": "P9",
+      "kind": "process",
+      "label": "kit/p9.c",
+      "group": "g_runner",
+      "plain": "Stage P9"
+    },
+    {
+      "id": "P7",
+      "kind": "process",
+      "label": "kit/p7.c",
+      "group": "g_store",
+      "plain": "Stage P7"
+    },
+    {
+      "id": "P8",
+      "kind": "process",
+      "label": "kit/p8.c",
+      "group": "g_store",
+      "plain": "Stage P8"
+    },
+    {
+      "id": "P16",
+      "kind": "process",
+      "label": "kit/p16.c",
+      "plain": "Stage P16",
+      "group": "g_bundle",
+      "note": "Note on P16."
+    },
+    {
+      "id": "P17",
+      "kind": "process",
+      "label": "kit/p17.c",
+      "plain": "Stage P17",
+      "group": "g_bundle",
+      "note": "Note on P17."
+    },
+    {
+      "id": "P13",
+      "kind": "process",
+      "label": "kit/p13.c",
+      "group": "g_checks",
+      "plain": "Stage P13"
+    },
+    {
+      "id": "P12",
+      "kind": "process",
+      "label": "kit/p12.c",
+      "group": "g_checks",
+      "plain": "Stage P12"
+    },
+    {
+      "id": "P14",
+      "kind": "process",
+      "label": "kit/p14.c",
+      "group": "g_checks",
+      "plain": "Stage P14"
+    },
+    {
+      "id": "P15",
+      "kind": "process",
+      "label": "kit/p15.c",
+      "group": "g_checks",
+      "plain": "Stage P15"
+    },
+    {
+      "id": "E3",
+      "kind": "external",
+      "label": "System E3",
+      "subtype": "system",
+      "impact": "critical",
+      "plain": "System E3"
+    },
+    {
+      "id": "D3",
+      "kind": "store",
+      "label": "Store D3",
+      "subtype": "file",
+      "impact": "high",
+      "plain": "Store D3"
+    },
+    {
+      "id": "Q1",
+      "kind": "store",
+      "label": "Store Q1",
+      "subtype": "log",
+      "impact": "medium",
+      "plain": "Store Q1"
+    },
+    {
+      "id": "E2",
+      "kind": "external",
+      "label": "System E2",
+      "subtype": "system",
+      "impact": "low",
+      "plain": "System E2"
+    },
+    {
+      "id": "R1",
+      "kind": "external",
+      "label": "System R1",
+      "subtype": "system",
+      "plain": "System R1"
+    },
+    {
+      "id": "E7",
+      "kind": "external",
+      "label": "System E7",
+      "subtype": "system",
+      "group": "g_host_store",
+      "plain": "System E7"
+    },
+    {
+      "id": "E9",
+      "kind": "external",
+      "label": "System E9",
+      "subtype": "system",
+      "group": "g_host_store",
+      "plain": "System E9"
+    },
+    {
+      "id": "E10",
+      "kind": "external",
+      "label": "System E10",
+      "subtype": "system",
+      "group": "g_host_store",
+      "unknown": true,
+      "plain": "System E10"
+    },
+    {
+      "id": "E8",
+      "kind": "external",
+      "label": "System E8",
+      "subtype": "system",
+      "group": "g_host_checks",
+      "plain": "System E8"
+    },
+    {
+      "id": "E11",
+      "kind": "external",
+      "label": "System E11",
+      "subtype": "system",
+      "group": "g_host_checks",
+      "plain": "System E11"
+    },
+    {
+      "id": "E12",
+      "kind": "external",
+      "label": "System E12",
+      "subtype": "system",
+      "group": "g_host_checks",
+      "plain": "System E12"
+    },
+    {
+      "id": "E13",
+      "kind": "external",
+      "label": "System E13",
+      "subtype": "system",
+      "group": "g_host_checks",
+      "plain": "System E13"
+    },
+    {
+      "id": "E5",
+      "kind": "external",
+      "label": "System E5",
+      "subtype": "system",
+      "group": "g_host_store",
+      "plain": "System E5"
+    },
+    {
+      "id": "E4",
+      "kind": "external",
+      "label": "System E4",
+      "subtype": "system",
+      "group": "g_host_store",
+      "plain": "System E4"
+    },
+    {
+      "id": "E6",
+      "kind": "external",
+      "label": "System E6",
+      "subtype": "system",
+      "group": "g_host",
+      "impact": "critical",
+      "plain": "System E6"
+    }
+  ],
+  "flows": [
+    {
+      "from": "E1",
+      "to": "P11",
+      "label": "item 1",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P10",
+      "label": "item 2",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P9",
+      "label": "item 3",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P7",
+      "label": "item 4",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P8",
+      "label": "item 5",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P16",
+      "label": "item 6",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P13",
+      "label": "item 7",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P12",
+      "label": "item 8",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P14",
+      "label": "item 9",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "P15",
+      "label": "item 10",
+      "mode": "sync"
+    },
+    {
+      "from": "P7",
+      "to": "P8",
+      "label": "item 11",
+      "mode": "sync"
+    },
+    {
+      "from": "P11",
+      "to": "E3",
+      "label": "item 12",
+      "mode": "sync"
+    },
+    {
+      "from": "P10",
+      "to": "E3",
+      "label": "item 13",
+      "mode": "sync"
+    },
+    {
+      "from": "P9",
+      "to": "Q1",
+      "label": "item 14",
+      "mode": "sync"
+    },
+    {
+      "from": "P8",
+      "to": "Q1",
+      "label": "item 15",
+      "mode": "sync"
+    },
+    {
+      "from": "P8",
+      "to": "E2",
+      "label": "item 16",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P7",
+      "to": "E2",
+      "label": "item 17",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P13",
+      "to": "Q1",
+      "label": "item 18",
+      "mode": "sync"
+    },
+    {
+      "from": "P13",
+      "to": "E2",
+      "label": "item 19",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P12",
+      "to": "E2",
+      "label": "item 20",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P14",
+      "to": "E2",
+      "label": "item 21",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P15",
+      "to": "E2",
+      "label": "item 22",
+      "mode": "sync",
+      "role": "error"
+    },
+    {
+      "from": "P15",
+      "to": "E13",
+      "label": "item 23",
+      "mode": "sync"
+    },
+    {
+      "from": "P8",
+      "to": "R1",
+      "label": "item 24",
+      "mode": "sync"
+    },
+    {
+      "from": "P7",
+      "to": "R1",
+      "label": "item 25",
+      "mode": "sync"
+    },
+    {
+      "from": "P13",
+      "to": "R1",
+      "label": "item 26",
+      "mode": "sync"
+    },
+    {
+      "from": "P13",
+      "to": "R1",
+      "label": "item 27",
+      "mode": "sync"
+    },
+    {
+      "from": "P12",
+      "to": "R1",
+      "label": "item 28",
+      "mode": "sync"
+    },
+    {
+      "from": "P15",
+      "to": "R1",
+      "label": "item 29",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E7",
+      "label": "item 30",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E9",
+      "label": "item 31",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E10",
+      "label": "item 32",
+      "mode": "sync",
+      "existence": "unknown"
+    },
+    {
+      "from": "E1",
+      "to": "E8",
+      "label": "item 33",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E11",
+      "label": "item 34",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E12",
+      "label": "item 35",
+      "mode": "sync"
+    },
+    {
+      "from": "E1",
+      "to": "E13",
+      "label": "item 36",
+      "mode": "sync"
+    },
+    {
+      "from": "E7",
+      "to": "E5",
+      "label": "item 37",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "confirmed"
+      }
+    },
+    {
+      "from": "E9",
+      "to": "E5",
+      "label": "item 38",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "confirmed"
+      }
+    },
+    {
+      "from": "E5",
+      "to": "E4",
+      "label": "item 39",
+      "mode": "sync",
+      "evidence": {
+        "witness": "authored",
+        "existence": "confirmed"
+      }
+    },
+    {
+      "from": "E4",
+      "to": "E6",
+      "label": "item 40",
+      "mode": "sync",
+      "gate": {
+        "state": "safe",
+        "finding": "W8@E4",
+        "evidence": {
+          "level": "static",
+          "witness": "static analysis 40: measured negative"
+        }
+      }
+    },
+    {
+      "from": "E10",
+      "to": "E6",
+      "label": "item 41",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "W8@E10",
+        "reason": "Reason 41."
+      }
+    },
+    {
+      "from": "E8",
+      "to": "E6",
+      "label": "item 42",
+      "mode": "sync",
+      "gate": {
+        "state": "safe",
+        "finding": "W18@E8",
+        "evidence": {
+          "level": "static",
+          "witness": "static analysis 42: measured negative"
+        }
+      }
+    },
+    {
+      "from": "E11",
+      "to": "E6",
+      "label": "item 43",
+      "mode": "sync",
+      "gate": {
+        "state": "safe",
+        "finding": "W16@E11",
+        "evidence": {
+          "level": "static",
+          "witness": "static analysis 43: measured negative"
+        }
+      }
+    },
+    {
+      "from": "E12",
+      "to": "E6",
+      "label": "item 44",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "W17@E12",
+        "reason": "Reason 44."
+      }
+    },
+    {
+      "from": "E13",
+      "to": "E2",
+      "label": "item 45",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "WCOMP@E13",
+        "reason": "Reason 45."
+      }
+    },
+    {
+      "from": "P16",
+      "to": "P17",
+      "label": "item 46",
+      "mode": "sync"
+    },
+    {
+      "from": "P17",
+      "to": "D3",
+      "label": "item 47",
+      "mode": "sync",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "WPATH",
+        "reason": "Reason 47."
+      }
+    },
+    {
+      "from": "P16",
+      "to": "D3",
+      "label": "item 48",
+      "mode": "sync",
+      "existence": "unknown",
+      "gate": {
+        "state": "unevaluated",
+        "finding": "WPATH",
+        "reason": "Reason 48."
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "W3",
+      "title": "Weakness W3",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P11"
+      }
+    },
+    {
+      "id": "W4",
+      "title": "Weakness W4",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P10"
+      }
+    },
+    {
+      "id": "W5",
+      "title": "Weakness W5",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P9"
+      }
+    },
+    {
+      "id": "W13",
+      "title": "Weakness W13",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P7"
+      }
+    },
+    {
+      "id": "WORTH",
+      "title": "Weakness WORTH",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P7"
+      }
+    },
+    {
+      "id": "W8",
+      "title": "Weakness W8",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P8"
+      }
+    },
+    {
+      "id": "WPATH",
+      "at": {
+        "node": "P16"
+      },
+      "title": "Weakness WPATH",
+      "severity": "undetermined",
+      "status": "undetermined",
+      "note": "Note on WPATH."
+    },
+    {
+      "id": "W10",
+      "title": "Weakness W10",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P13"
+      }
+    },
+    {
+      "id": "W18",
+      "title": "Weakness W18",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P13"
+      }
+    },
+    {
+      "id": "W19",
+      "title": "Weakness W19",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P13"
+      }
+    },
+    {
+      "id": "W9",
+      "title": "Weakness W9",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P12"
+      }
+    },
+    {
+      "id": "W14",
+      "title": "Weakness W14",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "P14"
+      }
+    },
+    {
+      "id": "W6",
+      "title": "Weakness W6",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "P15"
+      }
+    },
+    {
+      "id": "WCOMP",
+      "title": "Weakness WCOMP",
+      "severity": "medium",
+      "status": "mitigated",
+      "at": {
+        "node": "P15"
+      }
+    },
+    {
+      "id": "W8@E4",
+      "title": "Weakness W8@E4",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "E4"
+      }
+    },
+    {
+      "id": "W8@E10",
+      "title": "Weakness W8@E10",
+      "severity": "undetermined",
+      "status": "undetermined",
+      "at": {
+        "node": "E10"
+      }
+    },
+    {
+      "id": "W18@E8",
+      "title": "Weakness W18@E8",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "E8"
+      }
+    },
+    {
+      "id": "W19@E8",
+      "title": "Weakness W19@E8",
+      "severity": "low",
+      "status": "mitigated",
+      "at": {
+        "node": "E8"
+      }
+    },
+    {
+      "id": "W16@E11",
+      "title": "Weakness W16@E11",
+      "severity": "undetermined",
+      "status": "mitigated",
+      "at": {
+        "node": "E11"
+      }
+    },
+    {
+      "id": "W17@E12",
+      "title": "Weakness W17@E12",
+      "severity": "undetermined",
+      "status": "undetermined",
+      "at": {
+        "node": "E12"
+      }
+    },
+    {
+      "id": "WCOMP@E13",
+      "title": "Weakness WCOMP@E13",
+      "severity": "medium",
+      "status": "undetermined",
+      "at": {
+        "node": "E13"
+      }
+    }
+  ],
+  "prs": [
+    {
+      "id": "pr-base",
+      "title": "Hardening already in the source (stated, not in the files read)",
+      "state": "merged",
+      "plain": "Upstream hardening (asserted)"
+    },
+    {
+      "id": "pr-bounds",
+      "title": "W8 set: chunk reader bounds",
+      "state": "proposed",
+      "files": [
+        "kit/set2/file1.c",
+        "kit/set2/file2.c",
+        "kit/set2/file3.c",
+        "kit/set2/file4.c",
+        "kit/set2/file5.c"
+      ],
+      "plain": "Chunk reader bounds checks"
+    },
+    {
+      "id": "pr-guards",
+      "title": "Guard set: nesting guards, size arithmetic, extractor firewall",
+      "state": "proposed",
+      "files": [
+        "kit/set3/file1.c",
+        "kit/set3/file2.c",
+        "kit/set3/file3.c",
+        "kit/set3/file4.c",
+        "kit/set3/file5.c",
+        "kit/set3/file6.c",
+        "kit/set3/file7.c",
+        "kit/set3/file8.c"
+      ],
+      "plain": "Depth limits and size checks"
+    }
+  ],
+  "patches": [
+    {
+      "id": "K3",
+      "pr": "pr-base",
+      "title": "W3 hardening",
+      "findings": [
+        "W3"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P11"
+      },
+      "closes": [
+        {
+          "from": "P11",
+          "to": "E3"
+        }
+      ],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Bound added by K3.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K4",
+      "pr": "pr-base",
+      "title": "W4 hardening",
+      "findings": [
+        "W4"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P10"
+      },
+      "closes": [
+        {
+          "from": "P10",
+          "to": "E3"
+        }
+      ],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Bound added by K4.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K5",
+      "pr": "pr-base",
+      "title": "W5 hardening",
+      "findings": [
+        "W5"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P9"
+      },
+      "closes": [
+        {
+          "from": "P9",
+          "to": "Q1"
+        }
+      ],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Bound added by K5.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K13",
+      "pr": "pr-base",
+      "title": "W13 hardening",
+      "findings": [
+        "W13"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P7"
+      },
+      "closes": [],
+      "evidence": {
+        "level": "asserted"
+      },
+      "note": "Bound added by K13.",
+      "plain": "Upstream hardening (asserted, unseen)"
+    },
+    {
+      "id": "K8",
+      "pr": "pr-bounds",
+      "title": "W8 set",
+      "findings": [
+        "W8"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P8"
+      },
+      "closes": [
+        {
+          "from": "P8",
+          "to": "Q1"
+        },
+        {
+          "from": "P8",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P8",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "kit/patch-k8-1.patch"
+        ]
+      },
+      "note": "Bound added by K8.",
+      "plain": "Offset and size bounds check"
+    },
+    {
+      "id": "K9",
+      "pr": "pr-guards",
+      "title": "W9 depth guard",
+      "findings": [
+        "W9"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P12"
+      },
+      "closes": [
+        {
+          "from": "P12",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P12",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "kit/patch-k9-1.patch"
+        ],
+        "control": {
+          "kind": "test",
+          "failsWithout": true,
+          "passesWith": true,
+          "test": "deep nesting input: crash unpatched, clean reject patched",
+          "ref": "kit/test-k9.log"
+        }
+      },
+      "note": "Bound added by K9.",
+      "plain": "Archive nesting depth limit"
+    },
+    {
+      "id": "K10",
+      "pr": "pr-guards",
+      "title": "W10 nesting guard",
+      "findings": [
+        "W10"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P13"
+      },
+      "closes": [
+        {
+          "from": "P13",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P13",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "kit/patch-k10-1.patch"
+        ]
+      },
+      "note": "Bound added by K10.",
+      "plain": "Directory nesting depth limit"
+    },
+    {
+      "id": "K14",
+      "pr": "pr-guards",
+      "title": "W14 default return",
+      "findings": [
+        "W14"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P14"
+      },
+      "closes": [
+        {
+          "from": "P14",
+          "to": "E2"
+        }
+      ],
+      "evidence": {
+        "level": "inspected",
+        "refs": [
+          "kit/patch-k14-1.patch"
+        ]
+      },
+      "note": "Bound added by K14.",
+      "plain": "Default branch on unknown entry type"
+    },
+    {
+      "id": "K18",
+      "pr": "pr-guards",
+      "title": "W18 safe count product",
+      "findings": [
+        "W18"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P13"
+      },
+      "closes": [
+        {
+          "from": "P13",
+          "to": "Q1"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P13",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "kit/patch-k18-1.patch"
+        ]
+      },
+      "note": "Bound added by K18.",
+      "plain": "Checked length arithmetic"
+    },
+    {
+      "id": "K19",
+      "pr": "pr-guards",
+      "title": "W19 wide length field",
+      "findings": [
+        "W19"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P13"
+      },
+      "closes": [
+        {
+          "from": "P13",
+          "to": "Q1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "kit/patch-k19-1.patch"
+        ],
+        "control": {
+          "kind": "static-assert",
+          "failsWithout": true,
+          "passesWith": true,
+          "test": "static_assert on the return type: the baseline fails to compile",
+          "ref": "kit/test-k19.log"
+        }
+      },
+      "note": "Bound added by K19.",
+      "plain": "Full-width length field"
+    },
+    {
+      "id": "KL1",
+      "pr": "pr-guards",
+      "title": "WORTH firewall",
+      "findings": [
+        "WORTH"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P7"
+      },
+      "closes": [
+        {
+          "from": "P7",
+          "to": "E2"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P7",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "kit/patch-kl1-1.patch"
+        ]
+      },
+      "note": "Bound added by KL1.",
+      "plain": "Typed error on chunk read"
+    },
+    {
+      "id": "KC",
+      "pr": "pr-guards",
+      "title": "WCOMP cap",
+      "findings": [
+        "WCOMP",
+        "W6"
+      ],
+      "guard": {
+        "from": "E1",
+        "to": "P15"
+      },
+      "closes": [
+        {
+          "from": "P15",
+          "to": "E2"
+        },
+        {
+          "from": "P15",
+          "to": "E13"
+        }
+      ],
+      "rejects": [
+        {
+          "from": "P15",
+          "to": "R1"
+        }
+      ],
+      "evidence": {
+        "level": "tested",
+        "refs": [
+          "kit/patch-kc-1.patch"
+        ],
+        "control": {
+          "kind": "test",
+          "failsWithout": true,
+          "passesWith": true,
+          "test": "entry count 4e9: allocation failure unpatched, reject patched",
+          "ref": "kit/test-kc.log"
+        }
+      },
+      "note": "Bound added by KC.",
+      "plain": "Entry count cap (1,000,000)"
+    }
+  ]
+}
