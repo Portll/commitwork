@@ -476,7 +476,10 @@ export function repoRelative(p, root = null) {
   let x = String(p || '').replace(/\\/g, '/');
   if (x.startsWith('file://')) { try { x = decodeURIComponent(new URL(x).pathname); } catch { x = x.slice(7); } }
   const r = root ? String(root).replace(/\\/g, '/').replace(/\/+$/, '') : null;
+  // cra/dataflow-evidence.mjs findingFileOf strips `file:///` whole to join the rollup, so an absolute trace path arrives without its leading slash
+  const bare = r ? r.replace(/^\/+/, '') : null;
   if (r && x.startsWith(`${r}/`)) x = x.slice(r.length + 1);
+  else if (bare && x.startsWith(`${bare}/`)) x = x.slice(bare.length + 1);
   return x.replace(/^(\.\/)+/, '');
 }
 
