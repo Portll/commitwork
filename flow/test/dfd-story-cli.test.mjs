@@ -19,7 +19,7 @@ test('story is a view, and it takes no --collapse', () => {
   // act
   const got = cases.map((argv) => parseArgs(argv));
   // assert
-  assert.deepEqual(VIEWS, ['classic', 'paths', 'map', 'story', 'replay']);
+  assert.deepEqual(VIEWS, ['classic', 'paths', 'map', 'story', 'replay', 'record']);
   assert.equal(got[0].error, undefined);
   assert.match(got[1].error, /--view story chooses what to draw from the findings, so it takes no --collapse/);
   assert.match(got[2].error, /--view takes one of classic, paths, map, story, replay/);

@@ -38,6 +38,7 @@ import { renderPathsHtml } from '../lib/dfd-paths-render.mjs';
 import { renderMapHtml } from '../lib/dfd-map-render.mjs';
 import { renderStoryHtml } from '../lib/dfd-story-render.mjs';
 import { renderReplayHtml } from '../lib/dfd-replay-render.mjs';
+import { renderRecordHtml } from '../lib/dfd-record-render.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 
@@ -49,7 +50,7 @@ export const DEFAULT_MAX = 150;
 const VALUE_FLAGS = ['from', 'repo', 'codeql', 'prefix', 'focus', 'hops', 'direction', 'collapse', 'collapse-all-groups-over', 'orientation', 'max', 'emit', 'fonts', 'title', 'findings', 'coverage', 'verdicts', 'view', 'out'];
 const BOOL_FLAGS = ['tests', 'imports', 'functions', 'taint-only', 'scanner-only', 'issues', 'only-live', 'help'];
 const EMIT = ['html', 'model', 'analysis'];
-export const VIEWS = Object.freeze(['classic', 'paths', 'map', 'story', 'replay']);
+export const VIEWS = Object.freeze(['classic', 'paths', 'map', 'story', 'replay', 'record']);
 const FONTS = ['inline', 'none', 'served'];
 const DIRECTIONS = ['in', 'out', 'both'];
 const WHOLE = { hops: 'hops', max: 'max', 'collapse-all-groups-over': 'collapseOver' };
@@ -113,7 +114,9 @@ drawing
                       reader who does not know the code: one fixed picture of the findings and
                       what surrounds them, lit a layer at a time (the picture, the lines data
                       follows, the findings, each change set, what is left); shows "plain" names ·
-                      replay: change sets step by step on a process flow, beside the file tree
+                      replay: change sets step by step on a process flow, beside the file tree ·
+                      record: every node in group or layer lanes by hop from the sources, findings
+                      under the node they sit on, patches replayed in a chosen order over a subset
   --title <text>      the diagram's title
 
 findings overlay
@@ -177,6 +180,7 @@ export function parseArgs(argv) {
   if (opts.view === 'map' && opts.collapse !== undefined) return { error: '--view map opens and closes groups on the page, so it takes no --collapse' };
   if (opts.view === 'story' && opts.collapse !== undefined) return { error: '--view story chooses what to draw from the findings, so it takes no --collapse' };
   if (opts.view === 'replay' && opts.collapse !== undefined) return { error: '--view replay opens and closes groups on the page, so it takes no --collapse' };
+  if (opts.view === 'record' && opts.collapse !== undefined) return { error: '--view record draws every node in its lane, so it takes no --collapse' };
   if (opts.issues && opts.codeql === undefined) return { error: '--issues places a scan\'s results, so it needs --codeql' };
   if (opts.view === 'paths' && opts.collapse !== undefined) return { error: '--view paths draws its own levels from the document\'s nested groups, so it takes no --collapse' };
   if (opts.fonts !== undefined && !FONTS.includes(opts.fonts)) return { error: `--fonts takes one of ${FONTS.join(', ')}` };
@@ -458,7 +462,7 @@ function emit(opts, got, { stdout, fail }) {
   const { model, collapse, drawn } = got;
   const emitWhat = opts.emit || 'html';
   const max = opts.max ?? DEFAULT_MAX;
-  if (emitWhat === 'html' && !['map', 'story', 'replay'].includes(opts.view) && drawn > max) {
+  if (emitWhat === 'html' && !['map', 'story', 'replay', 'record'].includes(opts.view) && drawn > max) {
     return fail(EXIT.SIZE, `${drawn} elements is more than --max ${max}: a diagram that size is not readable. Narrow it with --prefix or --focus (and --hops), collapse groups with --collapse or --collapse-all-groups-over, or raise --max.`);
   }
   let text;
@@ -467,6 +471,7 @@ function emit(opts, got, { stdout, fail }) {
   let mapStats = null;
   let storyStats = null;
   let replayStats = null;
+  let recordStats = null;
   if (emitWhat === 'model') text = `${JSON.stringify(model, null, 2)}\n`;
   else if (emitWhat === 'analysis') text = `${JSON.stringify(analyse(model), null, 2)}\n`;
   else if (opts.view === 'paths') {
@@ -485,6 +490,10 @@ function emit(opts, got, { stdout, fail }) {
     const got = renderReplayHtml(model, opts.title !== undefined ? { title: opts.title } : {});
     text = got.html;
     replayStats = got.stats;
+  } else if (opts.view === 'record') {
+    const got = renderRecordHtml(model, opts.title !== undefined ? { title: opts.title } : {});
+    text = got.html;
+    recordStats = got.stats;
   } else ({ html: text, stats } = renderHtml(model, { fonts: opts.fonts || 'inline', collapse, orientation: opts.orientation || 'auto', onlyLive: !!opts['only-live'] }));
   if (opts.out === undefined) { stdout.write(text); return EXIT.OK; }
   writeAtomic(opts.out, text, { mkdir: true });
@@ -492,7 +501,8 @@ function emit(opts, got, { stdout, fail }) {
   const mapWord = mapStats ? `, map view: ${mapStats.elements} code element(s), ${mapStats.leaves} folded, ${mapStats.issues} issue(s), ${mapStats.drawn} box(es) drawn at first` : '';
   const storyWord = storyStats ? `, story view: ${storyStats.drawn} box(es) drawn, ${storyStats.hidden} left out, ${storyStats.places} finding(s), ${storyStats.stages} stage(s)` : '';
   const replayWord = replayStats ? `, replay view: ${replayStats.sets} change set(s), ${replayStats.findings} issue(s), ${replayStats.drawable} drawable element(s), ${replayStats.files} file(s)` : '';
-  const drawing = replayStats ? replayWord : storyStats ? storyWord : mapStats ? mapWord : pathStats ? pathWord : stats ? `, ${stats.orientation} ${stats.width}x${stats.height}, ${stats.crossings} crossing(s), ${stats.collisions} label collision(s)` : '';
+  const recordWord = recordStats ? `, record view: ${recordStats.elements} element(s), ${recordStats.findings} finding(s), ${recordStats.patches} patch(es) in ${recordStats.sets} change set(s), ${recordStats.lanes.group} group lane(s), ${recordStats.lanes.layer} layer lane(s), outcomes by ${recordStats.outcomeRule === 'declared' ? 'declared impact' : 'sink rule'}, layout faults ${recordStats.audit.group.nan + recordStats.audit.group.through + recordStats.audit.group.overlap + recordStats.audit.layer.nan + recordStats.audit.layer.through + recordStats.audit.layer.overlap}` : '';
+  const drawing = recordStats ? recordWord : replayStats ? replayWord : storyStats ? storyWord : mapStats ? mapWord : pathStats ? pathWord : stats ? `, ${stats.orientation} ${stats.width}x${stats.height}, ${stats.crossings} crossing(s), ${stats.collisions} label collision(s)` : '';
   const u = model.source?.unknown;
   const unknown = u ? `; unknown: ${u.unanalysable} of ${u.files} file(s) not analysed, ${Object.values(u.unsupportedLanguages || {}).reduce((a, b) => a + b, 0)} in other languages, ${u.computedSites} computed site(s)` : '';
   const c = got.coverage;

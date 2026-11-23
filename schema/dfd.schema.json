@@ -848,6 +848,54 @@
           }
         }
       }
+    },
+    "routes": {
+      "type": "array",
+      "description": "Open questions not yet settled, each with the test that would settle it. validateDfd checks the shape here and that any node anchor names a node.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "claim": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "running",
+              "closed",
+              "blocked",
+              "inconclusive"
+            ]
+          },
+          "node": {
+            "type": "string"
+          },
+          "test": {
+            "type": "string"
+          },
+          "harness": {
+            "type": "string"
+          },
+          "would_flip": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "evidence_ref": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }
