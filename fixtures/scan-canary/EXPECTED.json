@@ -948,6 +948,13 @@
         "want": "OUT OF SCOPE, permanently. Three synthetic workflows that bin/test/actions-grade.test.mjs feeds to the grading command; refused.yml carries an expression both parsers refuse by design. No runner executes them, and counting them would report test inputs as this repository's CI.",
         "blockedBy": "Belongs in checks[actions-zizmor].scopeNotes as a MINUS entry, like the dirty canary's. Recorded here beside it for the same reason.",
         "isGapNotPolicy": false
+      },
+      {
+        "lane": "zizmor",
+        "path": "fixtures/semgrep-workflows/.github/",
+        "want": "OUT OF SCOPE, permanently. Synthetic workflows that monitor/test/semgrep-workflows.test.mjs scans to show the workflow prompt rules firing and staying quiet; .semgrepignore already keeps them out of the self-scan. No runner executes them, and counting them would report test inputs as this repository's CI.",
+        "blockedBy": "Belongs in checks[actions-zizmor].scopeNotes as a MINUS entry, like the dirty canary's. Recorded here beside it for the same reason.",
+        "isGapNotPolicy": false
       }
     ]
   },

@@ -630,6 +630,12 @@
       "minDepth": 1,
       "note": "Reads one package-lock.json and one package.json per locked package; no walk, no network, no build. As of 2026-09-15: 58-84 ms wall over three runs each on a 70-package lockfile and on the 2-package canary — process start dominates."
     },
+    "deps-malware-list": {
+      "cost": "light",
+      "container": false,
+      "minDepth": 1,
+      "note": "Reads the tree's lockfiles (dot-directories and dependency folders skipped) and looks each resolved package up in an operator-supplied list already on disk; no network, no build. As of 2026-11-23, on a 4-lockfile repository: 0.5-1.1 s wall over three runs — process start dominates."
+    },
     "agent-instructions": {
       "cost": "light",
       "container": false,

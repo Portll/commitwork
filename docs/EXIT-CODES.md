@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-367 commands: 167 declared, 13 prose, 187 undeclared. Of the declared, 133 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
+368 commands: 168 declared, 13 prose, 187 undeclared. Of the declared, 134 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -624,6 +624,13 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `sbom-review`, `
 |---:|---|
 | 0 | ran |
 | 2 | could not run |
+
+### `bin/malware-list.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | ran (no list, or no lockfile, is a declared void with filesScanned 0) |
+| 2 | could not run (a list that exists but cannot be read or parsed) |
 
 ### `bin/md-view.mjs`
 

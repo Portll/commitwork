@@ -5,7 +5,7 @@
   "images": [
     "ghcr.io/google/osv-scanner:latest",
     "ghcr.io/owasp-dep-scan/dep-scan:v6.3.0",
-    "renovate/renovate:44.173.0",
+    "renovate/renovate:44.245.0",
     "ghcr.io/datadog/guarddog:v3.2.0"
   ],
   "groups": {
@@ -2051,9 +2051,9 @@
         "~/.npm"
       ],
       "description": "Automated dependency-update wiring present + valid (Renovate). Config-only gate; the self-hosted runner bin/renovate-run.sh opens the actual PRs (local dry-run needs no token; pr mode needs RENOVATE_TOKEN).",
-      "notes": "PINNED to renovate@44.173.0, the SAME version package.json's devDependencies declares (`^44.173.0`) and the same version monitor/renovate-dryrun.mjs spawns -- one number in three places rather than three independent resolutions of `latest`. An unpinned `npx --yes --package renovate --` would be a scan-time fetch of a very large package (renovate pulls hundreds of transitive deps) executed by the security scanner. Choosing the devDependency's own version rather than the registry's latest is deliberate: renovate the tool proposes its own bumps, so letting it also silently BE a different version on every run would mean the validator's verdict could change without anything in this repo changing. When the devDependency is bumped, bump this literal and the two in monitor/renovate-dryrun.mjs with it -- `bin/test/no-unpinned-fetch.test.mjs` enforces that a pin exists, and `bin/test/dependency-policy.test.mjs` that the three agree.",
+      "notes": "PINNED to renovate@44.245.0, the SAME version package.json's devDependencies declares (`^44.245.0`) and the same version monitor/renovate-dryrun.mjs spawns -- one number in three places rather than three independent resolutions of `latest`. An unpinned `npx --yes --package renovate --` would be a scan-time fetch of a very large package (renovate pulls hundreds of transitive deps) executed by the security scanner. Choosing the devDependency's own version rather than the registry's latest is deliberate: renovate the tool proposes its own bumps, so letting it also silently BE a different version on every run would mean the validator's verdict could change without anything in this repo changing. When the devDependency is bumped, bump this literal and the two in monitor/renovate-dryrun.mjs with it -- `bin/test/no-unpinned-fetch.test.mjs` enforces that a pin exists, and `bin/test/dependency-policy.test.mjs` that the three agree.",
       "local": [
-        "npx --prefix=\"$CW_NPX_PREFIX\" --yes --package renovate@44.173.0 -- renovate-config-validator renovate.json > \"$CW_REPORT_DIR/renovate-validate.txt\" 2>&1; rc=$?; echo $rc > \"$CW_REPORT_DIR/renovate-validate.txt.exit\"; [ $rc -eq 0 ] || echo RENOVATE_CONFIG_INVALID >> \"$CW_REPORT_DIR/renovate-validate.txt\""
+        "npx --prefix=\"$CW_NPX_PREFIX\" --yes --package renovate@44.245.0 -- renovate-config-validator renovate.json > \"$CW_REPORT_DIR/renovate-validate.txt\" 2>&1; rc=$?; echo $rc > \"$CW_REPORT_DIR/renovate-validate.txt.exit\"; [ $rc -eq 0 ] || echo RENOVATE_CONFIG_INVALID >> \"$CW_REPORT_DIR/renovate-validate.txt\""
       ],
       "report": {
         "file": "renovate-validate.txt",

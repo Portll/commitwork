@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 349 | 285 | 64 |
-| Exit codes (declared in the header) | 365 | 165 | 200 |
-| `CW_*` environment variables (described in an `env` header) | 965 | 233 | 732 |
+| Commands (a usage line in the header) | 352 | 288 | 64 |
+| Exit codes (declared in the header) | 368 | 168 | 200 |
+| `CW_*` environment variables (described in an `env` header) | 968 | 235 | 733 |
 | Lane manifest check keys in use (described in the schema) | 45 | 43 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -106,7 +106,7 @@ bin/ab-loop.mjs — the prompt A/B loop backbone, runnable today.
 
 ### `bin/actions-gaps.mjs`
 
-actions-gaps.mjs — four GitHub Actions workflow findings the fleet could not see: a job on a self-hosted runner, a privileged trigger (workflow_run / pull_request_target) whose job checks out or downloads the triggering…
+actions-gaps.mjs — five GitHub Actions workflow findings the fleet could not see: a job on a self-hosted runner, a privileged trigger (workflow_run / pull_request_target) whose job checks out or downloads the triggering…
 
 - Usage: `node bin/actions-gaps.mjs [rootDir] exit 0 ran · 2 could not run`
 - Exit: 0 ran · 2 could not run
@@ -402,6 +402,13 @@ bin/cobolwork-remediate.mjs — cobolwork remediation from a terminal: draft and
 - Usage: `node bin/cobolwork-remediate.mjs list`
 - Option: `--dir <path> (or CW_COBOLWORK_REMEDIATION_DIR) is where job files live; default reports/cobolwork-remediation.`
 - Exit: 0 done · 1 refused, failed, or a verdict other than pass · 2 usage
+
+### `bin/codeql-frontier.mjs`
+
+bin/codeql-frontier.mjs — where untrusted data leaves the code CodeQL can follow.
+
+- Usage: `node bin/codeql-frontier.mjs <language> <database> (run by a CodeQL lane, after analyze)`
+- Exit: 0 always. This is a side measurement: the lane's verdict is its own analyze, and a frontier that could not run is recorded as such (state failed / unsupported / no-database), never as an empty frontier.
 
 ### `bin/codeql-go-build.mjs`
 
@@ -786,6 +793,15 @@ bin/format-phase.mjs — remediation #19: the pre-commit formatting phase, built
 - Option: `--write fix them and restage exactly those files; exit 0`
 - Exit: stated in the header in a form not tabulated (prose)
 
+### `bin/frontier-review.mjs`
+
+bin/frontier-review.mjs — draft, emit and check the taint-frontier worksheets (cra/frontier-review.mjs).
+
+- Usage: `node bin/frontier-review.mjs draft <sweep dir> [--repo <name>]`
+- Usage: `node bin/frontier-review.mjs emit [--repo <name>]`
+- Usage: `node bin/frontier-review.mjs status <sweep dir> [--repo <name>]`
+- Exit: 0 done; status always, its JSON naming any worksheet it could not use · 1 draft or emit: a worksheet could not be used, or a decision does not validate (named on stderr; nothing is written for that repository) · 2 usage
+
 ### `bin/gate-ratchet.mjs`
 
 commitwork gate ratchet — fail on NEW debt, never on inherited debt.
@@ -1043,6 +1059,13 @@ commitwork — mainline (feature d) git-graph harvester.
 - Option: `--slug output slug (default: derived from repo dir basename)`
 - Option: `--out output dir (default: <this>/../sitemap/data)`
 - Exit: undeclared
+
+### `bin/malware-list.mjs`
+
+malware-list.mjs — every resolved npm and PyPI package in the tree's lockfiles, looked up in a known-malicious package list the OPERATOR supplies.
+
+- Usage: `node bin/malware-list.mjs [rootDir]`
+- Exit: 0 ran (no list, or no lockfile, is a declared void with filesScanned 0) · 2 could not run (a list that exists but cannot be read or parsed)
 
 ### `bin/manifest-map.mjs`
 
@@ -2798,7 +2821,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-965 `CW_*` names read by tracked non-test sources: 836 by name, and
+968 `CW_*` names read by tracked non-test sources: 839 by name, and
 129 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -3293,6 +3316,9 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_MAIL_RETRY_MS` | direct | `lib/mail.mjs` | undocumented |
 | `CW_MAIL_TIMEOUT_MS` | direct | `lib/mail.mjs` | undocumented |
 | `CW_MAIL_TRANSPORT` | direct | `lib/mail.mjs` | undocumented |
+| `CW_MALWARE_LIST_NPM` | direct | `bin/malware-list.mjs` | undocumented |
+| `CW_MALWARE_LIST_PYPI` | direct | `bin/malware-list.mjs` | list paths; default ~/.commitwork/malware-lists/{npm,pypi}.json |
+| `CW_MALWARE_LIST_ROOT` | direct | `bin/malware-list.mjs` | overrides rootDir |
 | `CW_MANIFESTS_DIR` | direct | `admin/routes/scanners.mjs`, `monitor/lane-roster.mjs` | undocumented |
 | `CW_MAP_STORE` | direct | `monitor/sync-map-history.mjs` | undocumented |
 | `CW_MCP_EMISSIONS` | indirect | `monitor/store-paths.mjs` | the ledger, default monitor/private/mcp-emissions.jsonl (`mcp/emission-ledger.mjs`) |
@@ -3477,7 +3503,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_RENOVATE_REPO` | direct | `monitor/renovate-status.mjs` | undocumented |
 | `CW_REPORTS_DIR` | direct | `admin/routes/determinations.mjs`, `bin/advisory-index.mjs`, `bin/md-view.mjs`, `cra/advisory-aliases.mjs`, `cra/dataflow-evidence.mjs` | undocumented |
 | `CW_REPORTS_ROOT` | direct | `bin/test-run.mjs`, `monitor/area-coverage.mjs`, `monitor/lane-timing.mjs`, `monitor/perf-feedback.mjs`, `monitor/store-paths.mjs` | holds the digest, its delivery ledger and the job journal &lt;reports&gt;/scheduled-job-journal.jsonl (`bin/digest-scheduled.mjs`) |
-| `CW_REPORT_DIR` | direct | `admin/routes/journey.mjs`, `bin/a11y-scan.mjs`, `bin/boot-harness.sh`, `bin/codeql-model-pack.mjs`, `bin/codeql-swift-build.sh`, `bin/commitwork.mjs` and 11 more | undocumented |
+| `CW_REPORT_DIR` | direct | `admin/routes/journey.mjs`, `bin/a11y-scan.mjs`, `bin/boot-harness.sh`, `bin/codeql-frontier.mjs`, `bin/codeql-model-pack.mjs`, `bin/codeql-swift-build.sh` and 12 more | undocumented |
 | `CW_REPORT_FORMATS` | indirect | `monitor/settings.mjs` | undocumented |
 | `CW_REPO_IDENTITIES` | direct | `bin/lib/release-names-head-scan.mjs` | undocumented |
 | `CW_REPO_IDENTITY_LEDGER` | direct | `lib/repo-identity.mjs` | undocumented |
@@ -3773,7 +3799,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 
 ## Manifest keys
 
-Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (92); 111 checks in all.
+Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (93); 112 checks in all.
 A nested key is written `parent.child`. A key the schema declares and no check uses is listed with 0.
 
 ### Check keys
@@ -3785,7 +3811,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `act.enabled` | 0 | undocumented |
 | `act.job` | 0 | Optional specific job id to run (act -j). |
 | `aliasOf` | 2 | This check reports into another check's category. |
-| `appliesIfExists` | 51 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
+| `appliesIfExists` | 52 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
 | `appliesIfGit` | 5 | During `scan`, only run this check if the target is a git repo. |
 | `appliesIfSourceExt` | 25 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
 | `containment` | 3 | A lane's exclusion from a group, declared as DATA rather than argued in prose. |
@@ -3793,29 +3819,29 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `containment.reason` | 3 | Why the exclusion exists, in terms a reader can check. |
 | `containment.reviewBy` | 3 | When this exclusion must be revisited, as an ISO-8601 UTC instant. |
 | `coverageSignals` | 4 | Patterns in this check's log that mean a LANE OF THE CHECK DID NOT RUN, even though the tool exited 0. |
-| `description` | 111 | undocumented |
-| `egress` | 111 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
+| `description` | 112 | undocumented |
+| `egress` | 112 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
 | `envPassthrough` | 5 | Credential-shaped environment names (…_TOKEN, …_SECRET, …_API_KEY, …_BEARER_x) this analyser lane may inherit from the operator's environment. |
 | `executesRepoCode` | 13 | This lane runs the scanned repository's own build, test or install code. |
-| `formatNotes` | 90 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
-| `groups` | 111 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
-| `id` | 111 | Stable check id, conventionally matching the workflow filename stem. |
-| `local` | 111 | Shell commands run in sequence (fail-fast) in repoPath. |
+| `formatNotes` | 91 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
+| `groups` | 112 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
+| `id` | 112 | Stable check id, conventionally matching the workflow filename stem. |
+| `local` | 112 | Shell commands run in sequence (fail-fast) in repoPath. |
 | `notALane` | 17 | Why this check feeds no lane: it writes an inventory, a count or a status that no reader derives a finding from. |
-| `notes` | 71 | undocumented |
+| `notes` | 72 | undocumented |
 | `producesIfExists` | 1 | Artifact globs (e.g. *.jar) that must exist somewhere in the repo for an empty-clean result to be trustworthy; otherwise the check is recorded as a void ('no scannable artifact — build first'). |
-| `remediationPrompt` | 88 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
-| `report` | 111 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
+| `remediationPrompt` | 89 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
+| `report` | 112 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
 | `report.exitCodes` | 92 | Every exit code the tool can end with, each marked measured (the report is a result) or unmeasured (it is not). |
-| `report.file` | 111 | Filename written under $CW_REPORT_DIR. |
+| `report.file` | 112 | Filename written under $CW_REPORT_DIR. |
 | `report.findingsExit` | 4 | Exit codes the tool documents as meaning it ran and reported findings. |
-| `report.format` | 111 | Report format. |
+| `report.format` | 112 | Report format. |
 | `report.log` | 19 | Filename (under $CW_REPORT_DIR) of the tool's own log. |
-| `requires` | 111 | Gating conditions. |
+| `requires` | 112 | Gating conditions. |
 | `requires.docker` | 4 | Requires a running Docker daemon. |
 | `requires.secrets` | 2 | Env vars that must be set (checked in process env and repoPath/.env). |
 | `requires.services` | 7 | Free-text service prerequisites surfaced to the user (e.g. 'docker daemon', 'live Supabase'). Informational. |
-| `requires.tools` | 111 | Executables that must be on PATH. |
+| `requires.tools` | 112 | Executables that must be on PATH. |
 | `requiresRepoTrust` | 2 | The lane's command runs a script the scanned repository supplies, not a bundled scanner. |
 | `requiresUrl` | 10 | Runtime scanner: needs a live base URL (--url/--urls/commitwork.url/$CW_TARGET_URL). |
 | `reuse` | 3 | Declares the lane's result a function of inputs bin/lib/lane-reuse.mjs can key: the scanned tree's files, this check, the files under the commitwork root listed in inputs (and their local imports), the tool versions, th… |
@@ -3823,7 +3849,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `reuse.inputs` | 2 | Paths under the commitwork root the lane reads or executes. |
 | `reuse.outputs` | 3 | Files the lane writes into CW_REPORT_DIR, as names or * patterns; must include report.file. |
 | `reuse.packs` | 2 | Query packs the tool loads locally: codeql keys the CodeQL package cache and the repository's CodeQL models, joern the query database installed beside the joern-scan launcher. |
-| `sandboxExtraReads` | 18 | Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). |
+| `sandboxExtraReads` | 19 | Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). |
 | `sandboxExtraWrites` | 42 | Paths this lane must write beyond $CW_REPORT_DIR and TMPDIR: a tool's own cache (~/.semgrep, ~/Library/Caches/trivy, ~/.codeql). |
 | `sandboxLoopback` | 2 | The lane's tool connects over TCP loopback to worker processes it starts itself. |
 | `scopeNotes` | 20 | Named limits on what this check can see (e.g. 'language', 'codeql-extractor-baseline'). |

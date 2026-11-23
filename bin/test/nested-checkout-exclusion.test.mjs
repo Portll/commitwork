@@ -73,6 +73,7 @@ const HELPER = {
   'sast-python-bandit': ['bin/python-lane-scan.mjs', [/SCAN_EXCLUDE_ROOTS\.map\(\(d\) => `\*\/\$\{d\}\/\*`\)/, /'-x', `[^`]*\$\{nested\}`/]],
   'lint-python-ruff': ['bin/python-lane-scan.mjs', [/SCAN_EXCLUDE_ROOTS\.flatMap\(\(d\) => \['--extend-exclude', d\]\)/]],
   'deps-ruby-bundler-audit': ['bin/bundler-audit-scan.mjs', CLASSIFIER],
+  'deps-malware-list': ['bin/malware-list.mjs', DOTDIRS],
   'jackson-caseinsensitive-guard': ['bin/guard-jackson-caseinsensitive.mjs', CLASSIFIER],
   'eol-runtime': ['bin/eol-scan.mjs', CLASSIFIER],
   'container-base-images': ['bin/base-images.mjs', CLASSIFIER],
