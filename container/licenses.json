@@ -66,7 +66,7 @@
     "$comment": "The scanners venv. A package whose dist-info carries no licence file gets one here, pinned to the version the lock installs. A copyleft package's source is its PyPI sdist unless `sources` names others.",
     "files": {
       "semgrep": { "version": "1.180.0", "files": [{ "tree": "container/licenses/semgrep/LICENSE", "sha256": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331", "upstream": "https://raw.githubusercontent.com/semgrep/semgrep/v1.180.0/LICENSE" }] },
-      "opentelemetry-util-http": { "version": "0.58b0", "files": [{ "tree": "container/licenses/opentelemetry-util-http/LICENSE", "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4", "upstream": "https://raw.githubusercontent.com/open-telemetry/opentelemetry-python-contrib/v0.58b0/LICENSE" }] }
+      "opentelemetry-util-http": { "version": "0.66b2", "files": [{ "tree": "container/licenses/opentelemetry-util-http/LICENSE", "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4", "upstream": "https://raw.githubusercontent.com/open-telemetry/opentelemetry-python-contrib/v0.66b2/LICENSE" }] }
     },
     "licences": {
       "$comment": "Packages whose metadata names no licence, as their licence file reads.",

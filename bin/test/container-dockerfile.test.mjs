@@ -224,3 +224,37 @@ test('each rule fires on a sources file or lock that breaks it', () => {
   only({ lock: `--extra-index-url https://example.test/simple\n${ctx.lock}` }, 'lock-line:--extra-index-url');
   only({ wanted: `${ctx.wanted}\nnot-in-the-lock\n` }, 'lock-missing:not-in-the-lock');
 });
+
+const versionKey = (v) => {
+  const m = /^(\d+(?:\.\d+)*)(?:(a|b|rc)(\d+))?$/.exec(v);
+  assert.ok(m, `unreadable version ${v}`);
+  return { release: m[1].split('.').map(Number), pre: m[2] ? [['a', 'b', 'rc'].indexOf(m[2]), Number(m[3])] : [3, 0] };
+};
+const atLeast = (version, floor) => {
+  const a = versionKey(version), b = versionKey(floor);
+  for (let i = 0; i < Math.max(a.release.length, b.release.length); i++) {
+    const d = (a.release[i] || 0) - (b.release[i] || 0);
+    if (d) return d > 0;
+  }
+  return a.pre[0] !== b.pre[0] ? a.pre[0] > b.pre[0] : a.pre[1] >= b.pre[1];
+};
+const overrideFloors = (text) => String(text).split('\n').map((l) => l.replace(/#.*$/, '').trim()).filter(Boolean).map((l) => {
+  const m = /^([A-Za-z0-9][A-Za-z0-9._-]*)>=([0-9a-z.]+)(?:,<\d+)?$/.exec(l);
+  assert.ok(m, `container/overrides.txt: unreadable line ${l}`);
+  return { name: m[1].toLowerCase().replace(/[._]/g, '-'), floor: m[2] };
+});
+
+test('the lock installs every overridden package at or above its override floor', () => {
+  const floors = overrideFloors(read('container', 'overrides.txt'));
+  assert.ok(floors.length >= 1, 'container/overrides.txt names no package');
+  const locked = new Map(lockEntries(read('container', 'requirements.txt')).entries.map((e) => [e.name, e.version]));
+  for (const { name, floor } of floors) {
+    assert.ok(locked.has(name), `${name} is overridden and the lock does not install it`);
+    assert.ok(atLeast(locked.get(name), floor), `${name}: the lock installs ${locked.get(name)}, below the floor ${floor}`);
+  }
+});
+
+test('the floor comparison orders releases and pre-releases', () => {
+  assert.ok(atLeast('1.30.0', '1.30.0') && atLeast('11.2', '11.2') && atLeast('0.66b2', '0.66b0') && atLeast('1.45.2', '1.45.2b1'));
+  assert.ok(!atLeast('1.29.0', '1.30.0') && !atLeast('8.5.2', '11.2') && !atLeast('0.58b0', '0.66b0') && !atLeast('0.66b0', '0.66'));
+});
