@@ -1,4 +1,4 @@
-<!-- verified-against: 2026-10-24 -->
+<!-- verified-against: 2026-11-24 -->
 # Installing commitwork on Linux: the installer and the container
 
 Two ways to put commitwork on a Linux machine, and what each one does and does not give you.
@@ -157,13 +157,25 @@ header, under the pinned base image:
 docker run --rm -v "$PWD:/src" -w /src node:22.23.3-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 sh -c '
   cp container/debian.sources /etc/apt/sources.list.d/debian.sources && apt-get update &&
   apt-get install -y --no-install-recommends ca-certificates python3-venv &&
-  python3 -m venv /tmp/v && /tmp/v/bin/pip install pip-tools &&
-  /tmp/v/bin/pip-compile --generate-hashes --allow-unsafe --strip-extras --annotation-style=line \
+  python3 -m venv /tmp/v && /tmp/v/bin/pip install uv &&
+  /tmp/v/bin/uv pip compile --generate-hashes --annotation-style=line --override container/overrides.txt \
     -o container/requirements.txt container/requirements.in'
 ```
 
-pip-tools is the one unpinned tool in that command; it writes the lock, and the lock is what gets
-reviewed. pip-compile keeps the versions already in the lock unless given `--upgrade`.
+uv is the one unpinned tool in that command; it writes the lock, and the lock is what gets
+reviewed. It keeps the versions already in the lock unless given `--upgrade`.
+
+`container/overrides.txt` raises three packages past what semgrep declares. semgrep 1.180.0 and
+1.186.0 both require `mcp==1.29.0`, `opentelemetry-api~=1.37.0` and `wcmatch~=8.3`, and each has
+advisories fixed only in a later release (mcp 1.30.0, opentelemetry-api 1.45.2, wcmatch 11.2), so no
+resolver reaches a fixed version while honouring those pins. The install uses `--no-deps`, so pip
+does not re-check them. Measured 2026-11-24 in the pinned base image, on semgrep 1.180.0 with the
+old lock and the new one: `semgrep --version` runs, `semgrep mcp --help` prints the same text, and
+a scan of one fixture gave the same findings and the same scanned paths with no errors in three
+modes (no path flags, `--exclude`, `--include`), the fixture carrying a `.semgrepignore` with
+`**` patterns. `pip check` reports the overridden requirements and nothing else.
+`bin/test/container-dockerfile.test.mjs` fails when the lock holds a version below an override's
+floor. Drop an override once semgrep's own requirement reaches the fixed release.
 
 ### Licences and source
 
