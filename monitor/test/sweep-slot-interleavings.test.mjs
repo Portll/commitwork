@@ -16,7 +16,8 @@
 // probes the pid (ESRCH dead, EPERM alive, zombie dead, anything else unknown) when the token
 // names this host; 'unknown' is never dead, so it falls to the stamp-age rule.
 //   holder pid dead, fresh stamp                         TAKEN   (a corpse holds nothing)
-//   holder pid reused by a live non-sweep, fresh stamp   TAKEN   (startedAt does not match the pid)
+//   holder pid reused by a live non-sweep, fresh stamp   HELD    (a fresh stamp was written by a live holder; the mismatch is the probe lying)
+//   holder pid reused, stamp past REUSE_GRACE_MS        TAKEN   (startedAt does not match the pid, and nobody has stamped since)
 //   holder pid alive, start matches, stamp 31 min old    TAKEN, loudly — the holder stopped refreshing
 //   holder pid alive, start matches, refreshed           HELD    (refresh() re-stamps `at`)
 //   holder pid alive, stamp 29 min old                   HELD
@@ -36,7 +37,7 @@ import { tmpdir, hostname } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { acquireSweepSlot, keepSweepSlot, slotName } from '../sweep-slot.mjs';
-import { inspectLock, ownStartMs, DEFAULT_STALE_MS } from '../lockfile.mjs';
+import { inspectLock, ownStartMs, DEFAULT_STALE_MS, REUSE_GRACE_MS } from '../lockfile.mjs';
 import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -106,7 +107,8 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 const [root, label, mode, sig] = process.argv.slice(2);
 const CAP = Number(process.env.CW_TEST_SLOT_PAUSE_CAP_MS || 15000);
-const got = acquireSweepSlot(root, { slots: 1, label, deadlineMs: 0 });
+// queue: false — these races are claim()'s own; the queue in front of it is sweep-queue.test.mjs's subject
+const got = acquireSweepSlot(root, { slots: 1, label, deadlineMs: 0, queue: false });
 const lock = join(root, slotName(0));
 const out = { pid: process.pid, label, ok: got.ok === true, slot: got.slot ?? null, reason: got.reason ?? null,
   refusalKeys: got.ok === true ? null : Object.keys(got).sort(), seen: inspectLock(lock) };
@@ -356,7 +358,7 @@ describe('what the slot decides about its holder', () => {
     } finally { if (got && got.ok) got.release(); rmSync(root, { recursive: true, force: true }); }
   });
 
-  test('a reused pid (live process whose start is not the token\'s) with a fresh stamp is TAKEN — startedAt tells a stranger from the holder', { timeout: SYNC_TEST_MS }, () => {
+  test('a reused pid (live process whose start is not the token\'s) is HELD under a fresh stamp and TAKEN once the stamp passes the reuse grace', { timeout: SYNC_TEST_MS }, () => {
     const root = scratch();
     let got = null;
     // A long-lived node process stands in for whatever inherited the pid. Killed on every exit path.
@@ -365,15 +367,21 @@ describe('what the slot decides about its holder', () => {
     process.once('exit', kill);
     try {
       assert.ok(alive(impostor.pid), 'precondition: the impostor must be alive when the slot decides');
-      // The dead holder started an hour ago; the impostor started just now.
-      const p = plant(root, { pid: impostor.pid, at: Date.now(), startedAt: Date.now() - 60 * MIN });
-      const before = inspectLock(p.lock);
+      // The token's start is an hour from the impostor's: what a sleep did to every uptime-derived start, so not a licence
+      const fresh = plant(root, { pid: impostor.pid, at: Date.now(), startedAt: Date.now() - 60 * MIN });
+      const before = inspectLock(fresh.lock);
       assert.equal(before.holderAlive, true, 'the pid IS alive');
-      assert.equal(before.holderMatches, false, 'but it is not the process that wrote the token');
-      assert.equal(before.stale, true);
+      assert.equal(before.holderMatches, false, 'and its start is not the token\'s');
+      assert.equal(before.stale, false, 'a fresh stamp was written by a live holder, so the mismatch does not make it stale');
+      assert.equal(contend(root).ok, false, 'HELD — the stamp is the second witness and it says the holder was here moments ago');
+      assert.equal(ownerBytes(fresh.lock), fresh.bytes, 'the token is untouched');
+      rmSync(fresh.lock, { recursive: true, force: true });
+
+      const old = plant(root, { pid: impostor.pid, at: Date.now() - REUSE_GRACE_MS, startedAt: Date.now() - 60 * MIN });
+      assert.equal(inspectLock(old.lock).stale, true, 'past the grace, a mismatched pid with no fresh stamp is a dead holder');
       got = contend(root);
-      assert.equal(got.ok, true, 'TAKEN — pid reuse is a dead holder');
-      assert.deepEqual(Object.keys(inspectLock(p.lock).holder).sort(), ['at', 'host', 'label', 'nonce', 'pid', 'startedAt'], 'the token names host and start');
+      assert.equal(got.ok, true, 'TAKEN — pid reuse is a dead holder once nobody has stamped for the grace');
+      assert.deepEqual(Object.keys(inspectLock(old.lock).holder).sort(), ['at', 'host', 'label', 'nonce', 'pid', 'startedAt'], 'the token names host and start');
     } finally { if (got && got.ok) got.release(); kill(); process.off('exit', kill); rmSync(root, { recursive: true, force: true }); }
   });
 
@@ -506,7 +514,7 @@ describe('what the slot decides about its holder', () => {
       const p = plant(root, { pid: process.pid, at: Date.now() - 2 * MIN, label: 'sweep:team-x' });
       const got = contend(root);
       assert.equal(got.ok, false);
-      assert.deepEqual(Object.keys(got).sort(), ['heldFor', 'holder', 'holderAlive', 'holders', 'ok', 'reason', 'slots', 'waitedMs']);
+      assert.deepEqual(Object.keys(got).sort(), ['heldFor', 'holder', 'holderAlive', 'holders', 'ok', 'queue', 'reason', 'slots', 'waitedMs']);
       assert.equal(got.holder.label, 'sweep:team-x'); assert.equal(got.holder.pid, process.pid);
       assert.ok(got.heldFor >= 2 * MIN - 1000 && got.heldFor < 3 * MIN, `heldFor is the hold age; got ${got.heldFor}`);
       assert.equal(got.holderAlive, true);

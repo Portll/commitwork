@@ -12,6 +12,7 @@ import { jobs, running, jobSubs, sseSlots, LOG_CAP, trigger, triggerProject, sto
 import { nowISO as issuesNowISO } from '../../monitor/issue-store.mjs';
 import { fleet as bolaFleet, bolaAreas } from '../../monitor/bola-fleet.mjs';
 import { laneTiming, batchArea } from '../../monitor/lane-timing.mjs';
+import { listQueue } from '../../monitor/sweep-queue.mjs';
 import { CW } from '../lib/core.mjs';
 import { stateBaseFor } from '../../monitor/store-paths.mjs';
 
@@ -132,6 +133,13 @@ export const routes = [
     // operator is reading numbers that describe a registry they may have already replaced, and
     // that is precisely the kind of thing this platform exists to refuse to hide.
     return send(200, { running: seen, sweep: see('sweep'), bola: see('bola'), stpa: see('stpa'), registryStale: registryStale(), health: health.find((j) => j.running) || health.sort((a, b) => String(b.startedAt).localeCompare(String(a.startedAt)))[0] || null });
+  } },
+  // The admission queue and its permits, read as the next sweep will read them; `prefix=self` is the post-commit set
+  { method: 'GET', path: '/api/sweep/queue', handle: ({ req, send }) => {
+    const prefix = new URL(req.url, 'http://127.0.0.1').searchParams.get('prefix') === 'self' ? 'self' : 'sweep';
+    const root = resolve(stateBaseFor(CW), registry().reportsRoot || 'reports');
+    const l = listQueue(root, { prefix });
+    return send(l.ok ? 200 : 500, { ok: l.ok, prefix, slots: l.slots, slotsError: l.slotsError ?? null, waiting: l.waiting, abandoned: l.abandoned, unreadable: l.unreadable, error: l.error ?? null });
   } },
   { method: 'POST', path: '/api/sweep/stop', handle: ({ req, send, isLoopbackReq }) => {
     const q = new URLSearchParams((req.url.split('?')[1]) || '');

@@ -10,11 +10,16 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { acquireSweepSlot, slotName, DEFAULT_SLOTS } from '../sweep-slot.mjs';
+import { acquireSweepSlot, slotName, DEFAULT_SLOTS, SLOT_REFRESH_MS } from '../sweep-slot.mjs';
+import { REUSE_GRACE_MS } from '../lockfile.mjs';
 
 const fresh = () => mkdtempSync(join(tmpdir(), 'cw-slot-'));
 
 describe('sweep admission control', () => {
+  test('a refreshing holder never ages past the pid-reuse grace', () => {
+    assert.ok(REUSE_GRACE_MS > SLOT_REFRESH_MS);
+  });
+
   test('hands out exactly `slots` permits and no more', () => {
     const d = fresh();
     const a = acquireSweepSlot(d, { slots: 2, label: 'a' });
