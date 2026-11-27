@@ -247,6 +247,13 @@ and the rest skip until it lapses again, seven days later. The deep agents do no
 `liveness.mjs` is the deadman: fresh ⇒ 0, expired/unknown ⇒ 1, fanning out over every area when
 given no argument. `freshness.mjs` is the pure decision module behind it.
 
+An area is never fresher than its oldest repo. `rollup.json` is whichever slice published last, so
+a one-repo re-scan or a `fast` pass re-stamps the whole area; `repo-scan-freshness.mjs` reads the
+verdict journal's per-repo outcomes and ages each repo on its own last completed `all` sweep, and
+liveness raises the area to `stale` or `expired` naming the repos behind. It makes no claim when
+the journal is behind the rollup (that fault has its own line), names no repos (records from before
+`repos.scans`), or the area is unscheduled or paused.
+
 It also carries an `isolation:` row from `isolation-freshness.mjs`, which ages the last measurement
 of container isolation on this host the way `freshness.mjs` ages a scan. The suite that makes the
 measurement (`bin/test/sandbox-effects.test.mjs`) skips when docker is absent, and a skipped
@@ -497,7 +504,7 @@ the published `schema/scanner-finding.schema.json` and the panel's columns all d
 browser), `scan-scope.mjs` (what each scanner was NOT allowed to look at), `scanner-checks.mjs`.
 Truth layer: `lifecycle.mjs`, `ledger.mjs`, `annotate-lib.mjs`, `attribution.mjs`,
 `validate-authored-judgment.mjs`, `cwx-registry.mjs`, `defence-vector.mjs`, `dwell.mjs`,
-`freshness.mjs`, `liveness.mjs`, `issue-store.mjs`, `scanner-delta.mjs` (the scanner lanes'
+`freshness.mjs`, `repo-scan-freshness.mjs`, `liveness.mjs`, `issue-store.mjs`, `scanner-delta.mjs` (the scanner lanes'
 place-keyed new/fixed diff — see "Slices, lifecycle, ledger").
 Population and reachability — what a finding is ABOUT, decided before what it is worth. Each
 classifies and never drops: the row keeps its identity, its original claim and its place in the

@@ -12,6 +12,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { classifyFreshness, freshnessSummary } from './freshness.mjs';
+import { repoScanFreshness, overdueNote } from './repo-scan-freshness.mjs';
 import { readRollupHead } from './rollup-head.mjs';
 // Static imports: neither module reads anything at import (area.mjs says so in its own header);
 // the file read happens in loadRegistry(), which areaSnapshot() below calls at CALL time.
@@ -227,8 +228,26 @@ export function checkOne(path, label, { scheduled = true, missingOk = false, now
         summary += ' · verdict journal: none recorded';
       }
     } else {
+      // Per-repo deadman: the published slice is whichever sweep finished last, so a one-repo
+      // re-scan or a `fast` pass re-stamps the area while its other repos and its slower lanes go
+      // unscanned. Each repo is aged on its own last completed scheduled-group sweep, and the area
+      // is never fresher than its oldest repo. A journal behind the rollup cannot speak for the
+      // published sweep, so it makes no per-repo claim; the BEHIND line below carries that fault.
       const last = vj.records.length ? vj.records[vj.records.length - 1] : null;
       const lagged = rollup.sliceId && (!last || (last.sliceId && last.sliceId < rollup.sliceId));
+      if (scheduled && !lagged && state !== 'paused' && state !== 'pending') {
+        const repoScans = repoScanFreshness(vj.records, effectiveNow, threshold);
+        if (repoScans.worst) {
+          const note = overdueNote(repoScans);
+          if ((RANK[repoScans.worst] ?? 0) > (RANK[state] ?? 0)) {
+            const was = state;
+            state = repoScans.worst;
+            summary = `${state === 'expired' ? 'EXPIRED' : 'STALE'} — the published slice reads ${was} but ${note}; a narrower or faster sweep does not stand in for the scheduled one · published slice: ${summary}`;
+          } else {
+            summary += ` · repos: ${note}`;
+          }
+        }
+      }
       if (vj.chain && vj.chain.broken) {
         // An edited journal outranks any freshness state — the instrument itself was touched.
         state = 'tampered';
