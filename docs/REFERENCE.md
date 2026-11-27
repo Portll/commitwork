@@ -12,7 +12,7 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 |---|---:|---:|---:|
 | Commands (a usage line in the header) | 353 | 289 | 64 |
 | Exit codes (declared in the header) | 369 | 169 | 200 |
-| `CW_*` environment variables (described in an `env` header) | 969 | 235 | 734 |
+| `CW_*` environment variables (described in an `env` header) | 970 | 236 | 734 |
 | Lane manifest check keys in use (described in the schema) | 45 | 43 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -2828,7 +2828,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-969 `CW_*` names read by tracked non-test sources: 840 by name, and
+970 `CW_*` names read by tracked non-test sources: 841 by name, and
 129 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -3563,9 +3563,10 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SELFDIR` | direct | `bin/boot-harness.sh`, `bin/lockfile-synth.sh` | undocumented |
 | `CW_SELF_SWEEP_DEADLINE_MIN` | direct | `monitor/sweep.mjs` | undocumented |
 | `CW_SEMGREP_RETRY` | direct | `bin/semgrep-retry.mjs` | 0 or off switches the retry off and the main scan's timeouts stand as reduced coverage |
-| `CW_SEMGREP_RETRY_BUDGET_SEC` | direct | `bin/semgrep-retry.mjs` | wall-clock seconds for the whole retry, default 600; past it the retry is killed and the SARIF is left untouched |
+| `CW_SEMGREP_RETRY_BATCH_FILES` | direct | `bin/semgrep-retry.mjs` | files per Semgrep run, default 50; a run that completes is merged before the next starts |
+| `CW_SEMGREP_RETRY_BUDGET_SEC` | direct | `bin/semgrep-retry.mjs` | wall-clock seconds for all the batches together, default 600; a batch that passes it is killed, its files and every later batch are named as not retried, and the batches already merged stand |
 | `CW_SEMGREP_RETRY_JOBS` | direct | `bin/semgrep-retry.mjs` | Semgrep -j for the retry; unset keeps Semgrep's default unless a fixpoint-timeout file is retried, which forces 1 |
-| `CW_SEMGREP_RETRY_MAX_FILES` | direct | `bin/semgrep-retry.mjs` | most files one retry scans, default 50; the rest are named in the receipt as not retried |
+| `CW_SEMGREP_RETRY_MAX_FILES` | direct | `bin/semgrep-retry.mjs` | most files one retry scans across all its batches, default 500; the rest are named in the receipt as not retried |
 | `CW_SEMGREP_RETRY_TIMEOUT` | direct | `bin/semgrep-retry.mjs` | seconds Semgrep may spend per rule on one file in the retry, default 60 |
 | `CW_SESSION_ROSTER` | direct | `bin/session-roster.mjs`, `bin/session-start-roster.mjs` | undocumented |
 | `CW_SESSION_STORE` | direct | `admin/sessions.mjs` | undocumented |

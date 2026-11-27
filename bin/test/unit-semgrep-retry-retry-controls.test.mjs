@@ -54,7 +54,14 @@ test('timeoutSec uses provided value when positive', () => {
 test('maxFiles floors to default when given non-numeric string', () => {
   const input = { CW_SEMGREP_RETRY_MAX_FILES: 'abc' };
   const result = retryControls(input);
-  assert.equal(result.maxFiles, 50);
+  assert.equal(result.maxFiles, 500);
+});
+
+test('batchFiles defaults to 50 and never drops below one file', () => {
+  assert.equal(retryControls({}).batchFiles, 50);
+  assert.equal(retryControls({ CW_SEMGREP_RETRY_BATCH_FILES: '7' }).batchFiles, 7);
+  assert.equal(retryControls({ CW_SEMGREP_RETRY_BATCH_FILES: '0.5' }).batchFiles, 1);
+  assert.equal(retryControls({ CW_SEMGREP_RETRY_MAX_FILES: '0.5' }).maxFiles, 1);
 });
 
 test('budgetSec uses default when not set', () => {

@@ -7,7 +7,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, chmodSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, chmodSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -408,6 +408,155 @@ describe('the operator controls are read at call time and reach the command', ()
     assert.equal(receipt.jobs, 2);
     const { args } = fake.calls[0];
     assert.equal(args[args.indexOf('-j') + 1], '2');
+  });
+});
+
+describe('the files are retried in batches that share one budget', () => {
+  // One file per batch on the two-file fixture: a.js is batch 1, b.js is batch 2.
+  const ONE = { ...ENV, CW_SEMGREP_RETRY_BATCH_FILES: '1' };
+  const scripted = (...steps) => {
+    const calls = [];
+    const spawn = (bin, args, opts) => {
+      const step = fakeSemgrep(steps[calls.length]);
+      calls.push({ bin, args, opts });
+      return step.spawn(bin, args, opts);
+    };
+    return { spawn, calls };
+  };
+  const clock = (...ticks) => { let i = 0; return () => ticks[Math.min(i++, ticks.length - 1)]; };
+  const cleanA = { retryDoc: doc([], [result('a.js', 7, 'fp-new')]) };
+  const run = (fake, { env = ONE, now, prepare } = {}) => {
+    const fx = fixture();
+    if (prepare) prepare(fx);
+    const before = readFileSync(fx.sarif, 'utf8');
+    const receipt = retrySemgrep({ sarifPath: fx.sarif, configArgs: [], cwd: fx.scan, env, spawn: fake.spawn, ...(now ? { now } : {}) });
+    return { fx, receipt, before };
+  };
+
+  test('each batch is its own Semgrep run, its own artifact and its own retry invocation', () => {
+    const fake = scripted(cleanA, { retryDoc: doc([timeout(RULE, 'b.js')]) });
+    const { fx, receipt } = run(fake, { now: clock(0, 100_000, 100_000, 150_000) });
+    assert.equal(receipt.state, 'retried');
+    assert.deepEqual(fake.calls.map((c) => c.args.at(-1)), ['a.js', 'b.js']);
+    assert.deepEqual(fake.calls.map((c) => c.args[c.args.indexOf('--output') + 1]), [join(fx.out, 'semgrep-retry.sarif'), join(fx.out, 'semgrep-retry.2.sarif')]);
+    assert.deepEqual(fake.calls.map((c) => c.opts.timeout), [600_000, 500_000], 'the second batch gets what the first left of the budget');
+    assert.deepEqual(receipt.files, ['a.js', 'b.js']);
+    assert.deepEqual(receipt.notRetried, ['c.js']);
+    assert.equal(receipt.batchFiles, 1);
+    assert.deepEqual(receipt.batches, [
+      { files: 1, state: 'merged', exit: 1, resultsAdded: 1 },
+      { files: 1, state: 'merged', exit: 1, resultsAdded: 0 },
+    ]);
+    const inv = JSON.parse(readFileSync(fx.sarif, 'utf8')).runs[0].invocations;
+    assert.deepEqual(inv.slice(1).map((i) => i.properties.commitworkRetry.files), [['a.js'], ['b.js']]);
+    const r = readSarif(fx.sarif);
+    assert.deepEqual(r.partialRetry, { files: ['a.js', 'b.js'], timeoutSec: 60, recovered: ['a.js'], stillTimedOut: ['b.js'] });
+    assert.deepEqual(uris(r.partialAnalysis), ['b.js', 'c.js']);
+    assert.match(readFileSync(join(fx.out, 'semgrep-retry.log'), 'utf8'), /a\.js\n[^]*b\.js\n/, 'one log holds every batch');
+  });
+
+  test('a budget spent by the first batch leaves the second named as not retried, and the merge stands', () => {
+    const fake = scripted(cleanA, cleanA);
+    const { fx, receipt } = run(fake, { now: clock(0, 600_000) });
+    assert.equal(fake.calls.length, 1, 'no batch starts with nothing left of the budget');
+    assert.equal(receipt.state, 'retried');
+    assert.deepEqual(receipt.files, ['a.js']);
+    assert.deepEqual(receipt.notRetried, ['c.js', 'b.js']);
+    assert.equal(receipt.batches[1].state, 'not-started');
+    assert.match(receipt.batches[1].reason, /600s budget was spent/);
+    const r = readSarif(fx.sarif);
+    assert.deepEqual(r.partialRetry.recovered, ['a.js']);
+    assert.deepEqual(uris(r.partialAnalysis), ['b.js', 'c.js'], 'the file no batch reached stays as measured');
+  });
+
+  test('a batch killed by the budget costs its own files, not the batch already merged', () => {
+    const fake = scripted(cleanA, { signal: 'SIGTERM' });
+    const { fx, receipt } = run(fake);
+    assert.equal(receipt.state, 'retried');
+    assert.deepEqual(receipt.files, ['a.js']);
+    assert.deepEqual(receipt.notRetried, ['c.js', 'b.js']);
+    assert.deepEqual(receipt.batches[1], { files: 1, state: 'failed', exit: null, signal: 'SIGTERM', reason: 'semgrep was killed by SIGTERM (the 600s budget)' });
+    assert.deepEqual(readSarif(fx.sarif).partialRetry.files, ['a.js']);
+  });
+
+  test('a batch that exits above 1 does not stop the batches behind it', () => {
+    const fake = scripted({ status: 2 }, { retryDoc: doc([]) });
+    const { fx, receipt } = run(fake);
+    assert.equal(fake.calls.length, 2);
+    assert.equal(receipt.state, 'retried');
+    assert.deepEqual(receipt.files, ['b.js']);
+    assert.deepEqual(receipt.notRetried, ['c.js', 'a.js']);
+    assert.equal(receipt.batches[0].state, 'failed');
+    assert.match(receipt.batches[0].reason, /^semgrep exited 2 — retry stderr$/);
+    assert.equal(receipt.exit, 1, 'the exit is the merged batch\'s, not the failed one\'s');
+    assert.deepEqual(readSarif(fx.sarif).partialRetry.recovered, ['b.js']);
+  });
+
+  test('a budget kill on the first batch starts no other: failed, the SARIF byte-identical', () => {
+    const fake = scripted({ signal: 'SIGTERM' }, cleanA);
+    const { fx, receipt, before } = run(fake);
+    assert.equal(fake.calls.length, 1);
+    assert.equal(receipt.state, 'failed');
+    assert.match(receipt.reason, /^semgrep was killed by SIGTERM \(the 600s budget\); the SARIF is unchanged$/);
+    assert.deepEqual(receipt.files, ['a.js', 'b.js']);
+    assert.deepEqual(receipt.batches.map((b) => b.state), ['failed', 'not-started']);
+    assert.equal(readFileSync(fx.sarif, 'utf8'), before);
+  });
+
+  test('every batch failing is failed, with the first fault as the reason', () => {
+    const fake = scripted({ status: 2 }, { retryDoc: { version: '2.1.0', runs: [] } });
+    const { fx, receipt, before } = run(fake);
+    assert.equal(fake.calls.length, 2);
+    assert.equal(receipt.state, 'failed');
+    assert.equal(receipt.exit, 2);
+    assert.match(receipt.reason, /^semgrep exited 2; the SARIF is unchanged — retry stderr$/);
+    assert.match(receipt.batches[1].reason, /reads never-ran/);
+    assert.equal(readFileSync(fx.sarif, 'utf8'), before);
+  });
+
+  test('the file cap is across the batches, and a capped file is named after the unreached ones', () => {
+    const fake = scripted(cleanA, cleanA);
+    const { receipt } = run(fake, { env: { ...ONE, CW_SEMGREP_RETRY_MAX_FILES: '1' } });
+    assert.equal(fake.calls.length, 1);
+    assert.deepEqual(receipt.files, ['a.js']);
+    assert.deepEqual(receipt.notRetried, ['c.js', 'b.js']);
+    assert.equal(receipt.batches.length, 1);
+  });
+
+  test('batch outputs left by an earlier run are removed; nothing else beside the SARIF is', () => {
+    const stale = ['semgrep-retry.2.sarif', 'semgrep-retry.9.scan.json', 'semgrep-retry.scan.json'];
+    const kept = ['semgrep-retry.notes.sarif', 'semgrep-retry-old.sarif', 'semgrep.json'];
+    const fake = scripted({ retryDoc: doc([]) });
+    const { fx } = run(fake, { env: ENV, prepare: (f) => { for (const n of [...stale, ...kept]) writeFileSync(join(f.out, n), '{}'); } });
+    const names = readdirSync(fx.out);
+    for (const n of stale) assert.ok(!names.includes(n), `${n} would be read as this retry's output`);
+    for (const n of kept) assert.ok(names.includes(n), `${n} is not a batch output`);
+    assert.ok(names.includes('semgrep-retry.sarif'));
+  });
+
+  test('fixpoint files keep -j 1 in every batch and the receipt totals what each batch measured', () => {
+    const fx = fixture([]);
+    const json = join(fx.out, 'semgrep.json');
+    writeFileSync(json, JSON.stringify(scanJson([fixpointEntry('a.js', 10), fixpointEntry('b.js', 4)])));
+    const fake = scripted({ retryDoc: doc([]), retryJson: scanJson([]) }, { retryDoc: doc([]), retryJson: scanJson([fixpointEntry('b.js', 4)]) });
+    const receipt = retrySemgrep({ sarifPath: fx.sarif, jsonPath: json, configArgs: [], cwd: fx.scan, env: ONE, spawn: fake.spawn });
+    assert.deepEqual(fake.calls.map((c) => c.args[c.args.indexOf('-j') + 1]), ['1', '1']);
+    assert.deepEqual(fake.calls.map((c) => c.args[c.args.indexOf('--json-output') + 1]), [join(fx.out, 'semgrep-retry.scan.json'), join(fx.out, 'semgrep-retry.2.scan.json')]);
+    assert.deepEqual(receipt.retryFixpoint, { measured: true, json: 'semgrep-retry.scan.json', count: 1, unattributed: 0 });
+    assert.deepEqual(receipt.recovered, ['a.js']);
+    assert.deepEqual(receipt.stillTimedOut, ['b.js']);
+    assert.deepEqual(receipt.unmeasured, []);
+  });
+
+  test('one batch whose JSON was not written leaves only its own files not re-measured', () => {
+    const fx = fixture([]);
+    const json = join(fx.out, 'semgrep.json');
+    writeFileSync(json, JSON.stringify(scanJson([fixpointEntry('a.js', 10), fixpointEntry('b.js', 4)])));
+    const fake = scripted({ retryDoc: doc([]), retryJson: scanJson([]) }, { retryDoc: doc([]) });
+    const receipt = retrySemgrep({ sarifPath: fx.sarif, jsonPath: json, configArgs: [], cwd: fx.scan, env: ONE, spawn: fake.spawn });
+    assert.deepEqual(receipt.recovered, ['a.js']);
+    assert.deepEqual(receipt.unmeasured, ['b.js']);
+    assert.equal(receipt.retryFixpoint.measured, false);
   });
 });
 
