@@ -79,7 +79,7 @@ jobs:
           persist-credentials: false
 
       - name: Initialise CodeQL
-        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:
           languages: javascript-typescript
           # security-and-quality, not the default security-extended. The quality queries are the
@@ -112,7 +112,7 @@ jobs:
       # leave a step in the log implying a build happened.
 
       - name: Analyze
-        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:
           category: /language:javascript-typescript
           # fact: code scanning on a private repository needs GitHub Advanced Security; without it the
@@ -145,14 +145,14 @@ jobs:
           persist-credentials: false
 
       - name: Initialise CodeQL
-        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:
           languages: actions
           build-mode: none
           queries: security-and-quality
 
       - name: Analyze
-        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:
           category: /language:actions
           upload: ${{ github.event.repository.private && 'never' || 'always' }}
