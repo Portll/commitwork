@@ -119,6 +119,16 @@ export function laneJavaEnv(check, env, resolveJavaHome) {
   return home ? { JAVA_HOME: home } : {};
 }
 
+export const SEMGREP_STORE = '~/.semgrep';
+
+// fact: a sandboxed Semgrep lane keeps its settings, log and version cache inside the declared ~/.semgrep / Semgrep puts them under XDG_CONFIG_HOME and XDG_CACHE_HOME when those name a directory, which every GitHub runner sets, and there it wrote outside the declared roots and died at "Read-only file system" before scanning (expiry: never, prev: broken)
+// An inherited value does not win here as it does for JAVA_HOME: a path outside the declared store is one the sandbox denies.
+export function laneSemgrepEnv(check, home) {
+  if (!(check.requires?.tools || []).includes('semgrep') || !(check.sandboxExtraWrites || []).includes(SEMGREP_STORE)) return {};
+  const store = `${home}/.semgrep`;
+  return { SEMGREP_SETTINGS_FILE: `${store}/settings.yml`, SEMGREP_LOG_FILE: `${store}/semgrep.log`, SEMGREP_VERSION_CACHE_PATH: `${store}/semgrep_version` };
+}
+
 // Tools whose entry point is a CPython script, MEASURED by reading the installed shebang rather
 // than inferred from the installer (ruff and zizmor ship via pipx and are native binaries, so a
 // pipx entry proves nothing). A tool absent from this set carries no claim either way.

@@ -217,8 +217,7 @@
       "id": "sast",
       "egress": "registry",
       "sandboxExtraWrites": [
-        "~/.semgrep",
-        "~/.cache/semgrep_version"
+        "~/.semgrep"
       ],
       "scopeNotes": [
         "metrics",
@@ -3008,8 +3007,7 @@
       "id": "sast-auto",
       "egress": "registry",
       "sandboxExtraWrites": [
-        "~/.semgrep",
-        "~/.cache/semgrep_version"
+        "~/.semgrep"
       ],
       "description": "Semgrep with the same three rule packs as the `sast` lane and WITHOUT --pro-intrafile, so the OSS engine is the only variable. Exists to MEASURE what the Pro engine buys: --pro-intrafile is interprocedural taint within a file and requires a Semgrep login; this lane requires no account.",
       "remediationPrompt": "You are triaging and fixing SAST findings from Semgrep (semgrep.sarif, SARIF format). For each result: read runs[].results[] \u2014 ruleId, message.text, and the file+region in locations[].physicalLocation. Work highest severity first (security-severity property, else level=error). For each real finding, fix the ROOT CAUSE, not the symptom: parameterize SQL instead of concatenating, encode/escape output at the sink for XSS, replace weak crypto/hashing, remove hardcoded credentials, validate/allowlist user-controlled paths and commands. For a genuine false positive, add a `// nosemgrep: <ruleId>` comment with a one-line justification rather than deleting the rule. Do not suppress a finding you have not understood. Show a diff per fix and note any that need a human decision.",

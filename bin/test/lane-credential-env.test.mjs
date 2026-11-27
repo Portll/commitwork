@@ -4,7 +4,8 @@
 // session outside the sandbox, and these cases pin who may receive it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { laneCredentialEnv, laneJavaEnv, GH_STORE } from '../lib/scanner-env.mjs';
+import { readFileSync } from 'node:fs';
+import { laneCredentialEnv, laneJavaEnv, laneSemgrepEnv, GH_STORE, SEMGREP_STORE } from '../lib/scanner-env.mjs';
 
 const counting = (value) => {
   const fn = () => { fn.calls++; return value; };
@@ -56,4 +57,26 @@ test('a lane that runs java gets JAVA_HOME resolved outside the sandbox, and not
   assert.deepEqual(laneJavaEnv(java, { JAVA_HOME: '/theirs' }, resolve), {}, 'an inherited JAVA_HOME wins');
   assert.deepEqual(laneJavaEnv({ requires: { tools: ['codeql'] } }, {}, resolve), {}, 'a lane without java gets nothing');
   assert.deepEqual(laneJavaEnv(java, {}, () => ''), {}, 'an unresolvable JDK sets nothing rather than an empty JAVA_HOME');
+});
+
+test('a sandboxed Semgrep lane keeps its three user files inside the declared store, whatever XDG says', () => {
+  const sast = { requires: { tools: ['semgrep'] }, sandboxExtraWrites: [SEMGREP_STORE] };
+  assert.deepEqual(laneSemgrepEnv(sast, '/home/runner'), {
+    SEMGREP_SETTINGS_FILE: '/home/runner/.semgrep/settings.yml',
+    SEMGREP_LOG_FILE: '/home/runner/.semgrep/semgrep.log',
+    SEMGREP_VERSION_CACHE_PATH: '/home/runner/.semgrep/semgrep_version',
+  });
+  assert.deepEqual(laneSemgrepEnv({ requires: { tools: ['semgrep'] } }, '/home/runner'), {}, 'no declared store, no pin into a path the sandbox denies');
+  assert.deepEqual(laneSemgrepEnv({ requires: { tools: ['opengrep'] }, sandboxExtraWrites: [SEMGREP_STORE] }, '/home/runner'), {}, 'another tool is not handed Semgrep variables');
+});
+
+test('every manifest lane that runs semgrep declares the store its pin points into', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../manifests/security-baseline.json', import.meta.url), 'utf8'));
+  const lanes = manifest.checks.filter((c) => (c.requires?.tools || []).includes('semgrep'));
+  assert.ok(lanes.length >= 2, 'sast and sast-auto');
+  for (const c of lanes) {
+    assert.ok((c.sandboxExtraWrites || []).includes(SEMGREP_STORE), `${c.id} declares ${SEMGREP_STORE}`);
+    assert.equal(Object.keys(laneSemgrepEnv(c, '/h')).length, 3, `${c.id} is pinned`);
+    assert.ok(!(c.sandboxExtraWrites || []).some((w) => w.includes('semgrep_version')), `${c.id} declares no version cache outside the store`);
+  }
 });

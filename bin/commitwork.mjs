@@ -29,7 +29,7 @@ import { findGitRepos } from '../lib/repo-walk.mjs'; // GNU `find` is not on Win
 import { homedir, tmpdir, cpus, loadavg, totalmem, constants as osConstants } from 'node:os';
 import { ensureFirstRunSetup, runSetup, parseSetupArgs, installHintFor, setupExitCode, loadCatalog } from './setup.mjs';
 import { runInit, parseInitArgs } from './init.mjs';
-import { withheldCredentials, scannerEnv, laneEnv, laneCredentialEnv, laneJavaEnv, laneWindowsEnv } from './lib/scanner-env.mjs';
+import { withheldCredentials, scannerEnv, laneEnv, laneCredentialEnv, laneJavaEnv, laneSemgrepEnv, laneWindowsEnv } from './lib/scanner-env.mjs';
 import { egressMode, startProxy, proxyEnv, recordObservation, upstreamProxy, containerised } from './lib/egress-observe.mjs';
 import { scannedGit } from './lib/git-env.mjs';
 import { cargoLaneEnv } from './lib/cargo-target.mjs'; // a sweep's cargo lanes build in their own folder, never the shared target-dir
@@ -752,6 +752,9 @@ function hostSandboxFor(check, repoPath, reportDir, laneWrites = [], targetEnv =
     const home = homedir();
     const links = symlinkReads(realOr(repoPath), check.sandboxExtraReads || [], { home });
     const javaEnv = laneJavaEnv(check, process.env, javaHome);
+    const semgrepEnv = laneSemgrepEnv(check, home);
+    // fact: the Semgrep store is made before the profile is built / bwrap skips a declared write that is absent, the store then stays read-only, and Semgrep dies creating it on a host that has never run it (expiry: never, prev: broken)
+    if (semgrepEnv.SEMGREP_SETTINGS_FILE) try { mkdirSync(dirname(semgrepEnv.SEMGREP_SETTINGS_FILE), { recursive: true, mode: 0o700 }); } catch { /* a home that refuses the directory leaves Semgrep to report its own failure */ }
     const spec = {
       egress: check.egress, repoPath: realOr(repoPath), reportDir: realOr(reportDir), platform: process.platform,
       cwRoot: realOr(ROOT), nodePrefix: dirname(dirname(realOr(process.execPath))), tmpDir: realOr(tmpdir()), home,
@@ -766,7 +769,7 @@ function hostSandboxFor(check, repoPath, reportDir, laneWrites = [], targetEnv =
     const pre = preflightHostSandbox(wrap);
     if (!pre.ok) return { refused: `host sandbox profile could not be applied, so the lane did not run: ${pre.why}` };
     const isolationReason = links.refused.length ? `symlink target(s) not made readable: ${links.refused.join('; ')}` : null;
-    return { wrap: spec, env: { ...laneCredentialEnv(check, process.env, ghAuthToken), ...javaEnv }, isolation: wrap.isolation, isolationReason };
+    return { wrap: spec, env: { ...laneCredentialEnv(check, process.env, ghAuthToken), ...javaEnv, ...semgrepEnv }, isolation: wrap.isolation, isolationReason };
   } catch (e) {
     return { refused: `host sandbox refused, so the lane did not run: ${e.message}` };
   }
