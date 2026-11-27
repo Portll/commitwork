@@ -1,109 +1,92 @@
 name: GitHub Action
 
-# Runs action.yml from this checkout (`uses: ./`) over the dirty scan canary, on a hosted runner.
-# bin/test/github-action.test.mjs runs the same steps under bash on every suite run; this is the
-# run on GitHub's own runner, which that test cannot be.
-#
-# Two jobs. `bare` installs nothing, so the scanner lanes cannot measure and the SARIF must name
-# each of them. `with-tools` installs the fast group's scanners, so those lanes must measure and
-# the dirty canary must produce results. Upload is off in both: the canary's findings are not this
-# repository's.
+# Diagnostic branch only, never merged: measures pasta's DNS forwarding on ubuntu-latest.
 
 on:
   push:
+    branches: ['diag/**']
     paths:
-      - action.yml
-      - bin/lib/github-action.mjs
-      - bin/lib/sarif-export.mjs
       - .github/workflows/github-action.yml
-  pull_request:
-    paths:
-      - action.yml
-      - bin/lib/github-action.mjs
-      - bin/lib/sarif-export.mjs
-      - .github/workflows/github-action.yml
-  workflow_dispatch:
-
-concurrency:
-  group: github-action-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  bare:
-    name: The action with no scanner installed
+  diag:
+    name: pasta DNS on ubuntu-latest
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - id: cw
-        uses: ./ # zizmor: ignore[self-repository] ./ is the documented local-action form; $/ is unverified on hosted runners here
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          path: fixtures/scan-canary/dirty
-          upload-sarif: 'false'
-          fail-on: none
-      - name: The SARIF was written and names every lane that did not measure
-        env:
-          SARIF: ${{ steps.cw.outputs.sarif }}
-          REPORT_DIR: ${{ steps.cw.outputs.report-dir }}
-          FAILED: ${{ steps.cw.outputs.failed }}
-          UNMEASURED: ${{ steps.cw.outputs.unmeasured }}
+          node-version: '26'
+      - name: Host
         run: |
-          test -s "$SARIF"
-          test "$FAILED" = false
-          # shellcheck disable=SC2016 # the ${} are JavaScript template literals
-          node -e '
-            const fs = require("fs");
-            const run = JSON.parse(fs.readFileSync(process.env.SARIF, "utf8")).runs[0];
-            const warned = new Set(run.invocations[0].toolExecutionNotifications.filter((n) => n.level === "warning").map((n) => n.descriptor.id));
-            const status = JSON.parse(fs.readFileSync(`${process.env.REPORT_DIR}/checks-status.json`, "utf8"));
-            const voided = status.filter((s) => s.status === "noscan").map((s) => s.check);
-            const missing = voided.filter((id) => !warned.has(id));
-            if (!voided.length) { console.error("no lane was voided on a bare runner; the scanners are installed after all"); process.exit(1); }
-            if (missing.length) { console.error(`did not measure and not named in the SARIF: ${missing.join(", ")}`); process.exit(1); }
-            if (String(warned.size) !== process.env.UNMEASURED) { console.error(`unmeasured output ${process.env.UNMEASURED}, SARIF ${warned.size}`); process.exit(1); }
-            console.log(`${run.results.length} result(s); not measured: ${[...warned].join(", ")}`);
-          '
-
-  with-tools:
-    name: The action with the fast group's scanners installed
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - id: cw
-        uses: ./ # zizmor: ignore[self-repository] ./ is the documented local-action form; $/ is unverified on hosted runners here
-        with:
-          path: fixtures/scan-canary/dirty
-          upload-sarif: 'false'
-          fail-on: none
-          install-tools: 'true'
-      - name: The scanner lanes measured and the canary produced results
-        env:
-          SARIF: ${{ steps.cw.outputs.sarif }}
-          RESULTS: ${{ steps.cw.outputs.results }}
-          REPORT_DIR: ${{ steps.cw.outputs.report-dir }}
+          set +e
+          head -4 /etc/os-release
+          pasta --version 2>&1 | head -2
+          dpkg-query -W passt bubblewrap
+          bwrap --version
+          echo "--- /etc/resolv.conf -> $(readlink -f /etc/resolv.conf)"
+          grep -v '^#' /etc/resolv.conf
+          echo "--- /run/systemd/resolve/resolv.conf"
+          grep -v '^#' /run/systemd/resolve/resolv.conf
+          echo "--- routes"
+          ip -4 route
+          ip -6 route
+          ip -brief addr
+          sysctl kernel.apparmor_restrict_unprivileged_userns
+          sudo aa-status 2>/dev/null | grep -iE 'pasta|passt|bwrap'
+      - name: Variants
         run: |
-          test -s "$SARIF"
-          test "$RESULTS" -gt 0
-          # shellcheck disable=SC2016 # the ${} are JavaScript template literals
-          node -e '
-            const fs = require("fs");
-            const run = JSON.parse(fs.readFileSync(process.env.SARIF, "utf8")).runs[0];
-            const warned = run.invocations[0].toolExecutionNotifications.filter((n) => n.level === "warning").map((n) => n.descriptor.id);
-            const logs = { "secrets-gitleaks": "gitleaks.log", sast: "semgrep.log", "actions-zizmor": "zizmor.log" };
-            const blind = Object.keys(logs).filter((id) => warned.includes(id));
-            for (const id of blind) {
-              const path = `${process.env.REPORT_DIR}/${logs[id]}`;
-              const tail = fs.existsSync(path) ? fs.readFileSync(path, "utf8").trimEnd().split("\n").slice(-80).join("\n") : "";
-              console.error(`::group::${id}: ${logs[id]}\n${tail || "(the scanner wrote nothing to its log)"}\n::endgroup::`);
-            }
-            if (blind.length) { console.error(`installed and still not measured: ${blind.join(", ")}`); process.exit(1); }
-            console.log(`${run.results.length} result(s); not measured: ${warned.join(", ") || "none"}`);
-          '
+          set +e
+          cat > "$RUNNER_TEMP/probe.mjs" <<'EOF'
+          import dns from 'node:dns';
+          import net from 'node:net';
+          const out = {};
+          for (const s of process.argv.slice(2)) {
+            const r = new dns.promises.Resolver({ timeout: 2500, tries: 1 });
+            r.setServers([s]);
+            const t0 = Date.now();
+            out[`udp ${s}`] = await r.resolve4('semgrep.dev').then((a) => `OK ${a[0]} ${Date.now() - t0}ms`, (e) => `${e.code} ${Date.now() - t0}ms`);
+          }
+          out.tcp = await new Promise((r) => {
+            const s = net.connect({ host: '1.1.1.1', port: 443 });
+            s.once('connect', () => { s.destroy(); r('CONNECTED'); });
+            s.once('error', (e) => r(e.code));
+            setTimeout(() => { s.destroy(); r('TIMEOUT'); }, 4000);
+          });
+          console.log(JSON.stringify(out));
+          EOF
+          UP=$(awk '/^nameserver/{print $2; exit}' /run/systemd/resolve/resolv.conf)
+          IF=$(ip -4 route show default | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+          NODE=$(command -v node)
+          echo "upstream=$UP iface=$IF"
+          echo "control (host): $("$NODE" "$RUNNER_TEMP/probe.mjs" 127.0.0.53 "$UP")"
+          BASE=(--config-net --tcp-ports none --udp-ports none --tcp-ns none --udp-ns none)
+          variant() {
+            local name=$1; shift
+            echo "== $name: pasta $*"
+            timeout 40 pasta "$@" -- "$NODE" "$RUNNER_TEMP/probe.mjs" 169.254.1.1 "$UP" 2>&1 | tail -5
+            echo "   exit=${PIPESTATUS[0]}"
+          }
+          variant A-product --quiet --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1 --outbound-if4 "$IF"
+          variant B-no-outbound-if --quiet --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1
+          variant C-map-gw --quiet "${BASE[@]}" --dns-forward 169.254.1.1 --outbound-if4 "$IF"
+          variant D-dns-host --quiet --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1 --dns-host "$UP" --outbound-if4 "$IF"
+          variant E-no-map-no-if --quiet "${BASE[@]}" --dns-forward 169.254.1.1
+          echo "== A with --debug"
+          timeout 40 pasta --debug --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1 --outbound-if4 "$IF" -- "$NODE" "$RUNNER_TEMP/probe.mjs" 169.254.1.1 > "$RUNNER_TEMP/debug.log" 2>&1
+          grep -niE 'dns|resolv|flow|bind|fail|error|warn|169\.254|127\.0\.0\.53|unreach|invalid' "$RUNNER_TEMP/debug.log" | head -80
+          echo "--- last lines"
+          tail -15 "$RUNNER_TEMP/debug.log"
+      - name: Live sandbox tests
+        if: always()
+        run: |
+          set +e
+          node --test bin/test/sandbox-netns-live.test.mjs > "$RUNNER_TEMP/live.log" 2>&1
+          echo "exit=$?"
+          grep -nE '^\s*(✔|✖|﹣)|^ℹ|name resolution|dns|AssertionError|Error:' "$RUNNER_TEMP/live.log" | head -80
