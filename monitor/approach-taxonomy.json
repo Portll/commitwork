@@ -477,6 +477,18 @@
       "escalates": "coverage is unmeasurable by construction (the rust extractor emits no expected-files baseline), so every zero carries coverageIncomplete — treat a clean run as a floor, never an all-clear."
     },
     {
+      "check": "sast-codeql-actions",
+      "weaknessClasses": [
+        "ci-workflow-injection"
+      ],
+      "oracleTier": 2,
+      "name": "CodeQL — taint analysis of GitHub Actions workflows",
+      "type": "sast",
+      "sourceKind": "config",
+      "findsSourceVulns": true,
+      "escalates": "an injection or untrusted-checkout result in a privileged trigger is code execution on a runner holding repository credentials, by anyone who can open an issue or a pull request. Coverage is unmeasurable by construction (no expected-files baseline for YAML), so every zero carries coverageIncomplete: read a clean run beside actions-zizmor, never instead of it."
+    },
+    {
       "check": "sast-codeql-go",
       "weaknessClasses": [
         "cwe-78-command-injection",

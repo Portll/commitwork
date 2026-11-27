@@ -359,6 +359,7 @@ const SCANNER_LABEL={
   sastCodeqlCsharp:'SAST · CodeQL (C#)',
   sastCodeqlRust:'SAST · CodeQL (Rust)',
   sastCodeqlGo:'SAST · CodeQL (Go)',
+  sastCodeqlActions:'SAST · CodeQL (GitHub Actions)',
   sastAuto:'SAST · Semgrep --auto (comparison run)',
   sastJoern:'SAST · Joern (CPG, C/C++/binary)',
   sastBearer:'Data-flow · Bearer (privacy/PII)',

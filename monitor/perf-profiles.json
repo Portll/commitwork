@@ -580,6 +580,11 @@
       "container": false,
       "note": "Reads Cargo.lock against the cached RustSec advisory DB. As of 2026-08-28, on a 719-dependency Rust workspace: 5.5s with the DB cached; the first run adds a one-time git clone of the advisory DB."
     },
+    "sast-codeql-actions": {
+      "cost": "medium",
+      "container": false,
+      "note": "Builds a CodeQL database from workflow and action YAML only, so cost follows the number of workflows and not the size of the repository. As of 2026-11-28, on two workflows: 22s for pack download, database create and analyze together."
+    },
     "sast-codeql-rust": {
       "cost": "very-heavy",
       "container": false,

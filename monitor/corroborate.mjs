@@ -167,6 +167,7 @@ export const SAST_JOIN_KEYS = [
   'sastSemgrep', 'sastAuto', 'sastGo',
   'sastCodeql', 'sastCodeqlJava', 'sastCodeqlPython', 'sastCodeqlRuby',
   'sastCodeqlCpp', 'sastCodeqlSwift', 'sastCodeqlCsharp', 'sastCodeqlRust', 'sastCodeqlGo',
+  'sastCodeqlActions',
   'sastJoern', 'sastBearer', 'sastElixir', 'sastBrakeman', 'sastPhp',
 ];
 

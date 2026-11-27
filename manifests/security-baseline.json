@@ -1382,6 +1382,53 @@
       ]
     },
     {
+      "id": "sast-codeql-actions",
+      "egress": "registry",
+      "sandboxExtraWrites": [
+        "~/.codeql"
+      ],
+      "description": "CodeQL analysis of GitHub Actions workflows and action metadata. Runs under build-mode NONE \u2014 the extractor reads YAML and builds nothing, so this lane executes no code from the scanned repository and needs no sandbox.",
+      "remediationPrompt": "You are fixing CodeQL GitHub Actions results (codeql-actions.sarif). Each result names a workflow or action file and the step it concerns; quote the rule id and the step so the fix matches what the query found. The usual fixes are: pass an untrusted expression to a script through env rather than interpolating it, declare least-privilege permissions on the workflow or job, and never check out or run pull-request code in a privileged trigger. Do not suppress a result to make the lane pass \u2014 an inline suppression comment does NOT work under the CodeQL CLI, so a \"suppressed\" finding here is simply an unfixed one. If a result is a genuine false positive, say why in the remediation notes rather than editing the query.",
+      "notes": "The tenth CodeQL language and the only one that reads no program source: the actions extractor indexes .github/workflows/*.yml|yaml, .github/reusable_workflows/**, every action.yml|yaml and actions.lock, and nothing else. It prepends those includes and then appends LGTM_INDEX_FILTERS, so the shared exclude-only filter file composes with it unchanged. This is the language GitHub code scanning runs as `actions`; without this lane a repository whose workflows GitHub scans had no local counterpart for those queries. It overlaps actions-zizmor on purpose and replaces nothing: zizmor audits posture by pattern, CodeQL follows untrusted input from a trigger to a sink across steps and jobs, and one lane must never stand in for another that did not run. build-mode none is the only mode the extractor supports. Gated on .github/workflows or an action.yml|yaml anywhere in the tree, the same files the extractor reads.",
+      "local": [
+        "test -r \"$CW_ROOT/manifests/codeql-filters.txt\" || { echo \"sast-codeql-actions: REFUSED to index unbounded \u2014 $CW_ROOT/manifests/codeql-filters.txt is missing or unreadable. Writing NO sarif, which classifies noscan \u2014 a visible void, never a clean zero.\" >&2; exit 1; }; LGTM_INDEX_FILTERS=\"$(node \"$CW_ROOT/bin/codeql-index-filters.mjs\" \"$CW_ROOT/manifests/codeql-filters.txt\")\" || { echo \"sast-codeql-actions: REFUSED to index unbounded \u2014 bin/codeql-index-filters.mjs produced no filter from $CW_ROOT/manifests/codeql-filters.txt (missing, unreadable, no rule, or the tool did not run; the line above says which), writing NO sarif, which classifies noscan \u2014 a visible void, never a clean zero.\" >&2; exit 1; }; export LGTM_INDEX_FILTERS; codeql pack download codeql/actions-queries >\"$CW_REPORT_DIR/codeql-actions.log\" 2>&1 || { echo \"sast-codeql-actions: pack download FAILED \u2014 not scanning. The analyze step would die at \\\"Query pack cannot be found\\\", which names the symptom and not this. Writing NO sarif, which classifies noscan \u2014 a visible void, never a clean zero.\" >&2; exit 1; }; codeql database create \"$CW_REPORT_DIR/codeql-actions-db\" --language=actions --build-mode=none --source-root=. --overwrite >>\"$CW_REPORT_DIR/codeql-actions.log\" 2>&1 && codeql database analyze \"$CW_REPORT_DIR/codeql-actions-db\" $(node \"$CW_ROOT/bin/codeql-model-pack.mjs\" actions) --format=sarif-latest --output=\"$CW_REPORT_DIR/codeql-actions.sarif\" >>\"$CW_REPORT_DIR/codeql-actions.log\" 2>&1; echo $? > \"$CW_REPORT_DIR/codeql-actions.sarif.exit\"; [ -s \"$CW_REPORT_DIR/codeql-actions.sarif\" ] && rm -rf \"$CW_REPORT_DIR/codeql-actions-db\""
+      ],
+      "report": {
+        "file": "codeql-actions.sarif",
+        "format": "sarif",
+        "exitCodes": {
+          "0": { "outcome": "measured", "meaning": "database create and analyze completed and wrote the SARIF, with or without results; files the extractor could not read are listed in it" },
+          "2": { "outcome": "unmeasured", "meaning": "database create or analyze failed (extractor, query pack or argument error); no SARIF written" },
+          "3": { "outcome": "unmeasured", "meaning": "the codeql launcher could not find its installation; nothing ran" },
+          "32": { "outcome": "unmeasured", "meaning": "the extractor saw no workflow or action file after the index filters; empty database, no SARIF" },
+          "33": { "outcome": "unmeasured", "meaning": "a query evaluation timed out, so the analysis is incomplete" },
+          "98": { "outcome": "unmeasured", "meaning": "the evaluation was cancelled; no SARIF written" },
+          "99": { "outcome": "unmeasured", "meaning": "codeql ran out of memory; no SARIF written" },
+          "100": { "outcome": "unmeasured", "meaning": "codeql hit a fatal internal error; no SARIF written" }
+        }
+      },
+      "requires": {
+        "tools": [
+          "codeql"
+        ]
+      },
+      "appliesIfExists": [
+        ".github/workflows",
+        "action.yml",
+        "action.yaml"
+      ],
+      "groups": [
+        "all",
+        "deep"
+      ],
+      "formatNotes": "A SARIF document must have runs[] (REQUIRED by the SARIF spec). Absence of runs[] indicates tool failure, not a clean scan; an empty runs:[] is valid and clean. A PREREQUISITE: codeql database analyze needs the codeql/actions-queries pack, and a fresh CodeQL install caches only the packs it has already been asked for, so the local command runs `codeql pack download` first; if it fails, no sarif is written and the lane reads as the void it is. COVERAGE IS UNMEASURABLE: the extractor reports actions/diagnostics/successfully-extracted-files but no expected-extracted-files baseline for YAML, so there is no denominator and a zero here always carries coverageIncomplete. Verified 2026-11-28 with codeql 2.27.5 on this repository: pack download, database create and analyze all exited 0, 7 files extracted (6 workflows and action.yml), 17 rules loaded, 0 results.",
+      "scopeNotes": [
+        "language",
+        "build-mode-none",
+        "codeql-extractor-baseline"
+      ]
+    },
+    {
       "id": "sast-codeql-python",
       "egress": "registry",
       "sandboxExtraWrites": [

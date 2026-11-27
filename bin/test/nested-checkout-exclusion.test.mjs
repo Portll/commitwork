@@ -57,7 +57,7 @@ const PINNED = {
   'sast-bearer': 'bearer', 'supply-chain-socket': 'socket',
   'sast-codeql': 'codeql', 'sast-codeql-java': 'codeql', 'sast-codeql-python': 'codeql', 'sast-codeql-ruby': 'codeql',
   'sast-codeql-cpp': 'codeql', 'sast-codeql-csharp': 'codeql', 'sast-codeql-swift': 'codeql', 'sast-codeql-rust': 'codeql',
-  'sast-codeql-go': 'codeql',
+  'sast-codeql-go': 'codeql', 'sast-codeql-actions': 'codeql',
   'shell-lint': 'sharedList', 'sast-joern': 'sharedList',
 };
 

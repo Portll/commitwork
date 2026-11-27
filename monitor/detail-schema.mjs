@@ -70,6 +70,12 @@ export const ROW_SCHEMAS = Object.freeze({
     identity: ['rule', 'file'],
     note: "One row per CodeQL Go result. The database is built by tracing `go build` per module (bin/codeql-go-build.mjs), never the autobuilder, which would run the scanned repository's own build scripts. A module that does not compile leaves its files as extraction errors, which codeql-coverage subtracts, so a zero under reduced coverage is undetermined rather than clean. `cwe` per cweOf() — blank means the rule asserted none.",
   },
+  sastCodeqlActions: {
+    fields: [['rule', 'str', 'Rule'], ['file', 'path', 'File'], ['line', 'int', 'Line'], ['sev', 'sev', 'Severity'], ['message', 'text', 'Message'], ['cwe', 'str', 'Weakness'], ['corroboratedBy', 'str', 'Corroborated by']],
+    sort: ['file', 'line', 'rule', 'message'],
+    identity: ['rule', 'file'],
+    note: "One row per CodeQL GitHub Actions result, read from workflow and action YAML under build-mode none. Coverage is unmeasurable by construction (the actions extractor lists the files it read but no expected-extracted-files baseline for them), so zeros here always carry coverageIncomplete. `cwe` per cweOf() — blank means the rule asserted none.",
+  },
   sastCodeqlRust: {
     fields: [['rule', 'str', 'Rule'], ['file', 'path', 'File'], ['line', 'int', 'Line'], ['sev', 'sev', 'Severity'], ['message', 'text', 'Message'], ['cwe', 'str', 'Weakness'], ['corroboratedBy', 'str', 'Corroborated by']],
     sort: ['file', 'line', 'rule', 'message'],

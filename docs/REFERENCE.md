@@ -3807,7 +3807,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 
 ## Manifest keys
 
-Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (93); 112 checks in all.
+Lane manifests (`$schema` is `manifest.schema.json`): `manifests/build-health.json` (6), `manifests/hermetic-tests.json` (1), `manifests/quality-gates.json` (5), `manifests/runtime.json` (7), `manifests/security-baseline.json` (94); 113 checks in all.
 A nested key is written `parent.child`. A key the schema declares and no check uses is listed with 0.
 
 ### Check keys
@@ -3819,7 +3819,7 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `act.enabled` | 0 | undocumented |
 | `act.job` | 0 | Optional specific job id to run (act -j). |
 | `aliasOf` | 2 | This check reports into another check's category. |
-| `appliesIfExists` | 52 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
+| `appliesIfExists` | 53 | During `scan`, only run this check if at least one of these paths exists in the repo (e.g. package.json). |
 | `appliesIfGit` | 5 | During `scan`, only run this check if the target is a git repo. |
 | `appliesIfSourceExt` | 25 | Only run this check if a source file with one of these extensions exists in the tree (bounded walk, vendored/build dirs skipped). |
 | `containment` | 3 | A lane's exclusion from a group, declared as DATA rather than argued in prose. |
@@ -3827,29 +3827,29 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `containment.reason` | 3 | Why the exclusion exists, in terms a reader can check. |
 | `containment.reviewBy` | 3 | When this exclusion must be revisited, as an ISO-8601 UTC instant. |
 | `coverageSignals` | 4 | Patterns in this check's log that mean a LANE OF THE CHECK DID NOT RUN, even though the tool exited 0. |
-| `description` | 112 | undocumented |
-| `egress` | 112 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
+| `description` | 113 | undocumented |
+| `egress` | 113 | What this lane reaches over the network, declared so the host sandbox can deny everything else. |
 | `envPassthrough` | 5 | Credential-shaped environment names (…_TOKEN, …_SECRET, …_API_KEY, …_BEARER_x) this analyser lane may inherit from the operator's environment. |
 | `executesRepoCode` | 13 | This lane runs the scanned repository's own build, test or install code. |
-| `formatNotes` | 91 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
-| `groups` | 112 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
-| `id` | 112 | Stable check id, conventionally matching the workflow filename stem. |
-| `local` | 112 | Shell commands run in sequence (fail-fast) in repoPath. |
+| `formatNotes` | 92 | Scanner-specific FORMAT FACTS composed into every triage handoff alongside remediationPrompt — the exact mechanics of this scanner's suppression/config syntax (e.g. a .gitleaksignore line IS the finding's Fingerprint fi… |
+| `groups` | 113 | Membership tags; lets `run &lt;group&gt;` select this check in addition to the top-level groups map. |
+| `id` | 113 | Stable check id, conventionally matching the workflow filename stem. |
+| `local` | 113 | Shell commands run in sequence (fail-fast) in repoPath. |
 | `notALane` | 17 | Why this check feeds no lane: it writes an inventory, a count or a status that no reader derives a finding from. |
-| `notes` | 72 | undocumented |
+| `notes` | 73 | undocumented |
 | `producesIfExists` | 1 | Artifact globs (e.g. *.jar) that must exist somewhere in the repo for an empty-clean result to be trustworthy; otherwise the check is recorded as a void ('no scannable artifact — build first'). |
-| `remediationPrompt` | 89 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
-| `report` | 112 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
-| `report.exitCodes` | 92 | Every exit code the tool can end with, each marked measured (the report is a result) or unmeasured (it is not). |
-| `report.file` | 112 | Filename written under $CW_REPORT_DIR. |
+| `remediationPrompt` | 90 | A prompt an operator can feed to an AI coding assistant to remediate this scanner's findings — templated guidance, not per-finding text. |
+| `report` | 113 | Declares the structured artifact this check writes (into $CW_REPORT_DIR) so `scan` can parse finding counts. |
+| `report.exitCodes` | 93 | Every exit code the tool can end with, each marked measured (the report is a result) or unmeasured (it is not). |
+| `report.file` | 113 | Filename written under $CW_REPORT_DIR. |
 | `report.findingsExit` | 4 | Exit codes the tool documents as meaning it ran and reported findings. |
-| `report.format` | 112 | Report format. |
+| `report.format` | 113 | Report format. |
 | `report.log` | 19 | Filename (under $CW_REPORT_DIR) of the tool's own log. |
-| `requires` | 112 | Gating conditions. |
+| `requires` | 113 | Gating conditions. |
 | `requires.docker` | 4 | Requires a running Docker daemon. |
 | `requires.secrets` | 2 | Env vars that must be set (checked in process env and repoPath/.env). |
 | `requires.services` | 7 | Free-text service prerequisites surfaced to the user (e.g. 'docker daemon', 'live Supabase'). Informational. |
-| `requires.tools` | 112 | Executables that must be on PATH. |
+| `requires.tools` | 113 | Executables that must be on PATH. |
 | `requiresRepoTrust` | 2 | The lane's command runs a script the scanned repository supplies, not a bundled scanner. |
 | `requiresUrl` | 10 | Runtime scanner: needs a live base URL (--url/--urls/commitwork.url/$CW_TARGET_URL). |
 | `reuse` | 3 | Declares the lane's result a function of inputs bin/lib/lane-reuse.mjs can key: the scanned tree's files, this check, the files under the commitwork root listed in inputs (and their local imports), the tool versions, th… |
@@ -3858,9 +3858,9 @@ A nested key is written `parent.child`. A key the schema declares and no check u
 | `reuse.outputs` | 3 | Files the lane writes into CW_REPORT_DIR, as names or * patterns; must include report.file. |
 | `reuse.packs` | 2 | Query packs the tool loads locally: codeql keys the CodeQL package cache and the repository's CodeQL models, joern the query database installed beside the joern-scan launcher. |
 | `sandboxExtraReads` | 19 | Paths this lane must read beyond the host sandbox's fixed set (the scanned tree, commitwork, the system prefixes, the node prefix, TMPDIR, the prefix of each `requires.tools` binary, ~/.gitconfig). |
-| `sandboxExtraWrites` | 42 | Paths this lane must write beyond $CW_REPORT_DIR and TMPDIR: a tool's own cache (~/.semgrep, ~/Library/Caches/trivy, ~/.codeql). |
+| `sandboxExtraWrites` | 43 | Paths this lane must write beyond $CW_REPORT_DIR and TMPDIR: a tool's own cache (~/.semgrep, ~/Library/Caches/trivy, ~/.codeql). |
 | `sandboxLoopback` | 2 | The lane's tool connects over TCP loopback to worker processes it starts itself. |
-| `scopeNotes` | 20 | Named limits on what this check can see (e.g. 'language', 'codeql-extractor-baseline'). |
+| `scopeNotes` | 21 | Named limits on what this check can see (e.g. 'language', 'codeql-extractor-baseline'). |
 | `skipsOnGitHub` | 1 | Workflow steps deliberately NOT reproduced locally (SARIF upload, PR comments, artifact retention, cloud uploads). |
 | `timeoutSec` | 9 | Wall-clock bound in seconds for this check. |
 | `workflow` | 0 | Path (relative to repoPath) to the GitHub workflow this check mirrors. |

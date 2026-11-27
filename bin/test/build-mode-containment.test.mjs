@@ -135,7 +135,7 @@ describe('the guard bites', () => {
   });
 
   test('build-mode none is NOT treated as building — the non-executing lanes stay in `all`', () => {
-    for (const id of ['sast-codeql-python', 'sast-codeql-ruby', 'sast-codeql-csharp', 'sast-codeql-cpp']) {
+    for (const id of ['sast-codeql-python', 'sast-codeql-ruby', 'sast-codeql-csharp', 'sast-codeql-cpp', 'sast-codeql-actions']) {
       const c = checksOf().find((x) => x.id === id);
       assert.ok(c, `${id} missing from the manifest`);
       assert.equal(buildsScannedTree(c), false,

@@ -27,6 +27,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const LIBRARY = Object.freeze({
   'javascript-typescript': 'javascript', javascript: 'javascript', java: 'java', ruby: 'ruby', python: 'python',
   cpp: 'cpp', swift: 'swift', csharp: 'csharp', rust: 'rust', go: 'go',
+  actions: 'actions',
 });
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'repo';
 

@@ -87,6 +87,7 @@ export const CLASS_FOR_CATEGORY = Object.freeze({
   sastCodeqlCsharp: 'S',
   sastCodeqlRust: 'S',
   sastCodeqlGo: 'S',
+  sastCodeqlActions: 'S',
   depsRustAudit: 'S',
   lintHaskell: 'S',
   sastAuto: 'S',

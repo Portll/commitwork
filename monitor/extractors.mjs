@@ -150,6 +150,9 @@ const SCANNER_SPECS = [
   // carries coverageIncomplete; that is fail-closed, not a defect (see codeql-coverage.mjs).
   ['sastCodeqlRust', 'sast-codeql-rust', (d) => _sarifDetail(d, 'codeql-rust.sarif', 'sastCodeqlRust', 'sast-codeql-rust')],
   ['sastCodeqlGo', 'sast-codeql-go', (d) => _sarifDetail(d, 'codeql-go.sarif', 'sastCodeqlGo', 'sast-codeql-go')],
+  // The actions extractor lists the YAML it read but no expected-extracted-files baseline for it,
+  // so coverage is unmeasurable and every zero carries coverageIncomplete, as for rust.
+  ['sastCodeqlActions', 'sast-codeql-actions', (d) => _sarifDetail(d, 'codeql-actions.sarif', 'sastCodeqlActions', 'sast-codeql-actions')],
   ['sastAuto', 'sast-auto', (d) => _sarifDetail(d, 'semgrep-auto.sarif', 'sastAuto')],
   // All three parsers are written against real runs; joern's artifact is text because the tool
   // writes no JSON.

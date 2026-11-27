@@ -654,6 +654,20 @@
    "draftedBy": "hand-written seed, 2026-10-04",
    "accepted": "2026-10-04"
   },
+  "sastCodeqlActions": {
+   "source": "real",
+   "pruned": "14 unreferenced SARIF rule definitions removed",
+   "check": "sast-codeql-actions",
+   "tools": [
+    "codeql"
+   ],
+   "files": [
+    "codeql-actions.sarif",
+    "codeql-actions.sarif.exit"
+   ],
+   "draftedBy": "hand-written seed, 2026-11-28",
+   "accepted": "2026-11-28T00:00:00Z"
+  },
   "sastCodeqlCpp": {
    "source": "real",
    "pruned": "56 unreferenced SARIF rule definitions removed",

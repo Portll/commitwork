@@ -75,6 +75,7 @@ export const DATAFLOW_SOURCES = Object.freeze([
 export const DATAFLOW_LANES = Object.freeze(new Set([
   'sastCodeql', 'sastCodeqlJava', 'sastCodeqlPython', 'sastCodeqlRuby', 'sastCodeqlCpp',
   'sastCodeqlSwift', 'sastCodeqlCsharp', 'sastCodeqlRust', 'sastCodeqlGo',
+  'sastCodeqlActions',
   'sastPhpPsalm', 'sastSemgrep', 'sastAuto',
 ]));
 

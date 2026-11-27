@@ -149,6 +149,7 @@ const CWE_ROW_KEYS = new Set([
   'sastSemgrep', 'sastAuto', 'sastGo',
   'sastCodeql', 'sastCodeqlJava', 'sastCodeqlPython', 'sastCodeqlRuby',
   'sastCodeqlCpp', 'sastCodeqlSwift', 'sastCodeqlCsharp', 'sastCodeqlRust', 'sastCodeqlGo',
+  'sastCodeqlActions',
   'sastCCppcheck', 'sastCFlawfinder',
 ]);
 // sastBrakeman is NOT in this set: it is a _brakemanCounts row (cwe already comes from Brakeman's

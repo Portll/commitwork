@@ -49,6 +49,7 @@
     "sastCodeqlCsharp": "dataflow",
     "sastCodeqlRust": "dataflow",
     "sastCodeqlGo": "dataflow",
+    "sastCodeqlActions": "dataflow",
     "sastJoern": "dataflow",
     "sastBearer": "dataflow",
     "sastPhpPsalm": "dataflow",

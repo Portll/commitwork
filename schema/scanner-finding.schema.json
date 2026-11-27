@@ -582,6 +582,102 @@
         }
       }
     },
+    "sastCodeqlActions": {
+      "type": "array",
+      "description": "One row per CodeQL GitHub Actions result, read from workflow and action YAML under build-mode none. Coverage is unmeasurable by construction (the actions extractor lists the files it read but no expected-extracted-files baseline for them), so zeros here always carry coverageIncomplete. `cwe` per cweOf() — blank means the rule asserted none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule",
+          "file",
+          "line",
+          "sev",
+          "message",
+          "cwe",
+          "corroboratedBy"
+        ],
+        "properties": {
+          "repo": {
+            "type": "string",
+            "description": "prepended by the rollup fleet flatten"
+          },
+          "annotation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "at",
+              "reason",
+              "who",
+              "whoKind"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "accept",
+                  "false-positive",
+                  "wont-fix"
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "who": {
+                "type": "string"
+              },
+              "whoKind": {
+                "type": "string"
+              }
+            }
+          },
+          "rule": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Rule"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "File"
+          },
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "sev": {
+            "type": "string",
+            "enum": [
+              "",
+              "crit",
+              "high",
+              "med",
+              "low"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4080,
+            "title": "Message"
+          },
+          "cwe": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Weakness"
+          },
+          "corroboratedBy": {
+            "type": "string",
+            "maxLength": 240,
+            "title": "Corroborated by"
+          }
+        }
+      }
+    },
     "sastCodeqlRust": {
       "type": "array",
       "description": "One row per CodeQL Rust result, extracted buildless; as of 2026-08-26, that executes no build.rs or proc-macro. Coverage is unmeasurable by construction (no expected-extracted-files baseline from the rust extractor), so zeros here always carry coverageIncomplete. `cwe` per cweOf() — blank means the rule asserted none.",

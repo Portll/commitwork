@@ -78,7 +78,7 @@ test('an unreadable filter file exits 1 with NOTHING on stdout', (t) => {
 
 test('every sast-codeql* lane assigns from the tool, refuses on its failure, then exports', () => {
   const cs = lanes();
-  assert.equal(cs.length, 9, 'nine CodeQL lanes');
+  assert.equal(cs.length, 10, 'ten CodeQL lanes');
   for (const c of cs) {
     const cmd = (c.local || []).join('\n');
     const m = fragmentOf(c);

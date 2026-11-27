@@ -100,6 +100,7 @@
     "sast-codeql-csharp":            { "category": null,          "nist80053": ["SA-11", "SA-15"], "soc2": ["CC7.1", "CC8.1"], "cra": ["3"] },
     "sast-codeql-rust":              { "category": null,          "nist80053": ["SA-11", "SA-15"], "soc2": ["CC7.1", "CC8.1"], "cra": ["3"] },
     "sast-codeql-go":                { "category": null,          "nist80053": ["SA-11", "SA-15"], "soc2": ["CC7.1", "CC8.1"], "cra": ["3"] },
+    "sast-codeql-actions":           { "category": null,          "nist80053": ["SA-11", "SA-15"], "soc2": ["CC7.1", "CC8.1"], "cra": ["3"] },
     "deps-rust-audit":               { "category": null,          "nist80053": ["RA-5", "SR-3"], "soc2": ["CC7.1"], "cra": ["1", "2"] },
     "jackson-caseinsensitive-guard": { "category": null,          "nist80053": ["SA-11"], "soc2": ["CC7.1"], "cra": ["3"] },
     "deps-osv":                      { "category": "maliciousPackages", "nist80053": ["RA-5", "SR-3", "SI-3"], "soc2": ["CC7.1"], "cra": ["1", "2"] },

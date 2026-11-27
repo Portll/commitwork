@@ -11,6 +11,7 @@ export const SCANNER_CHECKS = Object.freeze({
   sastCodeqlCsharp: 'sast-codeql-csharp',
   sastCodeqlRust: 'sast-codeql-rust',
   sastCodeqlGo: 'sast-codeql-go',
+  sastCodeqlActions: 'sast-codeql-actions',
   sastAuto: 'sast-auto',
   sastElixir: 'sast-elixir-sobelow',
   lintHaskell: 'lint-haskell-hlint',
