@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-368 commands: 168 declared, 13 prose, 187 undeclared. Of the declared, 134 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
+369 commands: 169 declared, 13 prose, 187 undeclared. Of the declared, 135 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -1306,6 +1306,14 @@ Undeclared: `a11y-scan.mjs`, `actions-grade.mjs`, `addsecret.mjs`, `adjudicate-g
 | 2 | the sweep itself failed to run (an unreadable closure point is not a clean loop) |
 | 23 | nothing flagged or unclassified but at least one named open finding |
 | 24 | nothing flagged but at least one row UNCLASSIFIED: a warning that a closure point went unchecked, printed with a suggested fix where one can be derived. 21 beats 24 beats 23: a flag is the strongest statement, and a point nobody checked outranks a gap already named. Every count still travels in the report. |
+
+### `monitor/sweep-queue.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | listed, or reaped with every reap recorded |
+| 1 | the queue or a slot was unreadable, or a reap failed or went unrecorded |
+| 2 | usage |
 
 ### `monitor/transcript-secrets.mjs`
 

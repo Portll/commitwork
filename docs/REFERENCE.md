@@ -10,9 +10,9 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 352 | 288 | 64 |
-| Exit codes (declared in the header) | 368 | 168 | 200 |
-| `CW_*` environment variables (described in an `env` header) | 968 | 235 | 733 |
+| Commands (a usage line in the header) | 353 | 289 | 64 |
+| Exit codes (declared in the header) | 369 | 169 | 200 |
+| `CW_*` environment variables (described in an `env` header) | 969 | 235 | 734 |
 | Lane manifest check keys in use (described in the schema) | 45 | 43 | 2 |
 
 Commands are the population of `bin/exit-codes.mjs`: top-level `bin/`, `monitor/` and `cra/`
@@ -2585,6 +2585,13 @@ sweep-health.mjs — classifies standing `.sweep-inflight.json` markers.
 - Usage: undocumented
 - Exit: undeclared
 
+### `monitor/sweep-queue.mjs`
+
+The admission queue in front of the sweep permits: who is waiting, in what order, and whether each is still there.
+
+- Usage: `node monitor/sweep-queue.mjs list|reap <reportsRoot> [--prefix self] [--json | --apply]`
+- Exit: 0 listed, or reaped with every reap recorded · 1 the queue or a slot was unreadable, or a reap failed or went unrecorded · 2 usage
+
 ### `monitor/sweep.mjs`
 
 commitwork monitor — scheduled cross-project sweep.
@@ -2821,7 +2828,7 @@ cra/watch.mjs — exploited-vulnerability watch with CRA Art.
 
 ## Environment variables
 
-968 `CW_*` names read by tracked non-test sources: 839 by name, and
+969 `CW_*` names read by tracked non-test sources: 840 by name, and
 129 indirect (quoted in a file that reads the environment by a computed key, so the read
 is likely but not shown). At most 6 readers are listed per name. A description is taken from
 a reader's `env` header section when one has it, otherwise from another file's, which is named.
@@ -3362,7 +3369,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_MONOREPO_CHILD_DIRS` | direct | `bin/races.mjs` | undocumented |
 | `CW_NONDET_HOT` | direct | `monitor/nondeterministic-store.mjs` | undocumented |
 | `CW_NONDET_STORE` | indirect | `bin/test-run.mjs`, `monitor/store-paths.mjs` | undocumented |
-| `CW_NOW` | direct | `admin/routes/comments.mjs`, `admin/routes/fleet-overview.mjs`, `admin/routes/posture.mjs`, `admin/routes/remediation.mjs`, `admin/routes/rollups.mjs`, `admin/routes/scan-config.mjs` and 83 more | authored-at override, tests |
+| `CW_NOW` | direct | `admin/routes/comments.mjs`, `admin/routes/fleet-overview.mjs`, `admin/routes/posture.mjs`, `admin/routes/remediation.mjs`, `admin/routes/rollups.mjs`, `admin/routes/scan-config.mjs` and 84 more | authored-at override, tests |
 | `CW_NOW_MS` | direct | `bin/watch-remote.mjs` | undocumented |
 | `CW_NO_COLOR` | direct | `bin/lib/theme.mjs` | undocumented |
 | `CW_NPM` | direct | `bin/lib/npm-update.mjs`, `bin/lib/npm-versions.mjs` | the npm binary |
@@ -3655,6 +3662,7 @@ a reader's `env` header section when one has it, otherwise from another file's, 
 | `CW_SWEEP_NO_SURFACE_CENSUS` | direct | `monitor/sweep.mjs` | undocumented |
 | `CW_SWEEP_NO_UNKNOWN_RATE` | direct | `monitor/sweep.mjs` | undocumented |
 | `CW_SWEEP_OFFBOX_TIMEOUT_MS` | direct | `monitor/sweep.mjs` | undocumented |
+| `CW_SWEEP_QUEUE` | direct | `monitor/sweep.mjs` | undocumented |
 | `CW_SWEEP_REFUSALS` | direct | `monitor/sweep.mjs` | undocumented |
 | `CW_SWEEP_SELF` | direct | `monitor/sweep.mjs` | undocumented |
 | `CW_SWEEP_SLOTS` | direct | `monitor/sweep.mjs` | undocumented |

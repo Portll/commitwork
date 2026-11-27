@@ -2,7 +2,7 @@
 // The admission queue in front of the sweep permits: who is waiting, in what order, and whether each is still there.
 // fact: a permit goes to the oldest live ticket; a second ticket for a waiting scope is coalesced; an unstamped one is reaped
 // usage: node monitor/sweep-queue.mjs list|reap <reportsRoot> [--prefix self] [--json | --apply]
-// exit: 0 · 1 the queue or a slot was unreadable, or a reap failed or went unrecorded · 2 usage
+// exit: 0 listed, or reaped with every reap recorded · 1 the queue or a slot was unreadable, or a reap failed or went unrecorded · 2 usage
 // env: CW_NOW — the instant used for ages and the reap journal
 import { mkdirSync, readdirSync, readFileSync, rmSync, rmdirSync } from 'node:fs';
 import { hostname } from 'node:os';
