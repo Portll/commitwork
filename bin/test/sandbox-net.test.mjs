@@ -8,7 +8,7 @@ import { mkdtempSync, writeFileSync, chmodSync, rmSync, existsSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseArgs, defaultRouteIfaces, onLinkIface, pastaArgs, resolvConf, DNS_FORWARD, NOT_RUN } from '../lib/sandbox-net.mjs';
+import { parseArgs, defaultRouteIfaces, onLinkIface, pastaArgs, resolvConf, upstreamResolvers, UPSTREAM_RESOLV_FILES, DNS_FORWARD, NOT_RUN } from '../lib/sandbox-net.mjs';
 
 const SELF = join(dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'sandbox-net.mjs');
 const BW = ['/usr/bin/bwrap', '--unshare-net', '--info-fd', '3', '--block-fd', '4', '--', 'sh', '-c', 'true'];
@@ -121,6 +121,40 @@ describe('resolvConf', () => {
   test('an empty host file still yields the forwarder', () => {
     assert.equal(resolvConf(''), `nameserver ${DNS_FORWARD}\n`);
     assert.equal(resolvConf(), `nameserver ${DNS_FORWARD}\n`);
+  });
+
+  const STUB = 'nameserver 127.0.0.53\noptions edns0 trust-ad\nsearch stub.example\n';
+  const UPSTREAM = 'nameserver 168.63.129.16\nsearch up.example\n';
+
+  test('a host behind a loopback stub names the upstream resolvers and the upstream file\'s settings', () => {
+    assert.equal(resolvConf(STUB, [UPSTREAM]), 'nameserver 168.63.129.16\nsearch up.example\n');
+    assert.deepEqual(upstreamResolvers(STUB, [UPSTREAM]), { servers: ['168.63.129.16'], settings: ['search up.example'] });
+  });
+  test('the stub\'s own options are not carried onto the upstream resolvers', () => {
+    assert.ok(!/trust-ad|stub\.example|127\.0\.0\.53/.test(resolvConf(STUB, [UPSTREAM])));
+  });
+  test('a host naming any resolver off loopback keeps the forwarded address', () => {
+    const mixed = 'nameserver 127.0.0.53\nnameserver 8.8.8.8\n';
+    assert.equal(upstreamResolvers(mixed, [UPSTREAM]), null);
+    assert.equal(resolvConf(mixed, [UPSTREAM]), `nameserver ${DNS_FORWARD}\n`);
+    assert.equal(resolvConf('nameserver 10.0.0.2\n', [UPSTREAM]), `nameserver ${DNS_FORWARD}\n`);
+  });
+  test('a stub with no usable upstream keeps the forwarded address and the host\'s settings', () => {
+    const forwarded = `nameserver ${DNS_FORWARD}\noptions edns0 trust-ad\nsearch stub.example\n`;
+    assert.equal(resolvConf(STUB, []), forwarded);
+    assert.equal(resolvConf(STUB, ['']), forwarded);
+    assert.equal(resolvConf(STUB, ['nameserver 127.0.0.1\nnameserver ::1\nnameserver 0.0.0.0\nnameserver fe80::1%eth0\n']), forwarded);
+    assert.equal(resolvConf('', [UPSTREAM]), `nameserver ${DNS_FORWARD}\n`);
+  });
+  test('loopback and scoped upstream entries are dropped, and at most three resolvers are named', () => {
+    const many = 'nameserver 127.0.0.1\nnameserver fe80::1%eth0\nnameserver 10.0.0.2\nnameserver 10.0.0.3\nnameserver 2001:db8::1\nnameserver 10.0.0.5\n';
+    assert.equal(resolvConf(STUB, [many]), 'nameserver 10.0.0.2\nnameserver 10.0.0.3\nnameserver 2001:db8::1\n');
+  });
+  test('the first upstream file naming a usable resolver wins', () => {
+    assert.equal(resolvConf('nameserver ::1\n', ['nameserver 127.0.0.1\n', 'nameserver 10.0.0.2\n', 'nameserver 10.0.0.9\n']), 'nameserver 10.0.0.2\n');
+  });
+  test('the upstream list a real host is read from is the systemd-resolved one', () => {
+    assert.deepEqual(UPSTREAM_RESOLV_FILES, ['/run/systemd/resolve/resolv.conf']);
   });
 });
 

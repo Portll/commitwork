@@ -112,9 +112,14 @@ jobs:
   # reaching host loopback, the host's addresses or /run sockets is a red build here rather than
   # a skip. A skip of a Linux confinement test in this job is a failure.
   linux-sandbox:
-    name: Linux lane sandbox (bwrap + pasta)
-    # Pinned with the suite: pasta's DNS times out inside the namespace on 26.04.
-    runs-on: ubuntu-24.04
+    name: Linux lane sandbox (bwrap + pasta, ${{ matrix.os }})
+    # Both images, because their pasta differs: ubuntu-latest is 26.04, whose pasta (0.0~git20260120)
+    # cannot forward a query to a loopback resolver, and 24.04's (0.0~git20240220) has no --dns-host.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

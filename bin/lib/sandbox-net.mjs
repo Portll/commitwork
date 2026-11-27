@@ -19,6 +19,7 @@
  * fact: pasta and not slirp4netns / under slirp4netns --disable-host-loopback a lane can still connect to the host's own address; pasta copies the host address into the namespace, where it is local (expiry: never, prev: unknown)
  * fact: outbound sockets are bound to the default-route interface / without it a lane can connect to the host's address on a second interface (a docker bridge) (expiry: never, prev: broken)
  * fact: DNS goes through pasta's --dns-forward and a resolv.conf naming that address / a host resolver on loopback (systemd-resolved 127.0.0.53, Docker 127.0.0.11) is unreachable from a separate namespace, and pasta 0.0~git20230309 and 20240220 both forward the query to it (expiry: never, prev: missing)
+ * fact: behind a loopback stub the lane's resolv.conf names the stub's upstream resolvers, not the forwarded address / pasta 0.0~git20260120 sends the forwarded query from a socket bound to the --outbound-if4 interface, which never reaches 127.0.0.53, so every lookup timed out on Ubuntu 26.04 while the upstream answered directly; 20240220 on 24.04 resolves either way and has no --dns-host (expiry: never, prev: broken)
  */
 import { spawn } from 'node:child_process';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
@@ -96,10 +97,41 @@ export function pastaArgs({ pid, loopback = [], v4 = null, v6 = null, link = nul
   ];
 }
 
-/** The lane's resolv.conf: the host's, with every nameserver replaced by the forwarded address. */
-export function resolvConf(hostText = '') {
-  const kept = hostText.split('\n').filter((l) => /^\s*(search|domain|options)\s/.test(l));
-  return [`nameserver ${DNS_FORWARD}`, ...kept, ''].join('\n');
+/** Where a host whose /etc/resolv.conf names a loopback stub lists the resolvers behind it. */
+export const UPSTREAM_RESOLV_FILES = ['/run/systemd/resolve/resolv.conf'];
+// glibc reads at most three nameserver lines.
+const MAX_NAMESERVERS = 3;
+const nameservers = (text) => text.split('\n').map((l) => /^\s*nameserver\s+(\S+)/.exec(l)?.[1]).filter(Boolean);
+const settings = (text) => text.split('\n').filter((l) => /^\s*(search|domain|options)\s/.test(l));
+const isLoopback = (addr) => /^127\./.test(addr) || ['::1', '0.0.0.0', '::'].includes(addr);
+const reachableFromLane = (addr) => !isLoopback(addr) && !addr.includes('%');
+
+/**
+ * -> {servers, settings} from the first upstream text naming a resolver the lane can reach itself,
+ * or null. Only when every nameserver in the host's own file is loopback: any other host keeps the
+ * forwarded address.
+ */
+export function upstreamResolvers(hostText = '', upstreamTexts = []) {
+  const host = nameservers(hostText);
+  if (!host.length || !host.every(isLoopback)) return null;
+  for (const text of upstreamTexts) {
+    const servers = nameservers(text).filter(reachableFromLane).slice(0, MAX_NAMESERVERS);
+    if (servers.length) return { servers, settings: settings(text) };
+  }
+  return null;
+}
+
+/**
+ * The lane's resolv.conf. A host behind a loopback stub gets the stub's upstream resolvers by
+ * address, with the upstream file's search, domain and options. Every other host gets its own
+ * file with each nameserver replaced by the forwarded address.
+ */
+export function resolvConf(hostText = '', upstreamTexts = []) {
+  const direct = upstreamResolvers(hostText, upstreamTexts);
+  const lines = direct
+    ? [...direct.servers.map((s) => `nameserver ${s}`), ...direct.settings]
+    : [`nameserver ${DNS_FORWARD}`, ...settings(hostText)];
+  return [...lines, ''].join('\n');
 }
 
 const readOr = (p) => { try { return readFileSync(p, 'utf8'); } catch { return ''; } };
@@ -132,7 +164,7 @@ function main() {
   // after a kill is expected; any other pipe error is a refusal of its own.
   const pipeError = (fd) => (e) => { if (e.code !== 'ECONNRESET' && e.code !== 'EPIPE') refuse(`bwrap fd ${fd}: ${e.code || e.message}`); };
   for (const i of [3, 4, 5]) if (b.stdio[i]) b.stdio[i].on('error', pipeError(i));
-  if (data) b.stdio[5].end(resolvConf(readOr('/etc/resolv.conf')));
+  if (data) b.stdio[5].end(resolvConf(readOr('/etc/resolv.conf'), UPSTREAM_RESOLV_FILES.map(readOr)));
   let info = '';
   b.stdio[3].on('data', (d) => {
     info += d;
