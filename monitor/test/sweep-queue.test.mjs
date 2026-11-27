@@ -235,4 +235,22 @@ describe('the operator surface', () => {
       assert.match(self.stdout, /self queue: 0 waiting \(no queue directory yet\)/);
     } finally { if (held && held.ok) held.release(); rmSync(root, { recursive: true, force: true }); }
   });
+
+  test('a prefix is a literal name: pattern characters match no other set, and the CLI refuses one that is not a name', () => {
+    const root = fresh();
+    let held = null;
+    try {
+      held = acquireSweepSlot(root, { slots: 1, label: 'sweep:held' });
+      assert.equal(listQueue(root).slots.length, 1);
+      for (const prefix of ['swee.', '.*', 's\\w+', '(sweep|self)']) {
+        const l = listQueue(root, { prefix });
+        assert.equal(l.ok, true, prefix);
+        assert.equal(l.slots.length, 0, `${prefix} listed another set's permit`);
+      }
+      for (const prefix of ['.*', '../sweep', 'a/b', '']) {
+        const refused = spawnSync(process.execPath, [CLI, 'reap', root, '--prefix', prefix, '--apply'], { encoding: 'utf8' });
+        assert.equal(refused.status, 2, `${JSON.stringify(prefix)} was accepted`);
+      }
+    } finally { if (held && held.ok) held.release(); rmSync(root, { recursive: true, force: true }); }
+  });
 });

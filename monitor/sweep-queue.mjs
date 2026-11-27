@@ -15,6 +15,7 @@ import { appendRecord } from '../bin/lib/verdict-journal-core.mjs';
 export const QUEUE_REAP_JOURNAL = 'sweep-queue-reaps.jsonl';
 // A waiter re-stamps every poll (30 s); three missed stamps and nobody is holding the place.
 export const TICKET_STALE_MS = 5 * 60 * 1000;
+const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const queueDirFor = (reportsRoot, prefix = 'sweep') => join(reportsRoot, `.${prefix}-queue`);
 // Sorts as arrival order: zero-padded enqueue instant, then pid, then the nonce as a tiebreak.
@@ -112,7 +113,8 @@ export function enqueue(reportsRoot, { prefix = 'sweep', label = 'sweep', area =
 // The permits beside the queue, read the way the next acquirer will read them.
 export function readSlots(reportsRoot, { prefix = 'sweep', kill, liveStart } = {}) {
   let names;
-  try { names = readdirSync(reportsRoot).filter((n) => new RegExp(`^\\.${prefix}-slot-\\d+\\.lock$`).test(n)).sort(); }
+  const safePrefix = escapeRegExp(prefix);
+  try { names = readdirSync(reportsRoot).filter((n) => new RegExp(`^\\.${safePrefix}-slot-\\d+\\.lock$`).test(n)).sort(); }
   catch (e) { return { ok: false, slots: [], error: e.code || e.message }; }
   return { ok: true, slots: names.map((n) => ({ name: n, ...inspectLock(join(reportsRoot, n), { kill, liveStart }) })) };
 }
@@ -145,7 +147,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const prefix = prefixIdx > -1 ? flags[prefixIdx + 1] : 'sweep';
   const rest = flags.filter((f, i) => f !== '--prefix' && !(prefixIdx > -1 && i === prefixIdx + 1));
   const allowed = cmd === 'list' ? ['--json'] : cmd === 'reap' ? ['--apply'] : null;
-  if (!allowed || !root || !prefix || rest.some((f) => !allowed.includes(f))) {
+  // The prefix names files and a directory under reportsRoot, and `reap --apply` deletes there.
+  const prefixNamesOneSet = typeof prefix === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(prefix);
+  if (!allowed || !root || !prefixNamesOneSet || rest.some((f) => !allowed.includes(f))) {
     console.error('usage: node monitor/sweep-queue.mjs list <reportsRoot> [--prefix self] [--json]\n       node monitor/sweep-queue.mjs reap <reportsRoot> [--prefix self] [--apply]');
     process.exit(2);
   }
