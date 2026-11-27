@@ -7,14 +7,19 @@ on:
     branches: ['diag/**']
     paths:
       - .github/workflows/github-action.yml
+      - bin/test/diag-pasta.mjs
 
 permissions:
   contents: read
 
 jobs:
   diag:
-    name: pasta DNS on ubuntu-latest
-    runs-on: ubuntu-latest
+    name: pasta DNS on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -23,70 +28,20 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
-      - name: Host
+      - name: Tools
         run: |
           set +e
-          head -4 /etc/os-release
-          pasta --version 2>&1 | head -2
+          head -2 /etc/os-release
+          if grep -q '24\.04' /etc/os-release; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends bubblewrap passt > /dev/null
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
           dpkg-query -W passt bubblewrap
-          bwrap --version
-          echo "--- /etc/resolv.conf -> $(readlink -f /etc/resolv.conf)"
-          grep -v '^#' /etc/resolv.conf
-          echo "--- /run/systemd/resolve/resolv.conf"
-          grep -v '^#' /run/systemd/resolve/resolv.conf
-          echo "--- routes"
-          ip -4 route
-          ip -6 route
-          ip -brief addr
           sysctl kernel.apparmor_restrict_unprivileged_userns
-          sudo aa-status 2>/dev/null | grep -iE 'pasta|passt|bwrap'
-      - name: Variants
+          pasta --help 2>&1 | grep -nE 'dns-host|dns-forward|outbound'
+      - name: Variants through the product path
         run: |
           set +e
-          cat > "$RUNNER_TEMP/probe.mjs" <<'EOF'
-          import dns from 'node:dns';
-          import net from 'node:net';
-          const out = {};
-          for (const s of process.argv.slice(2)) {
-            const r = new dns.promises.Resolver({ timeout: 2500, tries: 1 });
-            r.setServers([s]);
-            const t0 = Date.now();
-            out[`udp ${s}`] = await r.resolve4('semgrep.dev').then((a) => `OK ${a[0]} ${Date.now() - t0}ms`, (e) => `${e.code} ${Date.now() - t0}ms`);
-          }
-          out.tcp = await new Promise((r) => {
-            const s = net.connect({ host: '1.1.1.1', port: 443 });
-            s.once('connect', () => { s.destroy(); r('CONNECTED'); });
-            s.once('error', (e) => r(e.code));
-            setTimeout(() => { s.destroy(); r('TIMEOUT'); }, 4000);
-          });
-          console.log(JSON.stringify(out));
-          EOF
-          UP=$(awk '/^nameserver/{print $2; exit}' /run/systemd/resolve/resolv.conf)
-          IF=$(ip -4 route show default | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
-          NODE=$(command -v node)
-          echo "upstream=$UP iface=$IF"
-          echo "control (host): $("$NODE" "$RUNNER_TEMP/probe.mjs" 127.0.0.53 "$UP")"
-          BASE=(--config-net --tcp-ports none --udp-ports none --tcp-ns none --udp-ns none)
-          variant() {
-            local name=$1; shift
-            echo "== $name: pasta $*"
-            timeout 40 pasta "$@" -- "$NODE" "$RUNNER_TEMP/probe.mjs" 169.254.1.1 "$UP" 2>&1 | tail -5
-            echo "   exit=${PIPESTATUS[0]}"
-          }
-          variant A-product --quiet --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1 --outbound-if4 "$IF"
-          variant B-no-outbound-if --quiet --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1
-          variant C-map-gw --quiet "${BASE[@]}" --dns-forward 169.254.1.1 --outbound-if4 "$IF"
-          variant D-dns-host --quiet --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1 --dns-host "$UP" --outbound-if4 "$IF"
-          variant E-no-map-no-if --quiet "${BASE[@]}" --dns-forward 169.254.1.1
-          echo "== A with --debug"
-          timeout 40 pasta --debug --no-map-gw "${BASE[@]}" --dns-forward 169.254.1.1 --outbound-if4 "$IF" -- "$NODE" "$RUNNER_TEMP/probe.mjs" 169.254.1.1 > "$RUNNER_TEMP/debug.log" 2>&1
-          grep -niE 'dns|resolv|flow|bind|fail|error|warn|169\.254|127\.0\.0\.53|unreach|invalid' "$RUNNER_TEMP/debug.log" | head -80
-          echo "--- last lines"
-          tail -15 "$RUNNER_TEMP/debug.log"
-      - name: Live sandbox tests
-        if: always()
-        run: |
-          set +e
-          node --test bin/test/sandbox-netns-live.test.mjs > "$RUNNER_TEMP/live.log" 2>&1
+          node bin/test/diag-pasta.mjs
           echo "exit=$?"
-          grep -nE '^\s*(✔|✖|﹣)|^ℹ|name resolution|dns|AssertionError|Error:' "$RUNNER_TEMP/live.log" | head -80

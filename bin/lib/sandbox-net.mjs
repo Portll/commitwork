@@ -21,7 +21,7 @@
  * fact: DNS goes through pasta's --dns-forward and a resolv.conf naming that address / a host resolver on loopback (systemd-resolved 127.0.0.53, Docker 127.0.0.11) is unreachable from a separate namespace, and pasta 0.0~git20230309 and 20240220 both forward the query to it (expiry: never, prev: missing)
  */
 import { spawn } from 'node:child_process';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync, appendFileSync } from 'node:fs';
 import { tmpdir, constants } from 'node:os';
 import { join } from 'node:path';
 import { isMainModule } from '../../lib/is-main.mjs';
@@ -85,8 +85,8 @@ export function onLinkIface({ route = '' } = {}) {
 /** pasta's argv: attach to `pid`, forward nothing in, forward to host loopback only the declared ports. */
 export function pastaArgs({ pid, loopback = [], v4 = null, v6 = null, link = null, pidFile }) {
   const out4 = v4 || link?.iface || null;
-  return [
-    '--config-net', '--quiet', '--foreground', '--no-map-gw',
+  const args = [
+    '--config-net', process.env.DIAG_LOG ? '--debug' : '--quiet', '--foreground', '--no-map-gw',
     '--tcp-ports', 'none', '--udp-ports', 'none',
     '--tcp-ns', loopback.length ? loopback.join(',') : 'none', '--udp-ns', 'none',
     '--dns-forward', DNS_FORWARD,
@@ -94,12 +94,18 @@ export function pastaArgs({ pid, loopback = [], v4 = null, v6 = null, link = nul
     ...(out4 ? ['--outbound-if4', out4] : []), ...(v6 ? ['--outbound-if6', v6] : []),
     '--pid', pidFile, String(pid),
   ];
+  for (const flag of (process.env.DIAG_DROP || '').split(',').filter(Boolean)) {
+    const i = args.indexOf(flag);
+    if (i >= 0) args.splice(i, flag === '--no-map-gw' ? 1 : 2);
+  }
+  args.splice(args.indexOf('--pid'), 0, ...(process.env.DIAG_ADD || '').split(' ').filter(Boolean));
+  return args;
 }
 
 /** The lane's resolv.conf: the host's, with every nameserver replaced by the forwarded address. */
 export function resolvConf(hostText = '') {
   const kept = hostText.split('\n').filter((l) => /^\s*(search|domain|options)\s/.test(l));
-  return [`nameserver ${DNS_FORWARD}`, ...kept, ''].join('\n');
+  return [`nameserver ${process.env.DIAG_RESOLV || DNS_FORWARD}`, ...kept, ''].join('\n');
 }
 
 const readOr = (p) => { try { return readFileSync(p, 'utf8'); } catch { return ''; } };
@@ -144,7 +150,7 @@ function main() {
     if (!ifs.v4 && !ifs.v6) ifs.link = onLinkIface({ route });
     let err = '';
     pasta = spawn('pasta', pastaArgs({ pid: child, loopback: opts.loopback, ...ifs, pidFile }), { stdio: ['ignore', 'ignore', 'pipe'] });
-    pasta.stderr.on('data', (x) => { err += x; });
+    pasta.stderr.on('data', (x) => { err += x; if (process.env.DIAG_LOG) appendFileSync(process.env.DIAG_LOG, x); });
     pasta.on('error', (e) => refuse(e.code === 'ENOENT'
       ? 'pasta is not installed (package passt), so an open lane has no network namespace of its own'
       : `pasta: ${e.code || e.message}`));
