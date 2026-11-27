@@ -15,7 +15,8 @@
 // all anyone can tell and is taken over, which `onStale` reports with the previous holder named.
 
 import { join } from 'node:path';
-import { acquireLock, DEFAULT_STALE_MS } from './lockfile.mjs';
+import { acquireLock, inspectLock, DEFAULT_STALE_MS } from './lockfile.mjs';
+import { enqueue } from './sweep-queue.mjs';
 
 // A third of the stale bound: two missed refreshes are still inside it, one hung holder is not.
 export const SLOT_REFRESH_MS = Math.floor(DEFAULT_STALE_MS / 3);
@@ -49,12 +50,20 @@ export const slotName = (i, prefix = 'sweep') => `.${prefix}-slot-${i}.lock`;
  * `now` and `sleep` are injected so a test can drive the deadline without wall-clock time — this
  * is a waiting loop, and a waiting loop tested against the real clock is a slow test that also
  * cannot exercise the timeout branch, which is the branch that matters.
+ *
+ * `queue` (default on) takes a ticket in `.<prefix>-queue/` before the first probe, and a waiter
+ * probes the permits only while it is within the first `slots` places, so a permit that frees goes
+ * to the longest waiter and a stampede admits in arrival order. A ticket already waiting under this
+ * label is a sweep of the same scope, so the newcomer is refused as `coalesced` and scans nothing.
+ * The result carries `queue: { position, ahead }` either way.
  */
 export function acquireSweepSlot(reportsRoot, {
   slots = DEFAULT_SLOTS,
   deadlineMs = DEFAULT_DEADLINE_MS,
   label = 'sweep',
   prefix = 'sweep',
+  queue = true,
+  area = null, group = null,
   now = () => Date.now(),
   sleep = null,
   onWait = null,
@@ -65,10 +74,30 @@ export function acquireSweepSlot(reportsRoot, {
   const n = Math.max(1, slots | 0);
   let announced = false;
   let holders = [];
+  let place = { index: 0, ahead: [], total: 0 };
+
+  const ticket = queue ? enqueue(reportsRoot, { prefix, label, area, group, deadlineMs, nowMs: started, kill, liveStart }) : null;
+  if (ticket && ticket.ok !== true) {
+    if (ticket.reason === 'coalesced') {
+      const d = ticket.duplicate;
+      return { ok: false, waitedMs: 0, slots: n, reason: `coalesced — ${label} is already queued as pid ${d.pid} (waiting ${Math.round(d.waitedMs / 60000)} min)`, coalesced: d, holders: [], holder: null, heldFor: null, holderAlive: null, queue: { position: null, ahead: [] } };
+    }
+    return { ok: false, waitedMs: 0, slots: n, reason: `queue unreadable (${ticket.error})`, holders: [], holder: null, heldFor: null, holderAlive: null, queue: { position: null, ahead: [] } };
+  }
+  const leave = () => { if (ticket) ticket.leave(); };
+  const probeSlots = () => {
+    if (!ticket) return true;
+    ticket.touch(now());
+    const p = ticket.position(now());
+    place = { index: p.index, ahead: p.ahead, total: p.total };
+    // guard: an unreadable queue admits nobody by position, so fall back to the bare permit race
+    return !p.ok || p.index < n;
+  };
 
   for (;;) {
     holders = [];
-    for (let i = 0; i < n; i++) {
+    const turn = probeSlots();
+    for (let i = 0; turn && i < n; i++) {
       const path = join(reportsRoot, slotName(i, prefix));
       // attempts:1 — never busy-wait INSIDE a slot probe, or the loop cannot see the other slots.
       // The waiting happens between full passes, so a freed slot anywhere is picked up next round.
@@ -80,8 +109,9 @@ export function acquireSweepSlot(reportsRoot, {
       // object is truthy — the bare check would take every contended slot as acquired and hand out
       // unlimited permits, which is the exact defect this module exists to prevent.
       if (got.ok === true) {
+        leave();
         return {
-          ok: true, slot: i, waitedMs: now() - started,
+          ok: true, slot: i, waitedMs: now() - started, queue: { position: place.index, ahead: place.ahead },
           release: () => { try { got.release(); } catch { /* releaseOnExit is the backstop */ } },
           refresh: () => { try { return got.refresh(); } catch (e) { return { ok: false, reason: `refresh threw: ${(e && e.code) || e}` }; } },
         };
@@ -90,12 +120,27 @@ export function acquireSweepSlot(reportsRoot, {
     }
 
     const waited = now() - started;
-    const refusal = (reason) => ({
-      ok: false, waitedMs: waited, slots: n, reason, holders,
-      holder: holders[0].holder, heldFor: holders[0].heldFor, holderAlive: holders[0].holderAlive,
-    });
-    if (waited >= deadlineMs) return refusal(`all ${n} sweep slots held for ${Math.round(waited / 60000)} min`);
-    if (!announced && onWait) { onWait(n, deadlineMs); announced = true; }
+    const queued = place.index >= n;
+    // A waiter that never probed still names the holders: the deferral line is read by whoever looks at what overran
+    if (queued && holders.length === 0) {
+      for (let i = 0; i < n; i++) {
+        const o = inspectLock(join(reportsRoot, slotName(i, prefix)), { kill, liveStart });
+        holders.push({ slot: i, holder: o.holder, heldFor: o.ageMs, holderAlive: o.holderAlive, holderMatches: o.holderMatches });
+      }
+    }
+    const refusal = (reason) => {
+      leave();
+      return {
+        ok: false, waitedMs: waited, slots: n, reason, holders, queue: { position: place.index, ahead: place.ahead },
+        holder: holders[0]?.holder ?? null, heldFor: holders[0]?.heldFor ?? null, holderAlive: holders[0]?.holderAlive ?? null,
+      };
+    };
+    if (waited >= deadlineMs) {
+      return refusal(queued
+        ? `queued behind ${place.index} sweep(s) for ${Math.round(waited / 60000)} min without reaching a turn at ${n} slot(s)`
+        : `all ${n} sweep slots held for ${Math.round(waited / 60000)} min`);
+    }
+    if (!announced && onWait) { onWait(n, deadlineMs, place); announced = true; }
     if (!sleep) return refusal('no sleep function supplied');
     sleep(Math.min(POLL_MS, deadlineMs - waited));
   }

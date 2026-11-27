@@ -9,7 +9,7 @@
 //             (the registry's primary area) — NOT the whole machine. --all sweeps every project.
 import { processState } from '../lib/pid-alive.mjs';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, rmSync, readdirSync } from 'node:fs';
-import { execFileSync, execFile, spawnSync } from 'node:child_process';
+import { execFileSync, execFile, spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, basename } from 'node:path';
 import { resolveRepos } from './discover.mjs';
@@ -538,12 +538,19 @@ function scanOne(r) {
   // exit carries the ones that did not run (sweepExit()).
   const manifestName = (m) => String(m).split('/').pop();
   if (JOBS === 1) {
-    for (const manifest of [].concat(r.manifest)) {
-      try { execFileSync('node', args(manifest), { stdio: 'inherit', env }); scanOutcomes.push(scanOutcome({ name: r.name, manifest: manifestName(manifest), code: 0 })); }
-      catch (e) { scanOutcomes.push(scanOutcome({ name: r.name, manifest: manifestName(manifest), code: e.status ?? null, signal: e.signal ?? null, error: e.status == null && !e.signal ? e.message : null })); }
-    }
-    solveOne(reportDir, r.name);
-    return Promise.resolve('');
+    // guard: awaited, never execFileSync — a synchronous wait blocks the permit's refresh timer for the lane's whole run
+    return (async () => {
+      for (const manifest of [].concat(r.manifest)) {
+        const run = await new Promise((res) => {
+          const child = spawn('node', args(manifest), { stdio: 'inherit', env });
+          child.once('error', (e) => res({ code: null, signal: null, error: e.message }));
+          child.once('close', (code, signal) => res({ code, signal, error: null }));
+        });
+        scanOutcomes.push(scanOutcome({ name: r.name, manifest: manifestName(manifest), ...run }));
+      }
+      solveOne(reportDir, r.name);
+      return '';
+    })();
   }
   // parallel: run this repo's manifests in sequence (they share one reportDir), capture output
   return (async () => {
@@ -696,12 +703,23 @@ if (SLOT_N > 0) {
     ...(selfSweep()
       ? { slots: 1, prefix: 'self', deadlineMs: selfDeadlineMs(), label: `self-sweep:${scopeArea || 'all'}` }
       : { slots: SLOT_N, deadlineMs: catchUpDeadlineMs(lateness, { now: START_MS }), label: `sweep:${scopeArea || 'all'}` }),
+    // fact: CW_SWEEP_QUEUE=0 drops the arrival-order queue and leaves the bare permit race
+    queue: process.env.CW_SWEEP_QUEUE !== '0', area: scopeArea || null, group,
     sleep: (ms) => { try { execFileSync('sleep', [String(Math.ceil(ms / 1000))]); } catch { /* interrupted is fine */ } },
-    onWait: (n) => console.log(`${TAG} all ${n} ${selfSweep() ? 'self-sweep' : 'sweep'} slots busy — waiting for a turn (CW_SWEEP_SLOTS=0 disables)`),
+    onWait: (n, _deadline, place) => console.log(`${TAG} all ${n} ${selfSweep() ? 'self-sweep' : 'sweep'} slots busy — queued at place ${(place?.index ?? 0) + 1}${place?.ahead?.length ? ` behind ${place.ahead.map((a) => a.label).join(', ')}` : ''}; waiting for a turn (CW_SWEEP_SLOTS=0 disables; node monitor/sweep-queue.mjs list <reportsRoot> shows the queue)`),
     // A takeover names what it took over from; a previous holder that was alive is a sweep that
     // stopped refreshing, which is worth a look even though the slot was rightly reclaimed.
     onStale: (s) => console.log(crit(`${TAG} broke a stale slot ${s.slot}: previous holder pid ${s.holder ? s.holder.pid : '?'} (${s.holder ? s.holder.label : 'no token'}), ${describeAge(s.ageMs)}, alive: ${s.holderAlive}, start matches: ${s.holderMatches}`)),
   });
+  if (got.ok !== true && got.coalesced) {
+    // The queued sweep of this scope will scan what this one would have; two tickets would be one scan twice
+    console.log(`${TAG} COALESCED — ${got.reason}; this run scans nothing and the queued sweep covers it`);
+    const cleared = clearOwnMarker(OUT_DIR, { sliceId: `sweep-${stamp}`, pid: process.pid });
+    if (!cleared.cleared) console.log(crit(`${TAG} in-flight marker NOT cleared (${cleared.reason}) — liveness will read this area as hung`));
+    const noted = recordDeferral(OUT_DIR, { sliceId: `sweep-${stamp}`, area: scopeArea, group, pid: process.pid, reason: got.reason, holders: [], startedAt: START_ISO, nowMs: Date.now() });
+    if (!noted.ok) console.log(crit(`${TAG} deferral NOT recorded (${noted.error})`));
+    process.exit(0);
+  }
   if (got.ok !== true) {
     console.log(crit(`${TAG} DEFERRED — ${got.reason}. This area was NOT swept; its freshness will go stale, which is`));
     console.log(crit(`${TAG} the honest reading. This should be RARE: a quiet-box sweep of a small area takes ~5 minutes,`));
@@ -713,7 +731,7 @@ if (SLOT_N > 0) {
     process.exit(0); // not a failure: a deferral is a scheduling outcome, and a red here would train the operator to ignore it
   }
   slotHeld = got;
-  console.log(`${TAG} admitted on ${selfSweep() ? 'self-sweep ' : ''}slot ${got.slot}/${selfSweep() ? 1 : SLOT_N}${got.waitedMs > 1000 ? ` after ${Math.round(got.waitedMs / 1000)}s wait` : ''}`);
+  console.log(`${TAG} admitted on ${selfSweep() ? 'self-sweep ' : ''}slot ${got.slot}/${selfSweep() ? 1 : SLOT_N}${got.waitedMs > 1000 ? ` after ${Math.round(got.waitedMs / 1000)}s wait` : ''}${got.queue?.position > 0 ? ` from queue place ${got.queue.position + 1}` : ''}`);
   // The permit's stamp goes stale in 30 minutes and a sweep runs for hours: keep it fresh, and say
   // so when it cannot be. The normal exit releases through the lock's own releaseOnExit; a signal
   // death skips 'exit', and keepSweepSlot covers that.

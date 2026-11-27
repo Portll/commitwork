@@ -74,15 +74,24 @@ export function holderVerdict(owner, { kill = defaultKill, liveStart = defaultLi
   return { holderAlive, holderMatches: Math.abs(live.startMs - owner.startedAt) <= START_TOLERANCE_MS };
 }
 
-// The writer stamps `Date.now() - process.uptime()*1000`, whole seconds: no spawn at claim time,
+// The writer stamps `performance.timeOrigin`, whole seconds: no spawn at claim time,
 // and it is the same number on Windows. The reader derives the live start from `ps -o etime=`
 // (elapsed, [[dd-]hh:]mm:ss) — present on every POSIX ps, whole seconds, and free of the
-// local-time parsing that `lstart` needs. So both sides are "now minus elapsed" and the tolerance
+// local-time parsing that `lstart` needs. So both sides are wall-clock starts and the tolerance
 // covers a second of truncation on each, the gap between exec and Node's clock start, and the ps
 // spawn's own latency on a loaded box — the direction a false mismatch fails in is the unsafe one.
 // A reused pid's start is minutes to days from the token's, never within this window.
 const START_TOLERANCE_MS = 5_000;
-export function ownStartMs() { return Math.round((Date.now() - process.uptime() * 1000) / 1000) * 1000; }
+// fact: timeOrigin is wall time at start, as ps etime is; uptime() runs on a clock that stops while a Mac sleeps
+export function ownStartMs() { return Math.round(performance.timeOrigin / 1000) * 1000; }
+// fact: a fresh stamp was written by a live holder, so a pid-start mismatch under it is the probe lying, not reuse
+// guard: longer than a holder's refresh interval (stale bound / 3), or a live stamp outlives the grace
+export const REUSE_GRACE_MS = DEFAULT_STALE_MS / 2;
+export function holderDead(o, graceMs = REUSE_GRACE_MS) {
+  if (!o) return false;
+  if (o.holderAlive === false) return true;
+  return o.holderMatches === false && o.ageMs !== null && o.ageMs >= graceMs;
+}
 function defaultKill(pid, sig) { process.kill(pid, sig); }
 function defaultLiveStart(pid) {
   if (process.platform === 'win32') return null;
@@ -225,13 +234,9 @@ export function acquireLock(lockPath, {
     const observed = observeLock(lockPath, probe);
     if (!observed) continue; // released between our failed claim and our stat — go straight round again
 
-    // `ageMs === null` is an age we could not read, and it is NOT a takeover licence. Stealing a
-    // live lock puts two writers in the critical section and corrupts the store it guards; refusing
-    // to steal a dead one costs a skipped cycle that says so out loud and that
-    // `forceReleaseLock()` clears. Only one of those is recoverable, so unknown fails closed.
-    // A holder known dead (ESRCH, zombie, or a pid whose start is not the token's) is stale at
-    // any age; 'unknown' keeps the stamp-age rule.
-    const dead = observed.holderAlive === false || observed.holderMatches === false;
+    // guard: `ageMs === null` is NOT a takeover licence; stealing a live lock corrupts the store, a skipped cycle recovers
+    // guard: a dead holder (ESRCH, zombie, mismatched start past REUSE_GRACE_MS) is stale at any age; unknown keeps the stamp rule
+    const dead = holderDead(observed);
     if (dead || (observed.ageMs !== null && observed.ageMs >= staleMs)) {
       if (onStale) onStale(observed.ageMs, observed.owner, lockPath, observed);
       breakStaleLock(lockPath, observed);
@@ -364,9 +369,8 @@ export function acquireLockOrReason(lockPath, opts) {
 export function inspectLock(lockPath, { staleMs = DEFAULT_STALE_MS, kill, liveStart } = {}) {
   const o = observeLock(lockPath, { verdict: true, kill, liveStart });
   if (!o) return { held: false, path: lockPath, ageMs: null, ageKnown: true, stale: false, holder: null, holderAlive: 'unknown', holderMatches: 'unknown' };
-  // `ageKnown:false` separates "not held" from "held, age unreadable" — both carry ageMs null, and
-  // an operator told "0s old" for the second would be told something we did not measure.
-  const dead = o.holderAlive === false || o.holderMatches === false;
+  // `ageKnown:false` separates "not held" from "held, age unreadable"; both carry ageMs null, and "0s old" would be invented
+  const dead = holderDead(o);
   return {
     held: true, path: lockPath, ageMs: o.ageMs, ageKnown: o.ageMs !== null,
     stale: dead || (o.ageMs !== null && o.ageMs >= staleMs), holder: o.owner,

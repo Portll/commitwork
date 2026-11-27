@@ -266,6 +266,40 @@ overlap is refused by the sweep's own lock (`reports/self-sweep.log`, exit-3 lin
 The hook bakes `CW_PROJECTSTATUS=0`, so the self-sweep does not regenerate the status document on
 every commit; scheduled and manual sweeps refresh it in `monitor/private/`.
 
+## Admission — a queue in front of a few permits
+
+Every sweep takes one of a bounded number of permits before it scans (`sweep-slot.mjs`; the count
+comes from the tuning profile, `CW_SWEEP_SLOTS` overrides it, `0` disables). A permit is a
+`lockfile.mjs` lock at the reports root, refreshed every ten minutes by its holder and taken over
+when its holder is dead or stops refreshing. A sweep that gets no permit by its deadline is
+DEFERRED: it scans nothing and its freshness goes stale, which is the reading the operator should
+see.
+
+In front of the permits sits a queue (`sweep-queue.mjs`): a ticket per waiting sweep in
+`<reportsRoot>/.sweep-queue/` (`.self-queue/` for post-commit self-sweeps), ordered by arrival. A
+waiter probes the permits only while it is within the first *N* places, so a permit that frees goes
+to the longest waiter and a launchd catch-up stampede admits in arrival order. A second ticket for a
+scope already waiting is **coalesced**: the newcomer exits 0 having scanned nothing, and the queued
+sweep covers it. A waiter re-stamps its ticket every poll; a ticket whose pid is dead, or whose
+stamp has stopped for five minutes, is abandoned and the next reaper journals its removal to
+`sweep-queue-reaps.jsonl`. `CW_SWEEP_QUEUE=0` leaves the bare permit race.
+
+```sh
+node monitor/sweep-queue.mjs list <reportsRoot>            # permits with their holders, then the queue in order
+node monitor/sweep-queue.mjs list <reportsRoot> --prefix self --json
+node monitor/sweep-queue.mjs reap <reportsRoot> --apply    # remove abandoned tickets, journaled; lists without --apply
+```
+
+The panel serves the same reading at `GET /api/sweep/queue` (`?prefix=self` for the self-sweep set).
+
+A holder is told apart from a stranger wearing its pid by the start time in its token, and that
+stamp is `performance.timeOrigin`, never `Date.now() - process.uptime()`: the monotonic clock
+behind `uptime()` does not advance while the machine sleeps, `ps etime` does, and a start derived
+from it reads as a different process after any sleep. A start mismatch is acted on only once the
+stamp has gone fifteen minutes without a refresh (`REUSE_GRACE_MS`, longer than the ten-minute
+refresh interval so a live stamp never ages past it): a fresh stamp was written by a
+live holder, so a mismatch under it is the probe lying, not the holder dead.
+
 ## Issue tracker — monitor/private/issues.json
 
 `issue-store.mjs` is the tracker's single owning library (store, mint, lifecycle, ready-work
