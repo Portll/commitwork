@@ -287,6 +287,26 @@ describe('the hard-protected names', () => {
   });
 });
 
+describe('the drop pattern is held to the whole directory name', () => {
+  test('an unanchored pattern prunes no directory that merely contains it', () => {
+    const { root, reports } = makeTree({ batches: [...OLD, ...FRESH_OLD_FORM], registry: { ...REGISTRY, retention: { ...REGISTRY.retention, dropDirPattern: 'repo|db' } } });
+    compact(root, { apply: true });
+    for (const b of OLD) {
+      assert.ok(existsSync(join(reports, b, 'repo-a/osv.sarif')), `${b}/repo-a matched a substring pattern and was deleted with its reports`);
+      assert.ok(survives(reports, b), `${b}/repo-a/codeql-db matched a substring pattern and was deleted`);
+    }
+  });
+
+  test('the anchored pattern still prunes exactly the database directory', () => {
+    const { root, reports } = makeTree({ batches: [...OLD, ...FRESH_OLD_FORM] });
+    compact(root, { apply: true });
+    for (const b of OLD) {
+      assert.equal(survives(reports, b), false);
+      assert.ok(existsSync(join(reports, b, 'repo-a/osv.sarif')));
+    }
+  });
+});
+
 describe('the compactor never escapes its reports root', () => {
   test('a scratch-tree run touches nothing in the real repo tree', () => {
     const { root } = makeTree({ batches: [...OLD, ...FRESH_OLD_FORM] });

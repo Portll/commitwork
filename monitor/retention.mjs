@@ -12,6 +12,18 @@ export const DEFAULT_KEEP_FULL_SWEEPS = 3;
 export const RETENTION_KEYS = new Set(['keepFullSweeps', 'keepDays', 'dropDirPattern', 'protect', 'note']);
 export const AREA_RETENTION_KEYS = new Set(['keepFullSweeps', 'keepDays', 'note']);
 
+export const DEFAULT_DROP_DIR_PATTERN = '^codeql(-[a-z0-9]+)*-db$';
+
+/**
+ * The directory-name matcher the compactor deletes by. The pattern is held to the WHOLE name
+ * whatever anchors it carries: an unanchored `db` would otherwise match every name containing it,
+ * and a per-repo report directory would go with the databases. Widening takes an explicit `.*`.
+ */
+export function dropDirRegex(pattern = DEFAULT_DROP_DIR_PATTERN) {
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- the operator's own registry retention pattern, wrapped to a whole-name match; it names report directories and matches no scanned content
+  return new RegExp(`^(?:${pattern})$`);
+}
+
 export function nowMs(now) {
   if (now !== undefined) return now instanceof Date ? now.getTime() : now;
   if (process.env.CW_NOW) {

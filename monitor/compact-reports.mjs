@@ -12,7 +12,7 @@ import { outDirFor, reportsRootDir } from './area.mjs'; // THE OUT resolver (one
 import { areaOut } from './registry.mjs';
 import { takeReportsLock, describeAge } from './lockfile.mjs';
 import { registryPathFor } from './store-paths.mjs';
-import { planProtection } from './retention.mjs'; // policy lives there; this file only acts on it
+import { planProtection, dropDirRegex } from './retention.mjs'; // policy lives there; this file only acts on it
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CW = path.resolve(HERE, '..');
@@ -25,7 +25,7 @@ const cfg = reg.retention || {};
 const KEEP = keepArg || +(process.env.CW_RETENTION_KEEP || 0) || cfg.keepFullSweeps || 3;
 // Every CodeQL language database, not only java: a registry copied from projects.example.json
 // declares no pattern, and the narrow fallback let codeql-python-db and codeql-ruby-db pile up.
-const DROP_DIR = new RegExp(cfg.dropDirPattern || '^codeql(-[a-z0-9]+)*-db$');
+const DROP_DIR = dropDirRegex(cfg.dropDirPattern || undefined);
 // The durable report dir, resolved through area.mjs — this tool deletes, so a wrong name is data loss
 const OUT_DIR = outDirFor(null, reg);
 const MONITOR_OUT = path.basename(OUT_DIR);
