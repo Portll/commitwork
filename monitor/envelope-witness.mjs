@@ -71,6 +71,7 @@ export function heldOutCanaries(env = process.env) {
   if (!existsSync(p)) return [];
   const doc = JSON.parse(readFileSync(p, 'utf8'));
   if (!Array.isArray(doc.patterns) || !doc.patterns.every((s) => typeof s === 'string')) throw new Error(`${p}: patterns must be an array of regex sources`);
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- canary sources planted beside the held-out corpus by whoever owns it; a regex is the file's declared content
   return doc.patterns.map((s) => new RegExp(s));
 }
 

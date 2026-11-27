@@ -486,6 +486,7 @@ export async function runWitness(opts) {
     // CW_WP_ONLY: an optional selector regex for a targeted re-run; the report records it
     const only = opts.only || env.CW_WP_ONLY;
     let pool = [...restEntries, ...actionEntries];
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- the operator's own selector regex from --only or CW_WP_ONLY, documented as a regex; it filters this run's entry list
     if (only) { const re = new RegExp(only); pool = pool.filter((e) => re.test(e.selector)); report.selectorFilter = only; }
     const entries = prioritize(pool).slice(0, maxEntries);
     report.entryCounts = { rest: restEntries.length, actions: actionEntries.length, exercised: entries.length };
