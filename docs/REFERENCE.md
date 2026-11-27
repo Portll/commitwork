@@ -10,8 +10,8 @@ verified against the code. Check definitions are indexed in [MANIFEST-MAP.md](MA
 
 | Surface | Total | Documented | Undocumented |
 |---|---:|---:|---:|
-| Commands (a usage line in the header) | 353 | 289 | 64 |
-| Exit codes (declared in the header) | 369 | 169 | 200 |
+| Commands (a usage line in the header) | 354 | 290 | 64 |
+| Exit codes (declared in the header) | 370 | 170 | 200 |
 | `CW_*` environment variables (described in an `env` header) | 970 | 236 | 734 |
 | Lane manifest check keys in use (described in the schema) | 45 | 43 | 2 |
 
@@ -1121,6 +1121,16 @@ bin/memory-upsert.mjs — THE WRITE SURFACE for agent sessions, the counterpart 
 
 - Usage: undocumented
 - Exit: undeclared
+
+### `bin/merge-checks-gate.mjs`
+
+bin/merge-checks-gate.mjs — has every other check on this commit passed?
+
+- Usage: `node bin/merge-checks-gate.mjs [--wait <seconds>] [--every <seconds>] [--github-output]`
+- Option: `--wait how long to wait for running checks (default 900)`
+- Option: `--every seconds between reads (default 30)`
+- Option: `--github-output append clear=true|false to $GITHUB_OUTPUT, and exit 0 either way`
+- Exit: 0 clear (or decided, under --github-output) · 2 usage · 20 a check did not pass · 21 a check was still running at the deadline · 22 no other check succeeded on the commit · 23 the checks could not be read — never read as "clear"
 
 ### `bin/minify-detect.mjs`
 

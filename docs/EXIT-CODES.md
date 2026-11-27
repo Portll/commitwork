@@ -8,7 +8,7 @@ nothing about exit status; `prose` means it does, in a shape the extractor does 
 Neither is a claim about what the command returns. What may change between releases is in
 [STABILITY.md](STABILITY.md).
 
-369 commands: 169 declared, 13 prose, 187 undeclared. Of the declared, 135 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 34 declare a code of 20 or above.
+370 commands: 170 declared, 13 prose, 187 undeclared. Of the declared, 135 use only codes 0–13, the range Node itself exits with (1 on an uncaught exception), and 35 declare a code of 20 or above.
 
 ## `commitwork` subcommands
 
@@ -655,6 +655,17 @@ Undeclared: `list`, `run`, `scan`, `brief`, `sarif`, `reindex`, `sbom-review`, `
 | 0 | done |
 | 20 | the canary refused the run, or no mode was given |
 | 21 | a write failed, stored divergent content, a coverage query could not run, or a file's frontmatter was unreadable |
+
+### `bin/merge-checks-gate.mjs`
+
+| Exit | Meaning |
+|---:|---|
+| 0 | clear (or decided, under --github-output) |
+| 2 | usage |
+| 20 | a check did not pass |
+| 21 | a check was still running at the deadline |
+| 22 | no other check succeeded on the commit |
+| 23 | the checks could not be read — never read as "clear" |
 
 ### `bin/model-artefacts.mjs`
 

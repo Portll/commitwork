@@ -432,9 +432,12 @@ jobs:
       - name: Audit shipped dependencies
         run: node bin/commitwork.mjs deps . --audit-gate high --no-record
 
-  # A Dependabot pull request merges itself only when every job above passed and
-  # .github/dependency-updates.json permits every dependency it moves. Anything else stays open for
-  # review. The decision is bin/dependency-policy-check.mjs, the same policy `commitwork deps` reads.
+  # A Dependabot pull request merges itself only when every job above passed,
+  # .github/dependency-updates.json permits every dependency it moves, and every other check on the
+  # commit has passed. Anything else stays open for review. The policy decision is
+  # bin/dependency-policy-check.mjs, the same policy `commitwork deps` reads. `needs:` reaches this
+  # workflow's jobs only, so bin/merge-checks-gate.mjs reads the commit's check runs for the other
+  # workflows (CodeQL, GitHub Action): #19 merged while one of them was failing.
   # The author check reads the pull request's own author, not github.actor: whoever re-runs a job
   # becomes the actor, and an actor test is spoofable that way (zizmor bot-conditions).
   dependabot-merge:
@@ -442,10 +445,11 @@ jobs:
     needs: [tests, linux-sandbox, syntax, windows, smoke, installer, docs, dependencies]
     if: ${{ !failure() && !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
     permissions:
       contents: write
       pull-requests: write
+      checks: read
     steps:
       - id: meta
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
@@ -461,9 +465,18 @@ jobs:
           DEP_UPDATES_JSON: ${{ steps.meta.outputs.updated-dependencies-json }}
           DEP_GHSA_ID: ${{ steps.meta.outputs.ghsa-id }}
         run: node bin/dependency-policy-check.mjs --github-output
-      - name: Merge
+      - id: checks
+        name: Wait for every other check on the commit
         if: steps.policy.outputs.allowed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SELF_CHECK_NAME: Merge a Dependabot update the policy allows
+        run: node bin/merge-checks-gate.mjs --wait 900 --github-output
+      - name: Merge
+        if: steps.policy.outputs.allowed == 'true' && steps.checks.outputs.clear == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --squash "$PR_URL"
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: gh pr merge --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
