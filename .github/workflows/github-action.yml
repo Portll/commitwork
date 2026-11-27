@@ -88,14 +88,22 @@ jobs:
         env:
           SARIF: ${{ steps.cw.outputs.sarif }}
           RESULTS: ${{ steps.cw.outputs.results }}
+          REPORT_DIR: ${{ steps.cw.outputs.report-dir }}
         run: |
           test -s "$SARIF"
           test "$RESULTS" -gt 0
           # shellcheck disable=SC2016 # the ${} are JavaScript template literals
           node -e '
-            const run = JSON.parse(require("fs").readFileSync(process.env.SARIF, "utf8")).runs[0];
+            const fs = require("fs");
+            const run = JSON.parse(fs.readFileSync(process.env.SARIF, "utf8")).runs[0];
             const warned = run.invocations[0].toolExecutionNotifications.filter((n) => n.level === "warning").map((n) => n.descriptor.id);
-            const blind = ["secrets-gitleaks", "sast", "actions-zizmor"].filter((id) => warned.includes(id));
+            const logs = { "secrets-gitleaks": "gitleaks.log", sast: "semgrep.log", "actions-zizmor": "zizmor.log" };
+            const blind = Object.keys(logs).filter((id) => warned.includes(id));
+            for (const id of blind) {
+              const path = `${process.env.REPORT_DIR}/${logs[id]}`;
+              const tail = fs.existsSync(path) ? fs.readFileSync(path, "utf8").trimEnd().split("\n").slice(-80).join("\n") : "";
+              console.error(`::group::${id}: ${logs[id]}\n${tail || "(the scanner wrote nothing to its log)"}\n::endgroup::`);
+            }
             if (blind.length) { console.error(`installed and still not measured: ${blind.join(", ")}`); process.exit(1); }
             console.log(`${run.results.length} result(s); not measured: ${warned.join(", ") || "none"}`);
           '
