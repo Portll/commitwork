@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { expandHome } from '../monitor/discover.mjs';
 import { outDirFor } from '../monitor/area.mjs'; // THE OUT resolver — an area's slug != its out dir
 import { loadRegistry } from '../monitor/registry.mjs';
-import { readSarif } from '../monitor/sarif-read.mjs'; // the one SARIF reader
+import { readSarif, effectiveLevel, resultsWithRules } from '../monitor/sarif-read.mjs'; // the one SARIF reader
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -186,11 +186,12 @@ const ENGINES = {
       const rep = readSarif(sarif);
       if (rep.state === 'absent' || rep.state === 'unreadable' || rep.state === 'empty' || rep.state === 'unparseable') return 'error:no-output';
       if (rep.state === 'never-ran' || rep.state === 'tool-failed') return `error:tool-failed — ${(rep.reason || '').slice(0, 120)}`;
-      for (const run of rep.runs) for (const res of run.results) {
+      for (const { res, rule } of resultsWithRules(rep.runs)) {
+        const level = effectiveLevel(res, rule);
         const loc = res.locations?.[0]?.physicalLocation;
         const file = loc?.artifactLocation?.uri || '?';
         const mod = javaMods.map((m) => basename(m)).find((m) => file.includes(`/${m}/`) || file.startsWith(`${m}/`)) || basename(javaMods[0]);
-        findings.push({ engine: 'semgrep', module: mod, ruleId: res.ruleId, severity: res.level === 'error' ? 'high' : res.level === 'note' ? 'low' : 'medium', file, line: loc?.region?.startLine || 0, message: (res.message?.text || res.ruleId).slice(0, 300) });
+        findings.push({ engine: 'semgrep', module: mod, ruleId: res.ruleId, severity: level === 'error' ? 'high' : level === 'note' ? 'low' : 'medium', file, line: loc?.region?.startLine || 0, message: (res.message?.text || res.ruleId).slice(0, 300) });
       }
       return 'ran';
     },
@@ -234,9 +235,10 @@ const ENGINES = {
       const rep = readSarif(sarif);
       if (rep.state === 'absent' || rep.state === 'unreadable' || rep.state === 'empty' || rep.state === 'unparseable') return 'error:no-output';
       if (rep.state === 'never-ran' || rep.state === 'tool-failed') return `error:tool-failed — ${(rep.reason || '').slice(0, 120)}`;
-      for (const run of rep.runs) for (const res of run.results) {
+      for (const { res, rule } of resultsWithRules(rep.runs)) {
+        const level = effectiveLevel(res, rule);
         const loc = res.locations?.[0]?.physicalLocation;
-        findings.push({ engine: 'codeql', module: basename(mod), ruleId: res.ruleId, severity: res.level === 'error' ? 'high' : res.level === 'note' ? 'low' : 'medium', file: loc?.artifactLocation?.uri || '?', line: loc?.region?.startLine || 0, message: (res.message?.text || res.ruleId).slice(0, 300) });
+        findings.push({ engine: 'codeql', module: basename(mod), ruleId: res.ruleId, severity: level === 'error' ? 'high' : level === 'note' ? 'low' : 'medium', file: loc?.artifactLocation?.uri || '?', line: loc?.region?.startLine || 0, message: (res.message?.text || res.ruleId).slice(0, 300) });
       }
       return 'ran';
     },

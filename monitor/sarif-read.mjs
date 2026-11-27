@@ -375,6 +375,26 @@ export const isSuppressed = (res) =>
   Array.isArray(res && res.suppressions) && res.suppressions.some((s) => s && s.status !== 'rejected');
 
 /**
+ * A result's level as SARIF defines it: its own, else its rule's default, else 'warning'. Semgrep
+ * writes no level on a result and states severity on the rule only, so reading the result alone
+ * counts every ERROR rule as a warning.
+ */
+export const effectiveLevel = (res, rule) =>
+  (res && res.level) || (rule && rule.defaultConfiguration && rule.defaultConfiguration.level) || 'warning';
+
+/** Every result `keep` admits, paired with the rule its own run declares for it (null when undeclared). */
+export function resultsWithRules(runs, keep = () => true) {
+  const out = [];
+  for (const run of Array.isArray(runs) ? runs : []) {
+    const idx = ruleIndex(run);
+    for (const res of run && Array.isArray(run.results) ? run.results : []) {
+      if (res && keep(res)) out.push({ res, rule: idx[res.ruleId] || null });
+    }
+  }
+  return out;
+}
+
+/**
  * The crit/high/med/low band of one result. security-severity (CodeQL's numeric convention, on the
  * rule or the result) outranks level; level falls back to the rule's default, then SARIF's own
  * default of 'warning'.
@@ -383,7 +403,7 @@ export function sarifBand(res, rule) {
   const r = rule || {};
   const ss = parseFloat(((r.properties && r.properties['security-severity']) ?? (res && res.properties && res.properties['security-severity'])) ?? NaN);
   if (!Number.isNaN(ss)) return ss >= 9 ? 'crit' : ss >= 7 ? 'high' : ss >= 4 ? 'med' : 'low';
-  const lvl = (res && res.level) || (r.defaultConfiguration && r.defaultConfiguration.level) || 'warning';
+  const lvl = effectiveLevel(res, r);
   return lvl === 'error' ? 'high' : lvl === 'warning' ? 'med' : 'low';
 }
 

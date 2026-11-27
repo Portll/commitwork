@@ -246,6 +246,16 @@ test('sarif: medium and low scores keep a warning-only report at med, and a scor
   assert.deepEqual(r.cvss, { crit: 0, high: 0, med: 1, low: 1 });
 });
 
+test('sarif: a result with no level takes its rule default, so a semgrep ERROR rule counts as an error', () => {
+  const r = parseReport('sarif', write('rule-default-level.sarif', sarif(
+    [{ ruleId: 'E1' }, { ruleId: 'E1' }, { ruleId: 'N1' }, { ruleId: 'W1' }, { ruleId: 'UNLISTED' }, { ruleId: 'E1', level: 'note' }],
+    [{ id: 'E1', defaultConfiguration: { level: 'error' } }, { id: 'N1', defaultConfiguration: { level: 'note' } }, { id: 'W1' }],
+  )));
+  assert.deepEqual(r.levels, { error: 2, warning: 2, note: 2, none: 0 });
+  assert.equal(r.sev, 'high');
+  assert.equal(r.summary, '6 (2e/2w)');
+});
+
 test('sarif: a report with no scores is graded by level exactly as before, with no CVSS field', () => {
   const r = parseReport('sarif', write('nocvss.sarif', sarif([{ ruleId: 'R1', level: 'warning' }], [{ id: 'R1' }])));
   assert.equal(r.sev, 'med');

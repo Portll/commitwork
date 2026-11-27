@@ -1,4 +1,4 @@
-import { readSarif, isSuppressed, cvssBands } from '../../../monitor/sarif-read.mjs';
+import { readSarif, isSuppressed, cvssBands, effectiveLevel, resultsWithRules } from '../../../monitor/sarif-read.mjs';
 import { classifyWorktreePath } from '../../../monitor/worktree-paths.mjs';
 import { sarifMalicious } from './common.mjs';
 
@@ -33,7 +33,7 @@ export function parseSarif(path) {
   const live = r.results.filter((res) => !isSuppressed(res));
   const suppressed = r.results.length - live.length;
   const levels = { error: 0, warning: 0, note: 0, none: 0 };
-  for (const res of live) { const l = res.level || 'warning'; levels[l] = (levels[l] || 0) + 1; }
+  for (const { res, rule } of resultsWithRules(r.runs, (x) => !isSuppressed(x))) { const l = effectiveLevel(res, rule); levels[l] = (levels[l] || 0) + 1; }
   // A CVSS score outranks the level. osv-scanner writes level `warning` on every result and puts the
   // advisory's score in its rule's `security-severity`, so grading by level alone showed 2 critical
   // and 10 high advisories as 29 yellow warnings (measured on this repository, 2026-11-18). The band
