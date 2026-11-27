@@ -2253,7 +2253,7 @@ install-agents.mjs — generate + install the launchd agents for THIS machine.
 
 ### `monitor/install-git-hook.mjs`
 
-commitwork self-monitor hook — installs a post-commit trigger that spawns a detached `sweep fast &lt;self-area&gt;`.
+commitwork self-monitor hook — installs post-commit and post-merge triggers that spawn a detached `sweep fast &lt;self-area&gt;`.
 
 - Usage: undocumented
 - Exit: undeclared

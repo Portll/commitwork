@@ -330,7 +330,7 @@ history, `because`, a second colon and the old trailer; no gate consumes it yet,
 env var.
 
 A commit made with a plain `git commit` instead fires the repository's `post-commit` hook, which
-starts a background self-sweep in the main checkout. The hook exits in a linked worktree; for a hook
+starts a background self-sweep in the main checkout; a merge or pull there fires `post-merge`, which starts the same sweep. The hook exits in a linked worktree; for a hook
 installed before that guard, prefix worktree commits with `CW_SELF_SWEEP=0`. `commit-phase.mjs` writes its commits with `git commit-tree`,
 which runs no hooks.
 

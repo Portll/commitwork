@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// commitwork self-monitor hook — installs a post-commit trigger that spawns a detached
+// commitwork self-monitor hook — installs post-commit and post-merge triggers that spawn a detached
 // `sweep fast <self-area>`. DRY RUN by default; --write installs, --uninstall removes OURS only
 // (a hook this script did not write is never clobbered or removed; --force overrides --write only).
 // The area is RESOLVED from the registry entry whose path IS this checkout — no entry ⟹ refuse.
@@ -18,6 +18,9 @@ import { forgetRepo, ledgerPath, pinFor, recordRepo } from '../bin/lib/gate-pin.
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CW = resolve(HERE, '..');
 const MARKER = 'commitwork self-monitor (installed by monitor/install-git-hook.mjs';
+// post-merge: this checkout takes most of its commits by merge or pull, and neither fires post-commit.
+const SELF_HOOKS = ['post-commit', 'post-merge'];
+const REFLECTS = { 'post-commit': 'this commit', 'post-merge': 'the merged commits' };
 
 const argv = process.argv.slice(2);
 const WRITE = argv.includes('--write');
@@ -67,11 +70,11 @@ function selfArea() {
   return area;
 }
 
-function hookText(area) {
+function hookText(area, hook) {
   return `#!/bin/sh
 # ${MARKER} — change or remove it THERE, not here).
-# post-commit: refresh this repo's own monitor state in the background, so the panel (:7878,
-# published via the tunnel) serves a rollup that reflects this commit without waiting for the
+# ${hook}: refresh this repo's own monitor state in the background, so the panel (:7878,
+# published via the tunnel) serves a rollup that reflects ${REFLECTS[hook]} without waiting for the
 # nightly sweep. Overlap is refused by the sweep's own lock (an exit-3 line below is benign).
 # CW_SELF_SWEEP=0 skips without uninstalling. CW_PROJECTSTATUS=0 keeps every commit from
 # regenerating the status document; scheduled and manual sweeps still refresh it.
@@ -158,19 +161,27 @@ function installTrailerGate(dir) {
 }
 
 const dir = hooksDir();
-const hookPath = join(dir, 'post-commit');
-const existing = existsSync(hookPath) ? readFileSync(hookPath, 'utf8') : null;
-const ours = existing != null && existing.includes(MARKER);
+const selfHooks = SELF_HOOKS.map((name) => {
+  const path = join(dir, name);
+  const existing = existsSync(path) ? readFileSync(path, 'utf8') : null;
+  return { name, path, existing, ours: existing != null && existing.includes(MARKER) };
+});
+const foreign = selfHooks.filter((h) => h.existing != null && !h.ours);
+const refuseForeign = (says) => {
+  for (const h of foreign) {
+    console.error(`install-git-hook: ${h.path} ${says}`);
+    console.error('--- existing hook ---\n' + h.existing.trim());
+  }
+  process.exit(2);
+};
 
 if (UNINSTALL) {
-  if (existing == null) { console.log(`install-git-hook: nothing installed at ${hookPath}`); process.exit(0); }
-  if (!ours) {
-    console.error(`install-git-hook: ${hookPath} exists but was not written by this script — refusing to remove it.`);
-    console.error('--- existing hook ---\n' + existing.trim());
-    process.exit(2);
+  if (selfHooks.every((h) => h.existing == null)) { console.log(`install-git-hook: nothing installed at ${selfHooks.map((h) => h.path).join(' or ')}`); process.exit(0); }
+  if (foreign.length) refuseForeign('exists but was not written by this script — refusing to remove it.');
+  for (const h of selfHooks.filter((x) => x.ours)) {
+    unlinkSync(h.path);
+    console.log(`install-git-hook: removed ${h.path}`);
   }
-  unlinkSync(hookPath);
-  console.log(`install-git-hook: removed ${hookPath}`);
   // The commit-msg gate is installed by the same command, so --uninstall must take it too —
   // otherwise "uninstalled" leaves half a gate behind, which is worse than either state.
   const msgPath = join(dir, 'commit-msg');
@@ -224,22 +235,21 @@ if (PREPARE && !registryDeclaresSelf()) {
   process.exit(0);
 }
 const area = selfArea();
-const text = hookText(area);
 
-if (existing != null && !ours && !FORCE) {
-  console.error(`install-git-hook: ${hookPath} already exists and was not written by this script — refusing to clobber it (--force overrides).`);
-  console.error('--- existing hook ---\n' + existing.trim());
-  process.exit(2);
-}
+if (foreign.length && !FORCE) refuseForeign('already exists and was not written by this script — refusing to clobber it (--force overrides).');
 
 if (!WRITE) {
-  console.log(`install-git-hook: DRY RUN — would ${existing ? 'replace' : 'install'} ${hookPath} (self-area: ${area}). Re-run with --write.`);
-  console.log('--- hook ---\n' + text);
+  for (const h of selfHooks) {
+    console.log(`install-git-hook: DRY RUN — would ${h.existing ? 'replace' : 'install'} ${h.path} (self-area: ${area}). Re-run with --write.`);
+    console.log('--- hook ---\n' + hookText(area, h.name));
+  }
   process.exit(0);
 }
 
 mkdirSync(dir, { recursive: true });
-writeFileSync(hookPath, text);
-chmodSync(hookPath, 0o755);
-console.log(`install-git-hook: installed ${hookPath} (self-area: ${area}; disable per-commit with CW_SELF_SWEEP=0, remove with --uninstall)`);
+for (const h of selfHooks) {
+  writeFileSync(h.path, hookText(area, h.name));
+  chmodSync(h.path, 0o755);
+  console.log(`install-git-hook: installed ${h.path} (self-area: ${area}; disable per-commit with CW_SELF_SWEEP=0, remove with --uninstall)`);
+}
 

@@ -263,8 +263,9 @@ and records `verified` / `partial` / `unverified` / `failed` with the suite's ow
 anything but a fresh `verified` warns, and only a measured failure fails the deadman.
 
 **On-commit self-refresh.** `node monitor/install-git-hook.mjs --write` installs a `post-commit`
-hook (dry run without `--write`; `--uninstall` removes it; a hook it did not write is never
-clobbered or removed unless `--force` is given with `--write`). Each commit to this checkout spawns a detached `sweep fast <self-area>` —
+and a `post-merge` hook (dry run without `--write`; `--uninstall` removes them; a hook it did not write is never
+clobbered or removed unless `--force` is given with `--write`). Each commit to this checkout, and each merge or pull that
+moves it (a fast-forward included), spawns a detached `sweep fast <self-area>` —
 the area is resolved at install time from the registry entry declaring this checkout, never
 guessed, and the absolute node path is baked in (a GUI commit has no shell PATH; that is how the
 plists died). The panel serves its artifacts from disk per request, so the sweep finishing IS the

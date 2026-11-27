@@ -44,6 +44,7 @@ describe('install-git-hook — declaration-driven, fail-closed', { skip: UNDECLA
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, /DRY RUN/);
     assert.equal(existsSync(join(dir, 'post-commit')), false, 'a dry run must not install');
+    assert.equal(existsSync(join(dir, 'post-merge')), false, 'a dry run must not install');
   });
 
   test('--write installs an executable hook with the resolved area and the absolute node path', () => {
@@ -96,6 +97,55 @@ describe('install-git-hook — declaration-driven, fail-closed', { skip: UNDECLA
     }
   });
 
+  test('--write installs the same sweep as an executable post-merge hook', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-hook-'));
+    assert.equal(run(dir, '--write').status, 0);
+    const hook = join(dir, 'post-merge');
+    const body = (name) => readFileSync(join(dir, name), 'utf8').split('\n').filter((l) => !l.startsWith('#')).join('\n');
+    assert.ok(statSync(hook).mode & 0o111, 'the hook must be executable');
+    assert.match(readFileSync(hook, 'utf8'), /^# post-merge: /m);
+    assert.equal(body('post-merge'), body('post-commit'), 'a merge must start exactly the sweep a commit starts');
+  });
+
+  test('a merge that moves the main checkout starts the self-sweep, and one in a linked worktree does not', () => {
+    const hooks = mkdtempSync(join(tmpdir(), 'cw-hook-'));
+    assert.equal(run(hooks, '--write').status, 0);
+    const base = mkdtempSync(join(tmpdir(), 'cw-hook-repo-'));
+    const repo = join(base, 'main');
+    const wt = join(base, 'wt');
+    const git = (sweep, cwd, ...a) => spawnSync('git', ['-c', 'user.name=Portll', '-c', 'user.email=fx@example.invalid',
+      '-c', `core.hooksPath=${hooks}`, ...a], { cwd, encoding: 'utf8', env: { ...process.env, CW_SELF_SWEEP: sweep } });
+    try {
+      assert.equal(git('0', base, 'init', '-q', '-b', 'main', repo).status, 0);
+      assert.equal(git('0', repo, 'commit', '-q', '--allow-empty', '-m', 'test: add main').status, 0);
+      assert.equal(git('0', repo, 'worktree', 'add', '-q', '--detach', wt).status, 0);
+      assert.equal(git('0', repo, 'checkout', '-q', '-b', 'side').status, 0);
+      assert.equal(git('0', repo, 'commit', '-q', '--allow-empty', '-m', 'test: add side').status, 0);
+      assert.equal(git('0', repo, 'checkout', '-q', 'main').status, 0);
+      assert.equal(existsSync(join(repo, 'reports')), false, 'the setup commits must not have reached the sweep');
+      assert.equal(git('1', wt, 'merge', '-q', '--ff-only', 'side').status, 0);
+      assert.equal(existsSync(join(wt, 'reports')), false, 'the worktree merge reached the sweep');
+      assert.equal(git('1', repo, 'merge', '-q', '--ff-only', 'side').status, 0);
+      assert.equal(existsSync(join(repo, 'reports')), true, 'a fast-forward of the main checkout did not reach the sweep');
+    } finally {
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  test('a foreign post-merge hook is refused before either self-monitor hook is written', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-hook-'));
+    const foreign = '#!/bin/sh\necho my own hook\n';
+    writeFileSync(join(dir, 'post-merge'), foreign);
+    const w = run(dir, '--write');
+    assert.equal(w.status, 2, 'clobbering a foreign hook must be refused');
+    assert.match(w.stderr, /post-merge already exists .* refusing to clobber/);
+    assert.equal(readFileSync(join(dir, 'post-merge'), 'utf8'), foreign, 'the foreign hook must be untouched');
+    assert.equal(existsSync(join(dir, 'post-commit')), false, 'half an install would sweep on commits and not on merges');
+    const u = run(dir, '--uninstall');
+    assert.equal(u.status, 2, 'uninstalling a foreign hook must be refused');
+    assert.equal(readFileSync(join(dir, 'post-merge'), 'utf8'), foreign);
+  });
+
   test('a hook this script did NOT write is never clobbered — and never uninstalled', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cw-hook-'));
     const foreign = '#!/bin/sh\necho my own hook\n';
@@ -119,6 +169,7 @@ describe('install-git-hook — declaration-driven, fail-closed', { skip: UNDECLA
     const u = run(dir, '--uninstall');
     assert.equal(u.status, 0, u.stderr);
     assert.equal(existsSync(join(dir, 'post-commit')), false);
+    assert.equal(existsSync(join(dir, 'post-merge')), false);
     const again = run(dir, '--uninstall');
     assert.equal(again.status, 0);
     assert.match(again.stdout, /nothing installed/);
