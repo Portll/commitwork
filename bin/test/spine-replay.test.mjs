@@ -11,7 +11,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import {
   replay, summarise, toSql, compareTaskIds, parentOf, taskOf, sqlLit,
   reconstructedGoal, TASK_STATUSES, RECONSTRUCTED_TASK_STATUS, RECONSTRUCTED_PLAN_STATUS,
-  LEDGER_UNREADABLE, NOTHING_TO_REPLAY, NOTHING_MISSING, PROPOSED,
+  LEDGER_UNREADABLE, NOTHING_TO_REPLAY, NOTHING_MISSING,
 } from '../spine-replay-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

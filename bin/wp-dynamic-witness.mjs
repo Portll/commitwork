@@ -41,7 +41,7 @@
 //
 // Zero runtime dependencies.
 
-import { readFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, statSync, cpSync, writeFileSync, rmSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, cpSync, rmSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';

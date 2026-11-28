@@ -8,9 +8,9 @@
 //   node bin/adjudication-import.mjs --write     # append new finding-adjudication records
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join, dirname, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { appendFindingAdjudication, findingKeyForScanner, findingKeyForDependency, readJournalFile, readAdjudications, adjudicationsPath } from './lib/verdict-journal-core.mjs';
+import { appendFindingAdjudication, findingKeyForScanner, findingKeyForDependency, readAdjudications } from './lib/verdict-journal-core.mjs';
 import { identityFor } from '../monitor/detail-schema.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 import { annotationsPathFor } from '../monitor/store-paths.mjs';

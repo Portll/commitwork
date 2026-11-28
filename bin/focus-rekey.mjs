@@ -20,7 +20,7 @@
 //
 // Env (call time): CW_VERDICT_DIR (journal dir), CW_TRANSCRIPT_ROOT (default ~/.claude/projects),
 // CW_FOCUS_REKEY_WINDOW_MS (default 3000).
-import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, basename } from 'node:path';
 import { isMainModule } from '../lib/is-main.mjs';

@@ -115,7 +115,7 @@ export function parseScorecard(path) {
   const j = safeReadJSON(path);
   if (!j || typeof j !== 'object') return { ok: false, summary: 'no scorecard data' };
   if (j.ran !== true) return voidResult(j.reason, 'not evaluated', 'self-gated');
-  const c = (j && j.counts) || {};
+  const c = j.counts || {};
   const fail = Number(c.failing) || 0, pass = Number(c.passing) || 0, und = Number(c.inconclusive) || 0;
   const scored = Number(c.scored) || 0;
   if (!scored) return { ok: false, sev: 'noscan', summary: `0 of ${und} check(s) could be determined — no posture was measured` };

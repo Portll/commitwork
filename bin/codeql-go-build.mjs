@@ -18,8 +18,6 @@
 // usage: codeql-go-build.mjs [root]   (exit 0 when at least one module extracted, 1 when none)
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { walkGoModules } from './lib/go-modules.mjs';
 import { isMainModule } from '../lib/is-main.mjs';

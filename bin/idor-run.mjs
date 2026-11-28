@@ -17,7 +17,7 @@
  *
  * usage: node bin/idor-run.mjs --manifest <path|name> [--base URL] [--trust-repo-manifest]
  */
-import { readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { writeFileSync, renameSync } from 'node:fs';
 import { resolveManifestPath, assertTrusted, loadManifest, resolveActors, req, disclosesObject, voidResult } from './bola-run.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 

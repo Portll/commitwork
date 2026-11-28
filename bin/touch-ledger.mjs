@@ -25,7 +25,7 @@
 // output carried a sha. Every error path still exits 0.
 
 import { existsSync, statSync } from 'node:fs';
-import { dirname, resolve, relative, isAbsolute } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { responseText, commitShaFrom, editFingerprints, execScriptsFrom, execWritesFrom, fitCommand } from './lib/touch-ledger-core.mjs';

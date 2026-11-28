@@ -8,7 +8,7 @@ import { join, dirname, resolve, delimiter } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { collectDocs, verdict, realDate, datedCycleDoc, measurementRaw } from '../docs-doctor.mjs';
+import { collectDocs, verdict, realDate, measurementRaw } from '../docs-doctor.mjs';
 
 const NOW = new Date('2026-07-29T12:00:00Z');
 

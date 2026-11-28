@@ -20,7 +20,7 @@
 // exit, run:       0 every lane ran, nothing blocking · 20 findings — commit blocked
 //                  21 a lane could not run and --unrun block · 2 usage
 // exit, install/uninstall: 0 done (or dry run) · 22 refused: a hook commitwork did not write · 2 usage
-import { readFileSync, existsSync, mkdirSync, unlinkSync, renameSync, mkdtempSync, rmSync, lstatSync } from 'node:fs';
+import { readFileSync, mkdirSync, unlinkSync, renameSync, mkdtempSync, rmSync, lstatSync } from 'node:fs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';

@@ -25,7 +25,7 @@
 // test drives this exact file against a fixture roster and a fixture socket directory.
 import { isMainModule } from '../../lib/is-main.mjs';
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolve as rosterResolve, assess } from '../session-roster.mjs';
 import { livePids } from '../lib/peer-headers.mjs';

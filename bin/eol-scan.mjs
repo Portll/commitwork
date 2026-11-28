@@ -13,8 +13,7 @@
 // directive accept current releases, so they are skipped rather than reported. CI matrices are skipped
 // too: testing on an old release is how a library proves it still supports it.
 import { readFileSync, readdirSync, writeFileSync, lstatSync } from 'node:fs';
-import { join, relative, basename, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, relative, basename, resolve } from 'node:path';
 import { snapshotPath } from './eol-snapshot.mjs';
 import { classifyWorktreePath } from '../monitor/worktree-paths.mjs';
 import { isMainModule } from '../lib/is-main.mjs';

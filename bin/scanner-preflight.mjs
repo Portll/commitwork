@@ -34,7 +34,6 @@
 // Intended to run BEFORE the nightly sweep, so the pass is made with current data rather than
 // whatever happened to be on disk.
 
-import { spawnSync } from 'node:child_process';
 import { safeSpawnSync, resolveWindowsExecutable } from '../lib/win-spawn.mjs'; // npm-installed scanners are .cmd shims on Windows
 import { probeToolVersion, binFor } from '../monitor/tool-version.mjs';
 import { clearGrypeStaging, updateOnce } from '../lib/db-update-lock.mjs';

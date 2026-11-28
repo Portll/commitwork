@@ -14,7 +14,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { platform } from 'node:os';
-import { SECRETS_FILE, loadTable, setRef, status, resolveRef, defaultRefFor, parseRef } from '../lib/secrets.mjs';
+import { SECRETS_FILE, setRef, status, resolveRef, defaultRefFor, parseRef } from '../lib/secrets.mjs';
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {

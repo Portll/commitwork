@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import {
-  upsert, verifyReceipt, recallByTags, config, scopeTags, redactionCheck, buildRow,
+  upsert, recallByTags, config, scopeTags, redactionCheck, buildRow,
   tally, summarise, sha256, CREDENTIAL_FIELDS, NOT_ATTEMPTED,
   VERIFIED, ACCEPTED_UNVERIFIED, FAILED, CONTRACT_VERSION,
 } from '../../lib/memory-layer-client.mjs';

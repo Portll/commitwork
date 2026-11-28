@@ -10,7 +10,7 @@
 //        CW_A11Y_FILES=a.html,b.html node bin/a11y-scan.mjs
 // output: JSON on stdout (and $CW_REPORT_DIR/a11y.json when the runner sets it)
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
 import { scannedGit } from './lib/git-env.mjs';

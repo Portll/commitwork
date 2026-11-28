@@ -29,11 +29,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  loadIssues, saveIssues, withIssuesLock as lockStore, issuesPath, nowISO,
+  loadIssues, saveIssues, withIssuesLock as lockStore, nowISO,
   mintIssue, claimIssue, releaseIssue, closeIssue, reopenIssue, linkIssues, gcIssues,
   markUnsatisfiable, findUnsatisfiable,
   readyIssues, verifyChain, ingestQueue, identityProblems, reindexByKey,
-  normaliseSeverity, SEV_RANK, ISSUE_STATES, CLOSED_AS, ISS_RE,
+  normaliseSeverity, SEV_RANK, CLOSED_AS, ISS_RE,
 } from '../monitor/issue-store.mjs';
 import { ingestArea } from '../monitor/issue-ingest.mjs';
 import { CLASS } from '../monitor/issue-key.mjs';

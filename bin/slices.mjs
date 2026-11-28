@@ -6,7 +6,7 @@
 //   node bin/slices.mjs list <slug>
 //   node bin/slices.mjs --backfill <slug>@<sha> --date <YYYY-MM-DD>   (RESERVED)
 
-import { readFileSync, existsSync, mkdirSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, copyFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

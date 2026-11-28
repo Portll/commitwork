@@ -20,7 +20,6 @@ import { readdirSync, lstatSync, readFileSync, openSync, readSync, closeSync } f
 import { join, relative, resolve, basename } from 'node:path';
 import { inflateRawSync, inflateSync, gunzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';
 import { repoDirExcluder } from './scan-exclusions.mjs';
 

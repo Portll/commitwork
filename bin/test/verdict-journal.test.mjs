@@ -2,8 +2,8 @@
 // tunnel. Every path runs on fixtures via the CW_* seams, read at call time.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, chmodSync, existsSync, appendFileSync, readdirSync } from 'node:fs';
-import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, existsSync, appendFileSync, readdirSync } from 'node:fs';
+import { denyRead } from '../../lib/fs-unreadable.mjs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,7 @@ import {
   anchorJournals, verifyAnchors, adjudicationsPath, buildFindingKey, findingKeyForScanner,
   findingKeyForDependency, redactLedgerFields, appendFindingAdjudication, FORBIDDEN_IDENTITY_COMPONENTS,
   bornSliceAt, computeFindingCalibration, bankedRatesFrom, compareCalibrationToBaseline,
-  calibrateBaselinePath, readCalibrateBaseline, writeCalibrateBaseline, UNMODELED_LABEL,
+  calibrateBaselinePath, UNMODELED_LABEL,
   anchorDataStore, retireDataAnchor, verifyDataAnchors, dataAnchorsPath, fatigueReport, verifyJudgementArchive,
   isModelDefaultSampling, raterOf,
 } from '../lib/verdict-journal-core.mjs';

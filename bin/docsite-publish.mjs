@@ -20,7 +20,7 @@
 // env, read at call time: CW_DOCSITE_ROOT, CW_DOCSITE_PRIVATE (via lib), CW_DOCSITE_DIST,
 //   CW_WRANGLER, CW_DOCSITE_PROJECT
 
-import { mkdtempSync, mkdirSync, cpSync, readFileSync, existsSync, readdirSync, statSync, lstatSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, readFileSync, existsSync, readdirSync, lstatSync } from 'node:fs';
 import { join, resolve, relative, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';

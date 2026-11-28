@@ -33,7 +33,7 @@ import { lintPair } from '../lib/reasoning-lint.mjs';
 import { identityFor } from '../monitor/detail-schema.mjs';
 import { isMainModule } from '../lib/is-main.mjs';
 import {
-  readJournalFile, readAdjudications, adjudicationsPath, readCalibrateBaseline, computeFindingCalibration,
+  readAdjudications, readCalibrateBaseline, computeFindingCalibration,
   appendFindingAdjudication, findingKeyForScanner,
 } from './lib/verdict-journal-core.mjs';
 

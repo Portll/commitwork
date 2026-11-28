@@ -84,7 +84,7 @@ import { bold, dim, mut, acc, heading, STATUS, colorEnabled, crit, live, part, h
 // The two axes a check is described with, declared once in monitor/check-vocabulary.mjs. bin/
 // already imports monitor/ (deploy.mjs, races.mjs), so this is not a layering violation.
 import { CHECK_STATUS, SEVERITY, isCheckStatus, isSeverity, toWireStatus } from '../monitor/check-vocabulary.mjs';
-import { readSarif, ruleIndex, describePartial } from '../monitor/sarif-read.mjs';
+import { readSarif, describePartial } from '../monitor/sarif-read.mjs';
 import { classifyWorktreePath } from '../monitor/worktree-paths.mjs';
 import { coverageForLane } from '../monitor/codeql-coverage.mjs';
 import { SCANNER_SPECS } from '../monitor/extractors.mjs'; // the publishing reader, as a findings-exit witness

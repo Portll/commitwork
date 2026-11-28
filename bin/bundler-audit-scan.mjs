@@ -22,7 +22,7 @@
  * Exit: 0 clean, 1 advisories found (bundle-audit's own convention, preserved so the lane's
  * existing guard keeps working), 2 no lockfile anywhere, 3 the tool failed on a lockfile it found.
  */
-import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, relative, dirname } from 'node:path';
 import { tmpdir } from 'node:os';

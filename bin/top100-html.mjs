@@ -18,7 +18,7 @@ import { esc } from '../lib/html-escape.mjs';
 import { houseCss } from '../lib/house-css.mjs';
 import { MARK_ICON } from '../lib/brand-tokens.mjs';
 import { readFileSync, mkdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { isMainModule } from '../lib/is-main.mjs';

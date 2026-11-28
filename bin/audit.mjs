@@ -22,7 +22,7 @@ import { dockerReachable } from '../lib/docker-reachable.mjs';
 import { spawnSync } from 'node:child_process';
 import { readSarif, ruleIndex } from '../monitor/sarif-read.mjs'; // the one SARIF reader
 import { validateAgainstSchema } from '../monitor/registry.mjs'; // the one schema validator
-import { resolve, dirname, join, isAbsolute, basename } from 'node:path';
+import { resolve, dirname, join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';
 import { useScopedDockerConfig } from '../lib/docker-config.mjs';

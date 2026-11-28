@@ -27,7 +27,7 @@
 //
 // usage: gradle-deps-scan.mjs <repoDir> --out <file> [--log <file>] [--offline]
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, appendFileSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, appendFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const arg = (n, d = null) => { const i = process.argv.indexOf(`--${n}`); return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : d; };

@@ -13,7 +13,7 @@
 // before the chain carry no `prev` and verify as `unchained` — counted, never passed as verified.
 
 import { readFileSync, mkdirSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { acquireLock } from '../monitor/lockfile.mjs';
 import { chainedAppendHeld, verifyLedgerChain } from './lib/touch-chain.mjs';

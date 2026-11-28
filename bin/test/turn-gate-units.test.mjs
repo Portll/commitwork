@@ -1,7 +1,7 @@
 // bin/test/turn-gate-units.test.mjs — case tests for assessFile.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assessFile } from '../turn-gate.mjs';

@@ -10,7 +10,7 @@
 //
 // explicit uncertainty: unfetchable tags are UNVERIFIABLE — never skipped, never counted current.
 
-import { readFileSync, writeFileSync, renameSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

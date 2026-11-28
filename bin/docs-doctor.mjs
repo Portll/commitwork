@@ -27,7 +27,7 @@
 // Env:   CW_DOCS_MAX_AGE_DAYS (default 30), CW_NOW (ISO override for deterministic runs)
 // Exit:  0 all green · 1 any orange · 2 grey only
 
-import { readFileSync, writeFileSync, renameSync, readdirSync, statSync, existsSync, openSync, readSync, closeSync, mkdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, openSync, readSync, closeSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

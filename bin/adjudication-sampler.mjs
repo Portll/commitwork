@@ -2,7 +2,7 @@
 // Adjudication sampler: per-stratum coverage, rates-as-records, and a ranked adjudication queue.
 // A rate here is a RECORD carrying its denominator and an `observable` flag — never a bare number,
 // so absence can never read as zero. Proposals only: nothing here mutates anything.
-import { readJournalFile, readJournal, TRUTHS, retractionsFrom, isModelDefaultSampling } from './lib/verdict-journal-core.mjs';
+import { readJournal, TRUTHS, retractionsFrom, isModelDefaultSampling } from './lib/verdict-journal-core.mjs';
 import { rethrowIfBug } from './rethrow.mjs';
 import { readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';

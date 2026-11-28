@@ -35,7 +35,7 @@ import { randomBytes } from "node:crypto";
 import { homedir } from "node:os";
 import { loadLlmHosts, baseUrlFor } from "../monitor/llm-hosts.mjs";
 import { resolveModelProvider, chatComplete, anthropicTakesTemperature } from "../lib/model-provider.mjs";
-import { upsert, verifyReceipt } from "../lib/memory-layer-client.mjs";
+import { upsert } from "../lib/memory-layer-client.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // Read at call time; the panel's preconditions check resolves the same variable.

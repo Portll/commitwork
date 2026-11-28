@@ -22,9 +22,9 @@
 // limit as a clean surface. Dropping it silently is the one failure mode that would make every
 // number here flatter than the truth.
 
-import { readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
-import { join, resolve, relative, dirname, sep } from 'node:path';
+import { join, resolve, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';
 import { stripComments } from './lib/tracked-imports.mjs';

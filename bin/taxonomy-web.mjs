@@ -11,7 +11,7 @@
 //   page would use (expiry: never, prev: pointed at a sibling commitwork-web checkout that was
 //   never built — the palette/shell/wordmark it wanted never existed under that path)
 import { esc } from '../lib/html-escape.mjs';
-import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, resolve, relative } from 'node:path';
 import { validateAgainstSchema } from '../monitor/registry.mjs'; // the one schema validator

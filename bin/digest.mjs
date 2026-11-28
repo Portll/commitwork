@@ -17,7 +17,7 @@
 //             (CW_REPORTS_ROOT; the returns go to the register at CW_DISREGARDED_WARNINGS)
 // Exit 0 every section measured · 2 usage · 20 at least one section not measured (still printed) ·
 // 21 --write: a returned warning could not be recorded in the register (the digest is still written).
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';

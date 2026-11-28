@@ -13,7 +13,7 @@
 // usage: node bin/reconcile-findings.mjs [--in <dir>] [--out <dir>] [--root <repo>] [--no-gate]
 // exit:  0 clean · 1 unresolved conflicts remain (gate) · 2 bad usage / unreadable input
 import { summaryTokens, jaccard } from '../lib/text-similarity.mjs';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { acquireLock, writeAtomic } from '../monitor/lockfile.mjs';
 import { join, dirname, resolve, basename } from 'node:path';

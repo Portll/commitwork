@@ -2,7 +2,7 @@ import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {
-  analyseFinding, promptFor, promptSha, classifyReachability, compareAnalysts, findingKey,
+  analyseFinding, promptFor, promptSha, classifyReachability, findingKey,
   lmStudioAnalyst, claudeCodeAnalyst,
   ANALYSED, NOT_ANALYSED, PATH_PROVEN, OPINION, EVIDENCE_CITED, classifyDismissal, extractCitations,
   untrustedSignals, ANALYST_TEMPERATURE,

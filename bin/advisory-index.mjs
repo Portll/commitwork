@@ -15,7 +15,7 @@
 
 import { isMainModule } from '../lib/is-main.mjs';
 import { nowISO } from '../lib/clock.mjs';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

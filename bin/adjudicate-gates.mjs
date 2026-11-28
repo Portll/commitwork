@@ -14,7 +14,7 @@
  *   node bin/adjudicate-gates.mjs --verify --write     ...and append the adjudications
  * env: CW_VERDICT_DIR (journals), CW_ADJ_WORKTREE_ROOT (where detached worktrees are built)
  */
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';

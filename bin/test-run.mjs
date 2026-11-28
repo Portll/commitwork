@@ -33,7 +33,7 @@
 
 import { isMainModule } from '../lib/is-main.mjs';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, mkdirSync, statSync, readFileSync, existsSync, readdirSync, realpathSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, statSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, dirname, basename, resolve } from 'node:path';

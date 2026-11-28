@@ -2,7 +2,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { judgementArchivePath } from '../lib/verdict-journal-core.mjs';
-import { join, dirname } from 'node:path';
 
 test('returns path with month derived from a full ISO timestamp', () => {
   const filePath = '/repo/verdicts/2024-01-15T10:30:00Z.json';

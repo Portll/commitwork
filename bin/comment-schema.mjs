@@ -7,7 +7,7 @@
 // fact: grammar is hard-gated, block length is ratcheted / 525 legacy files would make a hard gate red forever (expiry: when the legacy count reaches zero, prev: unknown)
 // fact: key is the path and a COUNT, not a line or a hash / a line drifts, a hash changes when you edit the block you were asked to shorten (expiry: never, prev: wrong)
 import { isMainModule } from '../lib/is-main.mjs';
-import { readFileSync, readdirSync, statSync, writeFileSync, renameSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeAtomic } from '../monitor/lockfile.mjs';

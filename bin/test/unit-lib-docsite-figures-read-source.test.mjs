@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readSource } from '../lib/docsite-figures.mjs';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, chmodSync, constants } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 

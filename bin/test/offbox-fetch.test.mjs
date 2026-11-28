@@ -1,7 +1,7 @@
 // offbox-fetch: verified evidence lands, unverified is refused, missing gh is exit 2
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, chmodSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fetchAndVerify, writeEvidence, latestRun } from '../offbox-fetch.mjs';

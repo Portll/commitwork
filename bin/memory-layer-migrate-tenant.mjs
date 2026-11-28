@@ -16,11 +16,10 @@
 //
 // exit: 0 all accounted for · 1 something did not verify · 2 bad usage / unreachable
 
-import { createHash } from 'node:crypto';
-import { writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { credential, config, health, sha256 } from '../lib/memory-layer-client.mjs';
+import { credential, config, sha256 } from '../lib/memory-layer-client.mjs';
 import { writeAtomic } from '../monitor/lockfile.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

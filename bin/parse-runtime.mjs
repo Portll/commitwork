@@ -1,7 +1,7 @@
 // commitwork — shared parser for RUNTIME (DAST / BOLA) reports; one source of truth for the
 // rollup and runtime.html. Reads nuclei.jsonl / nuclei.json / authz-bola.json / authz.json into
 // normalised findings + probes, each carrying a stable category.
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 // severity model — 'info' is a first-class tier below 'low' (Nuclei emits it heavily)

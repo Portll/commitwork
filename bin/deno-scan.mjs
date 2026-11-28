@@ -2,7 +2,7 @@
 // bin/deno-scan.mjs — run deno lint / deno check once per deno.json: each file is checked under
 // its nearest-ancestor config. Output shapes belong to monitor/extractors.mjs — the single
 // `Found N errors.` line is the repo total. Exit 0 whenever the scan ran; non-zero = scan failed.
-import { readdirSync, existsSync, statSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, relative, resolve, sep } from 'node:path';
 

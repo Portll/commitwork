@@ -2,8 +2,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { servingIntervals } from '../release-report.mjs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const input1 = {
   events: [

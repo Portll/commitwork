@@ -116,7 +116,7 @@ export async function readDump(path, { tables = DEFAULT_TABLES, maxStatementByte
   let overflow = false;
 
   const suffixFor = (name) => {
-    for (const t of wanted) if (name.endsWith(t) && (result.prefix ? name === result.prefix + t : /_?$/.test(name.slice(0, -t.length)))) return t;
+    for (const t of wanted) if (name.endsWith(t) && (!result.prefix || name === result.prefix + t)) return t;
     return null;
   };
   const endStatement = () => {

@@ -1,7 +1,7 @@
 // Verifies the hash chain of events (bin/upstream-fetch.mjs verifyChain).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyChain, chainOf, eventBody } from '../upstream-fetch.mjs';
+import { verifyChain, chainOf } from '../upstream-fetch.mjs';
 import { createHash } from 'node:crypto';
 
 const GENESIS = '0'.repeat(64);

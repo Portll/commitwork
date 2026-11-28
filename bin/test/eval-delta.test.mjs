@@ -2,11 +2,11 @@
 // vanished-dimension alarms, structured-only residual linkage, linkage-UNKNOWN on unreadable backlog.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, chmodSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { normalizeDimension, diffDimensions, collectResiduals, checkLinkage, loadArtifact } from '../eval-delta.mjs';
+import { normalizeDimension, diffDimensions, checkLinkage, loadArtifact } from '../eval-delta.mjs';
 import { fileURLToPath } from 'node:url';
 
 const dir = mkdtempSync(join(tmpdir(), 'eval-delta-'));

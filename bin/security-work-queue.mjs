@@ -5,7 +5,7 @@
 //      context, default monitor/private/betterleaks-assessment.md; absent, they bank without it
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { execFileSync, execFile, spawn } from 'node:child_process';
 import { PLAN_ID, ROUTE, QUEUE, CORE_PHASES, readyJob, completionText } from './lib/security-work-queue.mjs';

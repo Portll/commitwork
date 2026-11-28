@@ -35,7 +35,7 @@
  *   CW_BARE_CATCH_BASELINE  baseline path        (default: bin/bare-catch-baseline.json)
  *   CW_NOW                  timestamp for writes (determinism)
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';

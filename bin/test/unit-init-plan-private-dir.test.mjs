@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { planPrivateDir } from '../init.mjs';
-import { mkdtempSync, rmSync, mkdirSync, symlinkSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, symlinkSync, writeFileSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 

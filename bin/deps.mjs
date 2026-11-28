@@ -30,7 +30,7 @@ import { getSetting } from '../monitor/settings.mjs';
 import { auditProject, renderAuditText, gate, AUDIT_LEVELS, UPDATE_KINDS, UPDATE_TYPES, COOLDOWN_WHY, cooldownOf } from './lib/npm-versions.mjs';
 import { operatorPolicy, resolvePolicy, validateKinds, POLICY_FILE } from './lib/update-policy.mjs';
 import { proposeUpdates, locate, readRepoPolicy } from './lib/npm-update.mjs';
-import { appendEvent, readLedger, ledgerPath, snapshotOf } from './lib/deps-ledger.mjs';
+import { appendEvent, readLedger, snapshotOf } from './lib/deps-ledger.mjs';
 import { buildHistory, renderHistoryHtml } from './lib/deps-history.mjs';
 import { initialPicker, runPicker } from './lib/checkbox-tui.mjs';
 import { introducedVerdict, inputsOf, renderIntroduced } from './lib/introduced-run.mjs';

@@ -2,8 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, dirname } from 'node:path';
 import { loadManifest, statusOf, toggle } from '../agent-surface.mjs';
 
 const scratch = () => mkdtempSync(join(tmpdir(), 'cw-surface-'));

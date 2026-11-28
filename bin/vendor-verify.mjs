@@ -25,7 +25,7 @@
 //
 // Asset identity is (path, pkg, entry) — never a line number, and never a digest.
 
-import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { join, resolve, dirname } from 'node:path';
