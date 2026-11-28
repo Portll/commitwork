@@ -98,6 +98,7 @@ export async function reviewFindings({ findings, backend = 'claude', lens = fals
 }
 
 const sevCell = (a) => `${a.severity}/${a.urgency}/${a.size}`;
+const cell = (s) => String(s).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
 
 export function renderMarkdown(review, { project = 'findings' } = {}) {
   const md = [];
@@ -106,13 +107,13 @@ export function renderMarkdown(review, { project = 'findings' } = {}) {
   md.push('> `undetermined` is its own state — a finding the judge could not verify, a dismissal with nothing checkable, or a backend error. It is neither a pass nor a confirmed finding; the original claim is kept below.', '');
 
   md.push('## Confirmed — remediation order', '', '| # | id | sev/urg/size | fix must confine | cites |', '|---|---|---|---|---|');
-  review.confirmed.forEach((r, i) => md.push(`| ${i + 1} | ${r.id} | ${sevCell(r.axes)} | ${(r.fix || '—').replace(/\|/g, '\\|')} | ${r.citations.join(', ') || '—'} |`));
+  review.confirmed.forEach((r, i) => md.push(`| ${i + 1} | ${r.id} | ${sevCell(r.axes)} | ${cell(r.fix || '—')} | ${r.citations.join(', ') || '—'} |`));
   if (!review.confirmed.length) md.push('| — | none confirmed | | | |');
 
   md.push('', '## Undetermined — triage, do not close', '', '| id | claimed sev | why undetermined |', '|---|---|---|');
   for (const r of review.undetermined) {
     const why = r.error ? `judge error: ${r.error}` : r.demotedToOpinion ? 'dismissal had nothing checkable (demoted to opinion)' : `verdict ${r.verdict || 'none'}`;
-    md.push(`| ${r.id} | ${r.claimedSeverity ?? '—'} | ${String(why).replace(/\|/g, '\\|')} |`);
+    md.push(`| ${r.id} | ${r.claimedSeverity ?? '—'} | ${cell(why)} |`);
   }
   if (!review.undetermined.length) md.push('| — | | none |');
 

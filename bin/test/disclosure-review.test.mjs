@@ -97,3 +97,15 @@ test('CLI writes review.json + drafts and fails every finding closed with no rea
     assert.ok(readdirSync(out).includes('review.md'));
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('renderMarkdown keeps a backslash and a pipe inside the cell they came from', () => {
+  const review = {
+    generatedAt: '2026-11-08T00:00:00Z', backend: 'fake', counts: { total: 2, confirmed: 1, dismissed: 0, undetermined: 1 },
+    confirmed: [{ id: 'c1', axes: { severity: 'high', urgency: 'now', size: 's' }, fix: 'confine C:\\tmp\\| and a|b', citations: [] }],
+    undetermined: [{ id: 'u1', claimedSeverity: 'low', error: 'bad reply \\| x' }],
+    dismissed: [],
+  };
+  const md = renderMarkdown(review, { project: 'demo' }).split('\n');
+  assert.equal(md.find((l) => l.includes('| c1 |')), '| 1 | c1 | high/now/s | confine C:\\\\tmp\\\\\\| and a\\|b | — |');
+  assert.equal(md.find((l) => l.startsWith('| u1 |')), '| u1 | low | judge error: bad reply \\\\\\| x |');
+});

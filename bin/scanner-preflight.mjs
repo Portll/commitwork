@@ -84,7 +84,7 @@ for (const s of SCANNERS) {
   // No `/bin/sh` on Windows: that path does not exist there, so every scanner would read MISSING
   // whatever was installed. resolveWindowsExecutable() answers WHERE the binary is, and also
   // whether the thing found is an executable or a batch shim.
-  const where = process.platform === 'win32'
+  let where = process.platform === 'win32'
     ? (resolveWindowsExecutable(bin).path || '')
     : sh('/bin/sh', ['-c', `command -v ${bin}`]).stdout.trim();
   if (!where) { results.push({ id: s.id, state: 'MISSING', version: null, path: null }); continue; }

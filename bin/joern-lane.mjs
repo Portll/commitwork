@@ -143,7 +143,7 @@ export function countSources(root, excluded = repoDirExcluder(root)) {
 const ANSI = /\[[0-9;]*m/g;
 // Most specific first: a compile error's E008 header names only the temp script; the line after it
 // names the member that does not exist.
-const WHY = [/is not a member/, /\[ERROR\]| ERROR /, /Exception|could not|Could not/, /^Error|not found/i];
+const WHY = [/is not a member/, /\[ERROR\]| ERROR /, /Exception|could not|Could not/, /^(?:Error|.*not found)/i];
 /** The line that says why a run failed, from its stderr then its stdout. */
 export function failureLine(...texts) {
   const lines = texts.flatMap((t) => String(t || '').replace(ANSI, '').split('\n').map((l) => l.replace(/^\|\s*/, '').trim())
