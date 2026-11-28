@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildComparison, assertFileSafe, main, maxFileBytes } from '../generate.mjs';
+import { buildComparison, assertFileSafe, main } from '../generate.mjs';
 
 let dir;
 before(() => { dir = mkdtempSync(join(tmpdir(), 'cw-chunkdiff-')); });

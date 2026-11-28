@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { alignColumns, MIN_COLUMNS, MAX_COLUMNS } from '../lib/align.mjs';
+import { alignColumns } from '../lib/align.mjs';
 import { STATE } from '../lib/chunk-identity.mjs';
 
 const col = (label, ...chunks) => ({ label, chunks: chunks.map((src) => ({ src })) });
