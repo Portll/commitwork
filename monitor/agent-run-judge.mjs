@@ -49,9 +49,13 @@ const JUDGE_EXTRA_RE = /(^|\/)(\.git-credentials|\.config\/gh|\.config\/gcloud|\
 const STRONG = /^(?:\.ssh|\.aws|\.gnupg|\.kube|Keychains|\.netrc|\.git-credentials|\.config\/gh|\.config\/gcloud|\.azure|\.pypirc|\.cargo\/credentials(?:\.toml)?|id_(?:rsa|ed25519|ecdsa))$/;
 // A bypass is a flag applied to the program it modifies, judged per pipeline stage: `grep --no-verify`
 // finds text, `git commit --no-verify` skips the hook.
+// Each option token has exactly one reading: a value-taking option consumes the next word, and the
+// flag alternative refuses those four. Two readings per token made a long refused command line
+// take exponential time.
+const GIT_GLOBAL_OPTIONS = String.raw`(?:\s+(?:-C|-c|--git-dir|--work-tree)\s+\S+|\s+(?!(?:-C|-c|--git-dir|--work-tree)\s)-[\w-]+)*`;
 export const GUARD_BYPASS = Object.freeze([
-  { exe: /^git$/, re: /^git\b(?:\s+(?:-C|-c|--git-dir|--work-tree)\s+\S+|\s+--?[\w-]+)*\s+(?:commit|push|merge|rebase|cherry-pick|am|revert)\b.*\s--no-verify\b/, subject: '--no-verify' },
-  { exe: /^git$/, re: /^git\b(?:\s+(?:-C|-c|--git-dir|--work-tree)\s+\S+|\s+--?[\w-]+)*\s+config\b(?!.*--(?:get|unset)).*\bcore\.hooksPath\b/, subject: 'core.hooksPath' },
+  { exe: /^git$/, re: new RegExp(String.raw`^git\b${GIT_GLOBAL_OPTIONS}\s+(?:commit|push|merge|rebase|cherry-pick|am|revert)\b.*\s--no-verify\b`), subject: '--no-verify' },
+  { exe: /^git$/, re: new RegExp(String.raw`^git\b${GIT_GLOBAL_OPTIONS}\s+config\b(?!.*--(?:get|unset)).*\bcore\.hooksPath\b`), subject: 'core.hooksPath' },
   { exe: /^(?:commitwork|commitwork\.mjs)$/, re: /\s--trust-repo-manifest\b/, subject: '--trust-repo-manifest' },
   { exe: /^claude$/, re: /\s--dangerously-skip-permissions\b/, subject: '--dangerously-skip-permissions' },
   { env: /^CW_SANDBOX=off$/, subject: 'CW_SANDBOX=off' },

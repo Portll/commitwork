@@ -237,3 +237,20 @@ test('a credential-named file inside the repository is config-path, never a bloc
   assert.equal(f['credential-path/.aws'].count, 1);
   assert.ok(judgeRun([{ tool: 'Edit', path: '/x/deploy/id_rsa', refused: false }], { cwd: null }).findings.some((x) => x.rule === 'credential-path'), 'an unknown cwd is not a repository');
 });
+
+test('forty ambiguous git option tokens are judged at once, and a bypass behind real options still fires', () => {
+  const [flagRule, hooksRule] = GUARD_BYPASS;
+  const flag = flagRule.subject;
+  const started = process.hrtime.bigint();
+  for (const re of [flagRule.re, hooksRule.re]) {
+    assert.equal(re.test(`git${' -C --'.repeat(40)} x`), false);
+    assert.equal(re.test(`git${' ---'.repeat(40)} !`), false);
+  }
+  assert.ok(Number(process.hrtime.bigint() - started) / 1e6 < 1000, 'each option token has one reading, so the time is linear in the tokens');
+  assert.ok(flagRule.re.test(`git --no-pager -C /x -c k=v am ${flag}`));
+  assert.ok(flagRule.re.test(`git --git-dir /x --work-tree /y rebase ${flag}`));
+  assert.ok(hooksRule.re.test('git -C /x config core.hooksPath /dev/null'));
+  assert.equal(hooksRule.re.test('git -C /x config --get core.hooksPath'), false);
+  assert.equal(flagRule.re.test(`git log ${flag}`), false);
+  assert.equal(flagRule.re.test(`git -C commit ${flag}`), false, 'git reads commit as the directory -C names');
+});
