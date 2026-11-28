@@ -15,7 +15,7 @@ export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 . "$(dirname "${BASH_SOURCE[0]}")/lib/docker-config.sh"
 TARGET="${1:?usage: renovate-run.sh <repo-path|owner/repo> [local|pr]}"
 MODE="${2:-local}"
-IMG="renovate/renovate:44.245.0"
+IMG="renovate/renovate:44.258.1"
 
 if [ "$MODE" = "pr" ]; then
   : "${RENOVATE_TOKEN:?RENOVATE_TOKEN required for pr mode}"
