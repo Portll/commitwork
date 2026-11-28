@@ -261,7 +261,7 @@ under `brief --pc`.
   `CW_SANDBOX=off` is set (R5).
 
   Lanes that fetch and run a pinned tool include `retire@6.1.0`, `@cyclonedx/cyclonedx-npm@6.0.1`
-  and `renovate@44.258.1` through `npx --prefix` (R6), the semgrep and CodeQL packs, and the docker
+  and `renovate@44.261.2` through `npx --prefix` (R6), the semgrep and CodeQL packs, and the docker
   images for osv-scanner, GuardDog, Renovate and dep-scan. `deep` adds the three contained build
   lanes.
   Not determined: whether CodeQL's NuGet restore in `sast-codeql-csharp` (`--build-mode=none`) runs

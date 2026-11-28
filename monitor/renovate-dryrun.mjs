@@ -215,9 +215,9 @@ const OUT = join(OUT_DIR, 'renovate-local.json');
 //
 // fact: the fetch is PINNED / a bare 'renovate' spec made every run resolve and execute whatever the registry served — a several-hundred-package unpinned fetch performed by the security monitor itself (expiry: never, prev: broken)
 // fact: an unpinned renovate also moves this tool's ANSWER — "which updates would renovate propose" — for reasons unrelated to the scanned repo, so a diff in the pending-update count could not be attributed (expiry: never, prev: broken)
-// fact: the same version lives in three places — here, package.json devDependencies (^44.258.1), and manifests/security-baseline.json's deps-renovate pin / three independent races to `latest` otherwise (expiry: when they are derived from one source, prev: drifted)
+// fact: the same version lives in three places — here, package.json devDependencies (^44.261.2), and manifests/security-baseline.json's deps-renovate pin / three independent races to `latest` otherwise (expiry: when they are derived from one source, prev: drifted)
 // fact: bin/test/no-unpinned-fetch.test.mjs fails if the pin is DROPPED but does NOT check that the three agree / bump this alongside package.json by hand (expiry: when that test compares the three, prev: missing)
-const RENOVATE_PIN = 'renovate@44.258.1';
+const RENOVATE_PIN = 'renovate@44.261.2';
 let renoArgs, spawnCwd, spawnEnv, targetDesc;
 if (mode === 'github') {
   renoArgs = ['--yes', RENOVATE_PIN, '--platform=github', '--dry-run=lookup', repo];
