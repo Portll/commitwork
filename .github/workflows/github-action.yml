@@ -8,19 +8,35 @@ name: GitHub Action
 # each of them. `with-tools` installs the fast group's scanners, so those lanes must measure and
 # the dirty canary must produce results. Upload is off in both: the canary's findings are not this
 # repository's.
+#
+# The path lists name what decides whether a lane measures: the runner, the sandbox and the lane
+# manifest. The weekly run is for what no commit changes: ubuntu-latest became 26.04 on 2026-11-18
+# and `with-tools` failed there for ten days before a pull request touched one of these paths.
 
 on:
+  schedule:
+    - cron: '41 4 * * 1'
   push:
     paths:
       - action.yml
+      - bin/commitwork.mjs
       - bin/lib/github-action.mjs
       - bin/lib/sarif-export.mjs
+      - bin/lib/sandbox.mjs
+      - bin/lib/sandbox-net.mjs
+      - bin/lib/scanner-env.mjs
+      - manifests/security-baseline.json
       - .github/workflows/github-action.yml
   pull_request:
     paths:
       - action.yml
+      - bin/commitwork.mjs
       - bin/lib/github-action.mjs
       - bin/lib/sarif-export.mjs
+      - bin/lib/sandbox.mjs
+      - bin/lib/sandbox-net.mjs
+      - bin/lib/scanner-env.mjs
+      - manifests/security-baseline.json
       - .github/workflows/github-action.yml
   workflow_dispatch:
 
