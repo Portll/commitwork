@@ -888,6 +888,8 @@ export function jsonSchema() {
 
 export const _limits = Object.freeze({ STR_MAX, PATH_MAX, TEXT_MAX, SEVS: [...SEVS] });
 
+import { isMainModule } from '../lib/is-main.mjs';
+
 // `node monitor/detail-schema.mjs --write` regenerates the checked-in copy. Guarded on argv so
 // importing this module stays pure — it is read by the rollup, the panel server and the tests.
 if (isMainModule(import.meta.url) && process.argv.includes('--write')) {
@@ -898,4 +900,3 @@ if (isMainModule(import.meta.url) && process.argv.includes('--write')) {
   writeFileSync(p, `${JSON.stringify(jsonSchema(), null, 2)}\n`);
   console.log(`wrote ${p}`);
 }
-import { isMainModule } from '../lib/is-main.mjs';

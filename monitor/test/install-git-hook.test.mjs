@@ -5,7 +5,7 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync, existsSync, statSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, existsSync, statSync, openSync, fstatSync, closeSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
@@ -102,8 +102,11 @@ describe('install-git-hook — declaration-driven, fail-closed', { skip: UNDECLA
     assert.equal(run(dir, '--write').status, 0);
     const hook = join(dir, 'post-merge');
     const body = (name) => readFileSync(join(dir, name), 'utf8').split('\n').filter((l) => !l.startsWith('#')).join('\n');
-    assert.ok(statSync(hook).mode & 0o111, 'the hook must be executable');
-    assert.match(readFileSync(hook, 'utf8'), /^# post-merge: /m);
+    const fd = openSync(hook, 'r');
+    try {
+      assert.ok(fstatSync(fd).mode & 0o111, 'the hook must be executable');
+      assert.match(readFileSync(fd, 'utf8'), /^# post-merge: /m);
+    } finally { closeSync(fd); }
     assert.equal(body('post-merge'), body('post-commit'), 'a merge must start exactly the sweep a commit starts');
   });
 

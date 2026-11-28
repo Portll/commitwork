@@ -17,11 +17,11 @@
 // key's own env shadow below.
 import { readFileSync, writeFileSync, renameSync, mkdirSync, chmodSync } from 'node:fs';
 import { validateAgainstSchema } from './registry.mjs'; // the one schema validator
-const SCHEMA_PATH = fileURLToPath(new URL('../schema/explainers.schema.json', import.meta.url));
 import { homedir } from 'node:os';
 import { dirname, join, basename, isAbsolute, resolve, delimiter } from 'node:path';
 import { acquireLock } from './lockfile.mjs';
 import { fileURLToPath } from 'node:url';
+const SCHEMA_PATH = fileURLToPath(new URL('../schema/explainers.schema.json', import.meta.url));
 import { loadFlagTable } from '../lib/feature-charter.mjs';
 import { validSetupJourney } from './journey.mjs';
 import { UPDATE_KINDS } from '../bin/lib/npm-versions.mjs';

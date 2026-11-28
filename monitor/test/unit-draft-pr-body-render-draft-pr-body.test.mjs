@@ -94,3 +94,13 @@ test('dcoWhy and asks sections appear when provided', () => {
   });
   assert.equal(r, "### Summary\n\nThis pull request moves `example.com/lib` to `v1.0.0` to clear [GO-2024-0007](https://pkg.go.dev/vuln/GO-2024-0007) in `example.com/lib`.\n\n### Reachability\n\n`govulncheck` traced a call path from this repository's code to the vulnerable symbol (compiler call graph, symbol level) on `main` at `abc`.\n\n### Head probe\n\nBefore this change, `main` at `abc` still reported GO-2024-0007 (ok).\n\n### Verification\n\nRun in a fresh clone of `main` with this change applied:\n\n| Command | Exit | Result |\n| --- | --- | --- |\n\nThe commit carries a `Signed-off-by` line for its author, as `policy` asks.\n\n### Before this leaves draft\n\n- [ ] review needed\n\n---\n\nPrepared 2024-01-01 by an automated tool (commitwork remediation-draft-pr). No person has reviewed it yet.\n");
 });
+
+test('a backslash before a pipe in a result cannot open a new column', () => {
+  const r = renderDraftPrBody({
+    adv: { id: 'GO-2024-0008', package: 'example.com/lib', bump: { module: 'example.com/lib', to: 'v1.0.0' } },
+    probe: { base: 'main', sha: 'abc', trace: [], reason: 'ok' },
+    versions: [], steps: [{ cmd: 'go build ./...', status: 0, result: 'a\\|b' }], asks: [], dcoWhy: null, now: null
+  });
+  const row = r.split('\n').find((l) => l.includes('go build'));
+  assert.equal(row, '| `go build ./...` | 0 | a\\\\\\|b |');
+});

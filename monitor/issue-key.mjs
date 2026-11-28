@@ -89,7 +89,6 @@ export const CLASS_FOR_CATEGORY = Object.freeze({
   sastCodeqlGo: 'S',
   sastCodeqlActions: 'S',
   depsRustAudit: 'S',
-  lintHaskell: 'S',
   sastAuto: 'S',
   sastJoern: 'S',         // code-property-graph engine; same axis as the other SAST lanes
   sastBearer: 'S',

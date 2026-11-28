@@ -12,7 +12,7 @@ export function advisoryUrl(id) {
 }
 
 const code = (s) => `\`${String(s ?? '').replace(/`/g, "'")}\``;
-const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+const cell = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
 
 /**
  * @param {object} r
