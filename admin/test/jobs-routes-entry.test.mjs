@@ -21,7 +21,7 @@
 // Auth and CSRF for these routes are enforced by serve.mjs's global gates, not by the handlers —
 // route-auth.test.mjs pins the dispatch order and bola-route.test.mjs the CSRF 403 — so neither is
 // re-asserted here.
-import { test, before, after, describe } from 'node:test';
+import { test, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';

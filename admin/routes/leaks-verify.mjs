@@ -11,7 +11,6 @@
 
 import { nowISO } from '../../lib/clock.mjs';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { scannedGit } from '../../bin/lib/git-env.mjs';
 import { CW } from '../../monitor/area.mjs';
 import { identityFor } from '../../monitor/detail-schema.mjs';

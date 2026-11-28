@@ -20,7 +20,7 @@
 // aggregates drop.
 
 import { requireSession } from '../lib/route-auth.mjs';
-import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { identityFor, detailKeys } from '../../monitor/detail-schema.mjs';
 import { validateScannerAnnotation, findActiveScannerAnnotation, SUPPRESSING_ACTIONS, annotationsLockPath, activeSuppressionFor, anyActiveSuppressionFor } from '../../monitor/annotate-lib.mjs';

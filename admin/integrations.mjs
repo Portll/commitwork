@@ -16,8 +16,7 @@
 
 import { randomBytes } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync, renameSync, chmodSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { dirname } from 'node:path';
 import { integrationsStorePath } from '../monitor/store-paths.mjs';
 import { acquireLock } from '../monitor/lockfile.mjs';
 

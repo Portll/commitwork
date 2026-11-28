@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tuningModuleUrl } from '../routes/perf.mjs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { isAbsolute, resolve, dirname } from 'node:path';
+import { resolve, dirname } from 'node:path';
 
 test('returns default monitor perf-tuning URL when CW_PERF_TUNING is unset', () => {
   const saved = process.env.CW_PERF_TUNING;

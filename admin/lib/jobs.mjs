@@ -15,7 +15,7 @@
 import { spawn } from 'node:child_process';
 import { quotedArgv } from '../../lib/posix-shell.mjs';
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync, chmodSync, renameSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 // Imported directly, not injected: both are leaf modules under monitor/ with no path back to
 // serve.mjs, so there is no cycle to avoid and injecting them would only hide where they come from.

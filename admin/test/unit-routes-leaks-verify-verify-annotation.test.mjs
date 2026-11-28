@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import { verifyAnnotation } from '../routes/leaks-verify.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { createHash } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..', '..');

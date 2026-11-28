@@ -42,7 +42,7 @@ import { statSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { openForRead, receiptsFor, get, stats, dbPath, now } from '../../lib/memory-store.mjs';
 import {
-  CREDENTIAL_FIELDS, redactionCheck, classifyStored,
+  CREDENTIAL_FIELDS, redactionCheck,
   PREVIEW_TOLERANCE, CONTAINMENT_FLOOR,
   STORED_FULL, STORED_PREVIEW, STORED_DIVERGENT, STORED_UNKNOWN,
   VERIFIED, ACCEPTED_UNVERIFIED, FAILED, NOT_ATTEMPTED,

@@ -8,9 +8,8 @@
 // and that no list names a lane the fleet does not declare.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { SCANNER_CHECKS } from '../../monitor/scanner-checks.mjs';
 import { panelSchema } from '../../monitor/detail-schema.mjs';
 import { panelSource } from './lib/panel-source.mjs';

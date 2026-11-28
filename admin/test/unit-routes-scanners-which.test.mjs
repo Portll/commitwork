@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { which } from '../routes/scanners.mjs';
-import { mkdtempSync, rmSync, writeFileSync, chmodSync, mkdirSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, chmodSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, delimiter } from 'node:path';
 

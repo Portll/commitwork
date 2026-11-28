@@ -2,9 +2,6 @@
 // exactly like success on the one control that must never be ambiguous.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { panelSource } from './lib/panel-source.mjs';
 const SRC = panelSource('index.html');
 const handler = SRC.slice(SRC.indexOf('out.onclick = s.authed'), SRC.indexOf('// Remote sign-in switch'));

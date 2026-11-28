@@ -8,8 +8,7 @@
 //   · A lane still marked running when the sweep is gone spins forever. The tab must clear.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { panelSource } from './lib/panel-source.mjs';
 

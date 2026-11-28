@@ -2,7 +2,7 @@ import { panelSource } from './lib/panel-source.mjs';
 // fact: every test drives the real setting store in a temp dir / a route tested against a stub proves the stub (expiry: never, prev: unknown)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

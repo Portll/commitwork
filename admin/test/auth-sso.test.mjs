@@ -8,7 +8,6 @@ import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const STORE = join(mkdtempSync(join(tmpdir(), 'cw-sso-')), 'users.json');
 process.env.CW_AUTH_STORE = STORE;

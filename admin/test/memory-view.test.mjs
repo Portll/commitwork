@@ -17,7 +17,7 @@ import {
   ADAPTERS, adapterRow, adapterComparison, TONE_RANK, louder, stateTone, formTone,
   storeSnapshot, listRecords, listReceiptIdentities, rollupSurvey, diskReceiptIndex,
   observationState, normaliseReceipt, stepsForReceipt, recordView, buildModel, renderPage,
-  sourceStep, redactStep, compareStep, verdictStep, readbackStep, acceptStep, RECEIPTS_FILE,
+  redactStep, compareStep, verdictStep, readbackStep, acceptStep, RECEIPTS_FILE,
 } from '../lib/memory-view.mjs';
 import { houseTokens } from '../../lib/house-css.mjs';
 import { routes } from '../routes/memory.mjs';

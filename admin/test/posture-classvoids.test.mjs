@@ -5,9 +5,8 @@
 // halves of the house rule: a void is unmeasured AND it says so in words.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { panelSource } from './lib/panel-source.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

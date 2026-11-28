@@ -4,7 +4,7 @@
 // fact: a suggestion is a DRAFT and the operator edits it before accepting / the counterfactual test is a judgement no heuristic makes, and a wrong deletion loses knowledge with no test to catch it (expiry: on a suggester that can be trusted unattended, prev: not built)
 // fact: accept refuses a block whose `before` no longer sits where it claimed / applying by position after a concurrent edit overwrites something else (expiry: never, prev: not built)
 // fact: every accepted write is re-parsed and the file is restored if it stops parsing / a comment edit that breaks a module is worse than the verbosity it removed (expiry: never, prev: not built)
-import { readFileSync, writeFileSync, renameSync, unlinkSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname, join } from 'node:path';
 import { withinRoot } from '../../lib/path-contain.mjs'; // `startsWith(root + '/')` is false on Windows

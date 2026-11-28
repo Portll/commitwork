@@ -2,10 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { verifyEmailCode } from '../auth.mjs';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { scryptSync, createHmac } from 'node:crypto';
+import { scryptSync } from 'node:crypto';
 
 function setup() {
   const dir = mkdtempSync(join(tmpdir(), 'verifyEmailCode-'));

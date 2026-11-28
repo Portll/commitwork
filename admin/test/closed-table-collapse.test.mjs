@@ -17,8 +17,7 @@
 // the bug in (2) and an empty render.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { panelSource } from './lib/panel-source.mjs';
 

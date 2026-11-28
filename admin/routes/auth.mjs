@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { needsBootstrap, bootstrapRootAsync, authenticateAsync, confirmTotpAsync, findByEmail, bootstrapSsoRoot, externalSsoAllowed, setExternalSsoAllowed, beginPasskeyRegistrationAsync, finishPasskeyRegistration, beginPasskeyLogin, finishPasskeyLogin, listPasskeys, removePasskeyAsync, accountFactors, setPasswordAsync, reauthenticatePasswordAsync, verifySecondFactorAsync } from '../auth.mjs';
 import { rpFor, declaredHosts } from '../rp-origin.mjs';
 import { persistSessions, sessionKey } from '../sessions.mjs';
-import { providerUrl, OAUTH, oauthIdentity, oauthConfigured, GITHUB_LINK_SCOPE, githubLinkBlocked, oauthRedirectUri, safeReturnPath, oauthNotConfigured, b64url, pkceVerifier, pkceChallenge, oauthFlows, SSO_TOTP_TTL_MS, ssoPending, OAUTH_SESSION_TTL_MS, REAUTH_TTL_MS, sameAccount, reauthFresh, oauthSessions, pruneOauth, takeOauthFlow, linkOutcome, completeGithubLink, authSlotEnter, authSlotTryEnter, authSlotLeave, emailCodeChallenge, authBudgetCheck, authBudgetSucceeded, sidFromReq, adminSession } from '../lib/auth-session.mjs';
+import { providerUrl, OAUTH, oauthIdentity, oauthConfigured, GITHUB_LINK_SCOPE, githubLinkBlocked, oauthRedirectUri, safeReturnPath, oauthNotConfigured, b64url, pkceVerifier, pkceChallenge, oauthFlows, SSO_TOTP_TTL_MS, ssoPending, OAUTH_SESSION_TTL_MS, REAUTH_TTL_MS, sameAccount, reauthFresh, oauthSessions, pruneOauth, takeOauthFlow, linkOutcome, completeGithubLink, authSlotTryEnter, authSlotLeave, emailCodeChallenge, authBudgetCheck, authBudgetSucceeded, sidFromReq, adminSession } from '../lib/auth-session.mjs';
 
 export const AUTH_UNHANDLED = Symbol('auth-unhandled');
 

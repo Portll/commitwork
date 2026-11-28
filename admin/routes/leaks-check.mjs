@@ -5,7 +5,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join, resolve, relative, isAbsolute } from 'node:path';
-import { CW, resolvedRepos } from '../lib/core.mjs';
+import { resolvedRepos } from '../lib/core.mjs';
 import { resolveLocalModel, runLocal } from './codeql-remediation.mjs';
 
 const CONTEXT_LINES = 12;

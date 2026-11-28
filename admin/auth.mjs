@@ -14,8 +14,7 @@
 
 import { randomBytes, randomInt, scrypt, scryptSync, timingSafeEqual, createHmac } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync, renameSync, chmodSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { dirname } from 'node:path';
 import { authStorePath } from '../monitor/store-paths.mjs';
 import { acquireLock, inspectLock, forceReleaseLock } from '../monitor/lockfile.mjs';
 import { classifyFsError } from '../lib/win-path-safety.mjs'; // on Windows ENOENT also means "unusable path"

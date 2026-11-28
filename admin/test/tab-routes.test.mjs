@@ -8,9 +8,8 @@
 // nav buttons, so adding a tab without a restorable route — or a route without a tab — fails here.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { panelSource } from './lib/panel-source.mjs';
 import { serverSource } from './lib/server-source.mjs';
 

@@ -13,7 +13,7 @@ import {
   loadAttestations, saveAttestations, withAttestationsLock, recordAttestation, mergeAttestations,
   attestableCriteria, nowISO, VERDICTS,
 } from '../../monitor/a11y-attestations.mjs';
-import { CW, readJSON, registry, reportsFor } from '../lib/core.mjs';
+import { CW, readJSON, registry } from '../lib/core.mjs';
 import { stateBaseFor } from '../../monitor/store-paths.mjs';
 
 /** The newest sweep batch that carries an a11y.json, and the first repo dir in it that has one. */

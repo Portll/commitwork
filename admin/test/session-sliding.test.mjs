@@ -5,9 +5,8 @@
 // listener and reads the keychain) and driven with a controllable clock.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // split(/\r?\n/): under a CRLF checkout `l === '}'` never matches `'}\r'`, so the lift below found

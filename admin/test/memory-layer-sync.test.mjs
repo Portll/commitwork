@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { syncPoints, verdictFor, sessionTag, syncSummary, contractPath } from '../lib/memory-layer-sync.mjs';
+import { syncPoints, verdictFor, sessionTag, syncSummary } from '../lib/memory-layer-sync.mjs';
 
 test('the points are READ from the contract, never re-declared here', () => {
   const { points } = syncPoints();

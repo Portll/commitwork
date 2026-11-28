@@ -1,7 +1,7 @@
 // admin/routes/scanners.mjs — direct-handler tests (no server spawn).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, copyFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -5,7 +5,7 @@
 import { spawn } from 'node:child_process';
 import { scannedGit } from '../../bin/lib/git-env.mjs';
 import { quotedArgv } from '../../lib/posix-shell.mjs';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { withinRoot } from '../../lib/path-contain.mjs'; // `startsWith(root + '/')` is false on Windows
 import { createHash } from 'node:crypto';

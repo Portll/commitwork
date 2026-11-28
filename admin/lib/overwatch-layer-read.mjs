@@ -186,7 +186,7 @@ export const agentsDir = () => process.env.CW_AGENTS_DIR || join(homedir(), '.su
 export function backendState(b) {
   if (!b || typeof b !== 'object') return 'unknown';   // an absent row is not a declared one
   if (b.why) return 'not-ready';
-  return b && b.kind === 'local' ? 'declared-unprobed' : 'declared';
+  return b.kind === 'local' ? 'declared-unprobed' : 'declared';
 }
 
 /**

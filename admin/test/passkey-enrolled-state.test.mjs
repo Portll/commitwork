@@ -17,8 +17,8 @@
 //      dismissed a system prompt. Nothing named the origin, and nothing named the fix.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, rmSync, chmodSync } from 'node:fs';
-import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
+import { readFileSync, rmSync } from 'node:fs';
+import { denyRead } from '../../lib/fs-unreadable.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { panelSource } from './lib/panel-source.mjs';

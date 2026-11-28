@@ -5,9 +5,8 @@
 // setLaneOverride is inline in admin/index.html, lifted and run against injected globals.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { panelSource } from './lib/panel-source.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

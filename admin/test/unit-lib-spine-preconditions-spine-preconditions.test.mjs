@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spinePreconditions } from '../lib/spine-preconditions.mjs';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, symlinkSync, existsSync, lstatSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, symlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 

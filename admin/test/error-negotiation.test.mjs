@@ -5,9 +5,8 @@
 // reaches by CLICKING, so deciding by path would have kept it on JSON.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { loginPage } from '../lib/login-page.mjs';
 import { esc } from '../../lib/html-escape.mjs';
 import { serverSource } from './lib/server-source.mjs';
