@@ -30,7 +30,6 @@ import { join, isAbsolute, resolve } from 'node:path';
 import { reportsRootDir } from '../../monitor/area.mjs';
 import { LANE_KINDS } from '../../monitor/lane-kinds.mjs';
 
-const CW_ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 import { resolvePaths, loadJSON, nowISO } from '../../cra/lib.mjs';
 import { openFindings } from '../../cra/lib.mjs';
 import { buildReachabilityIndex, reachabilityFor, proverCoverage } from '../../cra/reachability-evidence.mjs';
@@ -39,6 +38,7 @@ import { buildFrontier, frontierSummary } from '../../cra/taint-frontier.mjs';
 import { readReview, reviewPath, applyReview } from '../../cra/frontier-review.mjs';
 import { codeqlModelsDirFor } from '../../monitor/store-paths.mjs';
 import { fileURLToPath } from 'node:url';
+const CW_ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 import { buildAliasIndex, aliasesOf } from '../../cra/advisory-aliases.mjs';
 import { determinationForStatement } from '../../cra/vex.mjs';
 import { project } from '../../cra/determination-projection.mjs';

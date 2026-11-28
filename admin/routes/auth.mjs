@@ -496,7 +496,7 @@ export function authHandle({ req, res, send, pathname, isLoopbackReq, readJsonBo
             return { ok: false, code: 403, error: `this panel has no operator yet — the first account must be bound from the operator port, http://127.0.0.1:${LOCAL_PORT} (the published port ${PORT} is external by definition and cannot mint the first account)` };
           }
           bootstrapSsoRoot({ email: ident.email, provider: p });
-          console.log(`[admin] operator bound via ${p}: ${ident.email}`);
+          console.log(`[admin] operator bound via ${p}: ${String(ident.email).replace(/[\r\n]+/g, ' ')}`);
           user = findByEmail(ident.email);
         }
         if (!isLoopbackReq && !externalSsoAllowed()) {

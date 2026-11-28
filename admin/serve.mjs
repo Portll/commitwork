@@ -1165,7 +1165,7 @@ function handleRequest(req, res) {
     return Promise.resolve(r.handle({ req, res, send, pathname, query: new URL(req.url, 'http://127.0.0.1').searchParams,
       knownProjects, readJsonBody, adminSession, isLoopbackReq, trigger, githubLinkBlocked }))
       .catch((e) => {
-        console.error(`[admin] route failed: ${req.method} ${pathname} — ${e && e.stack ? e.stack : e}`);
+        console.error(`[admin] route failed: ${req.method} ${pathname.replace(/[\r\n]+/g, ' ')} — ${e && e.stack ? e.stack : e}`);
         if (!res.headersSent) send(500, { ok: false, error: 'request failed — see the panel log on the host' });
         else { try { res.end(); } catch { /* socket already gone */ } }
       });
@@ -1402,7 +1402,7 @@ const onRequest = (req, res) => {
     // ONE argument, deliberately: req.url is attacker-controlled, and console.error treats a
     // string first argument as a printf-style format when a second argument follows — a URL
     // containing literal %s would then consume/garble the stack trace instead of appending it.
-    console.error(`[admin] request failed: ${req.method} ${req.url} — ${e && e.stack ? e.stack : e}`);
+    console.error(`[admin] request failed: ${req.method} ${String(req.url).replace(/[\r\n]+/g, ' ')} — ${e && e.stack ? e.stack : e}`);
     if (!res.headersSent) {
       // The detail still never travels — only the SHAPE changes with the reader. A browser that
       // navigated here gets the branded page; everything else keeps the JSON the client parses.
