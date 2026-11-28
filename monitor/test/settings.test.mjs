@@ -8,8 +8,8 @@
 // test here would still pass while proving nothing.
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, readdirSync, statSync, chmodSync } from 'node:fs';
-import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { denyRead, ignoresPermissions } from '../../lib/fs-unreadable.mjs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

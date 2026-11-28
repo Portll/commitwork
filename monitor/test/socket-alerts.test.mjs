@@ -5,7 +5,7 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { _socketAlertCount, _socketAlertRows, _socketCounts, _socketTypes, sumTotals, regradeSocket }
   from '../extractors.mjs';

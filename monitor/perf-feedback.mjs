@@ -9,7 +9,7 @@
 //
 // Append-only JSONL, atomic writes, env-overridable path read at CALL time.
 
-import { readFileSync, writeFileSync, renameSync, existsSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, appendFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 export const feedbackPath = () => process.env.CW_PERF_FEEDBACK

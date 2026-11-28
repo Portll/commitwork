@@ -10,7 +10,6 @@
 // after the fact. The version has to travel WITH the finding, not merely be knowable about the
 // machine.
 
-import { spawnSync } from 'node:child_process';
 import { safeSpawnSync } from '../lib/win-spawn.mjs'; // npm-installed scanners are .cmd shims on Windows
 import { resolvePinnedTool } from '../lib/cobolwork-resolve.mjs';
 

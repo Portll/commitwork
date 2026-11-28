@@ -5,7 +5,7 @@
 //
 // usage: node monitor/posture.mjs [project]      # the area's posture as JSON on stdout
 
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { registryPath } from './registry.mjs';

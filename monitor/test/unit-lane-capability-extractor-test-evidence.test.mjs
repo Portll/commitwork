@@ -2,9 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { extractorTestEvidence } from '../lane-capability.mjs';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname, basename } from 'node:path';
+import { join } from 'node:path';
 
 test('returns read false when index file is missing', () => {
   const dir = mkdtempSync(join(tmpdir(), 'extractorTestEvidence-'));

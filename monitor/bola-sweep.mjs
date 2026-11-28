@@ -9,7 +9,7 @@
 import { nowISO } from '../lib/clock.mjs';
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { registry, outDirFor } from './area.mjs';
 import { bolaAreas, readiness, manifestPathFor, evidencePathFor } from './bola-fleet.mjs';
 import { run, validateManifest } from '../bin/bola-run.mjs';

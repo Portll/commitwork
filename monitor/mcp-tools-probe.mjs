@@ -21,7 +21,7 @@
 import { readFileSync, existsSync, mkdtempSync, realpathSync, rmSync, mkdirSync, statSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
-import { join, dirname, basename, resolve, isAbsolute } from 'node:path';
+import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';
 import { nowISO } from '../lib/clock.mjs';

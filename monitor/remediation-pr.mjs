@@ -31,7 +31,6 @@
 
 import { writeAtomic } from './lockfile.mjs';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { isMainModule } from '../lib/is-main.mjs';
 
 const env = (k) => process.env[k]; // read at call time — never captured at module load

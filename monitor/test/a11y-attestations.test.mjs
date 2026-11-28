@@ -5,8 +5,8 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, chmodSync, existsSync } from 'node:fs';
-import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
+import { mkdtempSync, writeFileSync, existsSync } from 'node:fs';
+import { denyRead, ignoresPermissions } from '../../lib/fs-unreadable.mjs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 

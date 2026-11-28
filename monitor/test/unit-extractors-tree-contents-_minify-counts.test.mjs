@@ -1,6 +1,6 @@
 // counts minified-code findings and aggregates severity buckets (monitor/extractors/tree-contents.mjs _minifyCounts).
 import { test } from 'node:test';
-import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';

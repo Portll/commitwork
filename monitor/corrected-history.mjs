@@ -15,7 +15,7 @@
 // usage: node monitor/corrected-history.mjs   (reads registry OUT or CW_MONITOR_OUT)
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve, basename, isAbsolute } from 'node:path';
+import { dirname, join, resolve, isAbsolute } from 'node:path';
 import { findRepoPath } from './discover.mjs';
 import { loadRegistry, areaBySlug } from './registry.mjs';
 import { outDirFor } from './area.mjs';

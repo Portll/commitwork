@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 
 import {
   emptyIssuesDoc, loadIssues, mintIssue, mutateIssue, verifyChain,
-  claimIssue, releaseIssue, closeIssue, reopenIssue, linkIssues,
+  claimIssue, closeIssue, reopenIssue, linkIssues,
   readyIssues, gcIssues, normaliseSeverity, SEV_RANK,
   lodgeFix, FIX_TYPES, FIX_NOTES_MIN, FIX_NOTES_MAX,
   ISS_RE, ISS_RE_LEGACY, ISS_RE_SCOPED, saveIssues, withIssuesLock,

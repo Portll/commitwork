@@ -8,7 +8,6 @@ import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseChain, chainId, readChains, verifyChain, recordRun, summarise } from '../resolution-chain.mjs';
-import { isUnknown } from '../unknown.mjs';
 
 const withTmp = (fn) => {
   const d = mkdtempSync(join(tmpdir(), 'cw-chain-'));

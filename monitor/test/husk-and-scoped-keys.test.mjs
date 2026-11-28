@@ -3,12 +3,11 @@
 // parsers must be spelled alike.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { _socketCounts, _sarifCounts, SCANNER_SPECS } from '../extractors.mjs';
-import { SCANNER_CHECKS, CHECK_ALIASES, canonicalCheck } from '../scanner-checks.mjs';
 import { extractorsSource } from './lib/extractors-source.mjs';
 import { packageFromOsvMessage } from '../../lib/osv-message.mjs';
 

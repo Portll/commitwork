@@ -11,7 +11,7 @@
 //
 // env (read at call time): CW_AGENT_CONFIG_HOME (default the home directory), CW_AGENT_CONFIG_MAX_BYTES, CW_NOW
 // exit: 0 read and clean · 21 findings · 2 nothing readable (no agent configuration at all, or every file unparseable)
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, basename } from 'node:path';
 import { isMainModule } from '../lib/is-main.mjs';

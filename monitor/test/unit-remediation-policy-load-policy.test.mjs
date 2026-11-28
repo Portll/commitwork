@@ -1,7 +1,7 @@
 // Load a remediation policy file, validate it, and gate agentic modes on a fresh witness (monitor/remediation-policy.mjs loadPolicy).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadPolicy } from '../remediation-policy.mjs';

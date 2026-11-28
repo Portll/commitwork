@@ -2,9 +2,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { basesOf } from '../detector-basis.mjs';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 
 const map = {
   classes: { a: {}, b: {} },

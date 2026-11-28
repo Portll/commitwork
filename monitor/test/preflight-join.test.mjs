@@ -4,7 +4,7 @@
 // and useless to a reader deciding whether anything is wrong. preflight knows which; this joins them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, chmodSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { readPreflight, preflightClause } from '../preflight-join.mjs';

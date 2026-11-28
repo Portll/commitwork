@@ -8,7 +8,7 @@
 //   node monitor/nuclei-solve.mjs <report-dir> --json     machine-readable
 //   node monitor/nuclei-solve.mjs <report-dir> --write    also write nuclei-solved.jsonl
 
-import { readFileSync, existsSync, writeFileSync, renameSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { NUCLEI_ARTIFACTS } from '../bin/parse-runtime.mjs';

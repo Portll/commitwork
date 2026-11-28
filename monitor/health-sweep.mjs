@@ -5,7 +5,7 @@
 // history slice — a health-only batch would mark every repo "not scanned" for deps.
 // usage: node monitor/health-sweep.mjs [deadcode|toolchain|provenance|gates|all] [onlyProject]
 //        (admin :7878 triggers this via POST /api/health/<check>)
-import { readFileSync, writeFileSync, existsSync, statSync, readdirSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, statSync, readdirSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';

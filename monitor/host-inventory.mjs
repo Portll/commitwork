@@ -6,8 +6,8 @@
 //   node monitor/host-inventory.mjs --published     the redacted shape the panel may serve
 
 import { execFileSync } from 'node:child_process';
-import { hostname, userInfo } from 'node:os';
-import { writeFileSync, renameSync, readFileSync } from 'node:fs';
+import { hostname } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { listeners, isExternal, BINDING } from './listeners.mjs';
 import { loadRegistry } from './registry.mjs';

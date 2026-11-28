@@ -5,7 +5,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import {
-  packEntries, unpackEntries, sealArchive, openArchive, sha256,
+  packEntries, unpackEntries, sealArchive, openArchive,
   MAGIC, VERSION, HEADER_LEN, IV_LEN, TAG_LEN, KEY_LEN,
 } from '../archive-container.mjs';
 

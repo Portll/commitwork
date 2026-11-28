@@ -3,8 +3,8 @@
 // archived mid-write, an unverified archive counted as coverage, a verify that vouches for itself.
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, appendFileSync, chmodSync } from 'node:fs';
-import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, appendFileSync } from 'node:fs';
+import { denyRead } from '../../lib/fs-unreadable.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { KEY_LEN, openArchive, unpackEntries } from '../archive-container.mjs';

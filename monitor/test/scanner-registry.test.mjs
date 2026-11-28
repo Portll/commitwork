@@ -4,9 +4,8 @@
 import { panelSource } from '../../admin/test/lib/panel-source.mjs';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { SCANNER_SPECS, SCANNER_LABELS } from '../extractors.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

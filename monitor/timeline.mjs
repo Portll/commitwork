@@ -4,7 +4,7 @@
 // (verified remediation from the ledger) vs cleanable (open findings).
 // All data is embedded inline at build time (file:// safe — fetch() is blocked there).
 // usage: node monitor/timeline.mjs            (reads the registry OUT, or CW_MONITOR_OUT)
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';

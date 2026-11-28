@@ -1,7 +1,7 @@
 // monitor/inbox.mjs: each Inbox signal from the record it is about, item ids that never carry a
 // line and survive a re-read, what was not measured listed with its reason, and a state store that
 // fails closed on corruption, is per operator, and is bounded.
-import { test, before, after } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

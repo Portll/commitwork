@@ -14,7 +14,7 @@
 // The tenant is `portll` — the person; anything that could appear in a memory-layer-project:/scope: tag is
 // not a tenant. Tenant history migration is unresolved (lib/memory-layer-contract.json#migration).
 
-import { readFileSync, existsSync, writeFileSync, renameSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { outDirFor } from './area.mjs'; // the OUT resolver — never re-derive the chain here

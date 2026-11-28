@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { batchesForArea } from '../area.mjs';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 
 test('returns empty covers and unknown when no sweep batches exist', () => {
   const dir = mkdtempSync(join(tmpdir(), 'batchesForArea-'));

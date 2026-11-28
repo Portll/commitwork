@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import {
-  checkGrypeDb, sbomForBundle, grypeMatches, candidatesForMatch, classifyMatch, defectSignature,
+  checkGrypeDb, sbomForBundle, grypeMatches, classifyMatch, defectSignature,
   assessApp, runLens, loadKevSet, loadEpss, collectNpmGlobalPackages, SYFT_CATALOGERS,
 } from '../app-vuln.mjs';
 

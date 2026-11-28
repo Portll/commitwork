@@ -1,10 +1,10 @@
 // Tests for the R2 baseline (monitor/minify-baseline.mjs) and its ingestArea grandfather hook.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { placeKeyFor, placeKeysFromRollup, applyCapture, loadBaseline, loadBaselinePlaceKeys } from '../minify-baseline.mjs';
+import { placeKeyFor, placeKeysFromRollup, applyCapture, loadBaseline } from '../minify-baseline.mjs';
 import { ingestArea } from '../issue-ingest.mjs';
 
 const AT = '2026-08-11T00:00:00.000Z';

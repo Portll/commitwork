@@ -20,7 +20,6 @@
 
 import { spawnSync } from 'node:child_process';
 import { scannedGit } from '../bin/lib/git-env.mjs';
-import { readFileSync } from 'node:fs';
 import { isMainModule } from '../lib/is-main.mjs';
 
 /**

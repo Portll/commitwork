@@ -10,7 +10,7 @@
 // measured. Those three properties are the argument for a dedicated path.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { regradeClosure, classifyDefect, closeIssue, CLOSED_AS, DEFECT_OWNERS } from '../issue-store.mjs';
+import { regradeClosure, classifyDefect, CLOSED_AS, DEFECT_OWNERS } from '../issue-store.mjs';
 
 const AT = '2026-08-27T00:00:00.000Z';
 const doc = (over = {}) => ({

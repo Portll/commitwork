@@ -2,7 +2,7 @@
 // history slice -> history/index.json. Three plants: an inert gitleaks finding, an osv.sarif CVE,
 // and a zero-rules semgrep.sarif that must read norules:true. Hermetic: tmp dirs, fetch removed.
 
-import { test, describe, before, after } from 'node:test';
+import { test, describe, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { spawnSync, execFileSync } from 'node:child_process';

@@ -8,7 +8,7 @@
 // area out), autocreated if missing — e.g. reports/<area>/. Tooling stays in monitor/.
 // Exit codes: 2 = empty batch (sweep.mjs continues), 3 = another rollup holds the lock,
 // 5 = no sweep-* batch to roll. (4 is reserved for the cross-area write refusal.)
-import { readFileSync, appendFileSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { readFileSync, appendFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, relative, basename } from 'node:path';
@@ -17,7 +17,7 @@ import { writeAtomic, acquireLock, ROLLUP_LOCK, describeAge } from './lockfile.m
 import { sealHistory, appendChainEvent, appendAnchor, anchorableOut } from './history-chain.mjs'; // the write log, fed HERE — it was once unwired while the module was untracked
 import { checkConservation } from './conserve.mjs'; // fleet-aggregate conservation invariant (published + truncated === declared) — wired below, BEFORE the scanner-annotations overlay (see the call site)
 import { assembleLifecycle, readAdvisoryCweIndex, SCAN_CHECK_FOR_TOOL } from './lifecycle.mjs'; // C03/C26 — vuln-lifecycle enrichment (additive, wrapped); SCAN_CHECK_FOR_TOOL is the tool->checkId map the synthetic noscan entries below reuse, so the name can never drift from lifecycle.mjs's own copy
-import { annActive as annActiveAsOf, annMatch, SUPPRESSING_ACTIONS, validateScannerAnnotation, findActiveScannerAnnotation, applyScannerAnnotations } from './annotate-lib.mjs'; // as-of matcher (extracted; genISO passed per call)
+import { annActive as annActiveAsOf, annMatch, validateScannerAnnotation, applyScannerAnnotations } from './annotate-lib.mjs'; // as-of matcher (extracted; genISO passed per call)
 import { annotationView } from './attribution.mjs'; // carries `who` + human/machine class to the panel
 import { classifyFreshness } from './freshness.mjs'; // sweep-liveness deadman (temporal twin of the false-green)
 import { pickBatch } from './batch-select.mjs'; // WHICH batch, when the caller names none — see that file
@@ -35,7 +35,7 @@ import { buildReachabilityIndex } from '../cra/reachability-evidence.mjs'; // ca
 import { buildAliasIndex } from '../cra/advisory-aliases.mjs'; // GO- <-> CVE, without which the join is 0.31%
 import { resolveRepos } from './discover.mjs'; // S1 fleet-coverage denominator (the sweep's own resolver)
 import {
-  _zero, _cmpStr, _detail, DETAIL_CAP,
+  _zero, _cmpStr, _detail,
   _sarifCounts, _sarifDetail, _trivyCounts, _nucleiCounts, _malCounts,
   _socketCounts, _socketAlertCount, regradeSocket, _trufflehogCounts, _hadolintCounts, _govulnCounts,
   _tlsHeaderCounts, _cspmCounts, _schemathesisCounts, _gitleaksCounts, _guarddogCounts,

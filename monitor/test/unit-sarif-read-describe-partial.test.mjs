@@ -2,7 +2,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describePartial } from '../sarif-read.mjs';
-import { describeRetry } from '../sarif-read.mjs';
 
 test('returns a string with file count, reasons, and named files when show is 0', () => {
   const rows = [

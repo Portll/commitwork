@@ -4,8 +4,8 @@
 
 import { describe, test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, chmodSync } from 'node:fs';
-import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { denyRead, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { validateRegistry, loadRegistry, registryPath, NAME_RE, SLUG_RE } from '../registry.mjs';

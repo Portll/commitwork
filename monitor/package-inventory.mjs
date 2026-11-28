@@ -25,7 +25,7 @@
 // tap's own age travels with the result and the panel shows it.
 
 import { nowISO } from '../lib/clock.mjs';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync, existsSync } from 'node:fs';
 import { rethrowIfBug, rethrowIfBugParsing } from '../bin/rethrow.mjs';
 import { join, dirname } from 'node:path';

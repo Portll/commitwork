@@ -3,7 +3,7 @@
 // batch produced by a dozen runners read as one measurement.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, chmodSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { codeVintage, readToolchain } from '../vintage.mjs';

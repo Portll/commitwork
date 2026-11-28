@@ -28,7 +28,7 @@
 // writes: <out>/<area>/lane-reach.json. CW_NOW pins `generated`; CW_REGISTRY/CW_MONITOR_OUT/
 // CW_BASELINE_MANIFEST isolate tests completely (all read at call time).
 
-import { readFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, relative } from 'node:path';
 import { loadRegistry } from './registry.mjs';

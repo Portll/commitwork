@@ -15,7 +15,7 @@
 // env (read at call time): CW_EGRESS_OBSERVED_ROOT (default the reports root, CW_REPORTS_ROOT), CW_EGRESS_SUGGEST_OUT
 //   (default <root>/egress/allowlist.suggested.json), CW_NOW
 // exit: 0 a suggestion is written · 2 no observation found, or one unreadable
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMainModule } from '../lib/is-main.mjs';

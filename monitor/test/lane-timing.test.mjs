@@ -6,8 +6,8 @@
 // its most wrong exactly where coverage is worst.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from 'node:fs';
-import { denyRead, ignoresPermissions, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { denyRead, REFUSED_ERRNO } from '../../lib/fs-unreadable.mjs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { laneTiming, statusFiles, batchArea, batchStartedAt, quantiles, dailyMedians, timingRoot }

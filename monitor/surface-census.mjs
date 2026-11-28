@@ -39,7 +39,7 @@
 import { readFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
 import { scannedGitOut } from '../bin/lib/git-env.mjs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve, relative } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { loadRegistry } from './registry.mjs';
 import { resolveRepos } from './discover.mjs';
 import { outDirFor, reportsRootDir } from './area.mjs';

@@ -11,7 +11,6 @@ import { execFileSync } from 'node:child_process';
 import { isMainModule } from '../lib/is-main.mjs';
 // One implementation of process naming, shared with the sibling host lens.
 import { parseTasklistCsv } from './port-bind.mjs';
-import { fileURLToPath } from 'node:url';
 
 // Protocol-aware gate: TCP must carry (LISTEN); UDP (no LISTEN state) must be unconnected with a
 // real port. Ephemeral-range ports are kept as rows but flagged, never silently dropped.

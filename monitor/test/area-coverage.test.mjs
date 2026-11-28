@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync } from 'node:f
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  readJsonState, reposOf, assess, scanSlices, newestPerRepo, declaredFor, coverageFor,
+  readJsonState, reposOf, assess, newestPerRepo, declaredFor, coverageFor,
 } from '../area-coverage.mjs';
 
 const fixture = () => {

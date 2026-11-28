@@ -6,7 +6,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { parseRuntime, RT_CATEGORIES, RT_SEVRANK, nucleiArtifact } from '../bin/parse-runtime.mjs';
+import { parseRuntime, RT_CATEGORIES, nucleiArtifact } from '../bin/parse-runtime.mjs';
 import { solveDir, disposition, DISPOSITION } from './nuclei-solve.mjs';
 import { readInventory, ownerOf } from './host-inventory.mjs';
 import { outDirFor, reportsRootDir, ambientArea, batchesForArea } from './area.mjs';

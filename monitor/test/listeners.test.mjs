@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import net from 'node:net';
 import {
   listeners, parseLsof, parseAddress, classifyBinding, formatTable, isExternal, BINDING, runLsof,

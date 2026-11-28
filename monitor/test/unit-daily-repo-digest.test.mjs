@@ -1,7 +1,7 @@
 // repoDigest computes a digest of current and previous scan results per repository (monitor/daily.mjs repoDigest).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { repoDigest, itemId, kindOf, severityOf, pathClassOf, SECRET_CATEGORIES } from '../daily.mjs';
+import { repoDigest, itemId } from '../daily.mjs';
 
 const makeGroup = (overrides = {}) => {
   const category = overrides.category || 'lint';

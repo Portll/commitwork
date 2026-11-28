@@ -12,7 +12,6 @@ import tls from 'node:tls';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import dns from 'node:dns/promises';
-import { NOT_A_CLEAN_RESULT } from './exposure-verdict.mjs';
 
 // Read per call, never at load: CW_CLOUDFLARED_CONFIG is what admin/serve.mjs's port check reads, and
 // a load-time path left /api/exposure reporting on a different tunnel config than the server checked.

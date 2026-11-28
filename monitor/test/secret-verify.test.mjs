@@ -7,7 +7,7 @@
 // against is a row with no verdict acquiring a severity — in either direction.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { verifyCandidates, verifiedRawSet, seenRawSet, severityFor, candidateKey, candidatesFrom, isRedacted, rawMatches, keyEncryption, isKeyContainer, sharedStaticRefs } from '../secret-verify.mjs';

@@ -6,7 +6,7 @@ import { readFileSync, existsSync, realpathSync } from 'node:fs';
 import { resolve, dirname, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readJournalFile, readAdjudications, adjudicationsPath } from '../bin/lib/verdict-journal-core.mjs';
+import { readAdjudications } from '../bin/lib/verdict-journal-core.mjs';
 import { checkForIssue, selectExemplars, formatExemplarBlock } from '../lib/exemplar-select.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

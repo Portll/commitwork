@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { join, dirname, resolve } from 'node:path';
 import { annotationsPathFor } from './store-paths.mjs';
 import { fileURLToPath } from 'node:url';
-import { appendFindingAdjudication, findingKeyForScanner, findingKeyForDependency, readJournalFile, readAdjudications, adjudicationsPath } from '../bin/lib/verdict-journal-core.mjs';
+import { appendFindingAdjudication, findingKeyForScanner, findingKeyForDependency, readAdjudications } from '../bin/lib/verdict-journal-core.mjs';
 import { identityFor } from './detail-schema.mjs';
 import { scannerPlaceKey } from './scanner-delta.mjs';
 import { scannerAnnotationTarget } from './annotate-lib.mjs';
