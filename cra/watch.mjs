@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url';
 import {
   loadJSON, writeJSONAtomic, resolvePaths, loadProducts, kevSet, epssFor, openFindings,
   nowISO, addHours, addDays, addMonths, isOverdue, hoursSince, chainHash, sha256, slugify,
-  emptyCasesDoc, appendCaseEvent, updateCases, CLOCK_SPEC, clockSpecFor, kevFreshness,
+  emptyCasesDoc, appendCaseEvent, updateCases, CLOCK_SPEC, kevFreshness,
 } from './lib.mjs';
 import { writeCaseReports } from './report.mjs';
 

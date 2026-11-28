@@ -37,7 +37,6 @@ import {
 import { buildCsaf, buildCsaf21, buildOpenVex } from './vex-formats.mjs';
 import { assertCsafValid } from './csaf-validate.mjs';
 import { project, fidelitySummary, FORMATS as PROJECTION_FORMATS } from './determination-projection.mjs';
-import { determinationFromAnnotation } from './determination.mjs';
 import { getSetting } from '../monitor/settings.mjs'; // reportFormats — which projections get written
 
 // worst-state-wins ordering for the same CVE seen twice. Higher = more affected.

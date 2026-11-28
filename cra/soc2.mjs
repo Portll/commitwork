@@ -24,7 +24,7 @@
 import { isMainModule } from '../lib/is-main.mjs';
 import { join } from 'node:path';
 import {
-  loadJSON, writeJSONAtomic, writeTextAtomic, resolvePaths, loadProducts, openFindings,
+  loadJSON, writeJSONAtomic, writeTextAtomic, resolvePaths, loadProducts,
   nowISO, daysBetween, sweepStampToISO, latestSweepDir,
 } from './lib.mjs';
 import { coverageFor, loadControls, ranChecksFromSweep } from './controls.mjs';

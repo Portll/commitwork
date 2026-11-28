@@ -160,7 +160,7 @@ export function preflight(paths, at = nowISO()) {
     // refreshes KEV), so the advisory names that remedy.
     advisories.push(`EPSS store missing (${paths.epss}) — populated by monitor/rollup.mjs's enrichment during a sweep, not by the watch`);
   } else {
-    const ef = epssFreshness(paths);
+    const ef = epssFreshness();
     info.push(`EPSS store freshness: ${ef.state} — ${ef.reason}`);
   }
 

@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
-import { buildReport, coverageOf, voidsOf, fixturesOf, vintageOf, vdbOf, SPEC_VERSION } from '../neutral-report.mjs';
+import { buildReport, coverageOf, voidsOf, fixturesOf, vintageOf, SPEC_VERSION } from '../neutral-report.mjs';
 
 const CW = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PRODUCT = { name: 'p', version: '1', repos: ['r1'] };
