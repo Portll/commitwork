@@ -44,8 +44,7 @@ import { readJson as readGraph, storePath as graphPath } from '../codegraph/stor
 import { index as graphIndex, neighbourhood, blastRadius, deadExports } from '../codegraph/query.mjs';
 import { withGraph as withRelations, neighbours as relationNeighbours } from '../bin/graph.mjs';
 import { loadIssues, saveIssues, withIssuesLock, readyIssues, claimIssue, closeIssue, nowISO, ISS_RE, CLOSED_AS } from '../monitor/issue-store.mjs';
-import { ingestExternal, runRescan, rescanArgv, rescanLevels, judgementView, subjectDigest, DISPOSITIONS, RESCAN_NONE }
-  from '../monitor/ingest-external.mjs';
+import { ingestExternal, runRescan, rescanArgv, judgementView, subjectDigest, DISPOSITIONS, RESCAN_NONE } from '../monitor/ingest-external.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
