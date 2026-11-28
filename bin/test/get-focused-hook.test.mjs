@@ -21,7 +21,8 @@ import { randomUUID } from 'node:crypto';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CW_HOME = resolve(HERE, '..', '..');
 const HOOK = process.env.CW_FOCUS_HOOK || join(homedir(), '.claude', 'hooks', 'get-focused.sh');
-// The hook hard-codes its state directory; a unique session id keeps this test's files apart.
+// The hook derives its state directory from TMPDIR unless SPINE_DRIFT_STATE_DIR names one, and
+// runHook names this one; a unique session id keeps this test's files apart.
 const STATE_DIR = '/tmp/claude-session-state';
 
 const hookPresent = existsSync(HOOK);
@@ -32,7 +33,7 @@ const skipWhy = !hookPresent ? `hook absent at ${HOOK}` : !jqPresent ? 'jq absen
 function runHook(fx, payload) {
   const r = spawnSync('bash', [HOOK], {
     input: JSON.stringify(payload), encoding: 'utf8', cwd: fx.cwd,
-    env: { ...process.env, CW_VERDICT_DIR: fx.verdicts, CW_HOME },
+    env: { ...process.env, CW_VERDICT_DIR: fx.verdicts, CW_HOME, SPINE_DRIFT_STATE_DIR: STATE_DIR },
   });
   return { code: r.status, stdout: r.stdout || '', stderr: r.stderr || '' };
 }
