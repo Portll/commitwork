@@ -4,7 +4,7 @@
  * ./cve-history/latest-image.json + the latest jvm full-cve-list; mutates ./data.json
  * (per-node node.cve, meta.cveSnapshot, recomputed meta.summary).
  */
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
