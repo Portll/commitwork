@@ -23,13 +23,15 @@ import { basename, isAbsolute, join, relative, sep, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { matchBracket } from './lexer.mjs';
 
+const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export const LAUNCHD_GENERATOR = 'monitor/install-agents.mjs';
 
 // ── in-module timers and watches (over the MASKED source) ───────────────────────────────────────
 
 /** Body `{…}` range of a function named `name` declared in this module, or null. */
 export function functionBody(masked, name) {
-  const n = name.replace(/\$/g, '\\$');
+  const n = escapeRegExp(name);
   const decl = new RegExp(`\\bfunction\\s*\\*?\\s+${n}\\s*\\(`, 'g');
   const arrow = new RegExp(`\\b(?:const|let|var)\\s+${n}\\s*=\\s*(?:async\\s+)?(?:function\\b[^{(]*\\(|\\(|[\\w$]+\\s*=>)`, 'g');
   for (const re of [decl, arrow]) {
@@ -83,7 +85,7 @@ export function timerSites(masked, { fsNamespaces = new Set(['fs', 'fsp']), fsNa
   }
   const locals = [...fsNamed].filter(([, imported]) => imported === 'watch' || imported === 'watchFile').map(([l]) => l);
   if (locals.length) {
-    const re = new RegExp(`(?<![\\w$.])(${locals.map((l) => l.replace(/\$/g, '\\$')).join('|')})\\s*\\(`, 'g');
+    const re = new RegExp(`(?<![\\w$.])(${locals.map(escapeRegExp).join('|')})\\s*\\(`, 'g');
     for (const m of masked.matchAll(re)) watches.push({ at: m.index, how: m[1] });
   }
   watches.sort((a, b) => a.at - b.at);

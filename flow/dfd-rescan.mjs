@@ -28,7 +28,8 @@ export function fileOfNode(node) {
 
 // What kind of file a changed path is decides what its neighbours are and which lanes it concerns.
 export const FILE_CLASSES = Object.freeze(['source', 'source-other', 'test', 'data', 'deps', 'ci', 'docs', 'other']);
-const RE_TEST = /(^|\/)(tests?|__tests__|fixtures)\/|\.(test|spec)\.[cm]?[jt]sx?$/;
+const RE_TEST_DIR = /(^|\/)(tests?|__tests__|fixtures)\//;
+const RE_TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
 const RE_DEPS = /(^|\/)(package(-lock)?\.json|npm-shrinkwrap\.json|deno\.lock|yarn\.lock|pnpm-lock\.yaml|requirements[^/]*\.txt|Pipfile(\.lock)?|pyproject\.toml|poetry\.lock|go\.(mod|sum)|Cargo\.(toml|lock)|composer\.(json|lock)|Gemfile(\.lock)?)$/;
 const RE_CI = /^\.github\/|(^|\/)(crontab|\.gitlab-ci\.yml|Jenkinsfile)$|\.plist$/;
 const RE_SOURCE = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts)$/;
@@ -49,7 +50,7 @@ const RE_DATA = /\.(json|jsonl|ya?ml|toml|csv|tsv|sql|xml|ini|env|conf|cfg|lock)
  */
 export function classifyFile(path) {
   const p = String(path);
-  if (RE_TEST.test(p)) return 'test';
+  if (RE_TEST_DIR.test(p) || RE_TEST_FILE.test(p)) return 'test';
   if (RE_DEPS.test(p)) return 'deps';
   if (RE_CI.test(p)) return 'ci';
   if (RE_SOURCE.test(p)) return 'source';

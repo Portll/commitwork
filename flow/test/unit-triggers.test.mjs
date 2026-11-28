@@ -237,3 +237,11 @@ test('analyseTriggers assembles every source into schedulers with targets and si
   assert.deepEqual(discovered.schedulers.map((s) => s.key), ['workflow:.github/workflows/s.yml#schedule']);
   rmSync(root, { recursive: true, force: true });
 });
+
+test('functionBody reads a name as text, not as a pattern', () => {
+  const masked = 'function ab() { return 1; }\nfunction $x() { return 2; }';
+  assert.equal(functionBody(masked, 'a.'), null, 'a dot in the name matches a dot only');
+  assert.equal(functionBody(masked, '(?:ab|zz)'), null);
+  const body = functionBody(masked, '$x');
+  assert.ok(body, 'a dollar name still resolves');
+});
